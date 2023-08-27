@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="nb">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UElements</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+        font-synthesis: none;
+        font-weight: 400;
+        line-height: 1.5;
+        text-rendering: optimizeLegibility;
+      }
+      body {
+        margin: 20vh auto 0;
+        max-width: 500px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- <input type="text" list="my-list" />
+    <u-datalist id="my-list">
+      <button>Button</button>
+      <a href="#">Link</a>
+      <label><input type="checkbox" /> Label</label>
+    </u-datalist>-->
+    <u-progress value="5" max="10"></u-progress>
+    <u-test></u-test>
+    <script type="module" src="/src/index.ts"></script>
+    <script>
+      // document.addEventListener('toggle', (e) => console.log('docs', e), true)
+      // document.querySelector('button')?.addEventListener('click', () => {
+      //   const dialog = document.querySelector('u-dialog')
+      //   if (dialog) dialog.open = true
+      // })
+
+      class UTest extends HTMLElement {
+        connectedCallback() {
+          const shadowRoot = this.attachShadow({ mode: 'open' })
+          shadowRoot.innerHTML = `
+          
+            <u-tablist>Heisann!</u-tablist>
+            <u-tablist>Hade!</u-tablist>
+            <u-tablist>Pølse!</u-tablist>
+            <u-tabs>
+              <u-tablist>
+                <u-tab aria-selected="true">Rosinbolle</u-tab>
+                <u-tab>Skolebolle</u-tab>
+                <u-tab>Kanelknute</u-tab>
+                <u-tab>Pistasjbolle</u-tab>
+                <!--<u-tab-close>Lukk</u-tab-close>-->
+              </u-tablist>
+              <u-tabpanel>
+                Panel 1<button>Innhold</button>
+                <u-tablist>
+                  <u-tab aria-selected="true">Nested 1</u-tab>
+                  <u-tab>Nested 2</u-tab>
+                </u-tablist>
+                <u-tabpanel>Nested panel 1</u-tabpanel>
+                <u-tabpanel hidden>Nested panel 2</u-tabpanel>
+              </u-tabpanel>
+              <u-tabpanel hidden>Panel 2</u-tabpanel>
+              <u-tabpanel hidden>Panel 3</u-tabpanel>
+            </u-tabs>
+            <u-tablist>Møte!</u-tablist>
+            <u-tabpanel hidden>Panel 4</u-tabpanel>
+            <u-details>
+              <u-summary>Test</u-summary>
+              <details><summary>test</summary>Innhold</details>
+            </u-details>
+            <br />
+            <button>Første</button>
+            <p>Før</p>
+            <label>
+              Velg type iskrem<br>
+              <input type="text" list="my-list" />
+            </label>
+            <u-datalist id="my-list">
+              <u-option>Kokkos</u-option>
+              <u-option>Jordbær</u-option>
+              <u-option>Sjokolade</u-option>
+              <u-option>Vanilje</u-option>
+              <u-option>Lakris</u-option>
+              <u-option>Pistasj</u-option>
+              <u-option>Mango</u-option>
+              <u-option>Hasselnøtt</u-option>
+            </u-datalist>
+            <p style="height:900px">Etter</p>
+            <button>Siste</button>
+            <style>
+              u-tabpanel { padding: 10px; border: 1px solid }
+            </style>
+          `
+          // on(document, 'clicky', (e) => console.log(e.target))
+          // <u-option><a href="#">Option 1</a></u-option>
+          // <u-option>Option 2</u-option>
+          // <u-option><label><input type="checkbox" /> Option 3</label></u-option>
+          // <u-option>Option 4</u-option>
+          // <div>
+          //   <a href="#">1</a>
+          //   <a href="#">2</a>
+          //   <a href="#">3</a>
+          // </div>
+        }
+      }
+      window.customElements.define('u-test', UTest)
+
+      document.addEventListener('click', ({ target }) => {
+        const modal = document.getElementById('modal')
+        if (target.name === 'color') document.body.style.background = 'gray';
+        if (target.name === 'close') modal.close()
+        if (target.name === 'modal') {
+          // modal.removeAttribute('aria-modal')
+          modal.show()
+        }
+        if (target.name === 'non-modal') {
+          // modal.setAttribute('aria-modal', 'true')
+          modal.showModal()
+        }
+      })
+    </script>
+  </body>
+</html>
+
+<!--
+UNIVERSAL ELEMENTS
+universal.dev
+github repo/prefix
+npm publish
+
+U-TAGS:
+x dialog?
+x datalist
+x details
+x progress (test "role")
+- selectmenu
+
+U-COMPONENTS:
+- tabs (await closeability if no time)
+- scroll (probably drop)
+- filter-suite? (await)
+- datepicker (await)
+  - type="date"
+  - type="datetime-local"
+  - type="month"
+  - type="time"
+  - type="week"
+-->

@@ -134,8 +134,8 @@ function onClick(self: UHTMLDataListElement, { target }: Event) {
   if (input && option) {
     input.readOnly = true // Prevent showing mobile keyboard when moving focus back to input after selection
     input.value = option.text
-    filterItems(self, input)
     setTimeout(() => {
+      filterItems(self, input)
       input.focus() // Change input.value before focus move to make screen reader read the correct value
       setOpen(self, false)
       setTimeout(() => (input.readOnly = false)) // Enable keyboard again

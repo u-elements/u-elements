@@ -50,7 +50,7 @@ export class UHTMLTabListElement extends HTMLElement {
   constructor() {
     super()
     attr(this, 'role', 'tablist')
-    style(this, BLOCK)
+    style(this, ':host(:not([hidden])) { display: flex; flex-wrap: wrap }')
   }
   connectedCallback() {
     // Listen for tab events on tablist to minimize amount of listeners
@@ -90,10 +90,7 @@ export class UHTMLTabElement extends HTMLElement {
   constructor() {
     super()
     attr(this, 'role', 'tab')
-    style(
-      this,
-      ':host(:not([hidden])) { display: inline-block; cursor: pointer }'
-    )
+    style(this, `${BLOCK}:host { cursor: pointer }`)
   }
   connectedCallback() {
     this.attributeChangedCallback() // Setup attributes on connect

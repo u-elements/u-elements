@@ -1,16 +1,20 @@
-import { attr, define, style } from '../utils'
+import { DISABLED, SELECTED, attr, define, style } from '../utils'
 
 declare global {
   interface HTMLElementTagNameMap {
-    'u-option': UOption
+    'u-option': UHTMLOptionElement
   }
 }
 
-export class UOption extends HTMLElement {
+export class UHTMLOptionElement extends HTMLElement {
   constructor() {
     super()
     attr(this, { role: 'option', tabindex: -1 })
-    style(this, `:host(:not([hidden])) { display: block; cursor: pointer }`)
+    style(
+      this,
+      `:host(:not([hidden])) { display: block; cursor: pointer }
+      :host([${SELECTED}="true"]) { color: red }`
+    )
   }
   /** Sets or retrieves whether the option in the list box is the default item. */
   get defaultSelected() {
@@ -20,10 +24,10 @@ export class UOption extends HTMLElement {
     attr(getContainer(this), 'selected', value)
   }
   get disabled() {
-    return attr(this, 'aria-disabled') === 'true'
+    return attr(this, DISABLED) === 'true'
   }
   set disabled(value: boolean) {
-    attr(this, 'aria-disabled', value ? 'true' : null)
+    attr(this, DISABLED, value ? 'true' : null)
   }
   /** Retrieves a reference to the form that the object is embedded in. */
   get form() {
@@ -33,7 +37,7 @@ export class UOption extends HTMLElement {
   get index() {
     const container = getContainer(this)
     if (!container) return -1
-    return Array.from(container.querySelectorAll(this.nodeName)).indexOf(this)
+    return [...container.getElementsByTagName(this.nodeName)].indexOf(this)
   }
   /** Sets or retrieves a value that you can use to implement your own label functionality for the object. */
   get label() {
@@ -43,10 +47,10 @@ export class UOption extends HTMLElement {
     attr(this, 'label', value)
   }
   get selected() {
-    return attr(this, 'aria-selected') === 'true'
+    return attr(this, SELECTED) === 'true'
   }
   set selected(value: boolean) {
-    attr(this, 'aria-selected', value ? true : null)
+    attr(this, SELECTED, !!value)
   }
   /** Sets or retrieves the text string specified by the option tag. */
   get text() {
@@ -64,6 +68,7 @@ export class UOption extends HTMLElement {
   }
 }
 
-const getContainer = (self: UOption) => self.closest('u-datalist,u-selectmenu')
+const getContainer = (self: UHTMLOptionElement) =>
+  self.closest('u-datalist,u-selectmenu')
 
-define('u-option', UOption)
+define('u-option', UHTMLOptionElement)

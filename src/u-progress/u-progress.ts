@@ -1,12 +1,12 @@
-import { IS_IOS, attr, define, style } from '../utils'
+import { IS_IOS, attr, define, getRoot, style } from '../utils'
 
 declare global {
   interface HTMLElementTagNameMap {
-    'u-progrss': UProgress
+    'u-progrss': UHTMLProgressElement
   }
 }
 
-export class UProgress extends HTMLElement {
+export class UHTMLProgressElement extends HTMLElement {
   static get observedAttributes() {
     return ['value', 'max']
   }
@@ -15,8 +15,8 @@ export class UProgress extends HTMLElement {
     attr(this, 'role', IS_IOS ? 'img' : 'progressbar')
     style(
       this,
-      `:host { box-sizing: border-box; border: 1px solid; display: inline-flex; height: .5em; width: 10em }
-      :host::before { content: ''; border-radius: inherit; background: currentColor; width: var(--percentage, 100%); transition: width .2s }
+      `:host { box-sizing: border-box; border: 1px solid; display: inline-flex; height: .5em; width: 10em; overflow: hidden }
+      :host::before { content: ''; background: currentColor; width: var(--percentage, 100%); transition: width .2s }
       :host(:not([value]))::before { animation: indeterminate 2s linear infinite; background: linear-gradient(90deg,currentColor 25%, transparent 50%, currentColor 75%) 100%/400% }
       @keyframes indeterminate { to { background-position-x: 0 } }`
     )
@@ -28,13 +28,20 @@ export class UProgress extends HTMLElement {
     const indeterminate = this.position < 0
     const percentage = `${Math.round(this.position * 100)}%` // Always use percentage as iOS role="progressbar"
     this.style.setProperty('--percentage', indeterminate ? '' : percentage)
-    attr(this, IS_IOS ? 'aria-label' : 'aria-valuenow', percentage)
-    attr(this, 'aria-busy', indeterminate || null)
-    attr(this, 'aria-valuemax', 100)
-    attr(this, 'aria-valuemin', 0)
+    attr(this, {
+      [IS_IOS ? 'aria-label' : 'aria-valuenow']: percentage,
+      'aria-busy': indeterminate || null,
+      'aria-valuemax': 100,
+      'aria-valuemin': 0
+    })
   }
   get labels() {
-    return this.querySelectorAll(`[for="${this.id}"]`)
+    const label = this.closest('label')
+    const needsFor = label && !label.htmlFor
+    if (needsFor) label.htmlFor = this.id // Ensure parent label is included in NodeList
+    const nodeList = getRoot(this).querySelectorAll(`[for="${this.id}"]`)
+    if (needsFor) attr(label, 'for', null) // Undo attribute in case u-progress is moved later
+    return nodeList
   }
   get position() {
     return this.value === null ? -1 : Math.min(this.value / this.max, 1)
@@ -64,4 +71,4 @@ const setNumber = (el: Element, key: string, val: unknown) => {
   throw new Error(`Failed to set non-numeric '${key}': '${val}'`)
 }
 
-define('u-progress', UProgress)
+define('u-progress', UHTMLProgressElement)

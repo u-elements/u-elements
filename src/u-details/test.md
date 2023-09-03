@@ -27,13 +27,9 @@ Windows 10 with Narrator -
 # Windows - Narrator 30.04.2023:
 ## Chrome:
 "Button, state, Text", Reads nothing on click, Reads no group, but reads content
-
-# Windows - Narrator 30.04.2023:
 ## Edge:
 "Button, state, Text", Reads "Text, Button, state, available suggestions" on click, Reads no group, but reads content
 *Note: "available suggestions" is read because of because of aria-controls*
-
-# Windows - Narrator 30.04.2023:
 ## Firefox:
 "Text, button, state", Reads "Text, button state" on click, Reads no group, but reads content
 

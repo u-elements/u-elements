@@ -1,48 +1,63 @@
-Notice: Can not guarantee that the users leave the dialog in old browsers and Firefox 06.05.23
-Keep close button as first element
+// TODO: Maybe show no results?
+//const valid =
+//return show
+// attr(self, 'tabindex', valid.length ? null : 0) // Set input to invalid if no matches found
 
-# MacOS 13.2 - VoiceOver 30.04.2023
+# MacOS 13.2 - VoiceOver 30.08.2023
 
 ## Safari:
-Warning: Needs click or typing to open
-Success: Anounces visible list
+Note: aria-expanded is not read on inputs - we can live with this
 
 ## Chrome:
-Success: Visually opens on focus
-Success: Sound indicates open on arrow
+Success
 
 ## Firefox:
-Success: Anounces visible window with slight delay after first arrow down
-Note: Needs second arrow down to move to first item
+Note: Reads group
+Success
 
 ------------------
 
-# Windows - NVDA 30.04.2023:
-## Edge, Chrome, Firefox:
-
-
-# Windows - JAWS 30.04.2023:
-## Edge, Chrome, Firefox v112:
-
-# Windows - Narrator 30.04.2023:
-## Chrome:
-
-# Windows - Narrator 30.04.2023:
+# Windows - NVDA 30.08.2023:
 ## Edge:
+Note: Aria-expanded is not read - we can live with this
+Note: Dos not annonce aria-selected - we can live with this
+## Chrome, Firefox
+Note: Dos not annonce aria-selected - we can live with this
 
-# Windows - Narrator 30.04.2023:
+# Windows - JAWS 30.08.2023:
+## Edge:
+Note: Dos not annonce aria-selected - we can live with this
+
+## Chrome:
+Success
 ## Firefox:
+Success
+
+# Windows - Narrator 30.08.2023:
+
+## Chrome:
+Note: Aria-expanded is not read - we can live with this
+## Edge:
+Success
+
+## Firefox:
+Success
 
 ------------------
 
-# iOS 16.2 - VoiceOver 30.04.2023
+# iOS 16.2 - VoiceOver 30.08.2023
 ## Safari, Chrome, Firefox:
-Warning: Show only 3 suggestions inside keyboard - aka. quite hidden and limited
-Fail: Visually shows arrow that gives access to full list, but this is not accessible to screen reader
+Note: Does not announce number of total, so we add a title attribute width n/N
 
 ------------------
 
-# Android 13 - Talkback 30.04.2023
-## Chrome, Samsung Internett:
+# Android 13 - Talkback 30.08.2023
+
+## Chrome
+Note: Announces options "above the keyboard" - which is technically not wrong
+## Samsung Internett:
+Note: Announces listarea - unnecessary, but this is Android standard
+Note: Does not announce "expanded/minimized" before initial focus is fired - which is technically not wrong
 
 ## Firefox:
+Note: Does not hide keyboard - we can live with this

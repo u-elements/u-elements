@@ -4,10 +4,17 @@ export const IS_BROWSER =
   typeof window.navigator !== 'undefined'
 
 export const IS_ANDROID =
-  IS_BROWSER && /(android)/i.test(window.navigator.userAgent) // Bad, but needed
+  IS_BROWSER && /android/i.test(window.navigator.userAgent) // Bad, but needed
 
 export const IS_IOS =
   IS_BROWSER && /iPad|iPhone|iPod/.test(window.navigator.userAgent) // Bad, but needed
+
+// Aria utils for better compression and control
+export const CONTROLS = 'aria-controls'
+export const DISABLED = 'aria-disabled'
+export const EXPANDED = 'aria-expanded'
+export const LABELLEDBY = IS_ANDROID ? 'data-labelledby' : 'aria-labelledby' // Android reads tab text instead of content when labelledby
+export const SELECTED = 'aria-selected'
 
 export const on = (
   element: Node | Window,
@@ -43,11 +50,11 @@ export function attr(
   name: string | object,
   value?: string | number | boolean | null
 ): string | null | void {
-  if (typeof name === 'object') {
-    Object.entries(name).map(([name, value]) => attr(element, name, value))
-  } else if (element instanceof Element) {
-    if (value === undefined) return element.getAttribute(name)
-    if (value === null) element.removeAttribute(name)
+  if (element instanceof Element) {
+    if (typeof name === 'object')
+      Object.entries(name).map(([name, value]) => attr(element, name, value))
+    else if (value === undefined) return element.getAttribute(name)
+    else if (value === null) element.removeAttribute(name)
     else element.setAttribute(name, String(value))
   }
 }
@@ -90,22 +97,6 @@ export const asButton = (event: Event): boolean => {
 }
 
 /**
- * dispatch
- * @param element The target object
- * @param name The event name
- * @param options Detail object (bubbles and cancelable is set to true)
- * @return Whether the event was canceled. Returns true if either event's cancelable attribute value is false or its preventDefault() method was not invoked, and false otherwise.
- */
-export const dispatch = (
-  element: Element,
-  name: string,
-  options: EventListenerOptions = {}
-) =>
-  element.dispatchEvent(
-    new Event(name, { composed: true, bubbles: true, ...options })
-  )
-
-/**
  * getRoot
  * @description Helper for minifying and better typescript typing
  * @param element The target object
@@ -120,6 +111,6 @@ export const getRoot = (node: Node) =>
  * useId
  * @return A generated unique ID
  */
-let id = 0
+let id = Date.now()
 export const useId = (el?: Element | null) =>
   el && (el.id = el.id || `:${el.nodeName.toLowerCase()}${(++id).toString(32)}`)

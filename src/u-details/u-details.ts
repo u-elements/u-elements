@@ -1,19 +1,21 @@
 import {
-  IS_ANDROID,
+  CONTROLS,
+  EXPANDED,
+  LABELLEDBY,
   asButton,
   attr,
   define,
-  style,
   mutationObserver,
   off,
   on,
+  style,
   useId
 } from '../utils'
 
 declare global {
   interface HTMLElementTagNameMap {
-    'u-details': UDetails
-    'u-summary': USummary
+    'u-details': UHTMLDetailsElement
+    'u-summary': UHTMLSummaryElement
   }
 }
 
@@ -21,9 +23,10 @@ declare global {
 // First element to be <u-summary>
 // Second element to be <details>
 // toggle event is triggered from child, not <u-details> iteself
+// We can not polyfill HTMLInputElement.list as this is readOnly
 // Why: details/summary does not work in iOS Safari: impossible to read state of aria-expanded
 
-export class UDetails extends HTMLElement {
+export class UHTMLDetailsElement extends HTMLElement {
   static get observedAttributes() {
     return ['open', 'id']
   }
@@ -32,8 +35,8 @@ export class UDetails extends HTMLElement {
     style(
       this,
       `:host(:not([hidden])) { display: block }
-      :host > ::slotted(u-summary) { cursor: pointer; display: list-item; list-style: inside disclosure-closed }
-      :host > ::slotted(u-summary[aria-expanded="true"]) { list-style-type: disclosure-open }`
+      ::slotted(u-summary) { cursor: pointer; display: list-item; list-style: inside disclosure-closed }
+      ::slotted(u-summary[${EXPANDED}="true"]) { list-style-type: disclosure-open }`
     )
   }
   connectedCallback() {
@@ -46,25 +49,25 @@ export class UDetails extends HTMLElement {
     mutationObserver(this, false)
   }
   attributeChangedCallback() {
-    const [summary, details] = Array.from(this.children)
+    const [summary, details] = this.children
     const isOpen = this.open // Cache for speed
 
     // Ensure native <summary> exists and is hidden (can not be accessed through css)
     if (details instanceof HTMLDetailsElement) {
       const summary =
-        details.querySelector(':scope > summary') ||
+        details.querySelector<HTMLElement>(':scope > summary') ||
         details.appendChild(document.createElement('summary'))
-      attr(summary, 'hidden', '')
+      summary.hidden = true
     }
 
     attr(summary, {
-      'aria-controls': details && useId(details),
-      'aria-expanded': isOpen,
+      [CONTROLS]: details && useId(details),
+      [EXPANDED]: isOpen,
       id: useId(summary)
     })
     attr(details, {
       'aria-hidden': !isOpen, // Needed to not announce "empty group" when closed
-      'aria-labelledby': IS_ANDROID ? null : useId(summary), // Android reads button instead of content when labelledby
+      [LABELLEDBY]: useId(summary),
       open: isOpen ? '' : null,
       role: 'group'
     })
@@ -83,7 +86,7 @@ export class UDetails extends HTMLElement {
   }
 }
 
-export class USummary extends HTMLElement {
+export class UHTMLSummaryElement extends HTMLElement {
   connectedCallback() {
     attr(this, { role: 'button', tabIndex: 0 })
     on(this, 'click,keydown', this)
@@ -92,12 +95,11 @@ export class USummary extends HTMLElement {
     off(this, 'click,keydown', this)
   }
   handleEvent(event: CustomEvent) {
-    const details = this.parentElement
+    const details = this.parentElement as UHTMLDetailsElement
     if (event.type === 'keydown') asButton(event)
-    if (event.type === 'click' && details instanceof UDetails)
-      details.open = !details.open
+    if (event.type === 'click') details.open = !details.open
   }
 }
 
-define('u-details', UDetails)
-define('u-summary', USummary)
+define('u-details', UHTMLDetailsElement)
+define('u-summary', UHTMLSummaryElement)

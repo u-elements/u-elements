@@ -86,15 +86,16 @@ const filter = (self: UHTMLDataListElement, input: unknown, wait = 16) => {
   clearTimeout(debounce)
   if (wait) debounce = setTimeout(filter, wait, self, input, 0)
   if (wait || !isInput(self, input)) return
-  self.hidden = true // Speed up large lists by hiding during filtering
-
-  const value = input.value.toLowerCase().trim()
+  const prevHidden = self.hidden // Store previous hidden state
   const added = addedWhileOpen.get(self) || [] // If a option is added to DOM while open, do not hide
-  const options = Array.from(self.options, (opt) => {
+  const value = input.value.toLowerCase().trim()
+  const options = [...self.options]
+
+  self.hidden = true // Speed up large lists by hiding during filtering
+  options.forEach((opt) => {
     const text = opt.text.toLowerCase()
     opt.hidden = !added.includes(opt) && (!text.includes(value) || opt.disabled)
     opt.selected = value === text
-    return opt
   })
 
   // Needed to announce count in iOS
@@ -103,7 +104,7 @@ const filter = (self: UHTMLDataListElement, input: unknown, wait = 16) => {
       .filter((opt) => !opt.hidden)
       .map((opt, i, all) => (opt.title = `${i + 1}/${all.length}`))
 
-  self.hidden = false // Show again after filtering
+  self.hidden = prevHidden // Reset hidden state
 }
 
 function onFocus(self: UHTMLDataListElement, { target: input }: Event) {
@@ -141,7 +142,6 @@ function onClick(self: UHTMLDataListElement, { target }: Event) {
     setTimeout(() => {
       input.focus() // Change input.value before focus move to make screen reader read the correct value
       setOpen(self, false)
-      filter(self, input)
       setTimeout(() => (input.readOnly = false)) // Enable keyboard again
     }, 16) // Set timeout to 16ms to allow mobile keyboard to hide before moving focus
   }

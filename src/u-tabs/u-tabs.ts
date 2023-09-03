@@ -166,7 +166,7 @@ const queryWithoutNested = <TagName extends keyof HTMLElementTagNameMap>(
 // Get related tab (if passing panel) or panel (if passing tab)
 // Needs to be a utility function so it can be used independendtly from Element life cycle
 // Querys elements both inside ShadowRoot and in document just incase trying to access outside shadowRoot elements
-const queryRelated = <Ret extends HTMLElement>(self: Element): Ret | null => {
+const queryRelated = <Rel extends HTMLElement>(self: Element): Rel | null => {
   const isTab = self.nodeName === 'U-TAB' // Check nodeName as UHTMLTabElement instance might not be created yet
   const key = isTab ? attr(self, CONTROLS) || '' : self.id
   const css = isTab ? `u-tabpanel[id="${key}"]` : `u-tab[${CONTROLS}="${key}"]`

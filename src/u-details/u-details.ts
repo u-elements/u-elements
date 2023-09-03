@@ -1,4 +1,5 @@
 import {
+  BLOCK,
   CONTROLS,
   EXPANDED,
   LABELLEDBY,
@@ -34,7 +35,7 @@ export class UHTMLDetailsElement extends HTMLElement {
     super()
     style(
       this,
-      `:host(:not([hidden])) { display: block }
+      `${BLOCK}
       ::slotted(u-summary) { cursor: pointer; display: list-item; list-style: inside disclosure-closed }
       ::slotted(u-summary[${EXPANDED}="true"]) { list-style-type: disclosure-open }`
     )

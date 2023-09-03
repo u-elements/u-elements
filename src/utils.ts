@@ -9,7 +9,8 @@ export const IS_ANDROID =
 export const IS_IOS =
   IS_BROWSER && /iPad|iPhone|iPod/.test(window.navigator.userAgent) // Bad, but needed
 
-// Aria utils for better compression and control
+// Constants for better compression and control
+export const BLOCK = ':host(:not([hidden])) { display: block }'
 export const CONTROLS = 'aria-controls'
 export const DISABLED = 'aria-disabled'
 export const EXPANDED = 'aria-expanded'

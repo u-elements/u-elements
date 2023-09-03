@@ -1,4 +1,5 @@
 import {
+  BLOCK,
   CONTROLS,
   IS_ANDROID,
   LABELLEDBY,
@@ -25,7 +26,7 @@ declare global {
 export class UHTMLTabsElement extends HTMLElement {
   constructor() {
     super()
-    style(this, `:host(:not([hidden])) { display: block }`)
+    style(this, BLOCK)
   }
   get tabList(): UHTMLTabListElement | null {
     return queryWithoutNested('u-tablist', this)[0] || null
@@ -49,7 +50,7 @@ export class UHTMLTabListElement extends HTMLElement {
   constructor() {
     super()
     attr(this, 'role', 'tablist')
-    style(this, `:host(:not([hidden])) { display: block }`)
+    style(this, BLOCK)
   }
   connectedCallback() {
     // Listen for tab events on tablist to minimize amount of listeners
@@ -146,7 +147,7 @@ export class UHTMLTabPanelElement extends HTMLElement {
   constructor() {
     super()
     attr(this, { role: 'tabpanel' })
-    style(this, `:host(:not([hidden])) { display: block }`)
+    style(this, BLOCK)
   }
   get tabsElement() {
     return this.tab ? this.tab.tabsElement : this.closest('u-tabs')

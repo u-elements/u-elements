@@ -1,5 +1,6 @@
 import { UHTMLOptionElement } from '../u-option/u-option'
 import {
+  BLOCK,
   CONTROLS,
   EXPANDED,
   IS_BROWSER,
@@ -32,7 +33,7 @@ export class UHTMLDataListElement extends HTMLElement {
   constructor() {
     super()
     attr(this, { hidden: '', role: 'listbox' })
-    style(this, `:host(:not([hidden])) { display: block }`)
+    style(this, BLOCK)
   }
   connectedCallback() {
     const root = getRoot(this)

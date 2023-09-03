@@ -1,4 +1,4 @@
-import { DISABLED, SELECTED, attr, define, style } from '../utils'
+import { BLOCK, DISABLED, SELECTED, attr, define, style } from '../utils'
 
 declare global {
   interface HTMLElementTagNameMap {
@@ -10,7 +10,7 @@ export class UHTMLOptionElement extends HTMLElement {
   constructor() {
     super()
     attr(this, { role: 'option', tabindex: -1 })
-    style(this, `:host(:not([hidden])) { display: block; cursor: pointer }`)
+    style(this, `${BLOCK}:host { cursor: pointer }`)
   }
   /** Sets or retrieves whether the option in the list box is the default item. */
   get defaultSelected() {

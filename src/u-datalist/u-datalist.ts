@@ -87,6 +87,7 @@ const filter = (self: UHTMLDataListElement, input: unknown, wait = 16) => {
   clearTimeout(debounce)
   if (wait) debounce = setTimeout(filter, wait, self, input, 0)
   if (wait || !isInput(self, input)) return
+
   const prevHidden = self.hidden // Store previous hidden state
   const added = addedWhileOpen.get(self) || [] // If a option is added to DOM while open, do not hide
   const value = input.value.toLowerCase().trim()
@@ -185,7 +186,7 @@ function onKeydown(self: UHTMLDataListElement, event: KeyboardEvent) {
   if (key === 'Escape') setOpen(self, false)
 }
 
-// Polyfill input.list so it aslo receives u-datalist
+// Polyfill input.list so it also receives u-datalist
 if (IS_BROWSER)
   Object.defineProperty(HTMLInputElement.prototype, 'list', {
     configurable: true,

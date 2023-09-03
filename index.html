@@ -17,6 +17,7 @@
         margin: 20vh auto 0;
         max-width: 500px;
       }
+      u-option[aria-selected="true"] { color: red }
       u-tabpanel { padding: 10px; border: 1px solid }
     </style>
   </head>
@@ -100,7 +101,7 @@
               u-tab { padding: 2px 5px }
               u-tab[aria-selected="true"] { background: black; color: white }
               u-tabpanel { padding: 10px; border: 1px solid }
-              u-datalist:focus{padding:5px;background:red}
+              u-option[aria-selected="true"] { color: red }
               input { font-size: inherit }
             </style>
           `

@@ -106,7 +106,7 @@ export class UHTMLTabElement extends HTMLElement {
 
       Array.from(tabs, (tab, index) => {
         const panel = queryRelated(tab) || panels[index]
-        panel.hidden = true
+        if (panel) panel.hidden = true
         attr(tab, {
           [CONTROLS]: useId(panel),
           [SELECTED]: tab === this,

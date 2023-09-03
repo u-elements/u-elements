@@ -113,4 +113,6 @@ export const getRoot = (node: Node) =>
  */
 let id = Date.now()
 export const useId = (el?: Element | null) =>
-  el && (el.id = el.id || `:${el.nodeName.toLowerCase()}${(++id).toString(32)}`)
+  el
+    ? (el.id = el.id || `:${el.nodeName.toLowerCase()}${(++id).toString(32)}`)
+    : undefined

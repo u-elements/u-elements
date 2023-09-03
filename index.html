@@ -26,10 +26,11 @@
         let i = 0
         document.addEventListener('input', (event) => {
           setTimeout(() => {
+            const pre = event.target.value.split('@')[0]
             event.target.list.innerHTML = `
-              <u-option>${event.target.value}@gmail.com</u-option>
-              <u-option>${event.target.value}@hotmail.com</u-option>
-              <u-option>${event.target.value}@icloud.com</u-option>
+              <u-option>${pre}@gmail.com</u-option>
+              <u-option>${pre}@hotmail.com</u-option>
+              <u-option>${pre}@icloud.com</u-option>
               <u-option>${i++}</u-option>`;
           })
         })

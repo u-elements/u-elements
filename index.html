@@ -25,11 +25,13 @@
       setTimeout(() => {
         let i = 0
         document.addEventListener('input', (event) => {
-          event.target.list.innerHTML = `
-            <u-option>${event.target.value}@gmail.com</u-option>
-            <u-option>${event.target.value}@hotmail.com</u-option>
-            <u-option>${event.target.value}@icloud.com</u-option>
-            <u-option>${i++}</u-option>`;
+          setTimeout(() => {
+            event.target.list.innerHTML = `
+              <u-option>${event.target.value}@gmail.com</u-option>
+              <u-option>${event.target.value}@hotmail.com</u-option>
+              <u-option>${event.target.value}@icloud.com</u-option>
+              <u-option>${i++}</u-option>`;
+          })
         })
       }, 200)
     </script>

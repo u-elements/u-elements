@@ -51,7 +51,7 @@ export class UHTMLDataListElement extends HTMLElement {
     if (event.type === 'click') onClick(this, event)
     if (event.type === 'focus' || event.type === 'focusin') onFocus(this, event)
     if (event.type === 'focusout') onBlur(this, event)
-    if (event.type === 'input') setTimeout(filterItems, 16, this, event.target) // Let other input events run first
+    if (event.type === 'input') filter(this, event.target)
     if (event.type === 'keydown') onKeydown(this, event as KeyboardEvent)
     if (event.type === 'mutation') onMutation(this)
   }
@@ -60,7 +60,6 @@ export class UHTMLDataListElement extends HTMLElement {
   }
 }
 
-const addedWhileOpen = new WeakMap<UHTMLDataListElement, UHTMLOptionElement[]>()
 const getInput = (self: UHTMLDataListElement) =>
   getRoot(self).querySelector<HTMLInputElement>(
     `input[${CONTROLS}="${self.id}"]`
@@ -80,8 +79,13 @@ const setOpen = (self: UHTMLDataListElement, open: boolean) => {
   self.hidden = !open
 }
 
-const filterItems = (self: UHTMLDataListElement, input: unknown) => {
-  if (!isInput(self, input)) return
+let debounce: ReturnType<typeof setTimeout>
+const addedWhileOpen = new WeakMap<UHTMLDataListElement, UHTMLOptionElement[]>()
+const filter = (self: UHTMLDataListElement, input: unknown, wait = 16) => {
+  // Debounce as filtering can be triggered multiple times in same event loop
+  clearTimeout(debounce)
+  if (wait) debounce = setTimeout(filter, wait, self, input, 0)
+  if (wait || !isInput(self, input)) return
   self.hidden = true // Speed up large lists by hiding during filtering
 
   const value = input.value.toLowerCase().trim()
@@ -107,7 +111,7 @@ function onFocus(self: UHTMLDataListElement, { target: input }: Event) {
     const label = input.labels && input.labels[0]
     if (label) attr(self, LABELLEDBY, useId(label))
     setOpen(self, true)
-    filterItems(self, input)
+    filter(self, input)
     attr(input, {
       'aria-autocomplete': 'list',
       [CONTROLS]: useId(self), // Used by getInput later
@@ -135,19 +139,20 @@ function onClick(self: UHTMLDataListElement, { target }: Event) {
     input.readOnly = true // Prevent showing mobile keyboard when moving focus back to input after selection
     input.value = option.text
     setTimeout(() => {
-      filterItems(self, input)
       input.focus() // Change input.value before focus move to make screen reader read the correct value
       setOpen(self, false)
+      filter(self, input)
       setTimeout(() => (input.readOnly = false)) // Enable keyboard again
     }, 16) // Set timeout to 16ms to allow mobile keyboard to hide before moving focus
   }
 }
 
-// Since InputEvent does not listen for event.preventDefault(),
-// we need another way of canceling automatic filtering if replacing inner DOM
-// We instead listen for mutations so we can store options that are added while open
+// Since InputEvent does not accept event.preventDefault(),
+// we need another way of canceling automatic filtering when replacing inner DOM
+// We instead listen for mutations so we can store options that are addedWhileOpen
 function onMutation(self: UHTMLDataListElement) {
   addedWhileOpen.set(self, [...self.options]) // Store to prevent mutations
+  filter(self, getInput(self))
 }
 
 function onKeydown(self: UHTMLDataListElement, event: KeyboardEvent) {

@@ -2,7 +2,7 @@ import { IS_IOS, attr, define, getRoot, style } from '../utils'
 
 declare global {
   interface HTMLElementTagNameMap {
-    'u-progrss': UHTMLProgressElement
+    'u-progress': UHTMLProgressElement
   }
 }
 

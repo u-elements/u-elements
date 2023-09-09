@@ -60,16 +60,6 @@ export function attr(
   }
 }
 
-export const define = (
-  ...args: Parameters<typeof window.customElements.define>
-) => {
-  try {
-    window.customElements.define(...args)
-  } catch (err) {
-    // Element allready defined or running on server
-  }
-}
-
 const observers = new WeakMap()
 export const mutationObserver = (
   element: Element & EventListenerObject,

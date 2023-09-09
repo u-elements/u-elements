@@ -1,4 +1,4 @@
-import { BLOCK, DISABLED, SELECTED, attr, define, style } from '../utils'
+import { BLOCK, DISABLED, SELECTED, attr, style } from '../utils'
 
 declare global {
   interface HTMLElementTagNameMap {
@@ -67,4 +67,8 @@ export class UHTMLOptionElement extends HTMLElement {
 const getContainer = (self: UHTMLOptionElement) =>
   self.closest('u-datalist,u-selectmenu')
 
-define('u-option', UHTMLOptionElement)
+try {
+  customElements.define('u-option', UHTMLOptionElement)
+} catch (err) {
+  // Already defined or on server
+}

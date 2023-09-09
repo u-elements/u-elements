@@ -7,7 +7,6 @@ import {
   IS_IOS,
   LABELLEDBY,
   attr,
-  define,
   getRoot,
   mutationObserver,
   off,
@@ -150,7 +149,7 @@ function onKeydown(self: UHTMLDataListElement, event: KeyboardEvent) {
   const active = getRoot(self).activeElement as UHTMLOptionElement
   const options = [...self.options].filter((opt) => !opt.hidden)
   const index = options.indexOf(active)
-  let next = -1 // If hidden - first arrow down should exit input TODO: Test with Kristoffer
+  let next = -1 // If hidden - first arrow down should exit input
 
   if (key === 'ArrowDown') next = (index + 1) % options.length
   if (key === 'ArrowUp') next = (~index ? index : options.length) - 1 // Allow focus in input on ArrowUp
@@ -183,4 +182,8 @@ if (IS_BROWSER)
     }
   })
 
-define('u-datalist', UHTMLDataListElement)
+try {
+  customElements.define('u-datalist', UHTMLDataListElement)
+} catch (err) {
+  // Already defined or on server
+}

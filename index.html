@@ -22,6 +22,10 @@
     </style>
   </head>
   <body>
+    <script type="module">
+      import 'api-viewer-element';
+    </script>
+    <api-viewer src="custom-elements.json" selected="u-progress"></api-viewer>
     <script>
       setTimeout(() => {
         let i = 0
@@ -39,7 +43,7 @@
     </script>
     <label>
       Hei
-      <u-progress value="5" max="10"></u-progress>
+      <u-progress value="5" max="10">70%</u-progress>
     </label>
     <u-tab>Rosinbolle</u-tab>
     <u-test></u-test>

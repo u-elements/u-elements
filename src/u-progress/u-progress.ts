@@ -1,12 +1,15 @@
-import { IS_IOS, attr, define, getRoot, style, useId } from '../utils'
+import { IS_IOS, attr, getRoot, style, useId } from '../utils'
 
 declare global {
   interface HTMLElementTagNameMap {
     'u-progress': UHTMLProgressElement
   }
 }
-
-export class UHTMLProgressElement extends HTMLElement {
+/**
+ * The `<u-progress value="70" max="100">` HTML element displays an indicator showing the completion progress of a task, typically displayed as a progress bar.
+ * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/progress)
+ */
+class UHTMLProgressElement extends HTMLElement {
   static get observedAttributes() {
     return ['value', 'max']
   }
@@ -15,8 +18,8 @@ export class UHTMLProgressElement extends HTMLElement {
     attr(this, 'role', IS_IOS ? 'img' : 'progressbar')
     style(
       this,
-      `:host(:not([hidden])) { box-sizing: border-box; border: 1px solid; display: inline-flex; height: .5em; width: 10em; overflow: hidden }
-      :host::before { content: ''; background: currentColor; width: var(--percentage, 100%); transition: width .2s }
+      `:host(:not([hidden])) { box-sizing: border-box; border: 1px solid; display: inline-block; height: .5em; width: 10em; overflow: hidden }
+      :host::before { content: ''; display: block; height: 100%; background: currentColor; width: var(--percentage, 100%); transition: width .2s }
       :host(:not([value]))::before { animation: indeterminate 2s linear infinite; background: linear-gradient(90deg,currentColor 25%, transparent 50%, currentColor 75%) 100%/400% }
       @keyframes indeterminate { to { background-position-x: 0 } }`
     )
@@ -73,4 +76,8 @@ const setNumber = (el: Element, key: string, val: unknown) => {
   throw new Error(`Failed to set non-numeric '${key}': '${val}'`)
 }
 
-define('u-progress', UHTMLProgressElement)
+try {
+  customElements.define('u-progress', UHTMLProgressElement)
+} catch (err) {
+  // Already defined or on server
+}

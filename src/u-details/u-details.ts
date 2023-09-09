@@ -5,7 +5,6 @@ import {
   LABELLEDBY,
   asButton,
   attr,
-  define,
   mutationObserver,
   off,
   on,
@@ -102,5 +101,9 @@ export class UHTMLSummaryElement extends HTMLElement {
   }
 }
 
-define('u-details', UHTMLDetailsElement)
-define('u-summary', UHTMLSummaryElement)
+try {
+  customElements.define('u-details', UHTMLDetailsElement)
+  customElements.define('u-summary', UHTMLSummaryElement)
+} catch (err) {
+  // Already defined or on server
+}

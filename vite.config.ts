@@ -2,21 +2,25 @@
 import { defineConfig } from 'vite'
 import dts from 'vite-plugin-dts'
 import path from 'path'
-// import customElementsManifest from 'vite-plugin-cem';
+import customElementsManifest from 'vite-plugin-cem'
+import { customElementVsCodePlugin } from 'custom-element-vs-code-integration'
 
 export default defineConfig({
   plugins: [
-    dts({ rollupTypes: true })
-    // customElementsManifest({
-    //   files: ['./src/**/index.ts']
-    // })
+    dts({ rollupTypes: true }),
+    customElementsManifest({
+      files: ['./src/**/*.ts'],
+      // eslint-disable-next-line
+      // @ts-ignore
+      plugins: [customElementVsCodePlugin({ outdir: 'dist' })]
+    })
   ],
   build: {
     sourcemap: true,
     lib: {
       entry: path.resolve('src/index.ts'),
       fileName: '[name]',
-      formats: ['es']
+      formats: ['es', 'cjs']
     }
   },
   test: {

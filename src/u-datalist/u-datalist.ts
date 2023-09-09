@@ -55,7 +55,7 @@ export class UHTMLDataListElement extends HTMLElement {
     if (event.type === 'keydown') onKeydown(this, event as KeyboardEvent)
     if (event.type === 'mutation') onMutation(this)
   }
-  get options() {
+  get options(): HTMLCollectionOf<UHTMLOptionElement> {
     return this.getElementsByTagName('u-option')
   }
 }

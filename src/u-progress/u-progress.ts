@@ -1,4 +1,4 @@
-import { IS_IOS, attr, define, getRoot, style } from '../utils'
+import { IS_IOS, attr, define, getRoot, style, useId } from '../utils'
 
 declare global {
   interface HTMLElementTagNameMap {
@@ -35,15 +35,17 @@ export class UHTMLProgressElement extends HTMLElement {
       'aria-valuemin': 0
     })
   }
-  get labels() {
+  get labels(): NodeListOf<HTMLLabelElement> {
     const label = this.closest('label')
-    const needsFor = label && !label.htmlFor
-    if (needsFor) label.htmlFor = this.id // Ensure parent label is included in NodeList
-    const nodeList = getRoot(this).querySelectorAll(`[for="${this.id}"]`)
-    if (needsFor) attr(label, 'for', null) // Undo attribute in case u-progress is moved later
-    return nodeList
+    const htmlFor = attr(label, 'for')
+    const selector = `[for="${useId(this)}"]`
+
+    attr(label, 'for', useId(this)) // Temportarily set for of parent label to include it in returned NodeList
+    const labels = getRoot(this).querySelectorAll<HTMLLabelElement>(selector)
+    attr(label, 'for', htmlFor || null) // Undo attribute in case u-progress is moved later
+    return labels
   }
-  get position() {
+  get position(): number {
     return this.value === null ? -1 : Math.min(this.value / this.max, 1)
   }
   get value(): number | null {

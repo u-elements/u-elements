@@ -30,17 +30,17 @@ export class UHTMLTabsElement extends HTMLElement {
   get tabList(): UHTMLTabListElement | null {
     return queryWithoutNested('u-tablist', this)[0] || null
   }
-  get selectedIndex() {
+  get selectedIndex(): number {
     // Check with real attribute (not .selected) as UHTMLTabElement instance might not be created yet
     return [...this.tabs].findIndex((tab) => attr(tab, SELECTED) === 'true')
   }
   set selectedIndex(index: number) {
     attr(this.tabs[index], SELECTED, true)
   }
-  get tabs() {
+  get tabs(): NodeListOf<UHTMLTabElement> {
     return queryWithoutNested('u-tab', this)
   }
-  get panels() {
+  get panels(): NodeListOf<UHTMLTabPanelElement> {
     return queryWithoutNested('u-tabpanel', this)
   }
 }
@@ -76,7 +76,7 @@ export class UHTMLTabListElement extends HTMLElement {
       tabs[index].focus()
     }
   }
-  get tabsElement() {
+  get tabsElement(): UHTMLTabsElement | null {
     return this.closest('u-tabs')
   }
 }
@@ -119,23 +119,23 @@ export class UHTMLTabElement extends HTMLElement {
       skipAttrChange = false
     }
   }
-  get tabsElement() {
+  get tabsElement(): UHTMLTabsElement | null {
     return this.closest('u-tabs')
   }
-  get tabList() {
+  get tabList(): UHTMLTabListElement | null {
     return this.closest('u-tablist')
   }
-  get selected() {
+  get selected(): boolean {
     return attr(this, SELECTED) === 'true'
   }
   set selected(value: boolean) {
     attr(this, SELECTED, !!value)
   }
   /** Retrieves the ordinal position of an tab in a tablist. */
-  get index() {
+  get index(): number {
     return Array.from(this.tabsElement?.tabs || []).indexOf(this)
   }
-  get panel() {
+  get panel(): UHTMLTabPanelElement | null {
     return queryRelated<UHTMLTabPanelElement>(this)
   }
 }
@@ -149,10 +149,10 @@ export class UHTMLTabPanelElement extends HTMLElement {
   connectedCallback() {
     this.hidden = !this.tab?.selected // Hide if not connected to tab
   }
-  get tabsElement() {
+  get tabsElement(): UHTMLTabsElement | null {
     return this.tab ? this.tab.tabsElement : this.closest('u-tabs')
   }
-  get tab() {
+  get tab(): UHTMLTabElement | null {
     return queryRelated<UHTMLTabElement>(this)
   }
 }

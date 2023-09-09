@@ -79,7 +79,7 @@ export class UHTMLDetailsElement extends HTMLElement {
     if (type === 'mutation') this.attributeChangedCallback()
     if (type === 'toggle' && target === details) this.open = details.open
   }
-  get open() {
+  get open(): boolean {
     return attr(this, 'open') === ''
   }
   set open(open) {

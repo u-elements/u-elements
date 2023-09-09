@@ -32,7 +32,7 @@ export class UHTMLOptionElement extends HTMLElement {
   /** Sets or retrieves the ordinal position of an option in a list box. */
   get index() {
     const container = getContainer(this)
-    if (!container) return -1
+    if (!container) return 0
     return [...container.getElementsByTagName(this.nodeName)].indexOf(this)
   }
   /** Sets or retrieves a value that you can use to implement your own label functionality for the object. */

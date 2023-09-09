@@ -1,7 +1,6 @@
 import {
   BLOCK,
   CONTROLS,
-  IS_ANDROID,
   LABELLEDBY,
   SELECTED,
   asButton,
@@ -53,8 +52,7 @@ export class UHTMLTabListElement extends HTMLElement {
     style(this, ':host(:not([hidden])) { display: flex; flex-wrap: wrap }')
   }
   connectedCallback() {
-    // Listen for tab events on tablist to minimize amount of listeners
-    on(this, 'click,keydown', this)
+    on(this, 'click,keydown', this) // Listen for tab events on tablist to minimize amount of listeners
   }
   disconnectedCallback() {
     off(this, 'click,keydown', this)
@@ -83,6 +81,8 @@ export class UHTMLTabListElement extends HTMLElement {
   }
 }
 
+// Speed up by not triggering attributeChangedCallback during attributeChangedCallback
+let skipAttrChange = false
 export class UHTMLTabElement extends HTMLElement {
   static get observedAttributes() {
     return [SELECTED, CONTROLS]
@@ -93,30 +93,30 @@ export class UHTMLTabElement extends HTMLElement {
     style(this, `${BLOCK}:host { cursor: pointer }`)
   }
   connectedCallback() {
-    this.attributeChangedCallback() // Setup attributes on connect
+    this.selected = !!this.selected // Ensure selected is set (which also triggers attributeChangedCallback)
   }
-  attributeChangedCallback(name?: string, prev?: unknown, next?: unknown) {
-    const selected = this.selected || this.tabsElement?.selectedIndex === -1
-    const isConnectOrChange = !name || (prev && prev !== next)
+  attributeChangedCallback(_name: string, prev: string, next: string) {
+    if (!skipAttrChange && prev !== next && (skipAttrChange = true)) {
+      const { tabs = [], panels = [], selectedIndex } = this.tabsElement || {}
+      const selected = this.selected ? this : tabs[selectedIndex || 0] || this // Ensure always one selected tab
+      const panelsWithoutTab = [...panels].filter((p) => !attr(p, LABELLEDBY))
+      let selectedPanel: HTMLElement
 
-    if (selected && isConnectOrChange && this.tabsElement) {
-      const { tabs, panels } = this.tabsElement
+      // Ensure correct state by always looping all tabs
+      panels.forEach((panel) => attr(panel, { [LABELLEDBY]: null, hidden: '' })) // Reset all panels in case changing aria-controls
+      tabs.forEach((tab) => {
+        const tabindex = selected === tab ? 0 : -1
+        const panel = queryRelated(tab) || panelsWithoutTab.shift() || null // Does not use tab.panel as UHTMLTabElement instance might not be created yet
+        if (!tabindex && panel) selectedPanel = panel // Store selectedPanel as multiple tabs can point to same panel
 
-      Array.from(tabs, (tab, index) => {
-        const panel = queryRelated(tab) || panels[index]
-        if (panel) panel.hidden = true
-        attr(tab, {
-          [CONTROLS]: useId(panel),
-          [SELECTED]: tab === this,
-          tabindex: tab === this ? 0 : -1,
-          title: IS_ANDROID ? `${index + 1} ${tabs.length}` : null // Add count to fix Android TalkBack
+        attr(tab, { [SELECTED]: !tabindex, [CONTROLS]: useId(panel), tabindex })
+        attr(panel, {
+          [LABELLEDBY]: useId(selectedPanel === panel ? selected : tab),
+          hidden: selectedPanel === panel ? null : ''
         })
       })
-      // Set panel attributes after loop as multiple tabs can point to same panel
-      attr(this.panel, {
-        [LABELLEDBY]: useId(this),
-        hidden: null
-      })
+
+      skipAttrChange = false
     }
   }
   get tabsElement() {
@@ -133,7 +133,7 @@ export class UHTMLTabElement extends HTMLElement {
   }
   /** Retrieves the ordinal position of an tab in a tablist. */
   get index() {
-    return this.tabsElement ? [...this.tabsElement.tabs].indexOf(this) : -1
+    return Array.from(this.tabsElement?.tabs || []).indexOf(this)
   }
   get panel() {
     return queryRelated<UHTMLTabPanelElement>(this)
@@ -143,8 +143,11 @@ export class UHTMLTabElement extends HTMLElement {
 export class UHTMLTabPanelElement extends HTMLElement {
   constructor() {
     super()
-    attr(this, { role: 'tabpanel' })
+    attr(this, 'role', 'tabpanel')
     style(this, BLOCK)
+  }
+  connectedCallback() {
+    this.hidden = !this.tab?.selected // Hide if not connected to tab
   }
   get tabsElement() {
     return this.tab ? this.tab.tabsElement : this.closest('u-tabs')

@@ -10,9 +10,15 @@ export default defineConfig({
     dts({ rollupTypes: true }),
     customElementsManifest({
       files: ['./src/**/*.ts'],
-      // eslint-disable-next-line
-      // @ts-ignore
-      plugins: [customElementVsCodePlugin({ outdir: 'dist' })]
+      plugins: [
+        // eslint-disable-next-line
+        // @ts-ignore
+        customElementVsCodePlugin({
+          htmlFileName: 'vscode.json',
+          cssFileName: null,
+          outdir: 'dist'
+        })
+      ]
     })
   ],
   build: {

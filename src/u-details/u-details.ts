@@ -30,16 +30,13 @@ export class UHTMLDetailsElement extends HTMLElement {
   static get observedAttributes() {
     return ['open', 'id']
   }
-  constructor() {
-    super()
+  connectedCallback() {
     style(
       this,
       `${BLOCK}
       ::slotted(u-summary) { cursor: pointer; display: list-item; list-style: inside disclosure-closed }
       ::slotted(u-summary[${EXPANDED}="true"]) { list-style-type: disclosure-open }`
     )
-  }
-  connectedCallback() {
     on(this, 'toggle', this, true)
     mutationObserver(this, { childList: true }) // Observe children to detect native <details>
     this.attributeChangedCallback() // We now know the element is in the DOM, so run a attribute setup

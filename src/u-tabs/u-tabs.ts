@@ -22,8 +22,7 @@ declare global {
 }
 
 export class UHTMLTabsElement extends HTMLElement {
-  constructor() {
-    super()
+  connectedCallback() {
     style(this, BLOCK)
   }
   get tabList(): UHTMLTabListElement | null {
@@ -45,12 +44,9 @@ export class UHTMLTabsElement extends HTMLElement {
 }
 
 export class UHTMLTabListElement extends HTMLElement {
-  constructor() {
-    super()
-    attr(this, 'role', 'tablist')
-    style(this, ':host(:not([hidden])) { display: flex; flex-wrap: wrap }')
-  }
   connectedCallback() {
+    style(this, ':host(:not([hidden])) { display: flex; flex-wrap: wrap }')
+    attr(this, 'role', 'tablist')
     on(this, 'click,keydown', this) // Listen for tab events on tablist to minimize amount of listeners
   }
   disconnectedCallback() {
@@ -86,12 +82,9 @@ export class UHTMLTabElement extends HTMLElement {
   static get observedAttributes() {
     return [SELECTED, CONTROLS]
   }
-  constructor() {
-    super()
-    attr(this, 'role', 'tab')
-    style(this, `${BLOCK}:host { cursor: pointer }`)
-  }
   connectedCallback() {
+    style(this, `${BLOCK}:host { cursor: pointer }`)
+    attr(this, 'role', 'tab')
     this.selected = !!this.selected // Ensure selected is set (which also triggers attributeChangedCallback)
   }
   attributeChangedCallback(_name: string, prev: string, next: string) {
@@ -140,12 +133,9 @@ export class UHTMLTabElement extends HTMLElement {
 }
 
 export class UHTMLTabPanelElement extends HTMLElement {
-  constructor() {
-    super()
-    attr(this, 'role', 'tabpanel')
-    style(this, BLOCK)
-  }
   connectedCallback() {
+    style(this, BLOCK)
+    attr(this, 'role', 'tabpanel')
     this.hidden = !this.tab?.selected // Hide if not connected to tab
   }
   get tabsElement(): UHTMLTabsElement | null {

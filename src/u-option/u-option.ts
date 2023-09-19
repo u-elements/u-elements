@@ -7,10 +7,9 @@ declare global {
 }
 
 export class UHTMLOptionElement extends HTMLElement {
-  constructor() {
-    super()
-    attr(this, { role: 'option', tabindex: -1 })
+  connectedCallback() {
     style(this, `${BLOCK}:host { cursor: pointer }`)
+    attr(this, { role: 'option', tabindex: -1 })
   }
   /** Sets or retrieves whether the option in the list box is the default item. */
   get defaultSelected(): boolean {

@@ -27,13 +27,10 @@ declare global {
 }
 
 export class UHTMLDataListElement extends HTMLElement {
-  constructor() {
-    super()
-    attr(this, { hidden: '', role: 'listbox' })
-    style(this, BLOCK)
-  }
   connectedCallback() {
     const root = getRoot(this)
+    style(this, BLOCK)
+    attr(this, { hidden: '', role: 'listbox' })
     on(root, 'focusin', this) // Only bind focus globally as this is needed to activate
     on(root, 'focus', this, true) // Need to also listen on focus with capturing to render before Firefox NVDA reads state
   }

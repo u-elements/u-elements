@@ -9,20 +9,16 @@
 // }
 
 // export class UHTMLSelectElement extends HTMLElement {
-//   constructor() {
-//     super()
-//     style(this, BLOCK)
+//   connectedCallback() {
 //   }
 // }
 
 // export class UHTMLSelectListElement extends HTMLElement {
-//   constructor() {
-//     super()
+//   connectedCallback() {
 //   }
 // }
 
 // export class UHTMLOptGroupElement extends HTMLElement {
-//   constructor() {
-//     super()
+//   connectedCallback() {
 //   }
 // }

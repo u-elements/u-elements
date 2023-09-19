@@ -1,20 +1,59 @@
+import type * as VueJSX from '@vue/runtime-dom';
+import type { JSX as ReactJSX } from 'react';
+import type { JSX as SolidJSX } from 'solid-js';
+import type { SvelteHTMLElements } from 'svelte/elements';
 import { IS_IOS, attr, getRoot, style, useId } from '../utils'
+
+export type VueProgress = VueJSX.ProgressHTMLAttributes;
+export type ReactProgress = ReactJSX.IntrinsicElements['progress'];
+export type SolidJSProgress = SolidJSX.HTMLElementTags['progress'];
+export type SvelteProgress = SvelteHTMLElements['progress'];
 
 declare global {
   interface HTMLElementTagNameMap {
     'u-progress': UHTMLProgressElement
   }
 }
+
+declare global {
+  namespace React.JSX {
+    interface IntrinsicElements {
+      'u-progress': ReactProgress
+    }
+  }
+}
+
+
+declare module 'solid-js' {
+  namespace JSX {
+    interface IntrinsicElements {
+      'u-progress': SolidJSProgress
+    }
+  }
+}
+
+declare module 'svelte/elements' {
+  interface SvelteHTMLElements {
+    'u-progress': SvelteProgress
+  }
+}
+
+// Augmenting @vue/runtime-dom to avoid interference with React JSX
+declare module '@vue/runtime-dom' {
+  export interface GlobalComponents {
+    'u-progress': VueProgress
+  }
+}
+
 /**
  * The `<u-progress value="70" max="100">` HTML element displays an indicator showing the completion progress of a task, typically displayed as a progress bar.
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/progress)
  */
-class UHTMLProgressElement extends HTMLElement {
+export class UHTMLProgressElement extends HTMLElement {
   static get observedAttributes() {
     return ['value', 'max']
   }
-  constructor() {
-    super()
+  connectedCallback() {
     attr(this, 'role', IS_IOS ? 'img' : 'progressbar')
     style(
       this,
@@ -23,8 +62,6 @@ class UHTMLProgressElement extends HTMLElement {
       :host(:not([value]))::before { animation: indeterminate 2s linear infinite; background: linear-gradient(90deg,currentColor 25%, transparent 50%, currentColor 75%) 100%/400% }
       @keyframes indeterminate { to { background-position-x: 0 } }`
     )
-  }
-  connectedCallback() {
     this.attributeChangedCallback()
   }
   attributeChangedCallback() {
@@ -54,13 +91,13 @@ class UHTMLProgressElement extends HTMLElement {
   get value(): number | null {
     return getNumber(this, 'value')
   }
-  set value(value: unknown) {
+  set value(value: string | number | null) {
     setNumber(this, 'value', value)
   }
   get max(): number {
     return getNumber(this, 'max') || 1
   }
-  set max(max: unknown) {
+  set max(max: string | number | null) {
     setNumber(this, 'max', max)
   }
 }

@@ -1,47 +1,8 @@
-import type * as VueJSX from '@vue/runtime-dom';
-import type { JSX as ReactJSX } from 'react';
-import type { JSX as SolidJSX } from 'solid-js';
-import type { SvelteHTMLElements } from 'svelte/elements';
 import { IS_IOS, attr, getRoot, style, useId } from '../utils'
-
-export type VueProgress = VueJSX.ProgressHTMLAttributes;
-export type ReactProgress = ReactJSX.IntrinsicElements['progress'];
-export type SolidJSProgress = SolidJSX.HTMLElementTags['progress'];
-export type SvelteProgress = SvelteHTMLElements['progress'];
 
 declare global {
   interface HTMLElementTagNameMap {
     'u-progress': UHTMLProgressElement
-  }
-}
-
-declare global {
-  namespace React.JSX {
-    interface IntrinsicElements {
-      'u-progress': ReactProgress
-    }
-  }
-}
-
-
-declare module 'solid-js' {
-  namespace JSX {
-    interface IntrinsicElements {
-      'u-progress': SolidJSProgress
-    }
-  }
-}
-
-declare module 'svelte/elements' {
-  interface SvelteHTMLElements {
-    'u-progress': SvelteProgress
-  }
-}
-
-// Augmenting @vue/runtime-dom to avoid interference with React JSX
-declare module '@vue/runtime-dom' {
-  export interface GlobalComponents {
-    'u-progress': VueProgress
   }
 }
 

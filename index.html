@@ -22,10 +22,6 @@
     </style>
   </head>
   <body>
-    <script type="module">
-      import 'api-viewer-element';
-    </script>
-    <api-viewer src="custom-elements.json" selected="u-progress"></api-viewer>
     <script>
       setTimeout(() => {
         let i = 0
@@ -42,10 +38,10 @@
       }, 200)
     </script>
     <label>
-      Hei
       <u-progress value="5" max="10">70%</u-progress>
     </label>
-    <u-tab>Rosinbolle</u-tab>
+    <br />
+    <br />
     <u-test></u-test>
     <label>
       Velg type iskrem<br>
@@ -67,9 +63,6 @@
         connectedCallback() {
           const shadowRoot = this.attachShadow({ mode: 'open' })
           shadowRoot.innerHTML = `
-            Heisann!
-            Hade!
-            Pølse!
             <u-tabs>
               <u-tablist>
                 <u-tab>Rosinbolle</u-tab>
@@ -79,7 +72,7 @@
                 <u-tab-close hidden>Lukk</u-tab-close>
               </u-tablist>
               <u-tabpanel id="panel-1">
-                Kristoffer<button>Innhold</button>
+                Panel 1
                 <u-tabs>
                   <u-tablist>
                     <u-tab>Nested 1</u-tab>
@@ -93,15 +86,12 @@
               <u-tabpanel>Panel 3</u-tabpanel>
               <u-tabpanel>Panel 4</u-tabpanel>
             </u-tabs>
+            <br />
             <u-details>
               <u-summary>Test</u-summary>
               <details>Innhold</details>
             </u-details>
             <br />
-            <button>Første</button>
-            <p>Før</p>
-            <!--<p style="height:900px">Etter</p>
-            <button>Siste</button>-->
             <style>
               u-tab { padding: 2px 5px }
               u-tab[aria-selected="true"] { background: black; color: white }
@@ -115,6 +105,12 @@
       window.customElements.define('u-test', UTest)
     </script>
     <u-tabpanel id="panel-outlier">Panel outlier</u-tabpanel>
+    <br />
+    <br />
+    <script type="module">
+      import 'api-viewer-element';
+    </script>
+    <api-viewer src="custom-elements.json" selected="u-progress"></api-viewer>
   </body>
 </html>
 

@@ -6,7 +6,7 @@ import type { JSX as ReactJSX } from 'react';
 import type { JSX as SolidJSX } from 'solid-js';
 import type { SvelteHTMLElements } from 'svelte/elements';
 
-
+export * from './u-datalist/u-datalist'
 
 export type VueDetails = VueJSX.DetailsHTMLAttributes;
 export type QwikDetails = QwikJSX.IntrinsicElements['details'];
@@ -55,3 +55,4 @@ declare module 'svelte/elements' { interface SvelteHTMLElements { 'u-progress': 
 
 export * from './u-progress/u-progress'
 
+export * from './u-tabs/u-tabs'

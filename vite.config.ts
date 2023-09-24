@@ -52,7 +52,8 @@ function getEntries() {
     .map((name) => {
       const tagName = name.replace(/^u-/, '')
       const HTMLName = tagName.slice(0, 1).toUpperCase() + tagName.slice(1)
-      if (name === 'u-tabs' || name === 'u-datalist') return ''; // TODO TMP
+      const exports = `export * from './${name}/${name}'`
+      if (name === 'u-tabs' || name === 'u-datalist') return exports; // TODO TMP
 
       return `
 export type Vue${HTMLName} = VueJSX.${HTMLName}HTMLAttributes;
@@ -68,7 +69,7 @@ declare global { namespace React.JSX { interface IntrinsicElements { '${name}': 
 declare module 'solid-js' { namespace JSX { interface IntrinsicElements { '${name}': SolidJS${HTMLName} } } }
 declare module 'svelte/elements' { interface SvelteHTMLElements { '${name}': Svelte${HTMLName} } }
 
-export * from './${name}/${name}'
+${exports}
 `
     });
 }

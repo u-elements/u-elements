@@ -1,7 +1,7 @@
 import { useState } from 'react'
 // import ReactDOM from 'react-dom/client'
 import { render } from 'react-dom'
-import '../../../src/u-progress/u-progress'
+import '../../dist'
 
 
 export default function App() {

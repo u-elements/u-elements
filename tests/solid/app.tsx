@@ -1,6 +1,6 @@
 /* @refresh reload */
 import { createSignal } from 'solid-js'
-import '../../../src/u-progress/u-progress'
+import '../../dist'
 
 export default function App() {
   const [count, setCount] = createSignal(0)

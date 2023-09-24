@@ -1,5 +1,5 @@
 <script lang="ts">
-  import '../../../src/u-progress/u-progress'
+  import '../../dist'
 
   let count: number = 0
   const increment = () => {

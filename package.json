@@ -23,7 +23,7 @@
     "./dist/vscode.html-custom-data.json": "./dist/vscode.html-custom-data.json"
   },
   "scripts": {
-    "build": "vite build && dts-bundle-generator -o dist/index.d.ts src/index.ts --inline-declare-global --inline-declare-externals",
+    "build": "vite build && tsup src/index.ts --format esm,cjs --dts-only",
     "install:all": "npm i && npm i --prefix frameworks/qwik && npm i --prefix frameworks/react && npm i --prefix frameworks/solid && npm i --prefix frameworks/svelte && npm i --prefix frameworks/vue",
     "lint": "eslint",
     "start": "vite",
@@ -36,19 +36,24 @@
     "test:coverage": "vitest --coverage"
   },
   "devDependencies": {
+    "@builder.io/qwik": "^1.3.2",
     "@types/jsdom": "21.1.6",
+    "@types/react": "^18.2.47",
     "@typescript-eslint/eslint-plugin": "6.18.1",
     "@typescript-eslint/parser": "6.18.1",
+    "@vue/runtime-dom": "^3.4.7",
     "api-viewer-element": "^1.0.0-pre.8",
     "custom-element-vs-code-integration": "^1.1.1",
-    "dts-bundle-generator": "^9.2.1",
     "eslint": "8.56.0",
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-prettier": "5.1.2",
     "jsdom": "^23.2.0",
     "prettier": "3.1.1",
+    "solid-js": "^1.8.9",
+    "svelte": "^4.2.8",
+    "tsup": "^8.0.1",
     "typescript": "5.3.3",
-    "vite": "5.0.11",
+    "vite": "^5.0.11",
     "vite-plugin-cem": "^0.6.0",
     "vitest": "1.1.3"
   },
@@ -73,7 +78,9 @@
       "ecmaVersion": "latest",
       "sourceType": "module"
     },
-    "plugins": ["prettier"],
+    "plugins": [
+      "prettier"
+    ],
     "root": true,
     "rules": {
       "prettier/prettier": "error",

@@ -17,23 +17,16 @@ export const EXPANDED = 'aria-expanded'
 export const LABELLEDBY = IS_ANDROID ? 'data-labelledby' : 'aria-labelledby' // Android reads tab text instead of content when labelledby
 export const SELECTED = 'aria-selected'
 
-export const on = (
-  element: Node | Window,
-  ...rest: Parameters<typeof Element.prototype.addEventListener>
-): void =>
+type BindElem = Node | Window;
+type BindRest = Parameters<typeof Element.prototype.addEventListener>;
+const bind = (element: BindElem, rest: BindRest, action: 'add' | 'remove'): void =>
   rest[0].split(',').forEach((type) => {
     rest[0] = type
-    Element.prototype.addEventListener.apply(element, rest)
+    Element.prototype[`${action}EventListener`].apply(element, rest)
   })
 
-export const off = (
-  element: Node | Window,
-  ...rest: Parameters<typeof Element.prototype.removeEventListener>
-): void =>
-  rest[0].split(',').forEach((type) => {
-    rest[0] = type
-    Element.prototype.removeEventListener.apply(element, rest)
-  })
+export const on = (element: BindElem, ...rest: BindRest): void => bind(element, rest, 'add');
+export const off = (element: BindElem, ...rest: BindRest): void => bind(element, rest, 'remove');
 
 /**
  * style

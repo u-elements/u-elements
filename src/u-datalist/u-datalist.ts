@@ -91,7 +91,7 @@ function onFocus(self: UHTMLDataListElement, { target }: Event) {
     activeInput = target as HTMLInputElement
     attr(self, LABELLEDBY, useId(activeInput.labels?.[0]))
     mutationObserver(self, { childList: true, subtree: true }) // Listen for DOM changes when open to opt out autofiltering
-    on(getRoot(self), 'click,focusout,input,keydown', self)
+    on(self.getRootNode(), 'click,focusout,input,keydown', self)
     setOpen(self, true)
     attr(activeInput, {
       'aria-autocomplete': 'list',

@@ -1,6 +1,5 @@
 import { customElementVsCodePlugin } from 'custom-element-vs-code-integration'
 import customElementsManifest from 'vite-plugin-cem'
-import path from 'path'
 import fs from 'fs';
 
 // Generate entry file
@@ -38,7 +37,7 @@ export default {
   ],
   build: {
     lib: {
-      entry: path.resolve('src/index.ts'),
+      entry: ['src/index.ts'],
       fileName: '[name]',
       formats: ['es', 'cjs']
     }

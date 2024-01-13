@@ -7,6 +7,7 @@ import {
   IS_IOS,
   LABELLEDBY,
   attr,
+  define,
   getRoot,
   mutationObserver,
   off,
@@ -179,6 +180,4 @@ if (IS_BROWSER)
     }
   })
 
-if (IS_BROWSER && !window.customElements.get('u-datalist')) {
-  customElements.define('u-datalist', UHTMLDataListElement)
-}
+define('u-datalist', UHTMLDataListElement)

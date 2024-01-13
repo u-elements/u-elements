@@ -100,3 +100,10 @@ export const useId = (el?: Element | null) =>
   el
     ? (el.id = el.id || `:${el.nodeName.toLowerCase()}${(++id).toString(32)}`)
     : undefined
+
+/**
+ * define
+ * @description Defined a customElement but only if not registered
+ */
+export const define = (name: string, instance: CustomElementConstructor) =>
+  !IS_BROWSER || window.customElements.get(name) || window.customElements.define(name, instance);

@@ -1,4 +1,4 @@
-import { BLOCK, DISABLED, IS_BROWSER, SELECTED, attr, style } from '../utils'
+import { BLOCK, DISABLED, SELECTED, attr, define, style } from '../utils'
 
 // TODO: Reflect real attributes? Yes
 declare global {
@@ -68,6 +68,4 @@ export class UHTMLOptionElement extends HTMLElement {
 const getContainer = (self: UHTMLOptionElement) =>
   self.closest('u-datalist,u-selectlist')
 
-if (IS_BROWSER && !window.customElements.get('u-option')) {
-  customElements.define('u-option', UHTMLOptionElement)
-}
+define('u-option', UHTMLOptionElement)

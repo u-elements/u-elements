@@ -6,6 +6,7 @@ import {
   SELECTED,
   asButton,
   attr,
+  define,
   getRoot,
   off,
   on,
@@ -166,9 +167,7 @@ const queryRelated = <Rel extends HTMLElement>(self: Element): Rel | null => {
   return getRoot(self).querySelector(css) || document.querySelector(css)
 }
 
-if (IS_BROWSER && !window.customElements.get('u-tabs')) {
-  customElements.define('u-tabs', UHTMLTabsElement)
-  customElements.define('u-tablist', UHTMLTabListElement)
-  customElements.define('u-tab', UHTMLTabElement)
-  customElements.define('u-tabpanel', UHTMLTabPanelElement)
-}
+define('u-tabs', UHTMLTabsElement)
+define('u-tablist', UHTMLTabListElement)
+define('u-tab', UHTMLTabElement)
+define('u-tabpanel', UHTMLTabPanelElement)

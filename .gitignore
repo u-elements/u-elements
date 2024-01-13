@@ -1,6 +1,7 @@
 # Runtime
 **/node_modules/
 **/dist/
+coverage
 
 # Logs
 **/logs

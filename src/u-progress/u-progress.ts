@@ -1,4 +1,4 @@
-import { IS_IOS, attr, getRoot, style, useId } from '../utils'
+import { IS_BROWSER, IS_IOS, attr, getRoot, style, useId } from '../utils'
 
 declare global {
   interface HTMLElementTagNameMap {
@@ -67,15 +67,13 @@ const isNumeric = (value: unknown): boolean =>
   !isNaN(parseFloat(String(value))) && isFinite(Number(value))
 
 const getNumber = (el: Element, key: string): number | null =>
-  isNumeric(attr(el, key)) ? Math.max(0, parseFloat(attr(el, key) || '')) : null
+  isNumeric(attr(el, key)) ? Math.max(0, parseFloat(attr(el, key) as string)) : null
 
 const setNumber = (el: Element, key: string, val: unknown) => {
   if (val === null || isNumeric(val)) return attr(el, key, val as string)
   throw new Error(`Failed to set non-numeric '${key}': '${val}'`)
 }
 
-try {
+if (IS_BROWSER && !window.customElements.get('u-progress')) {
   customElements.define('u-progress', UHTMLProgressElement)
-} catch (err) {
-  // Already defined or on server
 }

@@ -1,5 +1,6 @@
-import { BLOCK, DISABLED, SELECTED, attr, style } from '../utils'
+import { BLOCK, DISABLED, IS_BROWSER, SELECTED, attr, style } from '../utils'
 
+// TODO: Reflect real attributes? Yes
 declare global {
   interface HTMLElementTagNameMap {
     'u-option': UHTMLOptionElement
@@ -10,13 +11,14 @@ export class UHTMLOptionElement extends HTMLElement {
   connectedCallback() {
     style(this, `${BLOCK}:host { cursor: pointer }`)
     attr(this, { role: 'option', tabindex: -1 })
+    this.defaultSelected
   }
   /** Sets or retrieves whether the option in the list box is the default item. */
   get defaultSelected(): boolean {
-    return attr(getContainer(this), 'selected') === this.value
+    return attr(this, SELECTED) === 'true'
   }
   set defaultSelected(value: boolean) {
-    attr(getContainer(this), 'selected', value)
+    attr(this, SELECTED, !!value)
   }
   get disabled(): boolean {
     return attr(this, DISABLED) === 'true'
@@ -64,10 +66,8 @@ export class UHTMLOptionElement extends HTMLElement {
 }
 
 const getContainer = (self: UHTMLOptionElement) =>
-  self.closest('u-datalist,u-selectmenu')
+  self.closest('u-datalist,u-selectlist')
 
-try {
+if (IS_BROWSER && !window.customElements.get('u-option')) {
   customElements.define('u-option', UHTMLOptionElement)
-} catch (err) {
-  // Already defined or on server
 }

@@ -1,20 +1,37 @@
 import { describe, expect, test } from 'vitest'
-import { UHTMLTabsElement } from '..'
+import { UHTMLTabsElement, UHTMLTabListElement, UHTMLTabElement, UHTMLTabPanelElement } from '..'
 
-const toDOM = (innerHTML: string) =>
-  Object.assign(document.body, { innerHTML }).firstElementChild
+const toDOM = <T extends HTMLElement>(innerHTML: string): T =>
+  Object.assign(document.body, { innerHTML }).firstElementChild as T
 
 describe('u-tabs', () => {
-  test('is connected', () => {
-    const uTabs = toDOM(`<u-tabs></u-tabs>`) as UHTMLTabsElement
+  test('snapshot', () => {
+    const uTabs = toDOM<UHTMLTabsElement>(`
+      <u-tabs>
+        <u-tablist>
+          <u-tab id="tab-1">Tab 1</u-tab>
+          <u-tab id="tab-2">Tab 2</u-tab>
+        </u-tablist>
+        <u-tabpanel id="panel-1">Panel 1</u-tabpanel>
+        <u-tabpanel id="panel-2">Panel 2</u-tabpanel>
+      </u-tabs>
+    `)
+    expect(uTabs).toMatchSnapshot()
+  })
+
+  test('is defined', () => {
+    const uTabs = toDOM<UHTMLTabsElement>(`<u-tabs></u-tabs>`)
 
     expect(uTabs.tabs.length).toBe(0)
-    expect(uTabs instanceof UHTMLTabsElement).toBeTruthy()
+    expect(uTabs).toBeInstanceOf(UHTMLTabsElement)
     expect(window.customElements.get('u-tabs')).toBe(UHTMLTabsElement)
+    expect(window.customElements.get('u-tablist')).toBe(UHTMLTabListElement)
+    expect(window.customElements.get('u-tab')).toBe(UHTMLTabElement)
+    expect(window.customElements.get('u-tabpanel')).toBe(UHTMLTabPanelElement)
   })
 
   test('sets up attributes', () => {
-    const uTabs = toDOM(`
+    const uTabs = toDOM<UHTMLTabsElement>(`
       <u-tabs>
         <u-tablist>
           <u-tab id="tab-1">Tab 1</u-tab>
@@ -23,7 +40,7 @@ describe('u-tabs', () => {
         <u-tabpanel>Panel 1</u-tabpanel>
         <u-tabpanel id="panel-2">Panel 2</u-tabpanel>
       </u-tabs>
-    `) as UHTMLTabsElement
+    `)
 
     expect(uTabs.tabList?.role).toBe('tablist')
     expect(uTabs.tabs[0].id).toBe(uTabs.panels[0].getAttribute('aria-labelledby'))
@@ -42,8 +59,39 @@ describe('u-tabs', () => {
     expect(uTabs.tabs[1].getAttribute('aria-selected')).toBe('false')
   })
 
+  test('sets up properties', () => {
+    const uTabs = toDOM<UHTMLTabsElement>(`
+      <u-tabs>
+        <u-tablist>
+          <u-tab>Tab 1</u-tab>
+          <u-tab>Tab 2</u-tab>
+        </u-tablist>
+        <u-tabpanel>Panel 1</u-tabpanel>
+      </u-tabs>
+    `)
+    const uTabList = uTabs.firstElementChild as UHTMLTabListElement
+    const uTab = uTabList.firstElementChild as UHTMLTabElement
+    const uTabPanel = uTabList.nextElementSibling as UHTMLTabPanelElement
+
+    expect(uTabs.selectedIndex).toBe(0)
+    expect(uTabs.tabList).toBe(uTabList)
+    expect(uTabs.tabs).toBeInstanceOf(NodeList)
+    expect(uTabs.tabs.length).toBe(2)
+    expect(uTabs.panels).toBeInstanceOf(NodeList)
+    expect(uTabs.panels.length).toBe(1)
+
+    expect(uTabList.tabsElement).toBe(uTabs)
+    expect(uTab.tabsElement).toBe(uTabs)
+    expect(uTab.tabList).toBe(uTabList)
+    expect(uTab.selected).toBe(true)
+    expect(uTab.index).toBe(0)
+    expect(uTab.panel).toBe(uTabPanel)
+    expect(uTabPanel.tabsElement).toBe(uTabs)
+    expect(uTabPanel.tab).toBe(uTab)
+  })
+
   test('updates attributes on selected prop change', () => {
-    const uTabs = toDOM(`
+    const uTabs = toDOM<UHTMLTabsElement>(`
       <u-tabs>
         <u-tablist>
           <u-tab>Tab 1</u-tab>
@@ -52,7 +100,7 @@ describe('u-tabs', () => {
         <u-tabpanel>Panel 1</u-tabpanel>
         <u-tabpanel>Panel 2</u-tabpanel>
       </u-tabs>
-    `) as UHTMLTabsElement
+    `)
 
     expect(uTabs.tabs[0].tabIndex).toBe(0)
     expect(uTabs.tabs[0].panel?.hidden).toBe(false)
@@ -71,8 +119,8 @@ describe('u-tabs', () => {
     expect(uTabs.tabs[1].getAttribute('aria-selected')).toBe('true')
   })
 
-  test('updates attributes on aria-selected attribute change', () => {
-    const uTabs = toDOM(`
+  test('updates attributes on selectedIndex prop change', () => {
+    const uTabs = toDOM<UHTMLTabsElement>(`
       <u-tabs>
         <u-tablist>
           <u-tab>Tab 1</u-tab>
@@ -81,7 +129,36 @@ describe('u-tabs', () => {
         <u-tabpanel>Panel 1</u-tabpanel>
         <u-tabpanel>Panel 2</u-tabpanel>
       </u-tabs>
-    `) as UHTMLTabsElement
+    `)
+
+    expect(uTabs.tabs[0].tabIndex).toBe(0)
+    expect(uTabs.tabs[0].panel?.hidden).toBe(false)
+    expect(uTabs.tabs[0].getAttribute('aria-selected')).toBe('true')
+    expect(uTabs.tabs[1].tabIndex).toBe(-1)
+    expect(uTabs.tabs[1].panel?.hidden).toBe(true)
+    expect(uTabs.tabs[1].getAttribute('aria-selected')).toBe('false')
+
+    uTabs.selectedIndex = 1
+
+    expect(uTabs.tabs[0].tabIndex).toBe(-1)
+    expect(uTabs.tabs[0].panel?.hidden).toBe(true)
+    expect(uTabs.tabs[0].getAttribute('aria-selected')).toBe('false')
+    expect(uTabs.tabs[1].tabIndex).toBe(0)
+    expect(uTabs.tabs[1].panel?.hidden).toBe(false)
+    expect(uTabs.tabs[1].getAttribute('aria-selected')).toBe('true')
+  })
+
+  test('updates attributes on aria-selected attribute change', () => {
+    const uTabs = toDOM<UHTMLTabsElement>(`
+      <u-tabs>
+        <u-tablist>
+          <u-tab>Tab 1</u-tab>
+          <u-tab>Tab 2</u-tab>
+        </u-tablist>
+        <u-tabpanel>Panel 1</u-tabpanel>
+        <u-tabpanel>Panel 2</u-tabpanel>
+      </u-tabs>
+    `)
 
     expect(uTabs.tabs[0].tabIndex).toBe(0)
     expect(uTabs.tabs[0].panel?.hidden).toBe(false)
@@ -101,7 +178,7 @@ describe('u-tabs', () => {
   })
 
   test('updates attributes on click', () => {
-    const uTabs = toDOM(`
+    const uTabs = toDOM<UHTMLTabsElement>(`
       <u-tabs>
         <u-tablist>
           <u-tab>Tab 1</u-tab>
@@ -110,7 +187,7 @@ describe('u-tabs', () => {
         <u-tabpanel>Panel 1</u-tabpanel>
         <u-tabpanel>Panel 2</u-tabpanel>
       </u-tabs>
-    `) as UHTMLTabsElement
+    `)
 
     expect(uTabs.tabs[0].tabIndex).toBe(0)
     expect(uTabs.tabs[0].panel?.hidden).toBe(false)
@@ -130,7 +207,7 @@ describe('u-tabs', () => {
   })
 
   test('respects aria-selected attribute', () => {
-    const uTabs = toDOM(`
+    const uTabs = toDOM<UHTMLTabsElement>(`
       <u-tabs>
         <u-tablist>
           <u-tab>Tab 1</u-tab>
@@ -139,7 +216,7 @@ describe('u-tabs', () => {
         <u-tabpanel>Panel 1</u-tabpanel>
         <u-tabpanel>Panel 2</u-tabpanel>
       </u-tabs>
-    `) as UHTMLTabsElement
+    `)
 
     expect(uTabs.tabs[0].tabIndex).toBe(-1)
     expect(uTabs.tabs[0].panel?.hidden).toBe(true)
@@ -150,7 +227,7 @@ describe('u-tabs', () => {
   })
 
   test('respects only first aria-selected attribute', () => {
-    const uTabs = toDOM(`
+    const uTabs = toDOM<UHTMLTabsElement>(`
       <u-tabs>
         <u-tablist>
           <u-tab aria-selected="true">Tab 1</u-tab>
@@ -161,7 +238,7 @@ describe('u-tabs', () => {
         <u-tabpanel>Panel 2</u-tabpanel>
         <u-tabpanel>Panel 3</u-tabpanel>
       </u-tabs>
-    `) as UHTMLTabsElement
+    `)
 
     expect(uTabs.tabs[0].tabIndex).toBe(0)
     expect(uTabs.tabs[0].panel?.hidden).toBe(false)
@@ -175,7 +252,7 @@ describe('u-tabs', () => {
   })
 
   test('respects id attributes', () => {
-    const uTabs = toDOM(`
+    const uTabs = toDOM<UHTMLTabsElement>(`
       <u-tabs>
         <u-tablist>
           <u-tab id="tab-1">Tab 1</u-tab>
@@ -184,7 +261,7 @@ describe('u-tabs', () => {
         <u-tabpanel id="panel-1">Panel 1</u-tabpanel>
         <u-tabpanel id="panel-2">Panel 2</u-tabpanel>
       </u-tabs>
-    `) as UHTMLTabsElement
+    `)
 
     expect(uTabs.tabs[0].id).toBe('tab-1')
     expect(uTabs.tabs[1].id).toBe('tab-2')
@@ -197,7 +274,7 @@ describe('u-tabs', () => {
   })
 
   test('respects aria-controls attributes', () => {
-    const uTabs = toDOM(`
+    const uTabs = toDOM<UHTMLTabsElement>(`
       <u-tabs>
         <u-tablist>
           <u-tab id="tab-1" aria-controls="panel-2">Tab 1</u-tab>
@@ -206,7 +283,7 @@ describe('u-tabs', () => {
         <u-tabpanel id="panel-1">Panel 1</u-tabpanel>
         <u-tabpanel id="panel-2">Panel 2</u-tabpanel>
       </u-tabs>
-    `) as UHTMLTabsElement
+    `)
 
     expect(uTabs.tabs[0].getAttribute('aria-controls')).toBe('panel-2')
     expect(uTabs.tabs[1].getAttribute('aria-controls')).toBe('panel-1')
@@ -217,7 +294,7 @@ describe('u-tabs', () => {
   })
 
   test('respects multiple tabs for same panel', () => {
-    const uTabs = toDOM(`
+    const uTabs = toDOM<UHTMLTabsElement>(`
       <u-tabs>
         <u-tablist>
           <u-tab id="tab-1" aria-controls="panel-1">Tab 1</u-tab>
@@ -226,7 +303,7 @@ describe('u-tabs', () => {
         </u-tablist>
         <u-tabpanel id="panel-1">Panel 1</u-tabpanel>
       </u-tabs>
-    `) as UHTMLTabsElement
+    `)
 
     expect(uTabs.tabs[0].panel).toBe(uTabs.tabs[1].panel)
     expect(uTabs.tabs[1].panel).toBe(uTabs.tabs[2].panel)
@@ -252,7 +329,7 @@ describe('u-tabs', () => {
   })
 
   test('respects external tabpanels', () => {
-    const uTabs = toDOM(`
+    const uTabs = toDOM<UHTMLTabsElement>(`
       <u-tabs>
         <u-tablist>
           <u-tab id="tab-1" aria-controls="panel-1">Tab 1</u-tab>
@@ -263,7 +340,7 @@ describe('u-tabs', () => {
       <u-tabpanel id="panel-1">Panel 1</u-tabpanel>
       <u-tabpanel id="panel-2">Panel 2</u-tabpanel>
       <u-tabpanel id="panel-3">Panel 3</u-tabpanel>
-    `) as UHTMLTabsElement
+    `)
 
     expect(uTabs.panels.length).toBe(0)
     expect(uTabs.tabs[0].panel?.hidden).toBe(false)
@@ -272,7 +349,7 @@ describe('u-tabs', () => {
   })
 
   test('handles setup and interaction with dynamically added tabs', () => {
-    const uTabs = toDOM(`
+    const uTabs = toDOM<UHTMLTabsElement>(`
       <u-tabs>
         <u-tablist>
           <u-tab>Tab 1</u-tab>
@@ -281,7 +358,7 @@ describe('u-tabs', () => {
         <u-tabpanel>Panel 1</u-tabpanel>
         <u-tabpanel>Panel 2</u-tabpanel>
       </u-tabs>
-    `) as UHTMLTabsElement
+    `)
     expect(uTabs.tabs[0].getAttribute('aria-selected')).toBe('true')
 
     uTabs.tabList?.insertAdjacentHTML('afterbegin', '<u-tab>Tab 0</u-tab>')
@@ -292,7 +369,7 @@ describe('u-tabs', () => {
   })
 
   test('handles nested DOM and nested instances', () => {
-    const uTabs = toDOM(`
+    const uTabs = toDOM<UHTMLTabsElement>(`
       <u-tabs>
         <div>
           <u-tablist>
@@ -314,7 +391,7 @@ describe('u-tabs', () => {
         </u-tabs>
         </u-tabpanel>
       </u-tabs>
-    `) as UHTMLTabsElement
+    `)
     const uTabsNested = uTabs.panels[1].firstElementChild as UHTMLTabsElement
 
     expect(uTabs.tabList?.parentElement?.nodeName).toBe('DIV')
@@ -324,8 +401,30 @@ describe('u-tabs', () => {
     expect(uTabsNested?.panels?.length).toBe(1)
   })
 
+  test('handles incomplete DOM instances', () => {
+    expect(toDOM<UHTMLTabsElement>(`<u-tabs></u-tabs>`).tabList).toBe(null)
+    expect(toDOM<UHTMLTabElement>(`<u-tab></u-tab>`).tabsElement).toBe(null)
+    expect(toDOM<UHTMLTabElement>(`<u-tab></u-tab>`).index).toBe(-1)
+    expect(toDOM<UHTMLTabPanelElement>(`<u-tabpanel></u-tabpanel>`).tabsElement).toBe(null)
+  })
+
+  test('respectes event.preventDefault', () => {
+    const uTabs = toDOM<UHTMLTabsElement>(`
+      <u-tabs>
+        <u-tablist>
+          <u-tab>Tab 1</u-tab>
+          <u-tab aria-selected="true">Tab 2</u-tab>
+        </u-tablist>
+      </u-tabs>
+    `)
+
+    uTabs?.tabs[0].addEventListener('click', (event: MouseEvent) => event.preventDefault())
+    uTabs?.tabs[0].click()
+    expect(uTabs?.tabs[1].selected).toBe(true)
+  })
+
   test('handles keyboard arrow navigation', () => {
-    const uTabs = toDOM(`
+    const uTabs = toDOM<UHTMLTabsElement>(`
       <u-tabs>
         <u-tablist>
           <u-tab>Tab 1</u-tab>
@@ -334,7 +433,7 @@ describe('u-tabs', () => {
         </u-tablist>
       </u-tabs>
       <button>Test</button>
-    `) as UHTMLTabsElement
+    `)
 
     uTabs.tabs[0].focus()
     expect(document.activeElement).toBe(uTabs.tabs[0])
@@ -361,6 +460,9 @@ describe('u-tabs', () => {
     expect(document.activeElement).toBe(uTabs.tabs[2])
 
     document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { key: 'Home', bubbles: true }))
+    expect(document.activeElement).toBe(uTabs.tabs[0])
+
+    document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { key: 'z', bubbles: true }))
     expect(document.activeElement).toBe(uTabs.tabs[0])
 
     document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { key: 'End', bubbles: true }))

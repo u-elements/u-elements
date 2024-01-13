@@ -1,0 +1,57 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`u-tabs > snapshot 1`] = `
+<u-tabs>
+  
+        
+  <u-tablist
+    role="tablist"
+  >
+    
+          
+    <u-tab
+      aria-controls="panel-1"
+      aria-selected="true"
+      id="tab-1"
+      role="tab"
+      tabindex="0"
+    >
+      Tab 1
+    </u-tab>
+    
+          
+    <u-tab
+      aria-controls="panel-2"
+      aria-selected="false"
+      id="tab-2"
+      role="tab"
+      tabindex="-1"
+    >
+      Tab 2
+    </u-tab>
+    
+        
+  </u-tablist>
+  
+        
+  <u-tabpanel
+    aria-labelledby="tab-1"
+    id="panel-1"
+    role="tabpanel"
+  >
+    Panel 1
+  </u-tabpanel>
+  
+        
+  <u-tabpanel
+    aria-labelledby="tab-2"
+    hidden=""
+    id="panel-2"
+    role="tabpanel"
+  >
+    Panel 2
+  </u-tabpanel>
+  
+      
+</u-tabs>
+`;

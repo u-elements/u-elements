@@ -179,8 +179,6 @@ if (IS_BROWSER)
     }
   })
 
-try {
+if (IS_BROWSER && !window.customElements.get('u-datalist')) {
   customElements.define('u-datalist', UHTMLDataListElement)
-} catch (err) {
-  // Already defined or on server
 }

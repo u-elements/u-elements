@@ -33,7 +33,8 @@
     "start:svelte": "npm run --prefix frameworks/svelte dev",
     "start:vue": "npm run --prefix frameworks/vue dev",
     "test": "vitest",
-    "test:coverage": "vitest --coverage"
+    "test:update": "vitest --update",
+    "test:coverage": "vitest --coverage.enabled --coverage.include=src/*/*.ts"
   },
   "devDependencies": {
     "@builder.io/qwik": "^1.3.2",
@@ -41,6 +42,7 @@
     "@types/react": "^18.2.47",
     "@typescript-eslint/eslint-plugin": "6.18.1",
     "@typescript-eslint/parser": "6.18.1",
+    "@vitest/coverage-v8": "^1.2.0",
     "@vue/runtime-dom": "^3.4.7",
     "api-viewer-element": "^1.0.0-pre.8",
     "custom-element-vs-code-integration": "^1.1.1",

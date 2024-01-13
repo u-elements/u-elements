@@ -1,6 +1,7 @@
 import {
   BLOCK,
   CONTROLS,
+  IS_BROWSER,
   LABELLEDBY,
   SELECTED,
   asButton,
@@ -165,11 +166,9 @@ const queryRelated = <Rel extends HTMLElement>(self: Element): Rel | null => {
   return getRoot(self).querySelector(css) || document.querySelector(css)
 }
 
-try {
+if (IS_BROWSER && !window.customElements.get('u-tabs')) {
   customElements.define('u-tabs', UHTMLTabsElement)
   customElements.define('u-tablist', UHTMLTabListElement)
   customElements.define('u-tab', UHTMLTabElement)
   customElements.define('u-tabpanel', UHTMLTabPanelElement)
-} catch (err) {
-  // Already defined or on server
 }

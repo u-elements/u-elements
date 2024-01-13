@@ -2,6 +2,7 @@ import {
   BLOCK,
   CONTROLS,
   EXPANDED,
+  IS_BROWSER,
   LABELLEDBY,
   asButton,
   attr,
@@ -98,9 +99,7 @@ export class UHTMLSummaryElement extends HTMLElement {
   }
 }
 
-try {
+if (IS_BROWSER && !window.customElements.get('u-details')) {
   customElements.define('u-details', UHTMLDetailsElement)
   customElements.define('u-summary', UHTMLSummaryElement)
-} catch (err) {
-  // Already defined or on server
 }

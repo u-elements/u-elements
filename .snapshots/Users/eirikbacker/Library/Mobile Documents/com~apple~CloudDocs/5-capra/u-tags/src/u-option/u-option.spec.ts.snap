@@ -1,0 +1,10 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`u-option > snapshot 1`] = `
+<u-option
+  role="option"
+  tabindex="-1"
+>
+  Option 1
+</u-option>
+`;

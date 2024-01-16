@@ -49,7 +49,7 @@ export function attr(
       Object.entries(name).map(([name, value]) => attr(element, name, value))
     else if (value === undefined) return element.getAttribute(name)
     else if (value === null) element.removeAttribute(name)
-    else element.setAttribute(name, String(value))
+    else if (element.getAttribute(name) !== `${value}`) element.setAttribute(name, `${value}`)
   }
 }
 
@@ -98,7 +98,7 @@ export const getRoot = (node: Node) =>
 let id = Date.now()
 export const useId = (el?: Element | null) =>
   el
-    ? (el.id = el.id || `:${el.nodeName.toLowerCase()}${(++id).toString(32)}`)
+    ? (el.id || (el.id = `:${el.nodeName.toLowerCase()}${(++id).toString(32)}`))
     : undefined
 
 /**

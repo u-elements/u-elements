@@ -83,7 +83,7 @@ export class UHTMLDetailsElement extends HTMLElement {
     }
   }
   handleEvent({ type, target, detail }: CustomEvent<MutationRecord[]>) {
-    if (type === 'mutation') onMutation(this, detail)
+    if (type === 'mutation' && isMutationRelevant(this, detail)) this.attributeChangedCallback()
     if (type === 'toggle' && target === this.children[1] && isDetails(target)) this[OPEN] = target[OPEN]
   }
   get open(): boolean {
@@ -116,10 +116,9 @@ function isDetails(el: unknown): el is HTMLDetailsElement {
   return el instanceof HTMLElement && OPEN in el
 }
 
-function onMutation(self: UHTMLDetailsElement, mutations: MutationRecord[]) {
-  const isRelevantMutation = mutations.some(({ attributeName, type, target }) =>
+function isMutationRelevant(self: UHTMLDetailsElement, mutations: MutationRecord[]) {
+  return mutations.some(({ attributeName, type, target }) =>
     (target === self && type === 'childList') ||
     (target.parentElement === self && attributeName === 'id')
   );
-  if (isRelevantMutation) self.attributeChangedCallback()
 }

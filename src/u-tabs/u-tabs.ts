@@ -1,12 +1,11 @@
 import {
-  BLOCK,
-  CONTROLS,
-  IS_BROWSER,
-  LABELLEDBY,
-  SELECTED,
+  ARIA_CONTROLS,
+  ARIA_LABELLEDBY,
+  ARIA_SELECTED,
+  DISPLAY_BLOCK,
   asButton,
   attr,
-  define,
+  customElements,
   getRoot,
   off,
   on,
@@ -25,17 +24,17 @@ declare global {
 
 export class UHTMLTabsElement extends HTMLElement {
   connectedCallback() {
-    style(this, BLOCK)
+    style(this, DISPLAY_BLOCK)
   }
   get tabList(): UHTMLTabListElement | null {
     return queryWithoutNested('u-tablist', this)[0] || null
   }
   get selectedIndex(): number {
     // Check with real attribute (not .selected) as UHTMLTabElement instance might not be created yet
-    return [...this.tabs].findIndex((tab) => attr(tab, SELECTED) === 'true')
+    return [...this.tabs].findIndex((tab) => attr(tab, ARIA_SELECTED) === 'true')
   }
   set selectedIndex(index: number) {
-    attr(this.tabs[index], SELECTED, true)
+    attr(this.tabs[index], ARIA_SELECTED, true)
   }
   get tabs(): NodeListOf<UHTMLTabElement> {
     return queryWithoutNested('u-tab', this)
@@ -82,10 +81,10 @@ export class UHTMLTabListElement extends HTMLElement {
 let skipAttrChange = false
 export class UHTMLTabElement extends HTMLElement {
   static get observedAttributes() {
-    return [SELECTED, CONTROLS]
+    return ['id', ARIA_SELECTED, ARIA_CONTROLS]
   }
   connectedCallback() {
-    style(this, `${BLOCK}:host { cursor: pointer }`)
+    style(this, `${DISPLAY_BLOCK}:host { cursor: pointer }`)
     attr(this, 'role', 'tab')
     this.selected = !!this.selected // Ensure selected is set (which also triggers attributeChangedCallback)
   }
@@ -93,19 +92,22 @@ export class UHTMLTabElement extends HTMLElement {
     if (!skipAttrChange && prev !== next && (skipAttrChange = true)) {
       const { tabs = [], panels = [], selectedIndex } = this.tabsElement || {}
       const selected = this.selected ? this : tabs[selectedIndex || 0] || this // Ensure always one selected tab
-      const panelsWithoutTab = [...panels].filter((p) => !attr(p, LABELLEDBY))
       let selectedPanel: HTMLElement
 
       // Ensure correct state by always looping all tabs
-      panels.forEach((panel) => attr(panel, { [LABELLEDBY]: null, hidden: '' })) // Reset all panels in case changing aria-controls
-      tabs.forEach((tab) => {
+      panels.forEach((panel) => attr(panel, { [ARIA_LABELLEDBY]: null, hidden: '' })) // Reset all panels in case changing aria-controls
+      tabs.forEach((tab, index) => {
         const tabindex = selected === tab ? 0 : -1
-        const panel = queryRelated(tab) || panelsWithoutTab.shift() || null // Does not use tab.panel as UHTMLTabElement instance might not be created yet
+        const panel = getPanel(tab) || panels[index] || null // Does not use tab.panel as UHTMLTabElement instance might not be created yet
         if (!tabindex && panel) selectedPanel = panel // Store selectedPanel as multiple tabs can point to same panel
 
-        attr(tab, { [SELECTED]: !tabindex, [CONTROLS]: useId(panel), tabindex })
+        attr(tab, {
+          [ARIA_SELECTED]: !tabindex,
+          [ARIA_CONTROLS]: useId(panel),
+          tabindex
+        })
         attr(panel, {
-          [LABELLEDBY]: useId(selectedPanel === panel ? selected : tab),
+          [ARIA_LABELLEDBY]: useId(selectedPanel === panel ? selected : tab),
           hidden: selectedPanel === panel ? null : ''
         })
       })
@@ -120,31 +122,39 @@ export class UHTMLTabElement extends HTMLElement {
     return this.closest('u-tablist')
   }
   get selected(): boolean {
-    return attr(this, SELECTED) === 'true'
+    return attr(this, ARIA_SELECTED) === 'true'
   }
   set selected(value: boolean) {
-    attr(this, SELECTED, !!value)
+    attr(this, ARIA_SELECTED, !!value)
   }
   /** Retrieves the ordinal position of an tab in a tablist. */
   get index(): number {
     return Array.from(this.tabsElement?.tabs || []).indexOf(this)
   }
   get panel(): UHTMLTabPanelElement | null {
-    return queryRelated<UHTMLTabPanelElement>(this)
+    return getPanel(this)
   }
 }
 
 export class UHTMLTabPanelElement extends HTMLElement {
+  static get observedAttributes() {
+    return ['id']
+  }
   connectedCallback() {
-    style(this, BLOCK)
+    style(this, DISPLAY_BLOCK)
     attr(this, 'role', 'tabpanel')
-    this.hidden = !this.tab?.selected // Hide if not connected to tab
+    this.hidden = Array.from(this.tabs).every((tab) => !tab.selected) // Hide if not connected to tab
+  }
+  attributeChangedCallback(_name: string, prev: string, next: string) {
+    if (!skipAttrChange && prev !== next) { // Prevent updates while running tab attributeChangedCallback
+      Array.from(getTabs(this, prev), (tab) => attr(tab, ARIA_CONTROLS, next))
+    }
   }
   get tabsElement(): UHTMLTabsElement | null {
-    return this.tab ? this.tab.tabsElement : this.closest('u-tabs')
+    return this.closest('u-tabs')
   }
-  get tab(): UHTMLTabElement | null {
-    return queryRelated<UHTMLTabElement>(this)
+  get tabs(): NodeListOf<UHTMLTabElement> {
+    return getTabs(this, this.id)
   }
 }
 
@@ -157,17 +167,21 @@ const queryWithoutNested = <TagName extends keyof HTMLElementTagNameMap>(
   return self.querySelectorAll(selector)
 }
 
-// Get related tab (if passing panel) or panel (if passing tab)
 // Needs to be a utility function so it can be used independendtly from Element life cycle
 // Querys elements both inside ShadowRoot and in document just incase trying to access outside shadowRoot elements
-const queryRelated = <Rel extends HTMLElement>(self: Element): Rel | null => {
-  const isTab = self.nodeName === 'U-TAB' // Check nodeName as UHTMLTabElement instance might not be created yet
-  const key = isTab ? attr(self, CONTROLS) || '' : self.id
-  const css = isTab ? `u-tabpanel[id="${key}"]` : `u-tab[${CONTROLS}="${key}"]`
+const getPanel = (self: Element): UHTMLTabPanelElement | null => {
+  const css = `u-tabpanel[id="${attr(self, ARIA_CONTROLS)}"]`
   return getRoot(self).querySelector(css) || document.querySelector(css)
 }
 
-define('u-tabs', UHTMLTabsElement)
-define('u-tablist', UHTMLTabListElement)
-define('u-tab', UHTMLTabElement)
-define('u-tabpanel', UHTMLTabPanelElement)
+// Needs to be a utility function so it can be used independendtly from Element life cycle
+// Querys elements both inside ShadowRoot and in document just incase trying to access outside shadowRoot elements
+const getTabs = (self: Element, id: string): NodeListOf<UHTMLTabElement> => {
+  const css = `u-tab[${ARIA_CONTROLS}="${id}"]`
+  return getRoot(self).querySelectorAll(css)
+}
+
+customElements.define('u-tabs', UHTMLTabsElement)
+customElements.define('u-tablist', UHTMLTabListElement)
+customElements.define('u-tab', UHTMLTabElement)
+customElements.define('u-tabpanel', UHTMLTabPanelElement)

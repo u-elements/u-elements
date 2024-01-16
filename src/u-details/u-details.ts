@@ -1,11 +1,11 @@
 import {
-  BLOCK,
-  CONTROLS,
-  EXPANDED,
-  LABELLEDBY,
+  ARIA_CONTROLS,
+  ARIA_EXPANDED,
+  ARIA_LABELLEDBY,
+  DISPLAY_BLOCK,
   asButton,
   attr,
-  define,
+  customElements,
   mutationObserver,
   off,
   on,
@@ -34,9 +34,9 @@ export class UHTMLDetailsElement extends HTMLElement {
   connectedCallback() {
     style(
       this,
-      `${BLOCK}
+      `${DISPLAY_BLOCK}
       ::slotted(u-summary) { cursor: pointer; display: list-item; list-style: inside disclosure-closed }
-      ::slotted(u-summary[${EXPANDED}="true"]) { list-style-type: disclosure-open }`
+      ::slotted(u-summary[${ARIA_EXPANDED}="true"]) { list-style-type: disclosure-open }`
     )
     on(this, 'toggle', this, true)
     mutationObserver(this, { childList: true }) // Observe children to detect native <details>
@@ -59,13 +59,13 @@ export class UHTMLDetailsElement extends HTMLElement {
     }
 
     attr(summary, {
-      [CONTROLS]: details && useId(details),
-      [EXPANDED]: isOpen,
+      [ARIA_CONTROLS]: details ? useId(details) : null,
+      [ARIA_EXPANDED]: isOpen,
       id: useId(summary)
     })
     attr(details, {
       'aria-hidden': !isOpen, // Needed to not announce "empty group" when closed
-      [LABELLEDBY]: useId(summary),
+      [ARIA_LABELLEDBY]: useId(summary),
       open: isOpen ? '' : null,
       role: 'group'
     })
@@ -85,6 +85,7 @@ export class UHTMLDetailsElement extends HTMLElement {
 }
 
 export class UHTMLSummaryElement extends HTMLElement {
+  // TODO: observeAttribute 'id'
   connectedCallback() {
     attr(this, { role: 'button', tabIndex: 0 })
     on(this, 'click,keydown', this)
@@ -99,5 +100,5 @@ export class UHTMLSummaryElement extends HTMLElement {
   }
 }
 
-define('u-details', UHTMLDetailsElement)
-define('u-summary', UHTMLSummaryElement)
+customElements.define('u-details', UHTMLDetailsElement)
+customElements.define('u-summary', UHTMLSummaryElement)

@@ -10,12 +10,12 @@ export const IS_IOS =
   IS_BROWSER && /iPad|iPhone|iPod/.test(window.navigator.userAgent) // Bad, but needed
 
 // Constants for better compression and control
-export const BLOCK = ':host(:not([hidden])) { display: block }'
-export const CONTROLS = 'aria-controls'
-export const DISABLED = 'aria-disabled'
-export const EXPANDED = 'aria-expanded'
-export const LABELLEDBY = IS_ANDROID ? 'data-labelledby' : 'aria-labelledby' // Android reads tab text instead of content when labelledby
-export const SELECTED = 'aria-selected'
+export const ARIA_CONTROLS = 'aria-controls'
+export const ARIA_DISABLED = 'aria-disabled'
+export const ARIA_EXPANDED = 'aria-expanded'
+export const ARIA_LABELLEDBY = IS_ANDROID ? 'data-labelledby' : 'aria-labelledby' // Android reads tab text instead of content when labelledby
+export const ARIA_SELECTED = 'aria-selected'
+export const DISPLAY_BLOCK = ':host(:not([hidden])) { display: block }'
 
 type BindElem = Node | Window;
 type BindRest = Parameters<typeof Element.prototype.addEventListener>;
@@ -102,8 +102,11 @@ export const useId = (el?: Element | null) =>
     : undefined
 
 /**
- * define
- * @description Defined a customElement but only if not registered
+ * customElements.define
+ * @description Defines a customElement if running in browser and if not already registered
+ * named customElements.define so @custom-elements-manifest/analyzer can find tag names
  */
-export const define = (name: string, instance: CustomElementConstructor) =>
-  !IS_BROWSER || window.customElements.get(name) || window.customElements.define(name, instance);
+export const customElements = {
+  define: (name: string, instance: CustomElementConstructor) =>
+    !IS_BROWSER || window.customElements.get(name) || window.customElements.define(name, instance)
+}

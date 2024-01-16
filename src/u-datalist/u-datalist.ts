@@ -1,13 +1,13 @@
 import { UHTMLOptionElement } from '../u-option/u-option'
 import {
-  BLOCK,
-  CONTROLS,
-  EXPANDED,
+  ARIA_CONTROLS,
+  ARIA_EXPANDED,
+  ARIA_LABELLEDBY,
+  DISPLAY_BLOCK,
   IS_BROWSER,
   IS_IOS,
-  LABELLEDBY,
   attr,
-  define,
+  customElements,
   getRoot,
   mutationObserver,
   off,
@@ -30,7 +30,7 @@ declare global {
 export class UHTMLDataListElement extends HTMLElement {
   connectedCallback() {
     const root = getRoot(this)
-    style(this, BLOCK)
+    style(this, DISPLAY_BLOCK)
     attr(this, { hidden: '', role: 'listbox' })
     on(root, 'focusin', this) // Only bind focus globally as this is needed to activate
     on(root, 'focus', this, true) // Need to also listen on focus with capturing to render before Firefox NVDA reads state
@@ -60,7 +60,7 @@ export class UHTMLDataListElement extends HTMLElement {
 let activeInput: HTMLInputElement | undefined // Store to speed up and prevent double focus
 const setOpen = (self: UHTMLDataListElement, open: boolean) => {
   if (open) setOptionAttributes(self) // Esure correct state when opening
-  attr(activeInput, EXPANDED, open)
+  attr(activeInput, ARIA_EXPANDED, open)
   self.hidden = !open
 }
 
@@ -90,13 +90,13 @@ const setOptionAttributes = (self: UHTMLDataListElement) => {
 function onFocus(self: UHTMLDataListElement, { target }: Event) {
   if (activeInput !== target && attr(target, 'list') === self.id) {
     activeInput = target as HTMLInputElement
-    attr(self, LABELLEDBY, useId(activeInput.labels?.[0]))
+    attr(self, ARIA_LABELLEDBY, useId(activeInput.labels?.[0]))
     mutationObserver(self, { childList: true, subtree: true }) // Listen for DOM changes when open to opt out autofiltering
     on(self.getRootNode(), 'click,focusout,input,keydown', self)
     setOpen(self, true)
     attr(activeInput, {
       'aria-autocomplete': 'list',
-      [CONTROLS]: useId(self),
+      [ARIA_CONTROLS]: useId(self),
       autocomplete: 'off',
       role: 'combobox'
     })
@@ -180,4 +180,4 @@ if (IS_BROWSER)
     }
   })
 
-define('u-datalist', UHTMLDataListElement)
+  customElements.define('u-datalist', UHTMLDataListElement)

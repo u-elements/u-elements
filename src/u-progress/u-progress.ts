@@ -1,4 +1,4 @@
-import { IS_IOS, attr, define, getRoot, style, useId } from '../utils'
+import { IS_IOS, attr, customElements, getRoot, style, useId } from '../utils'
 
 declare global {
   interface HTMLElementTagNameMap {
@@ -74,4 +74,4 @@ const setNumber = (el: Element, key: string, val: unknown) => {
   throw new Error(`Failed to set non-numeric '${key}': '${val}'`)
 }
 
-define('u-progress', UHTMLProgressElement)
+customElements.define('u-progress', UHTMLProgressElement)

@@ -87,7 +87,10 @@ describe('u-tabs', () => {
     expect(uTab.index).toBe(0)
     expect(uTab.panel).toBe(uTabPanel)
     expect(uTabPanel.tabsElement).toBe(uTabs)
-    expect(uTabPanel.tab).toBe(uTab)
+    expect(uTabPanel.tabs).toBeInstanceOf(NodeList)
+    expect(uTabPanel.tabs[0]).toBe(uTab)
+
+    expect(toDOM<UHTMLTabPanelElement>(`<u-tabpanel></u-tabpanel>`).tabs.length).toBe(0)
   })
 
   test('updates attributes on selected prop change', () => {
@@ -271,6 +274,18 @@ describe('u-tabs', () => {
     expect(uTabs.tabs[1].panel?.id).toBe('panel-2')
     expect(uTabs.tabs[0].panel?.getAttribute('aria-labelledby')).toBe('tab-1')
     expect(uTabs.tabs[1].panel?.getAttribute('aria-labelledby')).toBe('tab-2')
+
+    uTabs.tabs[0].id = 'tab-1-changed-id'
+    expect(uTabs.panels[0].getAttribute('aria-labelledby')).toBe('tab-1-changed-id')
+    
+    uTabs.tabs[1].setAttribute('aria-controls', 'panel-1')
+    expect(uTabs.panels[1].hasAttribute('aria-labelledby')).toBe(false)
+
+    uTabs.panels[0].id = 'panel-1-changed-id'
+    expect(uTabs.tabs[0].getAttribute('aria-controls')).toBe('panel-1-changed-id')
+
+    // NOTE: intentionnaly does not test changeing aria-labelledby,
+    // as this attribute varies between OSes and is meant only to be used under the hood
   })
 
   test('respects aria-controls attributes', () => {

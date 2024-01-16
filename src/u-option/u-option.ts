@@ -1,6 +1,4 @@
-import { BLOCK, DISABLED, SELECTED, attr, define, style } from '../utils'
-
-// TODO: Reflect real attributes? Yes
+import { ARIA_DISABLED, ARIA_SELECTED, DISPLAY_BLOCK, attr, customElements, style } from '../utils'
 declare global {
   interface HTMLElementTagNameMap {
     'u-option': UHTMLOptionElement
@@ -8,23 +6,26 @@ declare global {
 }
 
 export class UHTMLOptionElement extends HTMLElement {
+  static get observedAttributes() {
+    return ['disabled', 'label', 'selected', 'value'] // TODO: Reflect real attributes? Yes
+  }
   connectedCallback() {
-    style(this, `${BLOCK}:host { cursor: pointer }`)
+    style(this, `${DISPLAY_BLOCK}:host { cursor: pointer }`)
     attr(this, { role: 'option', tabindex: -1 })
     this.defaultSelected
   }
   /** Sets or retrieves whether the option in the list box is the default item. */
   get defaultSelected(): boolean {
-    return attr(this, SELECTED) === 'true'
+    return attr(this, ARIA_SELECTED) === 'true'
   }
   set defaultSelected(value: boolean) {
-    attr(this, SELECTED, !!value)
+    attr(this, ARIA_SELECTED, !!value)
   }
   get disabled(): boolean {
-    return attr(this, DISABLED) === 'true'
+    return attr(this, ARIA_DISABLED) === 'true'
   }
   set disabled(value: boolean) {
-    attr(this, DISABLED, value ? 'true' : null)
+    attr(this, ARIA_DISABLED, value ? 'true' : null)
   }
   /** Retrieves a reference to the form that the object is embedded in. */
   get form(): HTMLFormElement | null {
@@ -44,10 +45,10 @@ export class UHTMLOptionElement extends HTMLElement {
     attr(this, 'label', value)
   }
   get selected(): boolean {
-    return attr(this, SELECTED) === 'true'
+    return attr(this, ARIA_SELECTED) === 'true'
   }
   set selected(value: boolean) {
-    attr(this, SELECTED, !!value)
+    attr(this, ARIA_SELECTED, !!value)
   }
   /** Sets or retrieves the text string specified by the option tag. */
   get text(): string {
@@ -68,4 +69,4 @@ export class UHTMLOptionElement extends HTMLElement {
 const getContainer = (self: UHTMLOptionElement) =>
   self.closest('u-datalist,u-selectlist')
 
-define('u-option', UHTMLOptionElement)
+  customElements.define('u-option', UHTMLOptionElement)

@@ -24,7 +24,7 @@ ${fs.readdirSync('./src')
 export default {
   plugins: [
     customElementsManifest({
-      files: ['./src/**/*.ts'],
+      files: ['src/*/*.ts'],
       plugins: [
         // @ts-ignore
         customElementVsCodePlugin({

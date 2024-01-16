@@ -45,7 +45,7 @@ export default {
   test: {
     environment: 'jsdom',
     // Store snapshots in .snapshots-folder
-    resolveSnapshotPath: (testPath: string, ext: string) => `.snapshots${testPath}${ext}`
+    resolveSnapshotPath: (testPath: string, ext: string) => `snapshots${testPath}${ext}`
   }
 }
 

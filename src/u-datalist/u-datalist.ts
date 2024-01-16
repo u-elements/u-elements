@@ -175,8 +175,7 @@ if (IS_BROWSER)
     configurable: true,
     enumerable: true,
     get(): HTMLDataElement | UHTMLDataListElement | null {
-      const selector = `[id="${attr(this, 'list')}"]:is(datalist,u-datalist)`
-      return document.querySelector(selector)
+      return document.querySelector(`[id="${attr(this, 'list')}"]:is(datalist,u-datalist)`)
     }
   })
 

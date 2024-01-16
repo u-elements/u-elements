@@ -20,6 +20,9 @@ declare global {
   }
 }
 
+// Constants for better compression
+const OPEN = 'open'
+
 // Needs two child elements
 // First element to be <u-summary>
 // Second element to be <details>
@@ -31,7 +34,7 @@ declare global {
 let skipAttrChange = false
 export class UHTMLDetailsElement extends HTMLElement {
   static get observedAttributes() {
-    return ['open', 'id']
+    return [OPEN, 'id']
   }
   connectedCallback() {
     style(
@@ -55,7 +58,7 @@ export class UHTMLDetailsElement extends HTMLElement {
   attributeChangedCallback() {
     if (!skipAttrChange && (skipAttrChange = true)) {  
       const [summary, details] = this.children
-      const isOpen = this.open // Cache for speed
+      const isOpen = this[OPEN] // Cache for speed
 
       // Ensure native <summary> exists and is hidden (can not be accessed through css)
       if (isDetails(details)) {
@@ -73,7 +76,7 @@ export class UHTMLDetailsElement extends HTMLElement {
       attr(details, {
         'aria-hidden': !isOpen, // Needed to not announce "empty group" when closed
         [ARIA_LABELLEDBY]: useId(summary),
-        open: isOpen ? '' : null,
+        [OPEN]: isOpen ? '' : null,
         role: 'group'
       })
       skipAttrChange = false
@@ -81,13 +84,13 @@ export class UHTMLDetailsElement extends HTMLElement {
   }
   handleEvent({ type, target, detail }: CustomEvent<MutationRecord[]>) {
     if (type === 'mutation' && isRelevantMutation(detail, this)) this.attributeChangedCallback()
-    if (type === 'toggle' && target === this.children[1] && isDetails(target)) this.open = target.open
+    if (type === 'toggle' && target === this.children[1] && isDetails(target)) this[OPEN] = target[OPEN]
   }
   get open(): boolean {
-    return attr(this, 'open') === ''
+    return attr(this, OPEN) !== null
   }
   set open(open) {
-    attr(this, 'open', open ? '' : null)
+    attr(this, OPEN, open ? '' : null)
   }
 }
 
@@ -102,7 +105,7 @@ export class UHTMLSummaryElement extends HTMLElement {
   handleEvent(event: CustomEvent) {
     const details = this.parentElement
     if (event.type === 'keydown') asButton(event)
-    if (event.type === 'click' && isDetails(details)) details.open = !details.open
+    if (event.type === 'click' && isDetails(details)) details[OPEN] = !details[OPEN]
   }
 }
 
@@ -110,7 +113,7 @@ customElements.define('u-details', UHTMLDetailsElement)
 customElements.define('u-summary', UHTMLSummaryElement)
 
 function isDetails(el: unknown): el is HTMLDetailsElement {
-  return el instanceof HTMLElement && 'open' in el
+  return el instanceof HTMLElement && OPEN in el
 }
 
 function isRelevantMutation(mutations: MutationRecord[], self: UHTMLDetailsElement) {

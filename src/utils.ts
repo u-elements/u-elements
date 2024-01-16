@@ -11,7 +11,6 @@ export const IS_IOS =
 
 // Constants for better compression and control
 export const ARIA_CONTROLS = 'aria-controls'
-export const ARIA_DISABLED = 'aria-disabled'
 export const ARIA_EXPANDED = 'aria-expanded'
 export const ARIA_LABELLEDBY = IS_ANDROID ? 'data-labelledby' : 'aria-labelledby' // Android reads tab text instead of content when labelledby
 export const ARIA_SELECTED = 'aria-selected'

@@ -57,6 +57,7 @@ export const mutationObserver = (
   element: Element & EventListenerObject,
   options?: MutationObserverInit | false
 ) => {
+  if (options === undefined) return observers.get(element)
   try {
     observers.get(element).disconnect() // Allways unbind previous listener
     observers.delete(element)

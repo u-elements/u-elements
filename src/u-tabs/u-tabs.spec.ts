@@ -481,7 +481,7 @@ describe('u-tabs', () => {
     expect(document.activeElement).toBe(uTabs.tabs[0])
 
     document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { key: 'End', bubbles: true }))
-    document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { key: 'Enter', bubbles: true }))
+    document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { key: ' ', bubbles: true }))
     expect(uTabs.tabs[2].selected).toBe(true)
   })
 })

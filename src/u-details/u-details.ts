@@ -29,9 +29,6 @@ const OPEN = 'open'
 // toggle event is triggered from child, not <u-details> iteself
 // We can not polyfill HTMLInputElement.list as this is readOnly
 // Why: details/summary does not work in iOS Safari: impossible to read state of aria-expanded
-
-// Speed up by not triggering attributeChangedCallback during attributeChangedCallback
-let skipAttrChange = false
 export class UHTMLDetailsElement extends HTMLElement {
   static get observedAttributes() {
     return [OPEN, 'id']
@@ -56,31 +53,33 @@ export class UHTMLDetailsElement extends HTMLElement {
     mutationObserver(this, false)
   }
   attributeChangedCallback() {
-    if (!skipAttrChange && (skipAttrChange = true)) {  
-      const [summary, details] = this.children
-      const isOpen = this[OPEN] // Cache for speed
+    const [summary, details] = this.children
+    const isOpen = this[OPEN] // Cache for speed
 
-      // Ensure native <summary> exists and is hidden (can not be accessed through css)
-      if (isDetails(details)) {
-        const summary =
-          details.querySelector<HTMLElement>(':scope > summary') ||
-          details.appendChild(document.createElement('summary'))
-        summary.hidden = true
-      }
-
-      attr(summary, {
-        [ARIA_CONTROLS]: details ? useId(details) : null,
-        [ARIA_EXPANDED]: isOpen,
-        id: useId(summary)
-      })
-      attr(details, {
-        'aria-hidden': !isOpen, // Needed to not announce "empty group" when closed
-        [ARIA_LABELLEDBY]: useId(summary),
-        [OPEN]: isOpen ? '' : null,
-        role: 'group'
-      })
-      skipAttrChange = false
+    // Ensure native <summary> exists and is hidden (can not be accessed through css)
+    if (isDetails(details)) {
+      const summary =
+        details.querySelector<HTMLElement>(':scope > summary') ||
+        details.appendChild(document.createElement('summary'))
+      summary.hidden = true
     }
+
+    attr(summary, {
+      [ARIA_CONTROLS]: details ? useId(details) : null,
+      [ARIA_EXPANDED]: isOpen,
+      id: useId(summary)
+    })
+    attr(details, {
+      'aria-hidden': !isOpen, // Needed to not announce "empty group" when closed
+      [ARIA_LABELLEDBY]: useId(summary),
+      [OPEN]: isOpen ? '' : null,
+      role: 'group'
+    })
+
+    // Skip mutation events caused by attributeChangedCallback
+    // Might be not defined if "open" is present in HTML causing
+    // attributeChangedCallback to run before connectedCallback
+    mutationObserver(this)?.takeRecords()
   }
   handleEvent({ type, target, detail }: CustomEvent<MutationRecord[]>) {
     if (type === 'mutation' && isMutationRelevant(this, detail)) this.attributeChangedCallback()

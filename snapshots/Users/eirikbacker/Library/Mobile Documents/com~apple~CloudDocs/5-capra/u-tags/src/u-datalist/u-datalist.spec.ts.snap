@@ -1,0 +1,55 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`u-datalist > snapshot 1`] = `
+<form>
+  
+  
+  <label>
+    
+    Search here
+    
+    <input
+      list="datalist-1"
+      type="text"
+    />
+    
+  
+  </label>
+  
+  
+  <u-datalist
+    hidden=""
+    id="datalist-1"
+    role="listbox"
+  >
+    
+    
+    <u-option
+      role="option"
+      tabindex="-1"
+    >
+      Option 1
+    </u-option>
+    
+    
+    <u-option
+      role="option"
+      tabindex="-1"
+    >
+      Option 2
+    </u-option>
+    
+    
+    <u-option
+      role="option"
+      tabindex="-1"
+    >
+      Option 3
+    </u-option>
+    
+  
+  </u-datalist>
+  
+
+</form>
+`;

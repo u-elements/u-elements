@@ -6,12 +6,14 @@ const toDOM = <T extends HTMLElement>(innerHTML: string): T =>
 
 describe('u-option', () => {
   test('snapshot', () => {
-    const uOption = toDOM<UHTMLOptionElement>(`
-      <u-option>Option 1</u-option>
-      <u-option selected>Option 2</u-option>
-      <u-option disabled>Option 2</u-option>
+    const form = toDOM(`
+      <form>
+        <u-option>Option 1</u-option>
+        <u-option selected>Option 2</u-option>
+        <u-option disabled>Option 2</u-option>
+      </form>
     `)
-    expect(uOption).toMatchSnapshot()
+    expect(form).toMatchSnapshot()
   })
 
   test('is defined', () => {

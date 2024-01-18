@@ -1,13 +1,20 @@
 import { describe, expect, test, vi } from 'vitest'
 import { UHTMLDetailsElement, UHTMLSummaryElement } from '..'
 
-const NEXT_TICK = { timeout: 500, interval: 1}
+const NEXT_TICK = { timeout: 500, interval: 1 }
 const toDOM = <T extends HTMLElement>(innerHTML: string): T =>
   Object.assign(document.body, { innerHTML }).firstElementChild as T
 
+const DEFAULT_TEST_HTML = `
+<u-details>
+  <u-summary>Summary 1</u-summary>
+  <details>Details 1</details>
+</u-details>
+`;
+
 describe('u-details', () => {
   test('snapshot', () => {
-    const uOption = toDOM(`
+    const div = toDOM(`
       <div>
         <u-details>
           <u-summary id="summary-1">Summary 1</u-summary>
@@ -23,16 +30,11 @@ describe('u-details', () => {
         </u-details>
       </div>
     `)
-    expect(uOption).toMatchSnapshot()
+    expect(div).toMatchSnapshot()
   })
 
   test('is defined', () => {
-    const uDetails = toDOM<UHTMLDetailsElement>(`
-      <u-details>
-        <u-summary>Summary 1</u-summary>
-        <details>Details 1</details>
-      </u-details>
-    `)
+    const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
 
     expect(uDetails.open).toBe(false)
     expect(uDetails).toBeInstanceOf(UHTMLDetailsElement)
@@ -42,12 +44,7 @@ describe('u-details', () => {
   })
 
   test('generates hidden native summary element', () => {
-    const uDetails = toDOM<UHTMLDetailsElement>(`
-      <u-details>
-        <u-summary>Summary 1</u-summary>
-        <details>Details 1</details>
-      </u-details>
-    `)
+    const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
     const nativeDetails = uDetails.lastElementChild as HTMLDetailsElement
     const nativeSummary = nativeDetails.firstElementChild as HTMLElement
 
@@ -65,12 +62,7 @@ describe('u-details', () => {
   })
 
   test('handles up open property and attributes change', () => {
-    const uDetails = toDOM<UHTMLDetailsElement>(`
-      <u-details>
-        <u-summary>Summary 1</u-summary>
-        <details>Details 1</details>
-      </u-details>
-    `)
+    const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
     const [uSummary, nativeDetails] = [...uDetails.children] as [UHTMLSummaryElement, HTMLDetailsElement]
 
     expect(uSummary.role).toBe('button')
@@ -83,12 +75,7 @@ describe('u-details', () => {
   })
 
   test('handles open property and attributes change', () => {
-    const uDetails = toDOM<UHTMLDetailsElement>(`
-      <u-details>
-        <u-summary>Summary 1</u-summary>
-        <details>Details 1</details>
-      </u-details>
-    `)
+    const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
     const [uSummary, nativeDetails] = [...uDetails.children] as [UHTMLSummaryElement, HTMLDetailsElement]
 
     uDetails.open = true
@@ -138,29 +125,19 @@ describe('u-details', () => {
   })
 
   test('updates attributes on click', () => {
-    const uDetails = toDOM<UHTMLDetailsElement>(`
-      <u-details>
-        <u-summary>Summary 1</u-summary>
-        <details>Details 1</details>
-      </u-details>
-    `)
+    const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
     const [uSummary] = [...uDetails.children] as [UHTMLSummaryElement]
 
     uSummary.click()
     expect(uDetails.open).toBe(true)
 
     uSummary.focus()
-    document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { key: ' ', bubbles: true }))
+    document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
     expect(uDetails.open).toBe(false)   
   })
 
   test('respects nativeDetails open', async () => {
-    const uDetails = toDOM<UHTMLDetailsElement>(`
-      <u-details>
-        <u-summary>Summary 1</u-summary>
-        <details>Details 1</details>
-      </u-details>
-    `)
+    const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
     const nativeDetails = uDetails.lastElementChild as HTMLDetailsElement
 
     expect(uDetails.open).toBe(false)

@@ -12,11 +12,11 @@ import type { JSX as SolidJSX } from 'solid-js';
 import type { SvelteHTMLElements } from 'svelte/elements';
 
 ${fs.readdirSync('./src')
-  .filter((name) => fs.existsSync(`src/${name}/${name}.ts`))
-  .map((name) => {
-    const code = String(fs.readFileSync(`src/${name}/${name}.ts`));
+  .filter((fileName) => fileName.startsWith('u-') && fileName.endsWith('.ts'))
+  .map((fileName) => {
+    const code = String(fs.readFileSync(`src/${fileName}`));
     const tags = code.match(/'u-([^']+)': UHTML\1Element/gi)?.map((m) => m.split("'")[1]) || [];
-    return tags.map(getTypes).concat(`export * from './${name}/${name}';`).join('\n');
+    return tags.map(getTypes).concat(`export * from './${fileName}';`).join('\n');
   })
   .join('\n')}
 `);
@@ -24,7 +24,7 @@ ${fs.readdirSync('./src')
 export default {
   plugins: [
     customElementsManifest({
-      files: ['src/*/*.ts'],
+      files: ['src/u-*.ts'],
       plugins: [
         // @ts-ignore
         customElementVsCodePlugin({
@@ -41,11 +41,6 @@ export default {
       fileName: '[name]',
       formats: ['es', 'cjs']
     }
-  },
-  test: {
-    environment: 'jsdom',
-    // Store in snapshots-folder
-    resolveSnapshotPath: (testPath: string, ext: string) => `${testPath.replace('/src/', '/snapshots/')}${ext}`
   }
 }
 

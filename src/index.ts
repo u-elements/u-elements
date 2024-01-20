@@ -19,7 +19,7 @@ declare module '@builder.io/qwik/jsx-runtime' { export namespace JSX { export in
 declare global { namespace React.JSX { interface IntrinsicElements { 'u-datalist': ReactDatalist } } }
 declare module 'solid-js' { namespace JSX { interface IntrinsicElements { 'u-datalist': SolidJSDatalist } } }
 declare module 'svelte/elements' { interface SvelteHTMLElements { 'u-datalist': SvelteDatalist } }
-export * from './u-datalist/u-datalist';
+export * from './u-datalist.ts';
 
 export type VueDetails = VueJSX.IntrinsicElementAttributes['details'];
 export type QwikDetails = QwikJSX.IntrinsicElements['details'];
@@ -46,7 +46,7 @@ declare module '@builder.io/qwik/jsx-runtime' { export namespace JSX { export in
 declare global { namespace React.JSX { interface IntrinsicElements { 'u-summary': ReactSummary } } }
 declare module 'solid-js' { namespace JSX { interface IntrinsicElements { 'u-summary': SolidJSSummary } } }
 declare module 'svelte/elements' { interface SvelteHTMLElements { 'u-summary': SvelteSummary } }
-export * from './u-details/u-details';
+export * from './u-details.ts';
 
 export type VueOption = VueJSX.IntrinsicElementAttributes['option'];
 export type QwikOption = QwikJSX.IntrinsicElements['option'];
@@ -60,7 +60,7 @@ declare module '@builder.io/qwik/jsx-runtime' { export namespace JSX { export in
 declare global { namespace React.JSX { interface IntrinsicElements { 'u-option': ReactOption } } }
 declare module 'solid-js' { namespace JSX { interface IntrinsicElements { 'u-option': SolidJSOption } } }
 declare module 'svelte/elements' { interface SvelteHTMLElements { 'u-option': SvelteOption } }
-export * from './u-option/u-option';
+export * from './u-option.ts';
 
 export type VueProgress = VueJSX.IntrinsicElementAttributes['progress'];
 export type QwikProgress = QwikJSX.IntrinsicElements['progress'];
@@ -74,7 +74,7 @@ declare module '@builder.io/qwik/jsx-runtime' { export namespace JSX { export in
 declare global { namespace React.JSX { interface IntrinsicElements { 'u-progress': ReactProgress } } }
 declare module 'solid-js' { namespace JSX { interface IntrinsicElements { 'u-progress': SolidJSProgress } } }
 declare module 'svelte/elements' { interface SvelteHTMLElements { 'u-progress': SvelteProgress } }
-export * from './u-progress/u-progress';
+export * from './u-progress.ts';
 
 export type VueTabs = VueJSX.IntrinsicElementAttributes['div'];
 export type QwikTabs = QwikJSX.IntrinsicElements['div'];
@@ -127,4 +127,4 @@ declare module '@builder.io/qwik/jsx-runtime' { export namespace JSX { export in
 declare global { namespace React.JSX { interface IntrinsicElements { 'u-tabpanel': ReactTabpanel } } }
 declare module 'solid-js' { namespace JSX { interface IntrinsicElements { 'u-tabpanel': SolidJSTabpanel } } }
 declare module 'svelte/elements' { interface SvelteHTMLElements { 'u-tabpanel': SvelteTabpanel } }
-export * from './u-tabs/u-tabs';
+export * from './u-tabs.ts';

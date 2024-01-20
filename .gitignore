@@ -1,6 +1,6 @@
 # Runtime
-**/node_modules/
-**/dist/
+node_modules
+dist
 coverage
 
 # Logs
@@ -24,3 +24,5 @@ coverage
 
 # Cache
 .eslintcache
+docs/.vitepress/dist
+docs/.vitepress/cache

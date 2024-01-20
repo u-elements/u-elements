@@ -4,8 +4,8 @@ layout: home
 
 hero:
   name: "u-elements"
-  text: "u-elements"
-  tagline: My great project tagline
+  text: "Native HTML tags - just truly accessible"
+  tagline: Drop in CustomElements replacing native HTML elements. W3C standards compatible and truly accessible.
   actions:
     - theme: brand
       text: Markdown Examples
@@ -15,11 +15,14 @@ hero:
       link: /api-examples
 
 features:
-  - title: Feature A
+  - icon: 🛠️
+    title: Feature A
     details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - title: Feature B
+  - icon: 🛠️
+    title: Feature B
     details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - title: Feature C
+  - icon: 🛠️
+    title: Feature C
     details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
 ---
 

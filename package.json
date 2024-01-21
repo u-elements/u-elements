@@ -54,6 +54,7 @@
     "@vue/runtime-dom": "^3.4.14",
     "api-viewer-element": "^1.0.0-pre.8",
     "custom-element-vs-code-integration": "^1.1.1",
+    "esbuild": "^0.19.11",
     "eslint": "8.56.0",
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-prettier": "5.1.3",

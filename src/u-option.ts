@@ -9,6 +9,10 @@ declare global {
 const DISABLED = 'disabled'
 const SELECTED = 'selected'
 
+/**
+ * The `<u-option>` HTML element is used to define an item contained in a `<u-datalist>` element. As such, <u-option> can represent lists of items in an HTML document.
+ * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option)
+ */
 export class UHTMLOptionElement extends HTMLElement {
   static get observedAttributes() {
     return [DISABLED, SELECTED]

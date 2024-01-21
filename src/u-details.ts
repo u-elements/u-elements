@@ -29,6 +29,11 @@ const OPEN = 'open'
 // toggle event is triggered from child, not <u-details> iteself
 // We can not polyfill HTMLInputElement.list as this is readOnly
 // Why: details/summary does not work in iOS Safari: impossible to read state of aria-expanded
+
+/**
+ * The `<u-details>` HTML element creates a disclosure widget in which information is visible only when the widget is toggled into an "open" state. A summary or label must be provided using the `<u-summary>` element.
+ * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details)
+ */
 export class UHTMLDetailsElement extends HTMLElement {
   static get observedAttributes() {
     return [OPEN, 'id']
@@ -93,6 +98,10 @@ export class UHTMLDetailsElement extends HTMLElement {
   }
 }
 
+/**
+ * The `<u-summary>` HTML element specifies a summary, caption, or legend for a `<u-details>` element's disclosure box. Clicking the `<u-summary>` element toggles the state of the parent `<u-details>` element open and closed.
+ * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/summary)
+ */
 export class UHTMLSummaryElement extends HTMLElement {
   connectedCallback() {
     attr(this, { role: 'button', tabIndex: 0 })

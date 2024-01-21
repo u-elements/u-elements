@@ -4,8 +4,19 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: "u-elements",
   description: "Standard HTML tags - just truly accessible",
+  vue: {
+    template: {
+      compilerOptions: {
+        isCustomElement: (tag) => tag.includes('-')
+      }
+    }
+  },
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
+    outline: 'deep',
+    editLink: {
+      pattern: 'https://github.com/u-elements/u-tags/tree/main/docs/:path'
+    },
     search: {
       provider: 'local'
     },

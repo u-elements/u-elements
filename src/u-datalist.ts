@@ -27,6 +27,10 @@ declare global {
   }
 }
 
+/**
+ * The `<u-datalist>` HTML element contains a set of `<u-option>` elements that represent the permissible or recommended options available to choose from within other controls.
+ * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist)
+ */
 export class UHTMLDataListElement extends HTMLElement {
   connectedCallback() {
     const root = getRoot(this)

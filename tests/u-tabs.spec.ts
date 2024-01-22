@@ -1,7 +1,7 @@
 import { expect } from '@esm-bundle/chai'
 import { compareSnapshot, sendKeys } from '@web/test-runner-commands'
 import { UHTMLTabsElement, UHTMLTabListElement, UHTMLTabElement, UHTMLTabPanelElement } from '../src'
-import { IS_IOS } from '../src/utils'
+import { ARIA_LABELLEDBY, IS_ANDROID } from '../src/utils'
 
 const toDOM = <T extends HTMLElement>(innerHTML: string): T =>
   Object.assign(document.body, { innerHTML }).firstElementChild as T
@@ -20,7 +20,7 @@ const DEFAULT_TEST_HTML = `
 describe('u-tabs', () => {
   it('matches snapshot', async () => {
     await compareSnapshot({
-      name: `u-tabs${IS_IOS ? '-ios' : ''}`,
+      name: `u-tabs${IS_ANDROID ? '-android' : ''}`,
       content: toDOM(`
       <u-tabs>
         <u-tablist>
@@ -58,14 +58,14 @@ describe('u-tabs', () => {
     `)
 
     expect(uTabs.tabList?.role).to.equal('tablist')
-    expect(uTabs.tabs[0].id).to.equal(uTabs.panels[0].getAttribute('aria-labelledby'))
+    expect(uTabs.tabs[0].id).to.equal(uTabs.panels[0].getAttribute(ARIA_LABELLEDBY))
     expect(uTabs.tabs[0].role).to.equal('tab')
     expect(uTabs.tabs[0].tabIndex).to.equal(0)
     expect(uTabs.tabs[0].panel?.role).to.equal('tabpanel')
     expect(uTabs.tabs[0].panel?.hidden).to.equal(false)
     expect(uTabs.tabs[0].getAttribute('aria-controls')).to.equal(uTabs.panels[0].id)
     expect(uTabs.tabs[0].getAttribute('aria-selected')).to.equal('true')
-    expect(uTabs.tabs[1].id).to.equal(uTabs.panels[1].getAttribute('aria-labelledby'))
+    expect(uTabs.tabs[1].id).to.equal(uTabs.panels[1].getAttribute(ARIA_LABELLEDBY))
     expect(uTabs.tabs[1].role).to.equal('tab')
     expect(uTabs.tabs[1].tabIndex).to.equal(-1)
     expect(uTabs.tabs[1].panel?.role).to.equal('tabpanel')
@@ -243,14 +243,14 @@ describe('u-tabs', () => {
     expect(uTabs.tabs[1].getAttribute('aria-controls')).to.equal('panel-2')
     expect(uTabs.tabs[0].panel?.id).to.equal('panel-1')
     expect(uTabs.tabs[1].panel?.id).to.equal('panel-2')
-    expect(uTabs.tabs[0].panel?.getAttribute('aria-labelledby')).to.equal('tab-1')
-    expect(uTabs.tabs[1].panel?.getAttribute('aria-labelledby')).to.equal('tab-2')
+    expect(uTabs.tabs[0].panel?.getAttribute(ARIA_LABELLEDBY)).to.equal('tab-1')
+    expect(uTabs.tabs[1].panel?.getAttribute(ARIA_LABELLEDBY)).to.equal('tab-2')
 
     uTabs.tabs[0].id = 'tab-1-changed-id'
-    expect(uTabs.panels[0].getAttribute('aria-labelledby')).to.equal('tab-1-changed-id')
+    expect(uTabs.panels[0].getAttribute(ARIA_LABELLEDBY)).to.equal('tab-1-changed-id')
     
     uTabs.tabs[1].setAttribute('aria-controls', 'panel-1')
-    expect(uTabs.panels[1].hasAttribute('aria-labelledby')).to.equal(false)
+    expect(uTabs.panels[1].hasAttribute(ARIA_LABELLEDBY)).to.equal(false)
 
     uTabs.panels[0].id = 'panel-1-changed-id'
     expect(uTabs.tabs[0].getAttribute('aria-controls')).to.equal('panel-1-changed-id')
@@ -273,10 +273,10 @@ describe('u-tabs', () => {
 
     expect(uTabs.tabs[0].getAttribute('aria-controls')).to.equal('panel-2')
     expect(uTabs.tabs[1].getAttribute('aria-controls')).to.equal('panel-1')
-    expect(uTabs.panels[0].getAttribute('aria-labelledby')).to.equal('tab-2')
-    expect(uTabs.panels[1].getAttribute('aria-labelledby')).to.equal('tab-1')
-    expect(uTabs.tabs[0].panel?.getAttribute('aria-labelledby')).to.equal('tab-1')
-    expect(uTabs.tabs[1].panel?.getAttribute('aria-labelledby')).to.equal('tab-2')
+    expect(uTabs.panels[0].getAttribute(ARIA_LABELLEDBY)).to.equal('tab-2')
+    expect(uTabs.panels[1].getAttribute(ARIA_LABELLEDBY)).to.equal('tab-1')
+    expect(uTabs.tabs[0].panel?.getAttribute(ARIA_LABELLEDBY)).to.equal('tab-1')
+    expect(uTabs.tabs[1].panel?.getAttribute(ARIA_LABELLEDBY)).to.equal('tab-2')
   })
 
   it('respects multiple tabs for same panel', () => {

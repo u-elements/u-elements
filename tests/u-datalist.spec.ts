@@ -1,7 +1,7 @@
 import { expect } from '@esm-bundle/chai'
 import { compareSnapshot, sendKeys } from '@web/test-runner-commands'
 import { UHTMLDataListElement } from '../src'
-import { ARIA_LABELLEDBY, IS_BROWSER, IS_IOS } from '../src/utils'
+import { ARIA_LABELLEDBY, IS_ANDROID, IS_IOS } from '../src/utils'
 
 const nextFrame = async () =>
   new Promise(resolve => requestAnimationFrame(resolve))
@@ -26,7 +26,7 @@ const DEFAULT_TEST_HTML = `
 describe('u-datalist', () => {
   it('matches snapshot', async () => {
     await compareSnapshot({
-      name: `u-datalist${IS_IOS ? '-ios' : ''}`,
+      name: `u-datalist${IS_IOS ? '-ios' : IS_ANDROID ? '-android' : ''}`,
       content: toDOM(DEFAULT_TEST_HTML).outerHTML
     })
   })

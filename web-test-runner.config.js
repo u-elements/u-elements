@@ -16,10 +16,10 @@ export default {
     playwrightLauncher({
       product: 'webkit',
       createBrowserContext: ({ browser }) => browser.newContext({ ...devices['iPhone X'] })
+    }),
+    playwrightLauncher({
+      product: 'chromium',
+      createBrowserContext: ({ browser }) => browser.newContext({ ...devices['Pixel 5'] })
     })
-    // playwrightLauncher({
-    //   product: 'chromium',
-    //   createBrowserContext: ({ browser }) => browser.newContext({ ...devices['Pixel 5'] })
-    // })
   ]
 }

@@ -1,8 +1,11 @@
-// @vitest-environment jsdom
-import { describe, expect, test, vi } from 'vitest'
+import { expect } from '@esm-bundle/chai'
+import { compareSnapshot, sendKeys } from '@web/test-runner-commands'
 import { UHTMLDetailsElement, UHTMLSummaryElement } from '../src'
+import { ARIA_LABELLEDBY, IS_IOS } from '../src/utils'
 
-const NEXT_TICK = { timeout: 500, interval: 1 }
+const nextFrame = async () =>
+  new Promise(resolve => requestAnimationFrame(resolve))
+
 const toDOM = <T extends HTMLElement>(innerHTML: string): T =>
   Object.assign(document.body, { innerHTML }).firstElementChild as T
 
@@ -11,11 +14,13 @@ const DEFAULT_TEST_HTML = `
   <u-summary>Summary 1</u-summary>
   <details>Details 1</details>
 </u-details>
-`;
+`
 
 describe('u-details', () => {
-  test('snapshot', () => {
-    const div = toDOM(`
+  it('matches snapshot', async () => {
+    await compareSnapshot({
+      name: `u-details${IS_IOS ? '-ios' : ''}`,
+      content: toDOM(`
       <div>
         <u-details>
           <u-summary id="summary-1">Summary 1</u-summary>
@@ -30,81 +35,82 @@ describe('u-details', () => {
           <details id="details-3"><summary>Summary 3 nested</summary>Details 3</details>
         </u-details>
       </div>
-    `)
-    expect(div).toMatchSnapshot()
+    `).outerHTML
+    })
   })
 
-  test('is defined', () => {
+  it('is defined', () => {
     const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
 
-    expect(uDetails.open).toBe(false)
-    expect(uDetails).toBeInstanceOf(UHTMLDetailsElement)
-    expect(uDetails.firstElementChild).toBeInstanceOf(UHTMLSummaryElement)
-    expect(window.customElements.get('u-details')).toBe(UHTMLDetailsElement)
-    expect(window.customElements.get('u-summary')).toBe(UHTMLSummaryElement)
+    expect(uDetails.open).to.equal(false)
+    expect(uDetails).to.be.instanceOf(UHTMLDetailsElement)
+    expect(uDetails.firstElementChild).to.be.instanceOf(UHTMLSummaryElement)
+    expect(window.customElements.get('u-details')).to.equal(UHTMLDetailsElement)
+    expect(window.customElements.get('u-summary')).to.equal(UHTMLSummaryElement)
   })
 
-  test('generates hidden native summary element', () => {
+  it('generates hidden native summary element', () => {
     const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
     const nativeDetails = uDetails.lastElementChild as HTMLDetailsElement
     const nativeSummary = nativeDetails.firstElementChild as HTMLElement
 
-    expect(nativeSummary).toBeInstanceOf(HTMLElement)
-    expect(nativeSummary.nodeName).toBe('SUMMARY')
-    expect(nativeSummary.hidden).toBe(true)
+    expect(nativeSummary).to.be.instanceOf(HTMLElement)
+    expect(nativeSummary.nodeName).to.equal('SUMMARY')
+    expect(nativeSummary.hidden).to.equal(true)
   })
 
-  test('sets up attributes when native details is appended', async () => {
+  it('sets up attributes when native details is appended', async () => {
     const uDetails = toDOM<UHTMLDetailsElement>(`<u-details><u-summary>Summary 1</u-summary></u-details>`)
     uDetails.insertAdjacentHTML('beforeend', '<details>Details 1</details>')
 
     const [uSummary, nativeDetails] = [...uDetails.children] as [UHTMLSummaryElement, HTMLDetailsElement]
-    await vi.waitFor(() => expect(nativeDetails.id).toBe(uSummary.getAttribute('aria-controls')), NEXT_TICK)
+    await nextFrame() // Let MutationObserver run
+    expect(nativeDetails.id).to.equal(uSummary.getAttribute('aria-controls'))
   })
 
-  test('handles up open property and attributes change', () => {
+  it('handles up open property and attributes change', () => {
     const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
     const [uSummary, nativeDetails] = [...uDetails.children] as [UHTMLSummaryElement, HTMLDetailsElement]
 
-    expect(uSummary.role).toBe('button')
-    expect(uSummary.id).toBe(nativeDetails.getAttribute('aria-labelledby'))
-    expect(uSummary.tabIndex).toBe(0)
-    expect(uSummary.getAttribute('aria-expanded')).toBe('false')
-    expect(uSummary.getAttribute('aria-controls')).toBe(nativeDetails.id)
-    expect(nativeDetails.role).toBe('group')
-    expect(nativeDetails.getAttribute('aria-hidden')).toBe('true')
+    expect(uSummary.role).to.equal('button')
+    expect(uSummary.id).to.equal(nativeDetails.getAttribute(ARIA_LABELLEDBY))
+    expect(uSummary.tabIndex).to.equal(0)
+    expect(uSummary.getAttribute('aria-expanded')).to.equal('false')
+    expect(uSummary.getAttribute('aria-controls')).to.equal(nativeDetails.id)
+    expect(nativeDetails.role).to.equal('group')
+    expect(nativeDetails.getAttribute('aria-hidden')).to.equal('true')
   })
 
-  test('handles open property and attributes change', () => {
+  it('handles open property and attributes change', () => {
     const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
     const [uSummary, nativeDetails] = [...uDetails.children] as [UHTMLSummaryElement, HTMLDetailsElement]
 
     uDetails.open = true
-    expect(uDetails.hasAttribute('open')).toBe(true)
-    expect(uSummary.getAttribute('aria-expanded')).toBe('true')
-    expect(nativeDetails.getAttribute('aria-hidden')).toBe('false')
-    expect(nativeDetails.hasAttribute('open')).toBe(true)
+    expect(uDetails.hasAttribute('open')).to.equal(true)
+    expect(uSummary.getAttribute('aria-expanded')).to.equal('true')
+    expect(nativeDetails.getAttribute('aria-hidden')).to.equal('false')
+    expect(nativeDetails.hasAttribute('open')).to.equal(true)
 
     uDetails.removeAttribute('open')
-    expect(uDetails.open).toBe(false)
-    expect(uSummary.getAttribute('aria-expanded')).toBe('false')
-    expect(nativeDetails.getAttribute('aria-hidden')).toBe('true')
-    expect(nativeDetails.hasAttribute('open')).toBe(false)
+    expect(uDetails.open).to.equal(false)
+    expect(uSummary.getAttribute('aria-expanded')).to.equal('false')
+    expect(nativeDetails.getAttribute('aria-hidden')).to.equal('true')
+    expect(nativeDetails.hasAttribute('open')).to.equal(false)
 
     uDetails.setAttribute('open', 'banana')
-    expect(uDetails.open).toBe(true)
-    expect(uSummary.getAttribute('aria-expanded')).toBe('true')
-    expect(nativeDetails.getAttribute('aria-hidden')).toBe('false')
-    expect(nativeDetails.hasAttribute('open')).toBe(true)
+    expect(uDetails.open).to.equal(true)
+    expect(uSummary.getAttribute('aria-expanded')).to.equal('true')
+    expect(nativeDetails.getAttribute('aria-hidden')).to.equal('false')
+    expect(nativeDetails.hasAttribute('open')).to.equal(true)
 
     uDetails.open = false
-    expect(uDetails.open).toBe(false)
-    expect(uSummary.getAttribute('aria-expanded')).toBe('false')
-    expect(nativeDetails.getAttribute('aria-hidden')).toBe('true')
-    expect(nativeDetails.hasAttribute('open')).toBe(false)
+    expect(uDetails.open).to.equal(false)
+    expect(uSummary.getAttribute('aria-expanded')).to.equal('false')
+    expect(nativeDetails.getAttribute('aria-hidden')).to.equal('true')
+    expect(nativeDetails.hasAttribute('open')).to.equal(false)
   })
 
-  test('respects id attributes', async () => {
+  it('respects id attributes', async () => {
     const uDetails = toDOM<UHTMLDetailsElement>(`
       <u-details>
         <u-summary id="summary-1">Summary 1</u-summary>
@@ -113,36 +119,40 @@ describe('u-details', () => {
     `)
     const [uSummary, nativeDetails] = [...uDetails.children] as [UHTMLSummaryElement, HTMLDetailsElement]
 
-    expect(uSummary.id).toBe('summary-1')
-    expect(nativeDetails.id).toBe('details-1')
-    expect(uSummary.getAttribute('aria-controls')).toBe('details-1')
-    expect(nativeDetails.getAttribute('aria-labelledby')).toBe('summary-1')
+    expect(uSummary.id).to.equal('summary-1')
+    expect(nativeDetails.id).to.equal('details-1')
+    expect(uSummary.getAttribute('aria-controls')).to.equal('details-1')
+    expect(nativeDetails.getAttribute(ARIA_LABELLEDBY)).to.equal('summary-1')
 
     uSummary.id = 'summary-1-changed-id'
-    await vi.waitFor(() => expect(nativeDetails.getAttribute('aria-labelledby')).toBe('summary-1-changed-id'), NEXT_TICK)
+    await nextFrame() // Let MutationObserver run
+    expect(nativeDetails.getAttribute(ARIA_LABELLEDBY)).to.equal('summary-1-changed-id')
     
     nativeDetails.id = 'details-1-changed-id'
-    await vi.waitFor(() => expect(uSummary.getAttribute('aria-controls')).toBe('details-1-changed-id'), NEXT_TICK)
+    await nextFrame() // Let MutationObserver run
+    expect(uSummary.getAttribute('aria-controls')).to.equal('details-1-changed-id')
   })
 
-  test('updates attributes on click', () => {
+  it('updates attributes on click', async () => {
     const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
     const [uSummary] = [...uDetails.children] as [UHTMLSummaryElement]
 
     uSummary.click()
-    expect(uDetails.open).toBe(true)
+    expect(uDetails.open).to.equal(true)
 
     uSummary.focus()
-    document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
-    expect(uDetails.open).toBe(false)   
+    await sendKeys({ press: ' ' })
+    expect(uDetails.open).to.equal(false)   
   })
 
-  test('respects nativeDetails open', async () => {
+  it('respects nativeDetails open', async () => {
     const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
-    const nativeDetails = uDetails.lastElementChild as HTMLDetailsElement
+    const nativeSummary = uDetails.querySelector('summary')
+    expect(uDetails.open).to.equal(false)
 
-    expect(uDetails.open).toBe(false)
-    ;(nativeDetails.firstElementChild as HTMLElement).click()
-    await vi.waitFor(() => expect(uDetails.open).toBe(true), NEXT_TICK)
+    nativeSummary?.click()
+    await nextFrame() // Let toggle event bubble
+    await nextFrame() // Let click event bubble
+    expect(uDetails.open).to.equal(true)
   })
 })

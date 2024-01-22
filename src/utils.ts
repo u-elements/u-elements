@@ -16,16 +16,16 @@ export const ARIA_LABELLEDBY = IS_ANDROID ? 'data-labelledby' : 'aria-labelledby
 export const ARIA_SELECTED = 'aria-selected'
 export const DISPLAY_BLOCK = ':host(:not([hidden])) { display: block }'
 
-type BindElem = Node | Window;
-type BindRest = Parameters<typeof Element.prototype.addEventListener>;
-const bind = (element: BindElem, rest: BindRest, action: 'add' | 'remove'): void =>
+type EventListenerTarget = Node | Window
+type EventListenerParams = Parameters<typeof Element.prototype.addEventListener>
+const bind = (element: EventListenerTarget, rest: EventListenerParams, action: 'add' | 'remove'): void =>
   rest[0].split(',').forEach((type) => {
     rest[0] = type
     Element.prototype[`${action}EventListener`].apply(element, rest)
   })
 
-export const on = (element: BindElem, ...rest: BindRest): void => bind(element, rest, 'add');
-export const off = (element: BindElem, ...rest: BindRest): void => bind(element, rest, 'remove');
+export const on = (element: EventListenerTarget, ...rest: EventListenerParams): void => bind(element, rest, 'add')
+export const off = (element: EventListenerTarget, ...rest: EventListenerParams): void => bind(element, rest, 'remove')
 
 /**
  * style

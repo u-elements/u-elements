@@ -128,5 +128,5 @@ function isMutationRelevant(self: UHTMLDetailsElement, mutations: MutationRecord
   return mutations.some(({ attributeName, type, target }) =>
     (target === self && type === 'childList') ||
     (target.parentElement === self && attributeName === 'id')
-  );
+  )
 }

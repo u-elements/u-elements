@@ -15,7 +15,6 @@ export class UHTMLProgressElement extends HTMLElement {
     return ['value', 'max']
   }
   connectedCallback() {
-    attr(this, 'role', IS_IOS ? 'img' : 'progressbar')
     style(
       this,
       `:host(:not([hidden])) { box-sizing: border-box; border: 1px solid; display: inline-block; height: .5em; width: 10em; overflow: hidden }
@@ -28,13 +27,15 @@ export class UHTMLProgressElement extends HTMLElement {
   attributeChangedCallback() {
     const indeterminate = this.position < 0
     const percentage = `${Math.round(this.position * 100)}%` // Always use percentage as iOS role="progressbar"
-    this.style.setProperty('--percentage', indeterminate ? '' : percentage)
+    /* c8 ignore next 7 */ // Because @web/test-runner code coverage only runs in chromium
     attr(this, {
       [IS_IOS ? 'aria-label' : 'aria-valuenow']: percentage,
       'aria-busy': indeterminate || null,
       'aria-valuemax': 100,
-      'aria-valuemin': 0
+      'aria-valuemin': 0,
+      role: IS_IOS ? 'img' : 'progressbar'
     })
+    this.style.setProperty('--percentage', indeterminate ? '' : percentage)
   }
   get labels(): NodeListOf<HTMLLabelElement> {
     const label = this.closest('label')

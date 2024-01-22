@@ -98,7 +98,6 @@ export class UHTMLTabElement extends HTMLElement {
   }
   connectedCallback() {
     style(this, `${DISPLAY_BLOCK}:host { cursor: pointer }`)
-    attr(this, 'role', 'tab')
     this.selected = !!this.selected // Ensure selected is set (which also triggers attributeChangedCallback)
   }
   attributeChangedCallback(_name: string, prev: string, next: string) {
@@ -117,6 +116,7 @@ export class UHTMLTabElement extends HTMLElement {
         attr(tab, {
           [ARIA_SELECTED]: !tabindex,
           [ARIA_CONTROLS]: useId(panel),
+          role: 'tab',
           tabindex
         })
         attr(panel, {

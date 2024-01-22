@@ -1,61 +1,41 @@
-// @vitest-environment jsdom
-import { describe, expect, test, vi } from 'vitest'
+import { expect } from '@esm-bundle/chai'
+import { compareSnapshot } from '@web/test-runner-commands'
 import { UHTMLProgressElement } from '../src'
-
-let MOCK_IS_IOS = false
-vi.mock('../src/utils', async (importOriginal) => ({
-  ...await importOriginal<typeof import('../src/utils')>(),
-  get IS_IOS() { return MOCK_IS_IOS }
-}))
+import { IS_IOS } from '../src/utils'
 
 const toDOM = <T extends HTMLElement>(innerHTML: string): T =>
   Object.assign(document.body, { innerHTML }).firstElementChild as T
 
 describe('u-progress', () => {
-  test('snapshot', () => {
-    const uProgress = toDOM<UHTMLProgressElement>(`<u-progress value="5" max="10"></u-progress>`)
-    expect(uProgress).toMatchSnapshot()
+  it('matches snapshot', async () => {
+    await compareSnapshot({
+      name: `u-progress${IS_IOS ? '-ios' : ''}`,
+      content: toDOM(`<u-progress value="5" max="10"></u-progress>`).outerHTML
+    })
   })
 
-  test('is defined', () => {
+  it('is defined', () => {
     const uProgress = toDOM<UHTMLProgressElement>(`<u-progress value="5" max="10"></u-progress>`)
 
-    expect(uProgress.max).toBe(10)
-    expect(uProgress).toBeInstanceOf(UHTMLProgressElement)
-    expect(window.customElements.get('u-progress')).toBe(UHTMLProgressElement)
+    expect(uProgress.max).to.equal(10)
+    expect(uProgress).to.be.instanceOf(UHTMLProgressElement)
+    expect(window.customElements.get('u-progress')).to.equal(UHTMLProgressElement)
   })
 
-  test('sets up attributes', () => {
+  it('sets up attributes', () => {
     const uProgress = toDOM<UHTMLProgressElement>(`<u-progress value="5" max="10"></u-progress>`)
 
-    expect(uProgress.getAttribute('role')).toBe('progressbar')
-    expect(uProgress.hasAttribute('aria-busy')).toBe(false)
-    expect(uProgress.getAttribute('aria-valuenow')).toBe('50%')
-    expect(uProgress.getAttribute('aria-valuemax')).toBe('100')
-    expect(uProgress.getAttribute('aria-valuemin')).toBe('0')
+    expect(uProgress.getAttribute(IS_IOS ? 'aria-label' : 'aria-valuenow')).to.equal('50%')
+    expect(uProgress.getAttribute('role')).to.equal(IS_IOS ? 'img' : 'progressbar')
+    expect(uProgress.getAttribute('aria-valuemin')).to.equal('0')
+    expect(uProgress.getAttribute('aria-valuemax')).to.equal('100')
+    expect(uProgress.hasAttribute('aria-busy')).to.equal(false)
 
     uProgress.value = null
-
-    expect(uProgress.getAttribute('aria-busy')).toBe('true')
+    expect(uProgress.getAttribute('aria-busy')).to.equal('true')
   })
 
-  test('sets up IOS attributes', () => {
-    MOCK_IS_IOS = true
-    const uProgress = toDOM<UHTMLProgressElement>(`<u-progress value="5" max="10"></u-progress>`)
-
-    expect(uProgress.getAttribute('role')).toBe('img')
-    expect(uProgress.hasAttribute('aria-busy')).toBe(false)
-    expect(uProgress.getAttribute('aria-label')).toBe('50%')
-    expect(uProgress.getAttribute('aria-valuemax')).toBe('100')
-    expect(uProgress.getAttribute('aria-valuemin')).toBe('0')
-
-    uProgress.value = null
-
-    expect(uProgress.getAttribute('aria-busy')).toBe('true')
-    MOCK_IS_IOS = false
-  })
-
-  test('sets up properties', () => {
+  it('sets up properties', () => {
     const uProgress = toDOM(`
       <div>
         <label for="progress-1">Label 1</label>
@@ -67,38 +47,38 @@ describe('u-progress', () => {
       </div>
     `).querySelector('u-progress') as UHTMLProgressElement
 
-    expect(uProgress.labels.length).toBe(2)
-    expect(uProgress.position).toBe(.5)
-    expect(uProgress.max).toBe(10)
-    expect(uProgress.value).toBe(5)
+    expect(uProgress.labels.length).to.equal(2)
+    expect(uProgress.position).to.equal(.5)
+    expect(uProgress.max).to.equal(10)
+    expect(uProgress.value).to.equal(5)
   })
 
-  test('calculates position and percentage', () => {
-    const uProgress = toDOM<UHTMLProgressElement>(`<u-progress value="5" max="10"></u-progress>`);
+  it('calculates position and percentage', () => {
+    const uProgress = toDOM<UHTMLProgressElement>(`<u-progress value="5" max="10"></u-progress>`)
 
-    expect(uProgress.max).toBe(10)
-    expect(uProgress.position).toBe(.5)
-    expect(uProgress.value).toBe(5)
+    expect(uProgress.max).to.equal(10)
+    expect(uProgress.position).to.equal(.5)
+    expect(uProgress.value).to.equal(5)
 
     uProgress.max = 20
 
-    expect(uProgress.max).toBe(20)
-    expect(uProgress.position).toBe(.25)
-    expect(uProgress.value).toBe(5)
+    expect(uProgress.max).to.equal(20)
+    expect(uProgress.position).to.equal(.25)
+    expect(uProgress.value).to.equal(5)
 
     uProgress.value = 10
 
-    expect(uProgress.max).toBe(20)
-    expect(uProgress.position).toBe(.5)
-    expect(uProgress.value).toBe(10)
+    expect(uProgress.max).to.equal(20)
+    expect(uProgress.position).to.equal(.5)
+    expect(uProgress.value).to.equal(10)
   })
 
-  test('handles invalid numeric value and max', () => {
-    const uProgress = toDOM<UHTMLProgressElement>(`<u-progress></u-progress>`);
+  it('handles invalid numeric value and max', () => {
+    const uProgress = toDOM<UHTMLProgressElement>(`<u-progress></u-progress>`)
 
-    expect(() => (uProgress.max = 'banana')).toThrow()
-    expect(() => (uProgress.value = 'banana')).toThrow()
-    expect(uProgress.value).toBe(null)
-    expect(uProgress.max).toBe(1)
+    expect(() => (uProgress.max = 'banana')).to.throw()
+    expect(() => (uProgress.value = 'banana')).to.throw()
+    expect(uProgress.value).to.equal(null)
+    expect(uProgress.max).to.equal(1)
   })
 })

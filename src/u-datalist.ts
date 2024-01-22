@@ -89,6 +89,7 @@ const setOptionAttributes = (self: UHTMLDataListElement) => {
   })
 
   // Needed to announce count in iOS
+  /* c8 ignore next 4 */ // Because @web/test-runner code coverage only runs in chromium
   if (IS_IOS)
     options
       .filter((opt) => !opt.hidden)

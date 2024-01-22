@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import zlib from 'node:zlib'
-import esbuild from 'esbuild';
+import esbuild from 'esbuild'
 
 export default {
   load() {

@@ -21,13 +21,14 @@ export default defineConfig({
       provider: 'local'
     },
     nav: [
-      { text: 'Home', link: '/' },
+      { text: 'Guide', link: '/' },
       { text: 'Examples', link: '/markdown-examples' }
     ],
     sidebar: [
       {
-        text: 'Examples',
+        text: 'Guide',
         items: [
+          { text: 'Why u-elements', link: '/why' },
           { text: 'Markdown Examples', link: '/markdown-examples' },
           { text: 'Runtime API Examples', link: '/api-examples' }
         ]
@@ -38,7 +39,7 @@ export default defineConfig({
     ],
     footer: {
       message: 'Released under the MIT License.',
-      copyright: 'Copyright © 2019-present Evan You'
+      copyright: 'Copyright © 2024-present Eirik Backer and Kristoffer Lium'
     }
   }
 })

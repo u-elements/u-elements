@@ -36,10 +36,10 @@ export default defineConfig({
     ],
     socialLinks: [
       { icon: 'github', link: 'https://github.com/u-elements/u-tags' }
-    ],
-    footer: {
-      message: 'Released under the MIT License.',
-      copyright: 'Copyright © 2024-present Eirik Backer and Kristoffer Lium'
-    }
+    ]
+    // footer: {
+    //   message: 'Released under the MIT License.',
+    //   copyright: 'Copyright © 2024-present Eirik Backer and Kristoffer Lium'
+    // }
   }
 })

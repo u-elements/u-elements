@@ -1,6 +1,5 @@
 import { defineConfig } from 'vitepress'
 
-// https://vitepress.dev/reference/site-config
 export default defineConfig({
   title: "u-elements",
   description: "Standard HTML tags - just truly accessible",
@@ -11,8 +10,9 @@ export default defineConfig({
       }
     }
   },
+  head: [['link', { rel: 'icon', href: '/logo.svg' }]],
   themeConfig: {
-    // https://vitepress.dev/reference/default-theme-config
+    logo: '/logo.svg',
     outline: 'deep',
     editLink: {
       pattern: 'https://github.com/u-elements/u-tags/tree/main/docs/:path'
@@ -36,10 +36,9 @@ export default defineConfig({
     ],
     socialLinks: [
       { icon: 'github', link: 'https://github.com/u-elements/u-tags' }
-    ]
-    // footer: {
-    //   message: 'Released under the MIT License.',
-    //   copyright: 'Copyright © 2024-present Eirik Backer and Kristoffer Lium'
-    // }
+    ],
+    footer: {
+      message: 'Released under the MIT License'
+    }
   }
 })

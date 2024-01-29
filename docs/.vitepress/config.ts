@@ -1,8 +1,9 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
-  cleanUrls: true,
   title: "u-elements",
+  base: '/u-elements/',
+  cleanUrls: true,
   description: "Standard HTML tags - just truly accessible",
   vue: {
     template: {

@@ -1,4 +1,4 @@
-import { DISPLAY_BLOCK, attr, customElements, style } from './utils'
+import { DISPLAY_BLOCK, UHTMLElement, attr, customElements, style } from './utils'
 declare global {
   interface HTMLElementTagNameMap {
     'u-option': UHTMLOptionElement
@@ -13,7 +13,7 @@ const SELECTED = 'selected'
  * The `<u-option>` HTML element is used to define an item contained in a `<u-datalist>` element. As such, <u-option> can represent lists of items in an HTML document.
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option)
  */
-export class UHTMLOptionElement extends HTMLElement {
+export class UHTMLOptionElement extends UHTMLElement {
   static get observedAttributes() {
     return [DISABLED, SELECTED]
   }

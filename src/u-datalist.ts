@@ -6,6 +6,7 @@ import {
   DISPLAY_BLOCK,
   IS_BROWSER,
   IS_IOS,
+  UHTMLElement,
   attr,
   customElements,
   getRoot,
@@ -31,7 +32,7 @@ declare global {
  * The `<u-datalist>` HTML element contains a set of `<u-option>` elements that represent the permissible or recommended options available to choose from within other controls.
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist)
  */
-export class UHTMLDataListElement extends HTMLElement {
+export class UHTMLDataListElement extends UHTMLElement {
   connectedCallback() {
     const root = getRoot(this)
     style(this, DISPLAY_BLOCK)

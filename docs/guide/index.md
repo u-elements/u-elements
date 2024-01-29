@@ -61,7 +61,7 @@ import '@u-elements/u-elements';
 
 ## Usage
 
-Refer to the [elements reference](./reference/) for more guidance on using each component.
+Refer to the [elements reference](/reference/) for more guidance on using each component.
 
 ## Usage in HTML
 

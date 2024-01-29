@@ -1,4 +1,4 @@
-import { IS_IOS, attr, customElements, getRoot, style, useId } from './utils'
+import { IS_IOS, UHTMLElement, attr, customElements, getRoot, style, useId } from './utils'
 
 declare global {
   interface HTMLElementTagNameMap {
@@ -10,7 +10,7 @@ declare global {
  * The `<u-progress value="70" max="100">` HTML element displays an indicator showing the completion progress of a task, typically displayed as a progress bar.
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/progress)
  */
-export class UHTMLProgressElement extends HTMLElement {
+export class UHTMLProgressElement extends UHTMLElement {
   static get observedAttributes() {
     return ['value', 'max']
   }

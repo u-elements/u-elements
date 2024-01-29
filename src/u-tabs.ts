@@ -3,6 +3,7 @@ import {
   ARIA_LABELLEDBY,
   ARIA_SELECTED,
   DISPLAY_BLOCK,
+  UHTMLElement,
   asButton,
   attr,
   customElements,
@@ -26,7 +27,7 @@ declare global {
  * The `<u-tabs>` HTML element is used to group a `<u-tablist>` and several `<u-tabpanel>` elements.
  * No MDN reference available.
  */
-export class UHTMLTabsElement extends HTMLElement {
+export class UHTMLTabsElement extends UHTMLElement {
   connectedCallback() {
     style(this, DISPLAY_BLOCK)
   }
@@ -52,7 +53,7 @@ export class UHTMLTabsElement extends HTMLElement {
  * The `<u-tablist>` HTML element serves as the container for a set of `<u-tab>` elements. The `<u-tab>` content are referred to as `<u-tabpanel>` elements.
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/tablist_role)
  */
-export class UHTMLTabListElement extends HTMLElement {
+export class UHTMLTabListElement extends UHTMLElement {
   connectedCallback() {
     style(this, ':host(:not([hidden])) { display: flex; flex-wrap: wrap }')
     attr(this, 'role', 'tablist')
@@ -92,7 +93,7 @@ let skipAttrChange = false
  * The `<u-tab>` HTML element is an interactive element inside a `<u-tablist>` that, when activated, displays its associated `<u-tabpanel>`.
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/tab_role)
  */
-export class UHTMLTabElement extends HTMLElement {
+export class UHTMLTabElement extends UHTMLElement {
   static get observedAttributes() {
     return ['id', ARIA_SELECTED, ARIA_CONTROLS]
   }
@@ -153,7 +154,7 @@ export class UHTMLTabElement extends HTMLElement {
  * The `<u-tabpanel>` HTML element is a container for the resources of layered content associated with a `<u-tab>`.
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/tabpanel_role)
  */
-export class UHTMLTabPanelElement extends HTMLElement {
+export class UHTMLTabPanelElement extends UHTMLElement {
   static get observedAttributes() {
     return ['id']
   }

@@ -16,6 +16,8 @@ export const ARIA_LABELLEDBY = IS_ANDROID ? 'data-labelledby' : 'aria-labelledby
 export const ARIA_SELECTED = 'aria-selected'
 export const DISPLAY_BLOCK = ':host(:not([hidden])) { display: block }'
 
+export const UHTMLElement = typeof HTMLElement === 'undefined' ? (class {} as unknown as typeof HTMLElement) : HTMLElement // Node compatibility
+
 type EventListenerTarget = Node | Window
 type EventListenerParams = Parameters<typeof Element.prototype.addEventListener>
 const bind = (element: EventListenerTarget, rest: EventListenerParams, action: 'add' | 'remove'): void =>

@@ -3,6 +3,7 @@ import {
   ARIA_EXPANDED,
   ARIA_LABELLEDBY,
   DISPLAY_BLOCK,
+  UHTMLElement,
   asButton,
   attr,
   customElements,
@@ -34,7 +35,7 @@ const OPEN = 'open'
  * The `<u-details>` HTML element creates a disclosure widget in which information is visible only when the widget is toggled into an "open" state. A summary or label must be provided using the `<u-summary>` element.
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details)
  */
-export class UHTMLDetailsElement extends HTMLElement {
+export class UHTMLDetailsElement extends UHTMLElement {
   static get observedAttributes() {
     return [OPEN, 'id']
   }
@@ -102,7 +103,7 @@ export class UHTMLDetailsElement extends HTMLElement {
  * The `<u-summary>` HTML element specifies a summary, caption, or legend for a `<u-details>` element's disclosure box. Clicking the `<u-summary>` element toggles the state of the parent `<u-details>` element open and closed.
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/summary)
  */
-export class UHTMLSummaryElement extends HTMLElement {
+export class UHTMLSummaryElement extends UHTMLElement {
   connectedCallback() {
     attr(this, { role: 'button', tabIndex: 0 })
     on(this, 'click,keydown', this)

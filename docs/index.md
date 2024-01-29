@@ -38,7 +38,7 @@ features:
 import { data } from './filesize.data.ts'
 
 // Let page render first
-setTimeout(() =>
+if (typeof document !== 'undefined') setTimeout(() =>
   document.querySelectorAll('[data-bytes]').forEach((el) => {
     el.textContent = data[el.getAttribute('data-bytes')]
   })

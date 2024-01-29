@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
-  title: "u-elements",
+  title: 'u-elements',
   base: '/u-elements/',
   cleanUrls: true,
   description: "Standard HTML tags - just truly accessible",

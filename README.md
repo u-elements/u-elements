@@ -1,6 +1,6 @@
-# u-tags
+# u-elements
 
-Standard HTML tags - just truly accessible
+Native HTML tags, just truly accessible
 
 ## Local development
 
@@ -24,16 +24,24 @@ npm run lint
 
 To generate production bundles, run the npm `build`-script
 
-```SH
+```sh
 npm run build
 ```
 
 This creates a `dist`-folder in the project root containing all built artefacts
 
-### watch-mode
+### Development
 
 Run the npm `start`-script to launch a local development-server using Vite:
 
 ```sh
-npm run start
+npm start
+```
+
+### Testing
+
+Run the npm `test`-script to launch a local development-server using Vite:
+
+```sh
+npm run test
 ```

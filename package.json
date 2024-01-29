@@ -1,10 +1,20 @@
 {
   "name": "@u-elements/u-elements",
   "version": "0.0.0",
+  "license": "MIT",
+  "description": "Native HTML tags, just truly accessible",
+  "homepage": "https://github.com/u-elements/u-elements/",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/u-elements/u-elements.git"
+  },
+  "bugs": {
+    "url": "https://github.com/u-elements/u-elements/issues"
+  },
   "customElements": "dist/custom-elements.json",
   "files": [
     "dist"

@@ -21,7 +21,6 @@
   },
   "scripts": {
     "build": "vite build && tsup src/index.ts --format esm,cjs --dts-only",
-    "cem": "custom-elements-manifest analyze --config custom-elements-manifest.config.js",
     "docs:build": "vitepress build docs",
     "docs:dev": "vitepress dev docs",
     "docs:preview": "vitepress preview docs",

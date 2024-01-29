@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
+  cleanUrls: true,
   title: "u-elements",
   description: "Standard HTML tags - just truly accessible",
   vue: {
@@ -21,16 +22,28 @@ export default defineConfig({
       provider: 'local'
     },
     nav: [
-      { text: 'Guide', link: '/' },
-      { text: 'Examples', link: '/markdown-examples' }
+      { text: 'Guide', link: '/guide/' },
+      { text: 'Reference', link: '/reference/' }
     ],
     sidebar: [
       {
         text: 'Guide',
         items: [
-          { text: 'Why u-elements', link: '/why' },
-          { text: 'Markdown Examples', link: '/markdown-examples' },
-          { text: 'Runtime API Examples', link: '/api-examples' }
+          { text: 'Why u-elements', link: '/guide/why' },
+          { text: 'Getting started', link: '/guide/' },
+          { text: 'Runtime API Examples', link: '/guide/api-examples' },
+          { text: 'Overview', link: '/reference/' }
+        ]
+      },
+      {
+        text: 'Reference',
+        items: [
+          { text: 'u-datalist', link: '/reference/u-datalist' },
+          { text: 'u-details', link: '/reference/u-details' },
+          { text: 'u-dialog', link: '/reference/u-dialog' },
+          { text: 'u-progress', link: '/reference/u-progress' },
+          { text: 'u-selectlist', link: '/reference/u-selectlist' },
+          { text: 'u-tabs', link: '/reference/u-tabs' }
         ]
       }
     ],

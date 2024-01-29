@@ -1,6 +1,5 @@
 {
-  "name": "u-tags",
-  "private": true,
+  "name": "@u-elements/u-elements",
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -23,8 +22,12 @@
   "scripts": {
     "build": "vite build && tsup src/index.ts --format esm,cjs --dts-only",
     "cem": "custom-elements-manifest analyze --config custom-elements-manifest.config.js",
+    "docs:build": "vitepress build docs",
+    "docs:dev": "vitepress dev docs",
+    "docs:preview": "vitepress preview docs",
     "install:all": "npm i && npm i --prefix tests/qwik && npm i --prefix tests/react && npm i --prefix tests/solid && npm i --prefix tests/svelte && npm i --prefix tests/vue",
     "lint": "eslint",
+    "prepublishOnly": "npm run build",
     "start": "vite --config ${npm_config_path:-.}/vite.config.ts",
     "start:qwik": "npm run start --path=tests/qwik",
     "start:react": "npm run start --path=tests/react",
@@ -32,10 +35,7 @@
     "start:svelte": "npm run start --path=tests/svelte",
     "start:vue": "npm run start --path=tests/vue",
     "test": "web-test-runner",
-    "test:update": "npm run test -- --update-snapshots",
-    "docs:dev": "vitepress dev docs",
-    "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "test:update": "npm run test -- --update-snapshots"
   },
   "devDependencies": {
     "@builder.io/qwik": "^1.4.0",

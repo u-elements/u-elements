@@ -12,10 +12,10 @@ hero:
   actions:
     - theme: brand
       text: Get started
-      link: /markdown-examples
+      link: /guide/
     - theme: alt
       text: Why u-elements?
-      link: /why
+      link: /guide/why
     - theme: alt
       text: View on GitHub
       link: https://github.com/u-elements/u-elements

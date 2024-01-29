@@ -1,10 +1,10 @@
 Why not use native element?
-Our testing of 2023.01.03, results provided below, showed that the native <progress>-element is still not providing a good enough user experience across platforms, browsers and screen readers.
+Our testing of 2023.01.03, results provided below, showed that the native `<progress>`-element is still not providing a good enough user experience across platforms, browsers and screen readers.
 
 Results of testing 2023.01.03
 Basic example:
 
-<progress value="20" max="50">
+`<progress value="20" max="50"></progress>`
 MacOS 13.2 with VoiceOver - Safari og Chrome: Reads «40 % fremdriftsindikator»
 MacOS 13.2 with VoiceOver - Firefox: Reads «opptatt framdriftsindikator
 iOS 16.2 with VoiceOver - Safari, Chrome og Firefox: Reads «20.00»
@@ -16,7 +16,7 @@ Windows 10 with Narrator - Chrome, Edge og Firefox: Reads «40 fremdriftsindikat
 Android 9 with Talkback - Chrome og Samsung Internett: Reads «20,0», pause, «20», pause, «fremdriftsindikator»
 Best supported example with ARIA:
 
-<progress value="15" aria-valuetext="15 av 50" max="50">
+`<progress value="15" aria-valuetext="15 av 50" max="50"></progress>`
 MacOS 13.2 with VoiceOver - Safari og Chrome: Reads «15 av 50 30 % framdriftsindikator»
 MacOS 13.2 with VoiceOver - Firefox: Reads «opptatt framdriftsindikator
 iOS 16.2 with VoiceOver - Safari, Chrome og Firefox: Reads «15 av 50»

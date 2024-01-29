@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="900" viewBox="0 0 300 300">
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="900" viewBox="20 20 260 270">
   <defs>
     <path id="u" d="M211.08 42.42 60.18 63.63a20 20 0 0 0-17.02 22.59l13.92 99.05.19 1.45c7.39 52.61 56.04 89.27 108.65 81.88s89.27-56.04 81.88-108.65l-14.12-100.5a20.01 20.01 0 0 0-22.6-17.03z"/>
     <filter id="blur-2"><feGaussianBlur stdDeviation="2"/></filter>

@@ -31,7 +31,7 @@
   },
   "scripts": {
     "build": "vite build && tsup src/index.ts --format esm,cjs --dts-only",
-    "docs:build": "vitepress build docs",
+    "docs:build": "npm run build && vitepress build docs",
     "docs:dev": "vitepress dev docs",
     "docs:preview": "vitepress preview docs",
     "install:all": "npm i && npm i --prefix tests/qwik && npm i --prefix tests/react && npm i --prefix tests/solid && npm i --prefix tests/svelte && npm i --prefix tests/vue",

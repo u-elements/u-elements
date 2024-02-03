@@ -1,6 +1,7 @@
 # u-elements
 
 Native HTML tags, just truly accessible
+[Open documentation](https://u-elements.github.io/u-elements/)
 
 ## Local development
 

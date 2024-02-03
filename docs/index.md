@@ -22,7 +22,7 @@ hero:
 
 features:
   - icon: ☑️
-    title: W3C standards compliant,<br />but accessible
+    title: W3C standards compliant,<br />accessible for everyone
     details: u-elements ensures native HTML tags remain truly accessible. By seamlessly integrating CustomElements, we bridge the gap for assistive technologies, making your web applications inclusive and user-friendly.
   - icon: 📋
     title: Battle-tested with<br />real screen readers

@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "description": "Native HTML tags, just truly accessible",
-  "homepage": "https://github.com/u-elements/u-elements/",
+  "homepage": "https://u-elements.github.io/u-elements/",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -44,6 +44,7 @@
     "start:svelte": "npm run start --path=tests/svelte",
     "start:vue": "npm run start --path=tests/vue",
     "test": "web-test-runner",
+    "test:coverage": "npm run test -- --coverage",
     "test:update": "npm run test -- --update-snapshots"
   },
   "devDependencies": {

@@ -5,6 +5,10 @@
   --vp-c-brand-soft: var(--vp-c-indigo-soft);
 }
 
+html, body {
+  background-color: var(--vp-c-bg);
+}
+
 /* Front page: Background gradient */
 .is-home::after {
   content: '';
@@ -34,7 +38,8 @@
 .icon { font-family: Apple Color Emoji,Segoe UI Emoji,Noto Color Emoji,Android Emoji,EmojiSymbols,EmojiOne Mozilla,Twemoji Mozilla,Segoe UI Symbol,Noto Color Emoji Compat,emoji,sans-serif }
 
 .demo {
+  margin-block: 8px;
   padding: 20px; 
-  border: 1px solid;
+  border: 2px dashed var(--vp-c-divider);
   border-radius: 8px;
 }

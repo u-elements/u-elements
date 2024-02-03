@@ -4,7 +4,6 @@ import { vitePlugin } from '@remcovaes/web-test-runner-vite-plugin'
 export default {
   files: 'tests/*.spec.ts',
   playwright: true,
-  coverage: true,
   coverageConfig: {
     include: ['src/u-*.ts']
   },

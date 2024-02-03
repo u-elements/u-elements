@@ -1,8 +1,10 @@
 import { defineConfig } from 'vitepress'
 
+const base = '/u-elements/';
+
 export default defineConfig({
   title: 'u-elements',
-  base: '/u-elements/',
+  base,
   cleanUrls: true,
   description: "Standard HTML tags - just truly accessible",
   vue: {
@@ -12,7 +14,7 @@ export default defineConfig({
       }
     }
   },
-  head: [['link', { rel: 'icon', href: '/logo.svg' }]],
+  head: [['link', { rel: 'icon', href: `${base}logo.svg` }]],
   themeConfig: {
     logo: '/logo.svg',
     outline: 'deep',

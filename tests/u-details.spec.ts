@@ -155,4 +155,19 @@ describe('u-details', () => {
     await nextFrame() // Let click event bubble
     expect(uDetails.open).to.equal(true)
   })
+
+  it('closes other uDetails with same name', async () => {
+    const HTML_GROUP = DEFAULT_TEST_HTML.replace('>', ' name="group-1">');
+    const div = toDOM<UHTMLDetailsElement>(`<div>${HTML_GROUP}${HTML_GROUP}</div>`)
+    const [uDetails1, uDetails2] = div.querySelectorAll('u-details')
+    const [uSummary1, uSummary2] = div.querySelectorAll('u-summary')
+
+    uSummary1.click()
+    expect(uDetails1.open).to.equal(true)
+    expect(uDetails2.open).to.equal(false)
+
+    uSummary2.click()
+    expect(uDetails1.open).to.equal(false)
+    expect(uDetails2.open).to.equal(true)
+  })
 })

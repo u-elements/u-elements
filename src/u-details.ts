@@ -7,6 +7,7 @@ import {
   asButton,
   attr,
   customElements,
+  getRoot,
   mutationObserver,
   off,
   on,
@@ -61,6 +62,7 @@ export class UHTMLDetailsElement extends UHTMLElement {
   attributeChangedCallback() {
     const [summary, details] = this.children
     const isOpen = this[OPEN] // Cache for speed
+    const name = attr(this, 'name')
 
     // Ensure native <summary> exists and is hidden (can not be accessed through css)
     if (isDetails(details)) {
@@ -81,6 +83,12 @@ export class UHTMLDetailsElement extends UHTMLElement {
       [OPEN]: isOpen ? '' : null,
       role: 'group'
     })
+
+    // Close other u-details with same name
+    if (isOpen && name)
+      getRoot(this)
+        .querySelectorAll<UHTMLDetailsElement>(`${this.nodeName}[name="${name}"]`)
+        .forEach((uDetails) => uDetails === this || (uDetails.open = false))
 
     // Skip mutation events caused by attributeChangedCallback
     // Might be not defined if "open" is present in HTML causing

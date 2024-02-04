@@ -9,6 +9,22 @@ html, body {
   background-color: var(--vp-c-bg);
 }
 
+/* Ensure emoji and not unicode symbols are used */
+.icon {
+  font-family: Apple Color Emoji,Segoe UI Emoji,Noto Color Emoji,Android Emoji,EmojiSymbols,EmojiOne Mozilla,Twemoji Mozilla,Segoe UI Symbol,Noto Color Emoji Compat,emoji,sans-serif;
+}
+
+/* Markdown: Use first paragraph as introduction text */
+.vp-doc h1 + p {
+  color: var(--vp-c-text-2);
+  font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: -.02em;
+  line-height: 1.5;
+  margin-bottom: 1em;
+  text-wrap: balance;
+}
+
 /* Front page: Background gradient */
 .is-home::after {
   content: '';
@@ -34,12 +50,20 @@ html, body {
 @media (min-width: 640px) { :root { --vp-home-hero-image-filter: blur(56px) opacity(.25) } }
 @media (min-width: 960px) { :root { --vp-home-hero-image-filter: blur(72px) opacity(.25) } }
 
-/* Ensure emoji and not unicode symbols are used */
-.icon { font-family: Apple Color Emoji,Segoe UI Emoji,Noto Color Emoji,Android Emoji,EmojiSymbols,EmojiOne Mozilla,Twemoji Mozilla,Segoe UI Symbol,Noto Color Emoji Compat,emoji,sans-serif }
 
-.demo {
-  margin-block: 8px;
-  padding: 20px; 
-  border: 2px dashed var(--vp-c-divider);
-  border-radius: 8px;
-}
+/* a[href*="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details"]:only-child {
+  background-color: var(--vp-button-alt-bg);
+  border-radius: 20px;
+  border: 1px solid  var(--vp-button-alt-border);
+  color: var(--vp-button-alt-text);
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 38px;
+  margin-bottom: 1rem;
+  padding: 0 20px;
+  text-align: center;
+  text-decoration: none;
+  transition: .2s;
+  white-space: nowrap;
+} */

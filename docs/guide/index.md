@@ -43,6 +43,10 @@ $ bun add -D @u-elements/u-elements
 
 :::
 
+## CDN
+
+https://unpkg.com/@u-elements/u-elements@latest/dist/index.js
+
 ## Import
 Import `@u-elements/u-elements` to automatically initialize u-elements:
 

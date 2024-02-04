@@ -156,7 +156,18 @@ describe('u-details', () => {
     expect(uDetails.open).to.equal(true)
   })
 
-  it('closes other uDetails with same name', async () => {
+  it('sets name property', () => {
+    const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)    
+    expect(uDetails.name).to.equal('')
+
+    uDetails.name = 'group-1'
+    expect(uDetails.getAttribute('name')).to.equal('group-1')
+
+    uDetails.setAttribute('name', 'group-2')
+    expect(uDetails.name).to.equal('group-2')
+  })
+
+  it('closes other uDetails with same name attribute', async () => {
     const HTML_GROUP = DEFAULT_TEST_HTML.replace('>', ' name="group-1">');
     const div = toDOM<UHTMLDetailsElement>(`<div>${HTML_GROUP}${HTML_GROUP}</div>`)
     const [uDetails1, uDetails2] = div.querySelectorAll('u-details')

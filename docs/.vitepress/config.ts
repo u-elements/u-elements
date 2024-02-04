@@ -10,6 +10,7 @@ export default defineConfig({
   vue: {
     template: {
       compilerOptions: {
+        whitespace: 'preserve', // Making Sandbox html render nicer
         isCustomElement: (tag) => tag.includes('-')
       }
     }
@@ -18,6 +19,7 @@ export default defineConfig({
   themeConfig: {
     logo: '/logo.svg',
     outline: 'deep',
+    externalLinkIcon: true,
     editLink: {
       pattern: 'https://github.com/u-elements/u-tags/tree/main/docs/:path'
     },
@@ -41,12 +43,12 @@ export default defineConfig({
       {
         text: 'Reference',
         items: [
-          { text: 'u-datalist', link: '/reference/u-datalist' },
-          { text: 'u-details', link: '/reference/u-details' },
-          { text: 'u-dialog', link: '/reference/u-dialog' },
-          { text: 'u-progress', link: '/reference/u-progress' },
-          { text: 'u-selectlist', link: '/reference/u-selectlist' },
-          { text: 'u-tabs', link: '/reference/u-tabs' }
+          { text: '&lt;u-datalist&gt;', link: '/reference/u-datalist' },
+          { text: '&lt;u-details&gt;', link: '/reference/u-details' },
+          { text: '&lt;u-dialog&gt;', link: '/reference/u-dialog' },
+          { text: '&lt;u-progress&gt;', link: '/reference/u-progress' },
+          { text: '&lt;u-selectlist&gt;', link: '/reference/u-selectlist' },
+          { text: '&lt;u-tabs&gt;', link: '/reference/u-tabs' }
         ]
       }
     ],

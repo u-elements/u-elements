@@ -105,6 +105,12 @@ export class UHTMLDetailsElement extends UHTMLElement {
   set open(open) {
     attr(this, OPEN, open ? '' : null)
   }
+  get name(): string {
+    return attr(this, 'name') || ''
+  }
+  set name(name) {
+    attr(this, 'name', `${name}`)
+  }
 }
 
 /**

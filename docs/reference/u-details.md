@@ -1,18 +1,37 @@
-# u-details
+# &lt;u-details&gt;
+The `<u-details>` HTML Elements lets you open/show and close/hide content.
+You can use it to make things like accordions, expandables, FAQs, dropdowns, etc.
+A summary or label must be provided using the `<u-summary>` element.
 
-The **`<u-details>`** HTML element creates a disclosure widget in which information is visible only when the widget is toggled into an "open" state. A summary or label must be provided using the `<u-summary>` element.
+**Quick Links to MDN Web Docs:**
+<br />
+[&lt;details&gt; HTML Element](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details) &nbsp;/&nbsp;
+[HTMLDetailsElement DOM interface](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDetailsElement)
+<br />
+[&lt;summary&gt; HTML Element](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/summary) &nbsp;/&nbsp;
+[HTMLElement DOM interface](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement)
 
-A disclosure widget is typically presented onscreen using a small triangle which rotates (or twists) to indicate open/closed status, with a label next to the triangle. The contents of the `<u-summary>` element are used as the label for the disclosure widget.
+## Example
+<Sandbox>
+&lt;u-details&gt;
+  &lt;u-summary&gt;Details&lt;/u-summary&gt;
+  &lt;details&gt;
+    Something small enough to escape casual notice.
+  &lt;/details&gt;
+&lt;/u-details&gt;
+</Sandbox>
 
-A `<u-details>` widget can be in one of two states. The default _closed_ state displays only the triangle and the label inside `<u-summary>`.
+## Usage
 
-When the user clicks on the widget or focuses it then presses the space bar, it "twists" open, revealing its contents. The common use of a triangle which rotates or twists around to represent opening or closing the widget is why these are sometimes called "twisty".
+- A `<u-summary>` element must be provided as first child to specify a visible heading for the `<u-details>`.
+- A child `<details>` (the native element) must be provided as second child to group the content to show and hide.
+- A `open` attribute can be set on `<u-details>` to change to open state.
+- Any content can be put inside the `<u-details>` tag.
 
-You can use CSS to style the disclosure widget, and you can programmatically open and close the widget by setting/removing its [`open`](#open) attribute. Unfortunately, at this time, there's no built-in way to animate the transition between open and closed.
 
-By default when closed, the widget is only tall enough to display the disclosure triangle and summary. When open, it expands to display the details contained within.
-
-Fully standards-compliant implementations automatically apply the CSS `display: list-item` to the `<u-summary>` element. You can use this to customize its appearance further. See [Customizing the disclosure widget](#customizing_the_disclosure_widget) for further details.
+::: tip
+If the user searches for text in a page, `<u-details>` will automatically open if a hit was found inside it's content.
+:::
 
 ## Attributes
 

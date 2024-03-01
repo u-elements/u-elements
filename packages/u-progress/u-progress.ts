@@ -1,8 +1,8 @@
-import { IS_IOS, UHTMLElement, attr, customElements, getRoot, style, useId } from './utils'
+import { IS_IOS, UHTMLElement, attr, customElements, getRoot, style, useId } from '../utils'
 
 declare global {
   interface HTMLElementTagNameMap {
-    'u-progress': UHTMLProgressElement
+    'u-progress': HTMLProgressElement
   }
 }
 

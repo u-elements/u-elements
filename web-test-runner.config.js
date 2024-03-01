@@ -1,13 +1,14 @@
 import { playwrightLauncher, devices } from '@web/test-runner-playwright'
+import { a11ySnapshotPlugin } from '@web/test-runner-commands/plugins'
 import { vitePlugin } from '@remcovaes/web-test-runner-vite-plugin'
 
 export default {
-  files: 'tests/*.spec.ts',
+  files: 'packages/**/*.spec.ts',
   playwright: true,
   coverageConfig: {
-    include: ['src/u-*.ts']
+    include: ['packages/**/u-*.ts'] // TODO: *.ts?
   },
-	plugins: [vitePlugin()],
+	plugins: [vitePlugin(), a11ySnapshotPlugin()],
   browsers: [
     playwrightLauncher({ product: 'chromium' }),
     playwrightLauncher({ product: 'firefox' }),

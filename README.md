@@ -1,6 +1,6 @@
 # u-elements
 
-Native HTML tags, just truly accessible.
+HTML tags, just truly accessible.
 
 [Open documentation →](https://u-elements.github.io/u-elements/)
 
@@ -8,10 +8,8 @@ Native HTML tags, just truly accessible.
 
 ### Install dependencies
 
-To install dependencies according to `package-lock.json` run the following command:
-
 ```SH
-npm ci
+npm install
 ```
 
 ### Linting

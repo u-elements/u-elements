@@ -1,10 +1,12 @@
 import { expect } from '@esm-bundle/chai'
-import { compareSnapshot, sendKeys } from '@web/test-runner-commands'
-import { UHTMLTabsElement, UHTMLTabListElement, UHTMLTabElement, UHTMLTabPanelElement } from '../src'
-import { ARIA_LABELLEDBY, IS_ANDROID } from '../src/utils'
+import { a11ySnapshot, findAccessibilityNode, compareSnapshot, sendKeys } from '@web/test-runner-commands'
+import { UHTMLTabsElement, UHTMLTabListElement, UHTMLTabElement, UHTMLTabPanelElement } from './u-tabs'
+import { ARIA_LABELLEDBY, IS_ANDROID } from '../utils'
 
 const toDOM = <T extends HTMLElement>(innerHTML: string): T =>
   Object.assign(document.body, { innerHTML }).firstElementChild as T
+
+// TODO: https://modern-web.dev/docs/test-runner/commands/#accessibility-snapshot
 
 const DEFAULT_TEST_HTML = `
 <u-tabs>

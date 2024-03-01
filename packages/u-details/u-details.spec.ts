@@ -1,7 +1,7 @@
 import { expect } from '@esm-bundle/chai'
 import { compareSnapshot, sendKeys } from '@web/test-runner-commands'
-import { UHTMLDetailsElement, UHTMLSummaryElement } from '../src'
-import { ARIA_LABELLEDBY, IS_ANDROID } from '../src/utils'
+import { UHTMLDetailsElement, UHTMLSummaryElement } from './u-details'
+import { ARIA_LABELLEDBY, IS_ANDROID } from '../utils'
 
 const nextFrame = async () =>
   new Promise(resolve => requestAnimationFrame(resolve))
@@ -12,7 +12,7 @@ const toDOM = <T extends HTMLElement>(innerHTML: string): T =>
 const DEFAULT_TEST_HTML = `
 <u-details>
   <u-summary>Summary 1</u-summary>
-  <details>Details 1</details>
+  <div>Details 1</div>
 </u-details>
 `
 
@@ -24,15 +24,15 @@ describe('u-details', () => {
       <div>
         <u-details>
           <u-summary id="summary-1">Summary 1</u-summary>
-          <details id="details-1">Details 1</details>
+          <div id="details-1">Details 1</div>
         </u-details>
         <u-details open>
           <u-summary id="summary-2">Summary 2</u-summary>
-          <details id="details-2">Details 2</details>
+          <div id="details-2">Details 2</div>
         </u-details>
         <u-details>
-          <u-summary id="summary-3"Summary 3</u-summary>
-          <details id="details-3"><summary>Summary 3 nested</summary>Details 3</details>
+          <u-summary id="summary-3">Summary 3</u-summary>
+          <div id="details-3">Details 3</div>
         </u-details>
       </div>
     `).outerHTML
@@ -49,65 +49,56 @@ describe('u-details', () => {
     expect(window.customElements.get('u-summary')).to.equal(UHTMLSummaryElement)
   })
 
-  it('generates hidden native summary element', () => {
+  it('sets up attributes', () => {
     const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
-    const nativeDetails = uDetails.lastElementChild as HTMLDetailsElement
-    const nativeSummary = nativeDetails.firstElementChild as HTMLElement
-
-    expect(nativeSummary).to.be.instanceOf(HTMLElement)
-    expect(nativeSummary.nodeName).to.equal('SUMMARY')
-    expect(nativeSummary.hidden).to.equal(true)
-  })
-
-  it('sets up attributes when native details is appended', async () => {
-    const uDetails = toDOM<UHTMLDetailsElement>(`<u-details><u-summary>Summary 1</u-summary></u-details>`)
-    uDetails.insertAdjacentHTML('beforeend', '<details>Details 1</details>')
-
-    const [uSummary, nativeDetails] = [...uDetails.children] as [UHTMLSummaryElement, HTMLDetailsElement]
-    await nextFrame() // Let MutationObserver run
-    expect(nativeDetails.id).to.equal(uSummary.getAttribute('aria-controls'))
-  })
-
-  it('handles up open property and attributes change', () => {
-    const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
-    const [uSummary, nativeDetails] = [...uDetails.children] as [UHTMLSummaryElement, HTMLDetailsElement]
+    const [uSummary, content] = [...uDetails.children] as [UHTMLSummaryElement, HTMLDivElement]
 
     expect(uSummary.role).to.equal('button')
-    expect(uSummary.id).to.equal(nativeDetails.getAttribute(ARIA_LABELLEDBY))
+    expect(uSummary.id).to.equal(content.getAttribute(ARIA_LABELLEDBY))
     expect(uSummary.tabIndex).to.equal(0)
     expect(uSummary.getAttribute('aria-expanded')).to.equal('false')
-    expect(uSummary.getAttribute('aria-controls')).to.equal(nativeDetails.id)
-    expect(nativeDetails.role).to.equal('group')
-    expect(nativeDetails.getAttribute('aria-hidden')).to.equal('true')
+    expect(uSummary.getAttribute('aria-controls')).to.equal(content.id)
+    expect(content.role).to.equal('group')
+    expect(content.getAttribute('hidden')).to.equal('until-found')
+    expect(content.getAttribute('aria-hidden')).to.equal('true')
+  })
+
+  it('sets up attributes when content is appended', async () => {
+    const uDetails = toDOM<UHTMLDetailsElement>(`<u-details><u-summary>Summary 1</u-summary></u-details>`)
+    uDetails.insertAdjacentHTML('beforeend', '<div>Details 1</div>')
+
+    const [uSummary, content] = [...uDetails.children] as [UHTMLSummaryElement, HTMLDivElement]
+    await nextFrame() // Let MutationObserver run
+    expect(content.id).to.equal(uSummary.getAttribute('aria-controls'))
   })
 
   it('handles open property and attributes change', () => {
     const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
-    const [uSummary, nativeDetails] = [...uDetails.children] as [UHTMLSummaryElement, HTMLDetailsElement]
+    const [uSummary, content] = [...uDetails.children] as [UHTMLSummaryElement, HTMLDivElement]
 
     uDetails.open = true
     expect(uDetails.hasAttribute('open')).to.equal(true)
     expect(uSummary.getAttribute('aria-expanded')).to.equal('true')
-    expect(nativeDetails.getAttribute('aria-hidden')).to.equal('false')
-    expect(nativeDetails.hasAttribute('open')).to.equal(true)
-
-    uDetails.removeAttribute('open')
-    expect(uDetails.open).to.equal(false)
-    expect(uSummary.getAttribute('aria-expanded')).to.equal('false')
-    expect(nativeDetails.getAttribute('aria-hidden')).to.equal('true')
-    expect(nativeDetails.hasAttribute('open')).to.equal(false)
-
-    uDetails.setAttribute('open', 'banana')
-    expect(uDetails.open).to.equal(true)
-    expect(uSummary.getAttribute('aria-expanded')).to.equal('true')
-    expect(nativeDetails.getAttribute('aria-hidden')).to.equal('false')
-    expect(nativeDetails.hasAttribute('open')).to.equal(true)
+    expect(content.getAttribute('aria-hidden')).to.equal('false')
+    expect(content.getAttribute('hidden')).to.equal(null)
 
     uDetails.open = false
     expect(uDetails.open).to.equal(false)
     expect(uSummary.getAttribute('aria-expanded')).to.equal('false')
-    expect(nativeDetails.getAttribute('aria-hidden')).to.equal('true')
-    expect(nativeDetails.hasAttribute('open')).to.equal(false)
+    expect(content.getAttribute('aria-hidden')).to.equal('true')
+    expect(content.getAttribute('hidden')).to.equal('until-found')
+
+    uDetails.setAttribute('open', 'banana')
+    expect(uDetails.open).to.equal(true)
+    expect(uSummary.getAttribute('aria-expanded')).to.equal('true')
+    expect(content.getAttribute('aria-hidden')).to.equal('false')
+    expect(content.getAttribute('hidden')).to.equal(null)
+
+    uDetails.removeAttribute('open')
+    expect(uDetails.open).to.equal(false)
+    expect(uSummary.getAttribute('aria-expanded')).to.equal('false')
+    expect(content.getAttribute('aria-hidden')).to.equal('true')
+    expect(content.getAttribute('hidden')).to.equal('until-found')
   })
 
   it('respects id attributes', async () => {
@@ -117,18 +108,18 @@ describe('u-details', () => {
         <details id="details-1">Details 1</details>
       </u-details>
     `)
-    const [uSummary, nativeDetails] = [...uDetails.children] as [UHTMLSummaryElement, HTMLDetailsElement]
+    const [uSummary, content] = [...uDetails.children] as [UHTMLSummaryElement, HTMLDivElement]
 
     expect(uSummary.id).to.equal('summary-1')
-    expect(nativeDetails.id).to.equal('details-1')
+    expect(content.id).to.equal('details-1')
     expect(uSummary.getAttribute('aria-controls')).to.equal('details-1')
-    expect(nativeDetails.getAttribute(ARIA_LABELLEDBY)).to.equal('summary-1')
+    expect(content.getAttribute(ARIA_LABELLEDBY)).to.equal('summary-1')
 
     uSummary.id = 'summary-1-changed-id'
     await nextFrame() // Let MutationObserver run
-    expect(nativeDetails.getAttribute(ARIA_LABELLEDBY)).to.equal('summary-1-changed-id')
+    expect(content.getAttribute(ARIA_LABELLEDBY)).to.equal('summary-1-changed-id')
     
-    nativeDetails.id = 'details-1-changed-id'
+    content.id = 'details-1-changed-id'
     await nextFrame() // Let MutationObserver run
     expect(uSummary.getAttribute('aria-controls')).to.equal('details-1-changed-id')
   })
@@ -143,17 +134,6 @@ describe('u-details', () => {
     uSummary.focus()
     await sendKeys({ press: ' ' })
     expect(uDetails.open).to.equal(false)   
-  })
-
-  it('respects nativeDetails open', async () => {
-    const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
-    const nativeSummary = uDetails.querySelector('summary')
-    expect(uDetails.open).to.equal(false)
-
-    nativeSummary?.click()
-    await nextFrame() // Let toggle event bubble
-    await nextFrame() // Let click event bubble
-    expect(uDetails.open).to.equal(true)
   })
 
   it('sets name property', () => {
@@ -180,5 +160,20 @@ describe('u-details', () => {
     uSummary2.click()
     expect(uDetails1.open).to.equal(false)
     expect(uDetails2.open).to.equal(true)
+  })
+  it('triggers toggle event', async () => {
+    const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
+    const [uSummary] = [...uDetails.children] as [UHTMLSummaryElement, HTMLDivElement]
+
+    const onToggle = (event: Event) => expect(event).to.include({
+      bubbles: false,
+      cancelable: false,
+      currentTarget: uDetails,
+      target: uDetails,
+      type: 'toggle'
+    }).and.be.instanceOf(Event)
+
+    uDetails.addEventListener('toggle', onToggle);
+    uSummary.click()
   })
 })

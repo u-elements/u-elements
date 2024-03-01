@@ -5,7 +5,7 @@ import esbuild from 'esbuild'
 
 export default {
   load() {
-    const file = path.resolve(__dirname, '../dist/index.js')
+    const file = path.resolve(__dirname, '../packages/u-tabs/dist/u-tabs.js')
     const { code } = esbuild.transformSync(fs.readFileSync(file), { minify: true })
     const bytes = zlib.gzipSync(code, { level: 9 }).length
     return {

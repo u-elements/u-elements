@@ -73,7 +73,10 @@
       <u-option>Pistasj</u-option>
       <u-option>Mango</u-option>
     </u-datalist>
-    <script type="module" src="/src/index.ts"></script>
+    <script type="module" src="/packages/u-datalist/u-datalist.ts"></script>
+    <script type="module" src="/packages/u-details/u-details.ts"></script>
+    <script type="module" src="/packages/u-progress/u-progress.ts"></script>
+    <script type="module" src="/packages/u-tabs/u-tabs.ts"></script>
     <script>
       class UTest extends HTMLElement {
         connectedCallback() {
@@ -105,11 +108,11 @@
             <br />
             <u-details name="group-1">
               <u-summary>Test 1</u-summary>
-              <details>Innhold 1</details>
+              <div>Innhold 1</div>
             </u-details>
             <u-details name="group-1">
               <u-summary>Test 2</u-summary>
-              <details>Innhold 2</details>
+              <div>Innhold 2</div>
             </u-details>
             <br />
             <style>
@@ -140,8 +143,6 @@ x datalist
 x details
 x progress (test "role")
 - selectlist
-
-U-COMPONENTS:
 x tabs (await closeability if no time)
 - scroll (drop)
 - filter-suite? (await)

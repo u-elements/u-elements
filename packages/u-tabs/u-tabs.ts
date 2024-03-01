@@ -12,7 +12,7 @@ import {
   on,
   style,
   useId
-} from './utils'
+} from '../utils'
 
 declare global {
   interface HTMLElementTagNameMap {

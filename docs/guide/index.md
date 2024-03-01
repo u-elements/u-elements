@@ -1,15 +1,8 @@
 # Getting started
 
-## You might already know how to use u-elements 🎉
+You might already know u-elements :tada:
 
-u-elements follow the same rules as existing HTML tags, meaning [online resources](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/) and your existing knowledge about the tags
-[details](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details),
-[summary](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/summary),
-[datalist](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist),
-[option](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option) and 
-[progress](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/progress) is applicable to their u-elements counterparts. The goal is to learn and use regular HTML, but also outstanding accessibility as a bonus! 🌟 
-
-The only thing that's different is that you need to load the u-elements javascript:
+`u-elements` mainly re-implements existing HTML tags. This means [online resources](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/) and your existing knowledge about HTML is applicable to u-elements counterparts. The goal is to learn and use regular HTML, but also [ensure outstanding accessibility](/guide/why) :rocket:
 
 <!-- `u-elements` comply with W3C spesifications of existing HTML tags. This means that your existing knowledge and the abundance of online resources about the HTML tags
 [details](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details),
@@ -26,50 +19,46 @@ Install u-elements from NPM:
 ::: code-group
 
 ```bash [NPM]
-$ npm add -D @u-elements/u-elements
+npm add -D @u-elements/u-elements
 ```
 
 ```bash [PNPM]
-$ pnpm add -D @u-elements/u-elements
+pnpm add -D @u-elements/u-elements
 ```
 
 ```bash [Yarn]
-$ yarn add -D @u-elements/u-elements
+yarn add -D @u-elements/u-elements
 ```
 
 ```bash [Bun]
-$ bun add -D @u-elements/u-elements
+bun add -D @u-elements/u-elements
+```
+
+```html [CDN]
+<script type="module" src="https://unpkg.com/@u-elements/u-elements@latest/dist/index.js"></script>
 ```
 
 :::
 
 ## CDN
 
-https://unpkg.com/@u-elements/u-elements@latest/dist/index.js
-
 ## Import
-Import `@u-elements/u-elements` to automatically initialize u-elements:
+Import `@u-elements/u-elements` to use u-elements.
+- **If browser:** u-elements are automatically registered through [customElements.define()](https://developer.mozilla.org/en-US/docs/Web/API/CustomElementRegistry/define)
+- **If server:** Write u-elements markup in HTML/TSX/JSX/Svelte/Vue just like you would with regular HTML.
+[DOM registration](https://developer.mozilla.org/en-US/docs/Web/API/CustomElementRegistry/define) only happens when reaching a browser
+- **If loading multiple versions:** The first loaded version of a u-element will be used
+
 
 ```js
 // your-main-app-file.js
 import '@u-elements/u-elements';
 ```
 
-::: tip 💡 What happens when I `import` u-elements?
-
-- **If browser:** u-elements are automatically registered through [customElements.define()](https://developer.mozilla.org/en-US/docs/Web/API/CustomElementRegistry/define).
-- **If server:** [DOM registration](https://developer.mozilla.org/en-US/docs/Web/API/CustomElementRegistry/define) is skipped, but you can write u-elements markup in HTML and frameworks just like you would with regular HTML tags.
-- **If loading multiple versions:** The first loaded version of u-elements will be used.
-
-:::
-
-## Usage
-
-Refer to the [elements reference](/reference/) for more guidance on using each component.
-
 ## Usage in HTML
 
-Add a `u-` to the relevant HTML tags in your markup. Example:
+Add a `u-` to the relevant HTML tags in your markup.
+<br />Refer to the [individual elements](/elements/) for supported attributes.
 
 ```html [u-progress]
 <!DOCTYPE html>
@@ -92,8 +81,9 @@ Add a `u-` to the relevant HTML tags in your markup. Example:
 ## Usage in Javascript
 
 When 
+<br />Refer to the [individual elements](/elements/) for supported JS interfaces.
 
-## Usage with a framework
+## Usage in a framework
 
 React, Svelte, Vue, Solid or Qwick
 

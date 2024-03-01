@@ -1,7 +1,8 @@
-import { DISPLAY_BLOCK, UHTMLElement, attr, customElements, style } from './utils'
+import { DISPLAY_BLOCK, UHTMLElement, attr, customElements, style } from '../utils'
+
 declare global {
   interface HTMLElementTagNameMap {
-    'u-option': UHTMLOptionElement
+    'u-option': HTMLOptionElement
   }
 }
 
@@ -77,6 +78,6 @@ export class UHTMLOptionElement extends UHTMLElement {
 }
 
 const getContainer = (self: UHTMLOptionElement) =>
-  self.closest('u-datalist,u-selectlist')
+  self.closest('u-datalist')
 
-  customElements.define('u-option', UHTMLOptionElement)
+customElements.define('u-option', UHTMLOptionElement)

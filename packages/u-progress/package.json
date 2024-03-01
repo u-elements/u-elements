@@ -1,0 +1,25 @@
+{
+  "name": "@u-elements/u-progress",
+  "version": "0.0.0",
+  "license": "MIT",
+  "description": "HTML tags, just truly accessible",
+  "homepage": "https://u-elements.github.io/u-elements/",
+  "type": "module",
+  "main": "dist/u-progress.cjs",
+  "module": "dist/u-progress.js",
+  "types": "dist/u-progress.d.ts",
+  "customElements": "dist/u-progress.manifest.json",
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/u-elements/u-elements.git"
+  },
+  "bugs": {
+    "url": "https://github.com/u-elements/u-elements/issues"
+  },
+  "scripts": {
+    "build": "tsup --config ../../tsup.config.ts"
+  }
+}

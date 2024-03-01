@@ -1,6 +1,6 @@
 import { expect } from '@esm-bundle/chai'
 import { compareSnapshot } from '@web/test-runner-commands'
-import { UHTMLOptionElement } from '../src'
+import { UHTMLOptionElement } from './u-option'
 
 const toDOM = <T extends HTMLElement>(innerHTML: string): T =>
   Object.assign(document.body, { innerHTML }).firstElementChild as T

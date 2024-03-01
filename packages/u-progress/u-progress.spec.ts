@@ -1,7 +1,7 @@
 import { expect } from '@esm-bundle/chai'
 import { compareSnapshot } from '@web/test-runner-commands'
-import { UHTMLProgressElement } from '../src'
-import { IS_IOS } from '../src/utils'
+import { UHTMLProgressElement } from './u-progress'
+import { IS_IOS } from '../utils'
 
 const toDOM = <T extends HTMLElement>(innerHTML: string): T =>
   Object.assign(document.body, { innerHTML }).firstElementChild as T

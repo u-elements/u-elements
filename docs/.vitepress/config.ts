@@ -21,14 +21,15 @@ export default defineConfig({
     outline: 'deep',
     externalLinkIcon: true,
     editLink: {
-      pattern: 'https://github.com/u-elements/u-tags/tree/main/docs/:path'
+      pattern: 'https://github.com/u-elements/u-elements/edit/main/docs/:path',
+      text: 'Suggest changes to this page'
     },
     search: {
       provider: 'local'
     },
     nav: [
       { text: 'Guide', link: '/guide/' },
-      { text: 'Reference', link: '/reference/' }
+      { text: 'Elements', link: '/elements/' }
     ],
     sidebar: [
       {
@@ -37,18 +38,17 @@ export default defineConfig({
           { text: 'Why u-elements', link: '/guide/why' },
           { text: 'Getting started', link: '/guide/' },
           { text: 'Runtime API Examples', link: '/guide/api-examples' },
-          { text: 'Overview', link: '/reference/' }
+          { text: 'Overview', link: '/elements/' }
         ]
       },
       {
-        text: 'Reference',
+        text: 'Elements',
         items: [
-          { text: '&lt;u-datalist&gt;', link: '/reference/u-datalist' },
-          { text: '&lt;u-details&gt;', link: '/reference/u-details' },
-          { text: '&lt;u-dialog&gt;', link: '/reference/u-dialog' },
-          { text: '&lt;u-progress&gt;', link: '/reference/u-progress' },
-          { text: '&lt;u-selectlist&gt;', link: '/reference/u-selectlist' },
-          { text: '&lt;u-tabs&gt;', link: '/reference/u-tabs' }
+          { text: '&lt;u-datalist&gt; <mark data-html5></mark>', link: '/elements/u-datalist' },
+          { text: '&lt;u-details&gt; <mark data-html5></mark>', link: '/elements/u-details' },
+          { text: '<del>&lt;u-dialog&gt;</del> <mark data-html5></mark>', link: '/elements/u-dialog' },
+          { text: '&lt;u-progress&gt; <mark data-html5></mark>', link: '/elements/u-progress' },
+          { text: '&lt;u-tabs&gt; <mark data-wcag></mark>', link: '/elements/u-tabs' }
         ]
       }
     ],

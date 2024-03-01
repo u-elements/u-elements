@@ -1,41 +1,35 @@
-# &lt;u-details&gt;
-The `<u-details>` HTML Elements lets you open/show and close/hide content.
-You can use it to make things like accordions, expandables, FAQs, dropdowns, etc.
-A summary or label must be provided using the `<u-summary>` element.
+<script>
+  import '../../packages/u-details/u-details'
+</script>
 
-**Quick Links to MDN Web Docs:**
-<br />
-[&lt;details&gt; HTML Element](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details) &nbsp;/&nbsp;
-[HTMLDetailsElement DOM interface](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDetailsElement)
-<br />
-[&lt;summary&gt; HTML Element](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/summary) &nbsp;/&nbsp;
-[HTMLElement DOM interface](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement)
+# &lt;u-details&gt;
+`<u-details>` lets you open and close content when clicking on a child `<u-summary>` element.
+You can use it to make things like accordions, expandables, FAQs, dropdowns, etc.
+
+**TL;DR:**
+- First child must be a `<u-summary>` - labeling the content to show and hide
+- Second child must surround the content to show and hide (NB: unlike native details)
+- Set the `open` attribute on `<u-details>` to change to state
+- **MDN Web Docs:** [&lt;details&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details),
+[&lt;summary&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/summary)
 
 ## Example
 <Sandbox>
 &lt;u-details&gt;
   &lt;u-summary&gt;Details&lt;/u-summary&gt;
-  &lt;details&gt;
+  &lt;div&gt;
     Something small enough to escape casual notice.
-  &lt;/details&gt;
+  &lt;/div&gt;
 &lt;/u-details&gt;
 </Sandbox>
 
 ## Usage
 
-- A `<u-summary>` element must be provided as first child to specify a visible heading for the `<u-details>`.
-- A child `<details>` (the native element) must be provided as second child to group the content to show and hide.
-- A `open` attribute can be set on `<u-details>` to change to open state.
-- Any content can be put inside the `<u-details>` tag.
-
-
-::: tip
 If the user searches for text in a page, `<u-details>` will automatically open if a hit was found inside it's content.
-:::
 
 ## Attributes
 
-This element includes the global attributes.
+This element includes the [global attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes)
 
 - `open`: This Boolean attribute indicates whether the details — that is, the contents of the `<u-details>` element — are currently visible. The details are shown when this attribute exists, or hidden when this attribute is absent. By default this attribute is absent which means the details are not visible.
 
@@ -57,31 +51,7 @@ details.addEventListener("toggle", (event) => {
 });
 ```
 
-## Examples
-
-### A simple disclosure example
-
-This example shows a simple `<u-details>` element with a `<u-summary>`.
-
-```html
-<u-details>
-  <u-summary>System Requirements</u-summary>
-  <p>
-    Requires a computer running an operating system. The computer must have some
-    memory and ideally some kind of long-term storage. An input device as well
-    as some form of output device is recommended.
-  </p>
-</u-details>
-```
-
-#### Result
-
-<div class="demo">
-  <u-details>
-    <u-summary>Summary</u-summary>
-    <details>Content</details>
-  </u-details>
-</div>
+## Styling
 
 ### Creating an open disclosure box
 

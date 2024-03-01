@@ -1,4 +1,5 @@
-import { UHTMLOptionElement } from './u-option'
+import type { UHTMLOptionElement } from './u-option'
+import './u-option'
 import {
   ARIA_CONTROLS,
   ARIA_EXPANDED,
@@ -15,7 +16,7 @@ import {
   on,
   style,
   useId
-} from './utils'
+} from '../utils'
 
 // Does not set aria-activedescendant to prevent double reading on plattforms supprting this attribute
 // aria-activedescendant does not work in Safari on Mac unless wrapped inside combobox (non-standard)
@@ -24,7 +25,7 @@ import {
 
 declare global {
   interface HTMLElementTagNameMap {
-    'u-datalist': UHTMLDataListElement
+    'u-datalist': HTMLDataListElement
   }
 }
 
@@ -55,7 +56,7 @@ export class UHTMLDataListElement extends UHTMLElement {
     if (event.type === 'keydown') onKeydown(this, event as KeyboardEvent)
     if (event.type === 'mutation') onMutation(this)
   }
-  get options(): HTMLCollectionOf<UHTMLOptionElement> {
+  get options(): HTMLCollectionOf<HTMLOptionElement> {
     return this.getElementsByTagName('u-option')
   }
 }
@@ -75,7 +76,7 @@ const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
   self.hidden = !open
 }
 
-const addedOptions = new WeakMap<UHTMLDataListElement, UHTMLOptionElement[]>()
+const addedOptions = new WeakMap<UHTMLDataListElement, HTMLOptionElement[]>()
 const setOptionAttributes = (self: UHTMLDataListElement) => {
   const hidden = self.hidden
   const added = addedOptions.get(self) || [] // If a option is added to DOM while open, do not hide
@@ -190,4 +191,4 @@ if (IS_BROWSER)
     }
   })
 
-  customElements.define('u-datalist', UHTMLDataListElement)
+customElements.define('u-datalist', UHTMLDataListElement)

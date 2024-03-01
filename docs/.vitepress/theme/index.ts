@@ -1,8 +1,7 @@
-//@ts-ignore
-import Sandbox from '../components/sandbox.vue';
-import type { Theme } from 'vitepress'
+// @ts-ignore
+import Sandbox from '../components/sandbox.vue'
 import DefaultTheme from 'vitepress/theme'
-import '../../../dist/index.js' // Load u-elements
+import type { Theme } from 'vitepress'
 import './custom.css'
 
 export default {

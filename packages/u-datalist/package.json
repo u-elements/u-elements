@@ -1,0 +1,25 @@
+{
+  "name": "@u-elements/u-datalist",
+  "version": "0.0.0",
+  "license": "MIT",
+  "description": "HTML tags, just truly accessible",
+  "homepage": "https://u-elements.github.io/u-elements/",
+  "type": "module",
+  "main": "dist/u-datalist.cjs",
+  "module": "dist/u-datalist.js",
+  "types": "dist/u-datalist.d.ts",
+  "customElements": "dist/u-datalist.manifest.json",
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/u-elements/u-elements.git"
+  },
+  "bugs": {
+    "url": "https://github.com/u-elements/u-elements/issues"
+  },
+  "scripts": {
+    "build": "tsup --config ../../tsup.config.ts"
+  }
+}

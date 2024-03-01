@@ -13,12 +13,12 @@ import {
   on,
   style,
   useId
-} from './utils'
+} from '../utils'
 
 declare global {
   interface HTMLElementTagNameMap {
-    'u-details': UHTMLDetailsElement
-    'u-summary': UHTMLSummaryElement
+    'u-details': HTMLDetailsElement
+    'u-summary': HTMLElement
   }
 }
 
@@ -47,7 +47,7 @@ export class UHTMLDetailsElement extends UHTMLElement {
       ::slotted(u-summary) { cursor: pointer; display: list-item; list-style: inside disclosure-closed }
       ::slotted(u-summary[${ARIA_EXPANDED}="true"]) { list-style-type: disclosure-open }`
     )
-    on(this, 'toggle', this, true)
+    on(this, 'beforematch', this, true)
     mutationObserver(this, {
       attributeFilter: ['id'], // Observe childrens id to sync aria-controls and aria-labelledby
       childList: true, // Observe children to detect native <details>
@@ -56,31 +56,24 @@ export class UHTMLDetailsElement extends UHTMLElement {
     this.attributeChangedCallback() // We now know the element is in the DOM, so run a attribute setup
   }
   disconnectedCallback() {
-    off(this, 'toggle', this, true)
+    off(this, 'beforematch', this, true)
     mutationObserver(this, false)
   }
-  attributeChangedCallback() {
-    const [summary, details] = this.children
+  attributeChangedCallback(_prop?: string, prev?: string, next?: string) {
+    const [summary, content] = this.children
     const isOpen = this[OPEN] // Cache for speed
     const name = attr(this, 'name')
 
-    // Ensure native <summary> exists and is hidden (can not be accessed through css)
-    if (isDetails(details)) {
-      const summary =
-        details.querySelector<HTMLElement>(':scope > summary') ||
-        details.appendChild(document.createElement('summary'))
-      summary.hidden = true
-    }
-
     attr(summary, {
-      [ARIA_CONTROLS]: details ? useId(details) : null,
+      [ARIA_CONTROLS]: content ? useId(content) : null,
       [ARIA_EXPANDED]: isOpen,
       id: useId(summary)
     })
-    attr(details, {
+
+    attr(content, {
       'aria-hidden': !isOpen, // Needed to not announce "empty group" when closed
+      'hidden': isOpen ? null : 'until-found', // Allows browsers to search inside content
       [ARIA_LABELLEDBY]: useId(summary),
-      [OPEN]: isOpen ? '' : null,
       role: 'group'
     })
 
@@ -90,6 +83,9 @@ export class UHTMLDetailsElement extends UHTMLElement {
         .querySelectorAll<UHTMLDetailsElement>(`${this.nodeName}[name="${name}"]`)
         .forEach((uDetails) => uDetails === this || (uDetails.open = false))
 
+    // Trigger toggle event
+    if (prev !== next) this.dispatchEvent(new Event('toggle'));
+
     // Skip mutation events caused by attributeChangedCallback
     // Might be not defined if "open" is present in HTML causing
     // attributeChangedCallback to run before connectedCallback
@@ -97,7 +93,7 @@ export class UHTMLDetailsElement extends UHTMLElement {
   }
   handleEvent({ type, target, detail }: CustomEvent<MutationRecord[]>) {
     if (type === 'mutation' && isMutationRelevant(this, detail)) this.attributeChangedCallback()
-    if (type === 'toggle' && target === this.children[1] && isDetails(target)) this[OPEN] = target[OPEN]
+    if (type === 'beforematch' && [...this.children].includes(target as Element)) this.open = true
   }
   get open(): boolean {
     return attr(this, OPEN) !== null

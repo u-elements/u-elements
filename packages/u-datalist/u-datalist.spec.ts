@@ -1,7 +1,7 @@
 import { expect } from '@esm-bundle/chai'
 import { compareSnapshot, sendKeys } from '@web/test-runner-commands'
-import { UHTMLDataListElement } from '../src'
-import { ARIA_LABELLEDBY, IS_ANDROID, IS_IOS } from '../src/utils'
+import { UHTMLDataListElement } from './u-datalist'
+import { ARIA_LABELLEDBY, IS_ANDROID, IS_IOS } from '../utils'
 
 const nextFrame = async () =>
   new Promise(resolve => requestAnimationFrame(resolve))

@@ -1,3 +1,7 @@
+<script setup>
+import { data } from '../filesize.data.ts'
+</script>
+
 # &lt;u-progress&gt; <mark data-badge="html5"></mark>
 Documentation coming
 
@@ -10,3 +14,27 @@ Documentation coming
 <Sandbox>
 &lt;u-progress value=&quot;5&quot; max=&quot;10&quot;&gt;&lt;/u-progress&gt;
 </Sandbox>
+
+## Install <mark :data-badge="data['u-progress']"></mark>
+
+::: code-group
+
+```bash [NPM]
+npm add -D @u-elements/u-progress
+```
+
+```bash [PNPM]
+pnpm add -D @u-elements/u-progress
+```
+
+```bash [Yarn]
+yarn add -D @u-elements/u-progress
+```
+
+```bash [Bun]
+bun add -D @u-elements/u-progress
+```
+
+```html [CDN]
+<script type="module" src="https://unpkg.com/@u-elements/u-progress@latest/dist/index.js"></script>
+```

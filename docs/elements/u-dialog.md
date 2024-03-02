@@ -18,3 +18,7 @@ There is no longer need for `<u-dialog>` :tada:
   &lt;/form&gt;
 &lt;/dialog&gt;
 </Sandbox>
+
+## Install <mark data-badge="0 KB"></mark>
+
+Nothing to install :tada:

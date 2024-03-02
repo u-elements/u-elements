@@ -1,3 +1,7 @@
+<script setup>
+import { data } from '../filesize.data.ts'
+</script>
+
 # &lt;u-datalist&gt; <mark data-badge="html5"></mark>
 Documentation coming
 
@@ -25,3 +29,27 @@ Documentation coming
   &lt;u-option&gt;Hazelnut&lt;/u-option&gt;
 &lt;/u-datalist&gt;
 </Sandbox>
+
+## Install <mark :data-badge="data['u-datalist']"></mark>
+
+::: code-group
+
+```bash [NPM]
+npm add -D @u-elements/u-datalist
+```
+
+```bash [PNPM]
+pnpm add -D @u-elements/u-datalist
+```
+
+```bash [Yarn]
+yarn add -D @u-elements/u-datalist
+```
+
+```bash [Bun]
+bun add -D @u-elements/u-datalist
+```
+
+```html [CDN]
+<script type="module" src="https://unpkg.com/@u-elements/u-datalist@latest/dist/index.js"></script>
+```

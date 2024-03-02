@@ -1,3 +1,7 @@
+<script setup>
+import { data } from '../filesize.data.ts'
+</script>
+
 # &lt;u-details&gt; <mark data-badge="html5"></mark>
 `<u-details>` lets you open and close content when clicking on a child `<u-summary>` element.
 You can use it to make things like accordions, expandables, FAQs, dropdowns, etc.
@@ -19,9 +23,31 @@ You can use it to make things like accordions, expandables, FAQs, dropdowns, etc
 &lt;/u-details&gt;
 </Sandbox>
 
-## Usage
+## Install <mark :data-badge="data['u-details']"></mark>
 
-If the user searches for text in a page, `<u-details>` will automatically open if a hit was found inside it's content.
+::: code-group
+
+```bash [NPM]
+npm add -D @u-elements/u-details
+```
+
+```bash [PNPM]
+pnpm add -D @u-elements/u-details
+```
+
+```bash [Yarn]
+yarn add -D @u-elements/u-details
+```
+
+```bash [Bun]
+bun add -D @u-elements/u-details
+```
+
+```html [CDN]
+<script type="module" src="https://unpkg.com/@u-elements/u-details@latest/dist/index.js"></script>
+```
+
+:::
 
 ## Attributes
 

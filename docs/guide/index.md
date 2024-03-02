@@ -4,6 +4,8 @@ You might already know u-elements :tada:
 
 `u-elements` mainly re-implements existing HTML tags. This means [online resources](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/) and your existing knowledge about HTML is applicable to u-elements counterparts. The goal is to learn and use regular HTML, but also [ensure outstanding accessibility](/guide/why) :rocket:
 
+[Browse elements &rarr;](/elements/)
+
 <!-- `u-elements` comply with W3C spesifications of existing HTML tags. This means that your existing knowledge and the abundance of online resources about the HTML tags
 [details](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details),
 [summary](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/summary),
@@ -14,36 +16,36 @@ You might already know u-elements :tada:
 
 
 ## Install
-Install u-elements from NPM:
+
+Install the elements you want through `@u-elements/[u-element-name-here]`.
+<br />Refer to the [individual elements](/elements/) for exact install name.
 
 ::: code-group
 
 ```bash [NPM]
-npm add -D @u-elements/u-elements
+npm add -D @u-elements/[u-element-name-here]
 ```
 
 ```bash [PNPM]
-pnpm add -D @u-elements/u-elements
+pnpm add -D @u-elements/[u-element-name-here]
 ```
 
 ```bash [Yarn]
-yarn add -D @u-elements/u-elements
+yarn add -D @u-elements/[u-element-name-here]
 ```
 
 ```bash [Bun]
-bun add -D @u-elements/u-elements
+bun add -D @u-elements/[u-element-name-here]
 ```
 
 ```html [CDN]
-<script type="module" src="https://unpkg.com/@u-elements/u-elements@latest/dist/index.js"></script>
+<script type="module" src="https://unpkg.com/@u-elements/[u-element-name-here]@latest/dist/index.js"></script>
 ```
 
 :::
 
-## CDN
-
 ## Import
-Import `@u-elements/u-elements` to use u-elements.
+Import the elements you want through `import '@u-elements/[u-element-name-here]'`
 - **If browser:** u-elements are automatically registered through [customElements.define()](https://developer.mozilla.org/en-US/docs/Web/API/CustomElementRegistry/define)
 - **If server:** Write u-elements markup in HTML/TSX/JSX/Svelte/Vue just like you would with regular HTML.
 [DOM registration](https://developer.mozilla.org/en-US/docs/Web/API/CustomElementRegistry/define) only happens when reaching a browser
@@ -52,7 +54,7 @@ Import `@u-elements/u-elements` to use u-elements.
 
 ```js
 // your-main-app-file.js
-import '@u-elements/u-elements';
+import '@u-elements/[u-element-name-here]';
 ```
 
 ## Usage in HTML

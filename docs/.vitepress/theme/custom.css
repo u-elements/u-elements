@@ -44,26 +44,8 @@
 @media (min-width: 640px) { :root { --vp-home-hero-image-filter: blur(56px) opacity(.25) } }
 @media (min-width: 960px) { :root { --vp-home-hero-image-filter: blur(72px) opacity(.25) } }
 
-abbr[aria-description] { border-bottom: 1px dashed; cursor: help; position: relative }
-abbr[aria-description]:hover::after { opacity: .9; visibility: visible }
-abbr[aria-description]::after {
-  background: var(--vp-c-text-1);
-  border-radius: 3px;
-  color: var(--vp-c-bg);
-  content: attr(aria-description);
-  font-size: .875rem;
-  opacity: 0;
-  padding: .25em .5em;
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transition: .2s;
-  translate: -50% .5rem;
-  visibility: hidden;
-  width: max-content;
-  max-width: 25em;
-  z-index: 9000;
-}
+/* Front page: Balanced slogan */
+.VPHomeHero .main .text { text-wrap: balance }
 
 /* VPTeamMembers used for overview pages */
 .VPTeamMembersItem { position: relative; transition: .2s }
@@ -76,12 +58,12 @@ abbr[aria-description]::after {
 .VPTeamMembersItem a { font-weight: 500; font-size: 1rem; text-decoration: none }
 .VPTeamMembersItem a::before { content: ''; position: absolute; inset: 0 } /* Large click surface */
 
-/* badges */
+/* All pages: Badges */
 mark[data-badge] { background: none }
 mark[data-badge]::before {
   background: #3c3c431f;
   border-radius: 3px;
-  color: #3c3c43;
+  color: var(--vp-c-text-2);
   content: attr(data-badge);
   display: inline-block;
   font-size: .625rem;
@@ -93,7 +75,30 @@ mark[data-badge]::before {
   vertical-align: middle;
 }
 
-mark[data-badge="wcag"]::before { content: '\2713\00A0 ' attr(data-badge); background: #3451b21f; color: #3451b2 }
+mark[data-badge="wcag"]::before { content: '\2713\00A0 ' attr(data-badge); background: #3451b21f; color: var(--vp-c-brand-1) }
 mark[data-badge="html5"]::before { content: '\2713\00A0 ' attr(data-badge); background: #e24d201f; color: #e24d20 }
 .VPSidebarItem mark[data-badge] { float: right }
 .VPLink.pager-link mark[data-badge] { display: none }
+
+/* All pages: Tooltip abbr */
+abbr[aria-description] { border-bottom: 1px dashed; cursor: help; position: relative }
+abbr[aria-description]:hover::after { opacity: .9; translate: -50% .5rem; visibility: visible }
+abbr[aria-description]:hover { color: var(--vp-c-brand-1); border-bottom: 2px solid }
+abbr[aria-description]::after {
+  background: var(--vp-c-text-1);
+  border-radius: 3px;
+  color: var(--vp-c-bg);
+  content: attr(aria-description);
+  font-size: .875rem;
+  opacity: 0;
+  padding: .25em .5em;
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transition: .2s;
+  translate: -50% .25rem;
+  visibility: hidden;
+  width: max-content;
+  max-width: 25em;
+  z-index: 9000;
+}

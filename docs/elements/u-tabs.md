@@ -1,3 +1,7 @@
+<script setup>
+import { data } from '../filesize.data.ts'
+</script>
+
 # &lt;u-tabs&gt; <mark data-badge="wcag"></mark>
 Documentation coming
 
@@ -22,3 +26,27 @@ Documentation coming
   &lt;u-tabpanel&gt;Panel 3&lt;/u-tabpanel&gt;
 &lt;/u-tabs&gt;
 </Sandbox>
+
+## Install <mark :data-badge="data['u-tabs']"></mark>
+
+::: code-group
+
+```bash [NPM]
+npm add -D @u-elements/u-tabs
+```
+
+```bash [PNPM]
+pnpm add -D @u-elements/u-tabs
+```
+
+```bash [Yarn]
+yarn add -D @u-elements/u-tabs
+```
+
+```bash [Bun]
+bun add -D @u-elements/u-tabs
+```
+
+```html [CDN]
+<script type="module" src="https://unpkg.com/@u-elements/u-tabs@latest/dist/index.js"></script>
+```

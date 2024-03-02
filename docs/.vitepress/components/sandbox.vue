@@ -35,6 +35,7 @@
   .demo { border-radius: 8px; border: 2px dashed var(--vp-c-divider); display: flex; margin-block: .5em; overflow: hidden }
   .demo > div { box-sizing: border-box; display: block!important; width: 50% }
   .demo > div:last-child { border-left: inherit; border-width: 0 0 0 2px; min-height: 200px; padding: 1rem }
+  .demo > div:last-child :is(button,input) { all: revert }
 </style>
 <template>
   <pre ref="slots" hidden><slot></slot></pre>

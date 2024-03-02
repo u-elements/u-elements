@@ -1,7 +1,3 @@
-<script>
-  import '../../packages/u-details/u-details'
-</script>
-
 # &lt;u-details&gt;
 `<u-details>` lets you open and close content when clicking on a child `<u-summary>` element.
 You can use it to make things like accordions, expandables, FAQs, dropdowns, etc.

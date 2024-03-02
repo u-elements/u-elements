@@ -16,7 +16,7 @@
   },
   "scripts": {
     "build": "npm run build --workspaces",
-    "docs:build": "npm run build && vitepress build docs",
+    "docs:build": "vitepress build docs",
     "docs:dev": "vitepress dev docs",
     "docs:preview": "vitepress preview docs",
     "lint": "eslint",

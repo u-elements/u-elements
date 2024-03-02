@@ -68,7 +68,7 @@ Add a `u-` to the relevant HTML tags in your markup.
     <title>u-elements example</title>
   </head>
   <body>
-    <!-- Use u-elements in your HTML like regular built-in elements -->
+    <!-- Use u-elements in your HTML just like regular HTML elements -->
     <progress value="10" max="100"></progress> // [!code --]
     <u-progress value="10" max="100"></u-progress> // [!code ++]
 
@@ -80,8 +80,7 @@ Add a `u-` to the relevant HTML tags in your markup.
 
 ## Usage in Javascript
 
-When 
-<br />Refer to the [individual elements](/elements/) for supported JS interfaces.
+Refer to the [individual elements](/elements/) for supported JS interfaces.
 
 ## Usage in a framework
 

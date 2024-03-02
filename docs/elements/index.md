@@ -3,18 +3,21 @@ next: false
 prev: false
 ---
 <script setup>
-import { VPTeamMembers } from 'vitepress/theme'
+import { ref } from 'vue'
+import { VPTeamMembers, useSidebar } from 'vitepress/theme'
+import { useRoute } from 'vitepress'
+
+const { data: { title } } = useRoute();
+const { sidebar } = useSidebar()
+const current = sidebar.value.find(({ text, items }) => text === title);
+const members = current?.items.map(({ text, link }) => ({
+  org: text.replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>'),
+  orgLink: link
+ })) || []
 </script>
 
 # Elements
 
 Standard HTML tags, solving common user interactions in a flexible and accssible way.
 
-<VPTeamMembers size="small" :members="[
-  { org: '<u-datalist>', orgLink: '/elements/u-datalist' },
-  { org: '<u-details>', orgLink: '/elements/u-details' },
-  { org: '<u-dialog>', orgLink: '/elements/u-dialog' },
-  { org: '<u-progress>', orgLink: '/elements/u-progress' },
-  { org: '<u-selectlist>', orgLink: '/elements/u-selectlist' },
-  { org: '<u-tabs>', orgLink: '/elements/u-tabs' }
-]" />
+<VPTeamMembers size="small" :members="members" />

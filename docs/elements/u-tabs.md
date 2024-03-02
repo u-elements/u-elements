@@ -1,5 +1,8 @@
-# &lt;u-tabs&gt;
+# &lt;u-tabs&gt; <mark data-badge="wcag"></mark>
 Documentation coming
+
+**Quick intro:**
+- **ARIA Authoring Practices Guide Docs:** [Tabs](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)
 
 ## Example
 <Sandbox>

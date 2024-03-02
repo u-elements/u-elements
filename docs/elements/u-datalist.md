@@ -1,5 +1,8 @@
-# &lt;u-datalist&gt;
+# &lt;u-datalist&gt; <mark data-badge="html5"></mark>
 Documentation coming
+
+**Quick intro:**
+- **MDN Web Docs:** [&lt;datalist&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist)
 
 ## Example
 <Sandbox>

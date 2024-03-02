@@ -1,5 +1,10 @@
-# &lt;u-dialog&gt;
-No longer needed - [native HTML5 `<dialog>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog) has sufficient support by all major screen readers :tada:
+# <del>&lt;u-dialog&gt;</del> <mark data-badge="html5"></mark>
+There is no longer need for `<u-dialog>` :tada:
+<br />[Native `<dialog>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog) now has sufficient screen reader 
+<br />support in all major screen readers.
+
+**Quick intro:**
+- **MDN Web Docs:** [&lt;dialog&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog)
 
 ## Example
 <Sandbox>

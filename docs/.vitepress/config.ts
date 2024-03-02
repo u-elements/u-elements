@@ -36,19 +36,18 @@ export default defineConfig({
         text: 'Guide',
         items: [
           { text: 'Why u-elements', link: '/guide/why' },
-          { text: 'Getting started', link: '/guide/' },
-          { text: 'Runtime API Examples', link: '/guide/api-examples' },
-          { text: 'Overview', link: '/elements/' }
+          { text: 'Getting started', link: '/guide/' }
         ]
       },
       {
         text: 'Elements',
         items: [
-          { text: '&lt;u-datalist&gt; <mark data-html5></mark>', link: '/elements/u-datalist' },
-          { text: '&lt;u-details&gt; <mark data-html5></mark>', link: '/elements/u-details' },
-          { text: '<del>&lt;u-dialog&gt;</del> <mark data-html5></mark>', link: '/elements/u-dialog' },
-          { text: '&lt;u-progress&gt; <mark data-html5></mark>', link: '/elements/u-progress' },
-          { text: '&lt;u-tabs&gt; <mark data-wcag></mark>', link: '/elements/u-tabs' }
+          { text: '&lt;u-datalist&gt; <mark data-badge="html5"></mark>', link: '/elements/u-datalist' },
+          { text: '&lt;u-details&gt; <mark data-badge="html5"></mark>', link: '/elements/u-details' },
+          { text: '<del>&lt;u-dialog&gt;</del> <mark data-badge="html5"></mark>', link: '/elements/u-dialog' },
+          { text: '&lt;u-progress&gt; <mark data-badge="html5"></mark>', link: '/elements/u-progress' },
+          { text: '<del>&lt;u-selectlist&gt;</del> <mark data-badge="pending"></mark>', link: '/elements/u-selectlist' },
+          { text: '&lt;u-tabs&gt; <mark data-badge="wcag"></mark>', link: '/elements/u-tabs' }
         ]
       }
     ],

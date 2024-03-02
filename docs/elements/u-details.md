@@ -1,11 +1,11 @@
-# &lt;u-details&gt;
+# &lt;u-details&gt; <mark data-badge="html5"></mark>
 `<u-details>` lets you open and close content when clicking on a child `<u-summary>` element.
 You can use it to make things like accordions, expandables, FAQs, dropdowns, etc.
 
-**TL;DR:**
-- First child must be a `<u-summary>` - labeling the content to show and hide
-- Second child must surround the content to show and hide (NB: unlike native details)
-- Set the `open` attribute on `<u-details>` to change to state
+**Quick intro:**
+- Use `<u-summary>` as first child - this becomes the label
+- Use <abbr aria-description="Native &lt;details&gt; does not have this requirement, but screen readers needs to know what element the &lt;u-summary&gt; is controlling">any HTML element as second child</abbr> - this becomes the content to hide and show
+- Use the `open` attribute on `<u-details>` to change state
 - **MDN Web Docs:** [&lt;details&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details),
 [&lt;summary&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/summary)
 

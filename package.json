@@ -3,7 +3,9 @@
   "private": true,
   "license": "MIT",
   "description": "HTML tags, just truly accessible",
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "homepage": "https://u-elements.github.io/u-elements/",
   "repository": {
     "type": "git",
@@ -66,7 +68,7 @@
     "vite-plugin-solid": "^2.10.1",
     "vitepress": "^1.0.0-rc.44",
     "vue": "^3.4.21",
-    "vue-codemirror": "^6.1.1",
+    "vue-codemirror6": "^1.2.5",
     "vue-tsc": "^2.0.2"
   },
   "prettier": {

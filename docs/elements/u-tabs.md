@@ -50,3 +50,32 @@ bun add -D @u-elements/u-tabs
 ```html [CDN]
 <script type="module" src="https://unpkg.com/@u-elements/u-tabs@latest/dist/index.js"></script>
 ```
+:::
+
+## Attributes
+
+| Attributes `<u-tabs>` | Description |  Default |
+| - | - | - |
+| [Global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. ||
+
+| Attributes `<u-tablist>` | Description |  Default |
+| - | - | - |
+| [Global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. ||
+
+| Attributes `<u-tab>` | Description |  Default |
+| - | - | - |
+| [Global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. ||
+| `aria-selected` | Specify `"true"` or `"false"` to set tab state | `"false"` |
+
+| Attributes `<u-tabpanel>` | Description |  Default |
+| - | - | - |
+| [Global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. ||
+
+
+## Styling
+
+Coming
+
+## Specifications
+
+- ARIA Authoring Practices: [Tabs](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)

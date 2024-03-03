@@ -31,11 +31,12 @@
   watch(code, () => clearTimeout(timer) || (timer = setTimeout(updateView, 300)))
 </script>
 <style>
-  .demo { border-radius: 8px; border: 2px dashed var(--vp-c-divider); display: flex; margin-block: .5em; overflow: hidden }
-  .demo-code, .demo-view { box-sizing: border-box; width: 50% }
+  .demo { border-radius: 8px; border: 2px dashed var(--vp-c-divider); display: flex; flex-wrap: wrap; margin-block: .5em; overflow: clip }
+  .demo-code, .demo-view { box-sizing: border-box; min-width: 0; flex: 1 0 100%; }
   .demo-code > * { font-size: .875rem; height: 100%; outline: none!important }
-  .demo-view { border-left: inherit; border-width: 0 0 0 2px; min-height: 200px; padding: 1rem }
+  .demo-view { border: inherit; min-height: 200px; padding: 1rem; margin: -2px }
   .demo-view :is(button,input) { all: revert }
+  @media (min-width: 800px) { .demo-code, .demo-view { flex-basis: 50% } }
 </style>
 <template>
   <pre ref="slots" hidden><slot></slot></pre>

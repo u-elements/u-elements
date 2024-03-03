@@ -21,17 +21,17 @@ hero:
 
 features:
   - icon: ☑️
-    title: W3C standards compliant,<br />accessible for everyone
-    details: u-elements ensures HTML tags remain truly accessible. By seamlessly integrating CustomElements, we bridge the gap for assistive technologies, making your web applications inclusive and user-friendly.
+    title: W3C standards compliant, accessible for everyone
+    details: Bridge the gap between assistive technologies and modern HTML tags, while still being able to use MDN et al. as documentation.
   - icon: 📋
-    title: Battle-tested with<br />real screen readers
-    details: u-elements has undergone rigorous testing to seamlessly replace HTML elements with their accessible counterparts. With u-elements, you can be confident in delivering a web experience that is both robust and inclusive.
-  - icon: ⚙️
-    title: Super lightweight and<br />framework independent
-    details: Built on CustomElements, u-elements seamlessly integrates into any project, regardless of the framework in use. Developers will appreciate the added convenience of VSCode autocomplete, inline documentation, and TypeScript definitions for popular frameworks like React, Solid, Svelte, Vue, and Qwik.
+    title: Battle-tested with real screen readers
+    details: No compatibility assumptions; all elements have been manually tested across all major screen readers, browsers and devices.
   - icon: 🪽
-    title: Future-proof
-    details: U-elements not only meets W3C standards but also anticipates changes in assistive technology. As your codebase evolves, u-elements serves as a self-destructing enhancement, gradually becoming obsolete as assistive technologies catch up to the new HTML Elements. Plus, with easy opt-in and opt-out features, integrating or removing u-elements is a breeze. And did we mention it's lightweight, simple, and performant at just <span data-bytes="gzip"></span> (minified and compressed)?
+    title: Lightweight, headless and framework independent
+    details: Zero dependencies. CSS styling. Compatible with any javascript framework, without, or even markdown - just like HTML.
+  - icon: ⚙️
+    title: Future proof and easy opt out
+    details: Think of u-elements as a HTML polyfill. As assistive technologies catch up, simply remove a "u-", and you're back on native HTML.
 ---
 <script setup>
 import { data } from './filesize.data.ts'
@@ -44,6 +44,9 @@ if (typeof document !== 'undefined') setTimeout(() =>
 )
 </script>
 
+<!-- Drop in replacements for modern HTML tags that . By seamlessly integrating CustomElements, we Bridging the gap between assistive technologies, making your web applications inclusive and user-friendly. -->
+<!-- ,  testing to seamlessly replace HTML elements with their accessible counterparts. With u-elements, you can be confident in delivering a web experience that is both robust and inclusive. -->
+<!-- in into any project, regardless of the framework in use. Developers will appreciate the added convenience of VSCode autocomplete, inline documentation, and TypeScript definitions for popular frameworks like React, Solid, Svelte, Vue, and Qwik. So you can use them with a framework, without one, or even directly in a markdown file. These components will work regardless of your project's architecture. regardless of your project's architecture -->
 <!--
 Drop in CustomElements enhancing accessibility of HTML elements. Because assistive technology does not fully understand the new and shiny HTML tags yet. Briding the gap.
 - icon: 🛠️

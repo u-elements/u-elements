@@ -1,9 +1,10 @@
-# <del>&lt;u-dialog&gt;</del> <mark data-badge="html5"></mark>
+# <del>&lt;u-dialog&gt;</del> <mark data-badge="html"></mark>
 There is no longer need for `<u-dialog>` :tada:
 <br />[Native `<dialog>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog) now has sufficient screen reader 
 <br />support in all major screen readers.
 
 **Quick intro:**
+- Use `<dialog>` to create a modal or non-modal dialog box
 - **MDN Web Docs:** [&lt;dialog&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog)
 
 ## Example
@@ -22,3 +23,15 @@ There is no longer need for `<u-dialog>` :tada:
 ## Install <mark data-badge="0 KB"></mark>
 
 Nothing to install :tada:
+
+## Attributes
+
+| Attributes `<dialog>` | Description |  Default |
+| - | - | - |
+| [Global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. ||
+| `open` | When the `open` attribute is present, the dialog is shown. By default this attribute is absent which means the dialog is hidden. **Note:** It `open` makes the dialog non-modal, so is instead recommended to use the `.show()` or `.showModal()` for greater control. | Not present |
+
+## Specifications
+
+- DOM interface: [HTMLDialogElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDialogElement)
+- HTML Standard: [The &lt;details&gt; element](https://html.spec.whatwg.org/multipage/interactive-elements.html#the-dialog-element)

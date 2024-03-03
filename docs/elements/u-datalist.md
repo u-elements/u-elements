@@ -54,7 +54,7 @@ bun add -D @u-elements/u-datalist
 ```
 
 ```html [CDN]
-<script type="module" src="https://unpkg.com/@u-elements/u-datalist@latest/dist/index.js"></script>
+<script type="module" src="https://unpkg.com/@u-elements/u-datalist@latest/dist/u-datalist.js"></script>
 ```
 :::
 

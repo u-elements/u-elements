@@ -51,7 +51,7 @@ bun add -D @u-elements/u-tabs
 ```
 
 ```html [CDN]
-<script type="module" src="https://unpkg.com/@u-elements/u-tabs@latest/dist/index.js"></script>
+<script type="module" src="https://unpkg.com/@u-elements/u-tabs@latest/dist/u-tabs.js"></script>
 ```
 :::
 

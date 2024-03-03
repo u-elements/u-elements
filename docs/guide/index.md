@@ -39,7 +39,7 @@ bun add -D @u-elements/[u-element-name-here]
 ```
 
 ```html [CDN]
-<script type="module" src="https://unpkg.com/@u-elements/[u-element-name-here]@latest/dist/index.js"></script>
+<script type="module" src="https://unpkg.com/@u-elements/[u-element-name-here]@latest/dist/[u-element-name-here].js"></script>
 ```
 
 :::

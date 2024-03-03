@@ -38,7 +38,7 @@ bun add -D @u-elements/u-progress
 ```
 
 ```html [CDN]
-<script type="module" src="https://unpkg.com/@u-elements/u-progress@latest/dist/index.js"></script>
+<script type="module" src="https://unpkg.com/@u-elements/u-progress@latest/dist/u-progress.js"></script>
 ```
 :::
 

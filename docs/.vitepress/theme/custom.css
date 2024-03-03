@@ -71,7 +71,7 @@ mark[data-badge]::before {
   background: var(--vp-c-gray-soft);
   border-radius: 3px;
   color: var(--vp-c-text-2);
-  content: '\26A0\00A0 ' attr(data-badge);
+  content: attr(data-badge);
   display: inline-block;
   font-size: .6875rem;
   font-weight: 700;
@@ -84,6 +84,7 @@ mark[data-badge]::before {
 
 mark[data-badge="aria"]::before,
 mark[data-badge="html"]::before { content: '\2713\00A0 ' attr(data-badge); background: var(--vp-c-brand-soft); color: var(--vp-c-brand-1) }
+mark[data-badge="non-standard"]::before { content: '\26A0\00A0 ' attr(data-badge) }
 .VPSidebarItem mark[data-badge] { float: right }
 .VPLink.pager-link mark[data-badge] { display: none }
 

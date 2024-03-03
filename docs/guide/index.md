@@ -86,5 +86,8 @@ Refer to the [individual elements](/elements/) for supported JS interfaces.
 
 ## Usage in a framework
 
-React, Svelte, Vue, Solid or Qwick
+Works with every framework, but comes with Typescript defintions for React, Svelte, Vue, Solid and Qwick.
 
+## Usage in VSCode
+
+Documentation on how to get autocompletion coming

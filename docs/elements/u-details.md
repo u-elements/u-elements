@@ -7,7 +7,7 @@ import { data } from '../filesize.data.ts'
 You can use it to make things like accordions, expandables, FAQs, dropdowns, etc.
 
 **Quick intro:**
-- Use `<u-summary>` as first child - this becomes the label
+- Use `<u-summary>` as first child - this is the label
 - Use any HTML element as second child - this will hide/show content <mark data-badge="non-standard" aria-description="Native &lt;details&gt; does not need a second child wrapping the content, but we need it to make screen readers see understand relation between &lt;u-summary&gt; and the content."></mark>
 - Use the `open` attribute on `<u-details>` to change state
 - **MDN Web Docs:** [&lt;details&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details),

@@ -82,7 +82,7 @@ mark[data-badge]::before {
   vertical-align: middle;
 }
 
-mark[data-badge="wcag"]::before,
+mark[data-badge="aria"]::before,
 mark[data-badge="html"]::before { content: '\2713\00A0 ' attr(data-badge); background: var(--vp-c-brand-soft); color: var(--vp-c-brand-1) }
 .VPSidebarItem mark[data-badge] { float: right }
 .VPLink.pager-link mark[data-badge] { display: none }

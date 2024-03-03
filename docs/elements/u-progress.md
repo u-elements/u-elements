@@ -3,11 +3,12 @@ import { data } from '../filesize.data.ts'
 </script>
 
 # &lt;u-progress&gt; <mark data-badge="html"></mark>
-Documentation coming
+`<u-progress>` lets you indicatate the amount of completed work, typically displayed as a progress bar.
 
 **Quick intro:**
 - Use the `max` attribute to change the amount of total work to be done
 - Use the `value` attribute to change the amount of completed work
+- Remove the `value` attribute to change to indeterminate/unknown amount of work
 - **MDN Web Docs:** [&lt;progress&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/progress)
 
 ## Example

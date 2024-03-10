@@ -8,13 +8,13 @@ import {
   IS_BROWSER,
   IS_IOS,
   UHTMLElement,
+  attachStyle,
   attr,
   customElements,
   getRoot,
   mutationObserver,
   off,
   on,
-  style,
   useId
 } from '../utils'
 
@@ -34,16 +34,18 @@ declare global {
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist)
  */
 export class UHTMLDataListElement extends UHTMLElement {
+  constructor() {
+    super()
+    attachStyle(this, DISPLAY_BLOCK)
+  }
   connectedCallback() {
     const root = getRoot(this)
-    style(this, DISPLAY_BLOCK)
     attr(this, { hidden: '', role: 'listbox' })
     on(root, 'focusin', onFocus) // Only bind focus globally as this is needed to activate
     on(root, 'focus', onFocus, true) // Need to also listen on focus with capturing to render before Firefox NVDA reads state
   }
   disconnectedCallback() {
     const root = getRoot(this)
-    addedOptions.delete(this) // Clean up
     off(root, 'focusin', onFocus)
     off(root, 'focus', onFocus, true)
     clearActiveInput(this)
@@ -52,9 +54,8 @@ export class UHTMLDataListElement extends UHTMLElement {
     if (event.defaultPrevented) return // Allow all events to be canceled
     if (event.type === 'click') onClick(this, event)
     if (event.type === 'focusout') onBlur(this)
-    if (event.type === 'input') setOptionAttributes(this)
+    if (event.type === 'input' || event.type === 'mutation') setOptionAttributes(this)
     if (event.type === 'keydown') onKeydown(this, event as KeyboardEvent)
-    if (event.type === 'mutation') onMutation(this)
   }
   get options(): HTMLCollectionOf<HTMLOptionElement> {
     return this.getElementsByTagName('u-option')
@@ -71,27 +72,26 @@ const clearActiveInput = (self: UHTMLDataListElement) => {
 }
 
 const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
-  if (open) setOptionAttributes(self) // Esure correct state when opening
+  if (open) setOptionAttributes(self) // Esure correct state when opening in input.value has changed
   attr(activeInput.get(self), ARIA_EXPANDED, open)
   self.hidden = !open
 }
 
-const addedOptions = new WeakMap<UHTMLDataListElement, HTMLOptionElement[]>()
 const setOptionAttributes = (self: UHTMLDataListElement) => {
   const hidden = self.hidden
-  const added = addedOptions.get(self) || [] // If a option is added to DOM while open, do not hide
   const value = activeInput.get(self)?.value.toLowerCase().trim() || ''
   const options = [...self.options]
 
   self.hidden = true // Speed up large lists by hiding during filtering
   options.forEach((opt) => {
-    const text = opt.text.toLowerCase()
-    opt.hidden = !added.includes(opt) && (!text.includes(value) || opt.disabled)
+    const text = `${opt.text}`.toLowerCase()
+    const values = `${opt.value}${opt.label}${text}`.toLowerCase()
+    opt.hidden = !values.includes(value) || opt.disabled
     opt.selected = value === text
   })
 
   // Needed to announce count in iOS
-  /* c8 ignore next 4 */ // Because @web/test-runner code coverage only runs in chromium
+  /* c8 ignore next 4 */ // Because @web/test-runner code coverage iOS emulator only runs in chromium
   if (IS_IOS)
     options
       .filter((opt) => !opt.hidden)
@@ -107,7 +107,12 @@ function onFocus({ target }: Event) {
     if (self instanceof UHTMLDataListElement && !activeInput.has(self)) {
       activeInput.set(self, target)
       attr(self, ARIA_LABELLEDBY, useId(target.labels?.[0]))
-      mutationObserver(self, { childList: true, subtree: true }) // Listen for DOM changes when open to opt out autofiltering
+      mutationObserver(self, {
+        attributeFilter: ['value'], // Listen for value changes to show u-options
+        attributes: true,
+        childList: true,
+        subtree: true
+      })
       on(self.getRootNode(), 'click,focusout,input,keydown', self)
       setExpanded(self, true)
       attr(target, {
@@ -142,14 +147,6 @@ function onClick(self: UHTMLDataListElement, { target }: Event) {
       setTimeout(() => (input.readOnly = false)) // Enable keyboard again
     }, 16) // Set timeout to 16ms to allow mobile keyboard to hide before moving focus
   }
-}
-
-// Since InputEvent does not accept event.preventDefault(),
-// we need another way of canceling automatic filtering when replacing inner DOM
-// We instead listen for mutations so we can store options that are addedOptions
-function onMutation(self: UHTMLDataListElement) {
-  addedOptions.set(self, [...self.options]) // Store to prevent mutations
-  setOptionAttributes(self)
 }
 
 function onKeydown(self: UHTMLDataListElement, event: KeyboardEvent) {

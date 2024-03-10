@@ -172,20 +172,16 @@ describe('u-datalist', () => {
     expect(uDatalist.options[2].hidden).to.equal(true)
   })
 
-  it('does not filter items added while in focus', async () => {
+  it('filters items when changing value', async () => {
     const items = [...toDOM(DEFAULT_TEST_HTML).querySelectorAll('*')]
     const [, input, uDatalist] = items as [HTMLLabelElement, HTMLInputElement, UHTMLDataListElement]
 
+    input.value = 'test'
     input.focus()
-    uDatalist.innerHTML = '<u-option>New option</u-option>'
-    await nextFrame() // Let MutationObserver run
-    expect(uDatalist.options[0].hidden).to.equal(false)
-
-    await sendKeys({ press: '1' })
     await nextFrame() // Let focus event bubble
-    expect(document.activeElement).to.equal(input)
-    expect(input.value).to.equal('1')
-    expect(uDatalist.options[0].value).to.equal('New option')
+    expect(uDatalist.options[0].hidden).to.equal(true)
+    uDatalist.options[0].value = 'test'
+    await nextFrame() // Let MutationObserver run
     expect(uDatalist.options[0].hidden).to.equal(false)
   })
 

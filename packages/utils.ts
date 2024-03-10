@@ -12,7 +12,7 @@ export const IS_IOS =
 // Constants for better compression and control
 export const ARIA_CONTROLS = 'aria-controls'
 export const ARIA_EXPANDED = 'aria-expanded'
-export const ARIA_LABELLEDBY = IS_ANDROID ? 'data-labelledby' : 'aria-labelledby' // Android reads tab text instead of content when labelledby
+export const ARIA_LABELLEDBY = IS_ANDROID ? 'data-labelledby' : 'aria-labelledby' // Android <=13 reads tab text instead of content when labelledby
 export const ARIA_SELECTED = 'aria-selected'
 export const DISPLAY_BLOCK = ':host(:not([hidden])) { display: block }'
 
@@ -34,11 +34,11 @@ export const off = (element: EventListenerTarget, ...rest: EventListenerParams):
  * @param element The Element to scope styles for
  * @param css The css to inject
  */
-export const style = (element: Element, css: string) => {
-  const shadow = element.attachShadow({ mode: 'open' })
-  shadow.appendChild(document.createElement('style')).textContent = css
-  shadow.appendChild(document.createElement('slot'))
-}
+export const attachStyle = (element: Element, css: string) =>
+  element.attachShadow({ mode: 'closed' }).append(
+    createElement('slot'), // Unnamed slot does automatically render all top element nodes
+    createElement('style', { textContent: css })
+  )
 
 export function attr(
   element: unknown,
@@ -97,11 +97,18 @@ export const getRoot = (node: Node) =>
  * useId
  * @return A generated unique ID
  */
-let id = Date.now()
+let id = 0;
 export const useId = (el?: Element | null) =>
   el
     ? (el.id || (el.id = `:${el.nodeName.toLowerCase()}${(++id).toString(32)}`))
     : undefined
+
+/**
+ * createElement with props
+ * @return HTMLElement with props
+ */
+export const createElement = (tagName: keyof HTMLElementTagNameMap, props?: unknown) => 
+  Object.assign(document.createElement(tagName), props)
 
 /**
  * customElements.define

@@ -23,19 +23,19 @@ Install the elements you want through `@u-elements/[u-element-name-here]`.
 ::: code-group
 
 ```bash [NPM]
-npm add -D @u-elements/[u-element-name-here]
+npm add -S @u-elements/[u-element-name-here]
 ```
 
 ```bash [PNPM]
-pnpm add -D @u-elements/[u-element-name-here]
+pnpm add -S @u-elements/[u-element-name-here]
 ```
 
 ```bash [Yarn]
-yarn add -D @u-elements/[u-element-name-here]
+yarn add -S @u-elements/[u-element-name-here]
 ```
 
 ```bash [Bun]
-bun add -D @u-elements/[u-element-name-here]
+bun add -S @u-elements/[u-element-name-here]
 ```
 
 ```html [CDN]
@@ -57,10 +57,10 @@ Import the elements you want through `import '@u-elements/[u-element-name-here]'
 import '@u-elements/[u-element-name-here]';
 ```
 
-## Usage in HTML
+## Usage
 
 Add a `u-` to the relevant HTML tags in your markup.
-<br />Refer to the [individual elements](/elements/) for supported attributes.
+<br />Refer to the [individual elements](/elements/) for supported attributes and Javascript properties.
 
 ```html [u-progress]
 <!DOCTYPE html>
@@ -79,14 +79,22 @@ Add a `u-` to the relevant HTML tags in your markup.
 </html>
 ```
 
-
-## Usage in Javascript
-
-Refer to the [individual elements](/elements/) for supported JS interfaces.
-
 ## Usage in a framework
 
-Works with every framework, but comes with Typescript defintions for React, Svelte, Vue, Solid and Qwick.
+Works with [every framework supporting CustomElements](https://custom-elements-everywhere.com/) (even React as we do not need any CustomEvents).
+As an added bonus; All `u-elements` shipps with Typescript definitions for both React, Svelte, Vue, Solid and Qwick.
+
+:::warning Note:
+React does not support [`className` on CustomElements](https://github.com/facebook/react/issues/4933) yet,
+but you can work around this:
+
+```jsx
+<u-datalist
+  className="your-className-here" // [!code --]
+  ref={(el) => el?.classList.add('your-className-here')} // [!code ++]
+>
+```
+:::
 
 ## Usage in VSCode
 

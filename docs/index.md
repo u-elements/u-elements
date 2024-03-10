@@ -44,6 +44,7 @@ if (typeof document !== 'undefined') setTimeout(() =>
 )
 </script>
 
+<!--Polyfill-->
 <!-- Drop in replacements for modern HTML tags that . By seamlessly integrating CustomElements, we Bridging the gap between assistive technologies, making your web applications inclusive and user-friendly. -->
 <!-- ,  testing to seamlessly replace HTML elements with their accessible counterparts. With u-elements, you can be confident in delivering a web experience that is both robust and inclusive. -->
 <!-- in into any project, regardless of the framework in use. Developers will appreciate the added convenience of VSCode autocomplete, inline documentation, and TypeScript definitions for popular frameworks like React, Solid, Svelte, Vue, and Qwik. So you can use them with a framework, without one, or even directly in a markdown file. These components will work regardless of your project's architecture. regardless of your project's architecture -->

@@ -1,7 +1,7 @@
 import { expect } from '@esm-bundle/chai'
 import { compareSnapshot, sendKeys } from '@web/test-runner-commands'
 import { UHTMLDetailsElement, UHTMLSummaryElement } from './u-details'
-import { ARIA_LABELLEDBY, IS_ANDROID } from '../utils'
+import { IS_ANDROID } from '../utils'
 
 const nextFrame = async () =>
   new Promise(resolve => requestAnimationFrame(resolve))
@@ -28,7 +28,7 @@ describe('u-details', () => {
         </u-details>
         <u-details open>
           <u-summary id="summary-2">Summary 2</u-summary>
-          <div id="details-2">Details 2</div>
+          Details 2
         </u-details>
         <u-details>
           <u-summary id="summary-3">Summary 3</u-summary>
@@ -54,22 +54,19 @@ describe('u-details', () => {
     const [uSummary, content] = [...uDetails.children] as [UHTMLSummaryElement, HTMLDivElement]
 
     expect(uSummary.role).to.equal('button')
-    expect(uSummary.id).to.equal(content.getAttribute(ARIA_LABELLEDBY))
     expect(uSummary.tabIndex).to.equal(0)
     expect(uSummary.getAttribute('aria-expanded')).to.equal('false')
-    expect(uSummary.getAttribute('aria-controls')).to.equal(content.id)
-    expect(content.role).to.equal('group')
-    expect(content.getAttribute('hidden')).to.equal('until-found')
-    expect(content.getAttribute('aria-hidden')).to.equal('true')
+    expect(uSummary.getAttribute('aria-controls')).to.exist
+    expect(content.checkVisibility()).to.equal(false)
   })
 
-  it('sets up attributes when content is appended', async () => {
+  it('moves content to content slot when is appended', async () => {
     const uDetails = toDOM<UHTMLDetailsElement>(`<u-details><u-summary>Summary 1</u-summary></u-details>`)
     uDetails.insertAdjacentHTML('beforeend', '<div>Details 1</div>')
 
-    const [uSummary, content] = [...uDetails.children] as [UHTMLSummaryElement, HTMLDivElement]
+    const [, content] = [...uDetails.children] as [UHTMLSummaryElement, HTMLDivElement]
     await nextFrame() // Let MutationObserver run
-    expect(content.id).to.equal(uSummary.getAttribute('aria-controls'))
+    expect(content.checkVisibility()).to.equal(false)
   })
 
   it('handles open property and attributes change', () => {
@@ -79,49 +76,22 @@ describe('u-details', () => {
     uDetails.open = true
     expect(uDetails.hasAttribute('open')).to.equal(true)
     expect(uSummary.getAttribute('aria-expanded')).to.equal('true')
-    expect(content.getAttribute('aria-hidden')).to.equal('false')
-    expect(content.getAttribute('hidden')).to.equal(null)
+    expect(content.checkVisibility()).to.equal(true)
 
     uDetails.open = false
     expect(uDetails.open).to.equal(false)
     expect(uSummary.getAttribute('aria-expanded')).to.equal('false')
-    expect(content.getAttribute('aria-hidden')).to.equal('true')
-    expect(content.getAttribute('hidden')).to.equal('until-found')
+    expect(content.checkVisibility()).to.equal(false)
 
     uDetails.setAttribute('open', 'banana')
     expect(uDetails.open).to.equal(true)
     expect(uSummary.getAttribute('aria-expanded')).to.equal('true')
-    expect(content.getAttribute('aria-hidden')).to.equal('false')
-    expect(content.getAttribute('hidden')).to.equal(null)
+    expect(content.checkVisibility()).to.equal(true)
 
     uDetails.removeAttribute('open')
     expect(uDetails.open).to.equal(false)
     expect(uSummary.getAttribute('aria-expanded')).to.equal('false')
-    expect(content.getAttribute('aria-hidden')).to.equal('true')
-    expect(content.getAttribute('hidden')).to.equal('until-found')
-  })
-
-  it('respects id attributes', async () => {
-    const uDetails = toDOM<UHTMLDetailsElement>(`
-      <u-details>
-        <u-summary id="summary-1">Summary 1</u-summary>
-        <details id="details-1">Details 1</details>
-      </u-details>
-    `)
-    const [uSummary, content] = [...uDetails.children] as [UHTMLSummaryElement, HTMLDivElement]
-
-    expect(uSummary.id).to.equal('summary-1')
-    expect(content.id).to.equal('details-1')
-    expect(uSummary.getAttribute('aria-controls')).to.equal('details-1')
-    expect(content.getAttribute(ARIA_LABELLEDBY)).to.equal('summary-1')
-
-    uSummary.id = 'summary-1-changed-id'
-    await nextFrame() // Let MutationObserver run
-    expect(content.getAttribute(ARIA_LABELLEDBY)).to.equal('summary-1-changed-id')
-    
-    content.id = 'details-1-changed-id'
-    await nextFrame() // Let MutationObserver run
-    expect(uSummary.getAttribute('aria-controls')).to.equal('details-1-changed-id')
+    expect(content.checkVisibility()).to.equal(false)
   })
 
   it('updates attributes on click', async () => {

@@ -7,8 +7,8 @@ import { data } from '../filesize.data.ts'
 You can use it to make things like accordions, expandables, FAQs, dropdowns, etc.
 
 **Quick intro:**
-- Use `<u-summary>` as first child - this is the label
-- Use any HTML element as second child - this will hide/show content <mark data-badge="non-standard" aria-description="Native &lt;details&gt; does not need a second child wrapping the content, but we need it to make screen readers see understand relation between &lt;u-summary&gt; and the content."></mark>
+- Use `<u-summary>` as a direct child - this is the label
+- Use any other content in `<u-details>` - this will hide/show
 - Use the `open` attribute on `<u-details>` to change state
 - **MDN Web Docs:** [&lt;details&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details),
 [&lt;summary&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/summary)
@@ -28,19 +28,19 @@ You can use it to make things like accordions, expandables, FAQs, dropdowns, etc
 ::: code-group
 
 ```bash [NPM]
-npm add -D @u-elements/u-details
+npm add -S @u-elements/u-details
 ```
 
 ```bash [PNPM]
-pnpm add -D @u-elements/u-details
+pnpm add -S @u-elements/u-details
 ```
 
 ```bash [Yarn]
-yarn add -D @u-elements/u-details
+yarn add -S @u-elements/u-details
 ```
 
 ```bash [Bun]
-bun add -D @u-elements/u-details
+bun add -S @u-elements/u-details
 ```
 
 ```html [CDN]
@@ -61,7 +61,7 @@ bun add -D @u-elements/u-details
 
 ## Events
 
-In addition to the [usual events supported by HTML elements](https://developer.mozilla.org/en-US/docs/Web/API/Element#events), the `<u-details>` element dispatches a `toggle` event _after_ the open state is changed:
+In addition to the [usual events supported by HTML elements](https://developer.mozilla.org/en-US/docs/Web/API/Element#events), the `<u-details>` element dispatches a [`toggle` event](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDetailsElement/toggle_event) _after_ the open state is changed:
 
 ```js
 details.addEventListener('toggle', (event) => {

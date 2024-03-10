@@ -35,19 +35,19 @@ import { data } from '../filesize.data.ts'
 ::: code-group
 
 ```bash [NPM]
-npm add -D @u-elements/u-tabs
+npm add -S @u-elements/u-tabs
 ```
 
 ```bash [PNPM]
-pnpm add -D @u-elements/u-tabs
+pnpm add -S @u-elements/u-tabs
 ```
 
 ```bash [Yarn]
-yarn add -D @u-elements/u-tabs
+yarn add -S @u-elements/u-tabs
 ```
 
 ```bash [Bun]
-bun add -D @u-elements/u-tabs
+bun add -S @u-elements/u-tabs
 ```
 
 ```html [CDN]

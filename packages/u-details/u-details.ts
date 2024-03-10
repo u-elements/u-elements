@@ -1,17 +1,16 @@
 import {
   ARIA_CONTROLS,
   ARIA_EXPANDED,
-  ARIA_LABELLEDBY,
   DISPLAY_BLOCK,
   UHTMLElement,
   asButton,
   attr,
+  createElement,
   customElements,
   getRoot,
   mutationObserver,
   off,
   on,
-  style,
   useId
 } from '../utils'
 
@@ -24,76 +23,74 @@ declare global {
 
 // Constants for better compression
 const OPEN = 'open'
-
-// Needs two child elements
-// First element to be <u-summary>
-// Second element to be <details>
-// toggle event is triggered from child, not <u-details> iteself
-// We can not polyfill HTMLInputElement.list as this is readOnly
-// Why: details/summary does not work in iOS Safari: impossible to read state of aria-expanded
+const USUMMARY_TAG = 'U-SUMMARY'
 
 /**
  * The `<u-details>` HTML element creates a disclosure widget in which information is visible only when the widget is toggled into an "open" state. A summary or label must be provided using the `<u-summary>` element.
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details)
  */
 export class UHTMLDetailsElement extends UHTMLElement {
+  #shadowRoot: ShadowRoot
   static get observedAttributes() {
-    return [OPEN, 'id']
+    return [OPEN]
+  }
+  constructor() {
+    super()
+    this.#shadowRoot = this.attachShadow({
+      mode: 'closed',
+      slotAssignment: 'manual' // 'manual' slotAssignment so we also can move text nodes into slots
+    })
+    this.#shadowRoot.append(
+      createElement('slot'), // Summary slot
+      createElement('slot'), // Content slot
+      createElement('style', {
+        textContent: `
+        ${DISPLAY_BLOCK}
+        ::slotted(u-summary) { cursor: pointer; display: list-item; counter-increment: list-item 0; list-style: disclosure-closed inside }
+        ::slotted(u-summary[${ARIA_EXPANDED}="true"]) { list-style-type: disclosure-open }
+      `
+      }))
   }
   connectedCallback() {
-    style(
-      this,
-      `${DISPLAY_BLOCK}
-      ::slotted(u-summary) { cursor: pointer; display: list-item; list-style: inside disclosure-closed }
-      ::slotted(u-summary[${ARIA_EXPANDED}="true"]) { list-style-type: disclosure-open }`
-    )
-    on(this, 'beforematch', this, true)
-    mutationObserver(this, {
-      attributeFilter: ['id'], // Observe childrens id to sync aria-controls and aria-labelledby
-      childList: true, // Observe children to detect native <details>
-      subtree: true // Needed to observe childrens attributes
-    })
+    assignSlots(this.#shadowRoot, this)
+    mutationObserver(this, { childList: true }) // Observe children to assign slots
+    on(getSlots(this.#shadowRoot).content, 'beforematch', this) // Open if browsers Find in page reveals content
     this.attributeChangedCallback() // We now know the element is in the DOM, so run a attribute setup
   }
   disconnectedCallback() {
-    off(this, 'beforematch', this, true)
     mutationObserver(this, false)
+    off(getSlots(this.#shadowRoot).content, 'beforematch', this)
   }
-  attributeChangedCallback(_prop?: string, prev?: string, next?: string) {
-    const [summary, content] = this.children
-    const isOpen = this[OPEN] // Cache for speed
-    const name = attr(this, 'name')
+  attributeChangedCallback(prop?: string, prev?: string, next?: string) {
+    const open = this[OPEN] // Cache for speed
+    const summary = [...this.children].find((el) => el.nodeName === USUMMARY_TAG)
+    const supportsHiddenUntilFound = 'onbeforematch' in this
+    const { content } = getSlots(this.#shadowRoot)
 
     attr(summary, {
-      [ARIA_CONTROLS]: content ? useId(content) : null,
-      [ARIA_EXPANDED]: isOpen,
-      id: useId(summary)
+      [ARIA_CONTROLS]: useId(content),
+      [ARIA_EXPANDED]: open
+    })
+    attr(content, {
+      'aria-hidden': `${!open}`, // Needed to prevent announcing "group" when closed in Chrome on Mac
+      hidden: open ? null : 'until-found' // Allows browsers to search inside content
     })
 
-    attr(content, {
-      'aria-hidden': !isOpen, // Needed to not announce "empty group" when closed
-      'hidden': isOpen ? null : 'until-found', // Allows browsers to search inside content
-      [ARIA_LABELLEDBY]: useId(summary),
-      role: 'group'
-    })
+    // Make <slot> display: block when hidden so content-visibility: hidden works
+    if (supportsHiddenUntilFound) content.style.display = open ? '' : 'block'
 
     // Close other u-details with same name
-    if (isOpen && name)
+    if (open && this.name)
       getRoot(this)
-        .querySelectorAll<UHTMLDetailsElement>(`${this.nodeName}[name="${name}"]`)
-        .forEach((uDetails) => uDetails === this || (uDetails.open = false))
+        .querySelectorAll<UHTMLDetailsElement>(`${this.nodeName}[name="${this.name}"]`)
+        .forEach((uDetails) => uDetails === this || (uDetails[OPEN] = false))
 
-    // Trigger toggle event
-    if (prev !== next) this.dispatchEvent(new Event('toggle'));
-
-    // Skip mutation events caused by attributeChangedCallback
-    // Might be not defined if "open" is present in HTML causing
-    // attributeChangedCallback to run before connectedCallback
-    mutationObserver(this)?.takeRecords()
+    // Trigger toggle event if change of open state
+    if (prop === OPEN && prev !== next) this.dispatchEvent(new Event('toggle'))
   }
-  handleEvent({ type, target, detail }: CustomEvent<MutationRecord[]>) {
-    if (type === 'mutation' && isMutationRelevant(this, detail)) this.attributeChangedCallback()
-    if (type === 'beforematch' && [...this.children].includes(target as Element)) this.open = true
+  handleEvent({ type }: Event) {
+    if (type === 'beforematch') this[OPEN] = true
+    if (type === 'mutation') assignSlots(this.#shadowRoot, this)
   }
   get open(): boolean {
     return attr(this, OPEN) !== null
@@ -124,20 +121,28 @@ export class UHTMLSummaryElement extends UHTMLElement {
   handleEvent(event: CustomEvent) {
     const details = this.parentElement
     if (event.type === 'keydown') asButton(event)
-    if (event.type === 'click' && isDetails(details)) details[OPEN] = !details[OPEN]
+    if (event.type === 'click' && details instanceof UHTMLDetailsElement) details[OPEN] = !details[OPEN]
   }
 }
 
 customElements.define('u-details', UHTMLDetailsElement)
 customElements.define('u-summary', UHTMLSummaryElement)
 
-function isDetails(el: unknown): el is HTMLDetailsElement {
-  return el instanceof HTMLElement && OPEN in el
+function getSlots(shadow: ShadowRoot) {
+  const slots = [...shadow?.children || []] as HTMLSlotElement[]
+  return { summary: slots[0], content: slots[1] }
 }
 
-function isMutationRelevant(self: UHTMLDetailsElement, mutations: MutationRecord[]) {
-  return mutations.some(({ attributeName, type, target }) =>
-    (target === self && type === 'childList') ||
-    (target.parentElement === self && attributeName === 'id')
-  )
+function assignSlots(shadow: ShadowRoot, self: UHTMLDetailsElement) {
+  const { summary, content } = getSlots(shadow)
+  let contents: (Element | Text)[] = []
+  let summarys: Element[] = []
+
+  self.childNodes.forEach((node) => {
+    if (node.nodeName === USUMMARY_TAG) summarys.push(node as Element)
+    else if (node instanceof Element || node instanceof Text) contents.push(node)
+  })
+
+  summary.assign(...summarys)
+  content.assign(...contents)
 }

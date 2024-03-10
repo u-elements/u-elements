@@ -1,9 +1,3 @@
-// TODO: Maybe show no results?
-// TODO: Read https://www.npmjs.com/package/custom-element-vs-code-integration
-//const valid =
-//return show
-// attr(self, 'tabindex', valid.length ? null : 0) // Set input to invalid if no matches found
-
 # MacOS 13.2 - VoiceOver 30.08.2023
 
 ## Safari:

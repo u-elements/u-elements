@@ -15,7 +15,10 @@ export default defineConfig({
       }
     }
   },
-  head: [['link', { rel: 'icon', href: `${base}logo.svg` }]],
+  head: [
+    ['link', { rel: 'icon', href: `${base}logo.svg` }],
+    ['script', { acync: '', defer: '', src: 'https://scripts.withcabin.com/hello.js' }] // Analytics
+  ],
   themeConfig: {
     logo: '/logo.svg',
     externalLinkIcon: true,
@@ -45,7 +48,7 @@ export default defineConfig({
           { text: '&lt;u-details&gt; <mark data-badge="html"></mark>', link: '/elements/u-details' },
           { text: '<del>&lt;u-dialog&gt;</del> <mark data-badge="html"></mark>', link: '/elements/u-dialog' },
           { text: '&lt;u-progress&gt; <mark data-badge="html"></mark>', link: '/elements/u-progress' },
-          { text: '<del>&lt;u-selectlist&gt;</del> <mark data-badge="pending"></mark>', link: '/elements/u-selectlist' },
+          { text: '<del>&lt;u-select&gt;</del> <mark data-badge="pending"></mark>', link: '/elements/u-select' },
           { text: '&lt;u-tabs&gt; <mark data-badge="aria"></mark>', link: '/elements/u-tabs' }
         ]
       }

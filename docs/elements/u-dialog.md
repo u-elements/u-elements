@@ -1,7 +1,7 @@
 # <del>&lt;u-dialog&gt;</del> <mark data-badge="html"></mark>
 There is no longer need for `<u-dialog>` :tada:
 <br />[Native `<dialog>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog) now has sufficient screen reader 
-<br />support in all major screen readers.
+<br />support in all major browsers and screen readers.
 
 **Quick intro:**
 - Use `<dialog>` to create a modal or non-modal dialog box
@@ -34,4 +34,4 @@ Nothing to install :tada:
 ## Specifications
 
 - DOM interface: [HTMLDialogElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDialogElement)
-- HTML Standard: [The &lt;details&gt; element](https://html.spec.whatwg.org/multipage/interactive-elements.html#the-dialog-element)
+- HTML Standard: [The &lt;dialog&gt; element](https://html.spec.whatwg.org/multipage/interactive-elements.html#the-dialog-element)

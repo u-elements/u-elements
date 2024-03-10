@@ -6,9 +6,9 @@ import { data } from '../filesize.data.ts'
 `<u-datalist>` lets you suggest values to a connected `<input>`. You can use it to make things like comboboxes, autosuggest, autocomplete, live search results, etc.
 
 **Quick intro:**
-- Use `<u-option>` as child elements - these will be the values suggested while typing
+- Use `<u-option>` as child elements - these will show the suggestions while typing
 - Use matching `id` on `<u-datalist>` and `list` attribute on `<input>` to connect
-- **Want to control the suggestions?** Replace content as the user types <mark data-badge="non-standard" aria-description="Native &lt;datalist&gt; also supports replacing content on the fly, but suggestions will only show if they match the value of the connected &lt;input&gt;"></mark>
+- **Want to show suggestions from a data source?** See [dynamic suggestions &rarr;](#example-dynamic-suggestions)
 - **MDN Web Docs:** [&lt;datalist&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist), [&lt;option&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option)
 
 ## Example
@@ -38,19 +38,19 @@ import { data } from '../filesize.data.ts'
 ::: code-group
 
 ```bash [NPM]
-npm add -D @u-elements/u-datalist
+npm add -S @u-elements/u-datalist
 ```
 
 ```bash [PNPM]
-pnpm add -D @u-elements/u-datalist
+pnpm add -S @u-elements/u-datalist
 ```
 
 ```bash [Yarn]
-yarn add -D @u-elements/u-datalist
+yarn add -S @u-elements/u-datalist
 ```
 
 ```bash [Bun]
-bun add -D @u-elements/u-datalist
+bun add -S @u-elements/u-datalist
 ```
 
 ```html [CDN]
@@ -65,6 +65,11 @@ bun add -D @u-elements/u-datalist
 
 ## Styling
 
+Coming
+
+## Examples
+
+### Example: Dynamic suggestions
 Coming
 
 ## Specifications

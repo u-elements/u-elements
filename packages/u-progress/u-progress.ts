@@ -1,4 +1,4 @@
-import { IS_IOS, UHTMLElement, attr, customElements, getRoot, style, useId } from '../utils'
+import { IS_IOS, UHTMLElement, attachStyle, attr, customElements, getRoot, useId } from '../utils'
 
 declare global {
   interface HTMLElementTagNameMap {
@@ -14,15 +14,15 @@ export class UHTMLProgressElement extends UHTMLElement {
   static get observedAttributes() {
     return ['value', 'max']
   }
-  connectedCallback() {
-    style(
+  constructor() {
+    super()
+    attachStyle(
       this,
       `:host(:not([hidden])) { box-sizing: border-box; border: 1px solid; display: inline-block; height: .5em; width: 10em; overflow: hidden }
       :host::before { content: ''; display: block; height: 100%; background: currentColor; width: var(--percentage, 100%); transition: width .2s }
       :host(:not([value]))::before { animation: indeterminate 2s linear infinite; background: linear-gradient(90deg,currentColor 25%, transparent 50%, currentColor 75%) 100%/400% }
       @keyframes indeterminate { to { background-position-x: 0 } }`
     )
-    this.attributeChangedCallback()
   }
   attributeChangedCallback() {
     const indeterminate = this.position < 0

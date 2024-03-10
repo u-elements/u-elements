@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en-US">
+<html lang="no">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -23,32 +23,34 @@
     </style>
   </head>
   <body>
-    <script>
-      // setTimeout(() => {
-      //   let i = 0
-      //   document.addEventListener('input', (event) => {
-      //     setTimeout(() => {
-      //       const pre = event.target.value.split('@')[0]
-      //       event.target.list.innerHTML = `
-      //         <u-option>${pre}@gmail.com</u-option>
-      //         <u-option>${pre}@hotmail.com</u-option>
-      //         <u-option>${pre}@icloud.com</u-option>
-      //         <u-option>${i++}</u-option>`;
-      //     })
-      //   })
-      // }, 200)
-    </script>
+    Hei
+    <u-test></u-test>
+    Hade
     <label>
       <u-progress value="5" max="10">70%</u-progress>
     </label>
     <br />
     <br />
-    <u-test></u-test>
     <label>
-      Velg type iskrem<br>
-      <input type="text" list="my-list" />
+      Velg type iskrem native<br />
+      <input type="text" list="native-list" />
     </label>
-    <u-datalist id="my-list">
+    <datalist id="native-list">
+      <option>Kokkos</option>
+      <option>Jordbær</option>
+      <option>Sjokolade</option>
+      <option>Vanilje</option>
+      <option>Lakris</option>
+      <option>Pistasj</option>
+      <option>Mango</option>
+      <option>Hasselnøtt</option>
+    </datalist>
+    <br />
+    <label>
+      Velg type iskrem<br />
+      <input type="text" list="u-list-1" />
+    </label>
+    <u-datalist id="u-list-1">
       <u-option>Kokkos</u-option>
       <u-option>Jordbær</u-option>
       <u-option>Sjokolade</u-option>
@@ -60,10 +62,10 @@
     </u-datalist>
     <br />
     <label>
-      Velg type iskrem<br>
-      <input type="text" list="my-list-2" />
+      Velg type iskrem<br />
+      <input type="text" list="u-list-2" />
     </label>
-    <u-datalist id="my-list-2">
+    <u-datalist id="u-list-2">
       <u-option>Hasselnøtt</u-option>
       <u-option>Kokkos</u-option>
       <u-option>Jordbær</u-option>
@@ -73,6 +75,28 @@
       <u-option>Pistasj</u-option>
       <u-option>Mango</u-option>
     </u-datalist>
+    <script>
+      // setTimeout(() => {
+        let i = 0
+        document.querySelectorAll('input[list]').forEach((input) => {
+          input.addEventListener('input', ({ target }) => {
+            // setTimeout(() => {
+              const { value, list } = target
+              const tag = list.nodeName.replace('DATALIST', 'option')
+              const pre = value.split('@')[0]
+
+              list.innerHTML = `
+                <${tag} value="${pre}">@gmail.com</${tag}>
+                <${tag} value="${pre}">${pre}@icloud.com</${tag}>
+                <${tag} value="${pre}">${pre}@hotmail.com</${tag}>
+                <${tag} value="${pre}">${++i}</${tag}>
+              `
+              setTimeout(() => target.click(), 16)
+            // }, 200)
+          })
+        })
+      // }, 200)
+    </script>
     <script type="module" src="/packages/u-datalist/u-datalist.ts"></script>
     <script type="module" src="/packages/u-details/u-details.ts"></script>
     <script type="module" src="/packages/u-progress/u-progress.ts"></script>
@@ -109,10 +133,13 @@
             <u-details name="group-1">
               <u-summary>Test 1</u-summary>
               <div>Innhold 1</div>
+              <div>Innhold 2</div>
+              <div>Innhold 3</div>
+              Innhold 4
             </u-details>
             <u-details name="group-1">
               <u-summary>Test 2</u-summary>
-              <div>Innhold 2</div>
+              <div>Innhold test 2</div>
             </u-details>
             <br />
             <style>

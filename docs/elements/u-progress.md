@@ -22,19 +22,19 @@ import { data } from '../filesize.data.ts'
 ::: code-group
 
 ```bash [NPM]
-npm add -D @u-elements/u-progress
+npm add -S @u-elements/u-progress
 ```
 
 ```bash [PNPM]
-pnpm add -D @u-elements/u-progress
+pnpm add -S @u-elements/u-progress
 ```
 
 ```bash [Yarn]
-yarn add -D @u-elements/u-progress
+yarn add -S @u-elements/u-progress
 ```
 
 ```bash [Bun]
-bun add -D @u-elements/u-progress
+bun add -S @u-elements/u-progress
 ```
 
 ```html [CDN]

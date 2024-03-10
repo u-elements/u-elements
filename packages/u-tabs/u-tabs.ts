@@ -5,12 +5,12 @@ import {
   DISPLAY_BLOCK,
   UHTMLElement,
   asButton,
+  attachStyle,
   attr,
   customElements,
   getRoot,
   off,
   on,
-  style,
   useId
 } from '../utils'
 
@@ -28,8 +28,9 @@ declare global {
  * No MDN reference available.
  */
 export class UHTMLTabsElement extends UHTMLElement {
-  connectedCallback() {
-    style(this, DISPLAY_BLOCK)
+  constructor() {
+    super()
+    attachStyle(this, DISPLAY_BLOCK)
   }
   get tabList(): UHTMLTabListElement | null {
     return queryWithoutNested('u-tablist', this)[0] || null
@@ -54,8 +55,11 @@ export class UHTMLTabsElement extends UHTMLElement {
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/tablist_role)
  */
 export class UHTMLTabListElement extends UHTMLElement {
+  constructor() {
+    super()
+    attachStyle(this, ':host(:not([hidden])) { display: flex; flex-wrap: wrap }')
+  }
   connectedCallback() {
-    style(this, ':host(:not([hidden])) { display: flex; flex-wrap: wrap }')
     attr(this, 'role', 'tablist')
     on(this, 'click,keydown', this) // Listen for tab events on tablist to minimize amount of listeners
   }
@@ -97,8 +101,11 @@ export class UHTMLTabElement extends UHTMLElement {
   static get observedAttributes() {
     return ['id', ARIA_SELECTED, ARIA_CONTROLS]
   }
+  constructor() {
+    super()
+    attachStyle(this, `${DISPLAY_BLOCK}:host { cursor: pointer }`)
+  }
   connectedCallback() {
-    style(this, `${DISPLAY_BLOCK}:host { cursor: pointer }`)
     this.selected = !!this.selected // Ensure selected is set (which also triggers attributeChangedCallback)
   }
   attributeChangedCallback(_name: string, prev: string, next: string) {
@@ -158,8 +165,11 @@ export class UHTMLTabPanelElement extends UHTMLElement {
   static get observedAttributes() {
     return ['id']
   }
+  constructor() {
+    super()
+    attachStyle(this, DISPLAY_BLOCK)
+  }
   connectedCallback() {
-    style(this, DISPLAY_BLOCK)
     attr(this, 'role', 'tabpanel')
     this.hidden = Array.from(this.tabs).every((tab) => !tab.selected) // Hide if not connected to tab
   }

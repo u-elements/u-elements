@@ -1,4 +1,4 @@
-import { DISPLAY_BLOCK, UHTMLElement, attr, customElements, style } from '../utils'
+import { DISPLAY_BLOCK, UHTMLElement, attachStyle, attr, customElements } from '../utils'
 
 declare global {
   interface HTMLElementTagNameMap {
@@ -18,8 +18,11 @@ export class UHTMLOptionElement extends UHTMLElement {
   static get observedAttributes() {
     return [DISABLED, SELECTED]
   }
+  constructor() {
+    super()
+    attachStyle(this, `${DISPLAY_BLOCK}:host { cursor: pointer }`)
+  }
   connectedCallback() {
-    style(this, `${DISPLAY_BLOCK}:host { cursor: pointer }`)
     attr(this, { role: 'option', tabindex: -1 })
   }
   attributeChangedCallback(name: string, _prev: string, next: string) {

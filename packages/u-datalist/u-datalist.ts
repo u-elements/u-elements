@@ -135,17 +135,24 @@ function onBlur(self: UHTMLDataListElement) {
 
 function onClick(self: UHTMLDataListElement, { target }: Event) {
   const option = [...self.options].find((opt) => opt.contains(target as Node))
+  const value = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value') 
   const input = activeInput.get(self)
 
   if (input === target) setExpanded(self, true) // Ensure click on input opens
   else if (input && option) {
     input.readOnly = true // Prevent showing mobile keyboard when moving focus back to input after selection
-    input.value = option.text
+    value?.set?.call(input, option.value); // Trigger value change - also React compatible
+
+    // Trigger input.value change events
+    input.dispatchEvent(new Event('input', { bubbles: true, composed: true }))
+    input.dispatchEvent(new Event('change', { bubbles: true }))
+
+    // Set timeout to 16ms to allow mobile keyboard to hide before moving focus
     setTimeout(() => {
       input.focus() // Change input.value before focus move to make screen reader read the correct value
       setExpanded(self, false)
       setTimeout(() => (input.readOnly = false)) // Enable keyboard again
-    }, 16) // Set timeout to 16ms to allow mobile keyboard to hide before moving focus
+    }, 16)
   }
 }
 

@@ -233,4 +233,35 @@ describe('u-datalist', () => {
     expect(uDatalist2.hidden).to.equal(false)
     expect(uDatalist1.hidden).to.equal(true)
   })
+
+  it('triggers input and change events', async () => {
+    const items = [...toDOM(DEFAULT_TEST_HTML).querySelectorAll('*')]
+    const [, input, uDatalist] = items as [HTMLLabelElement, HTMLInputElement, UHTMLDataListElement]
+
+    const onInput = (event: Event) => expect(event).to.include({
+      composed: true,
+      bubbles: true,
+      cancelable: false,
+      currentTarget: input,
+      target: input,
+      type: 'input'
+    }).and.be.instanceOf(Event)
+
+    const onChange = (event: Event) => expect(event).to.include({
+      composed: false,
+      bubbles: true,
+      cancelable: false,
+      currentTarget: input,
+      target: input,
+      type: 'change'
+    }).and.be.instanceOf(Event)
+
+    input.addEventListener('input', onInput)
+    input.addEventListener('change', onChange)
+
+    input.focus()
+    await nextFrame() // Let focus event bubble
+
+    uDatalist.options[0].click()
+  })
 })

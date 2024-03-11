@@ -17,9 +17,7 @@ You can use it to make things like accordions, expandables, FAQs, dropdowns, etc
 <Sandbox>
 &lt;u-details&gt;
   &lt;u-summary&gt;Details&lt;/u-summary&gt;
-  &lt;div&gt;
-    Something small enough to escape casual notice.
-  &lt;/div&gt;
+  Something small enough to escape casual notice.
 &lt;/u-details&gt;
 </Sandbox>
 

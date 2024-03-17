@@ -1,7 +1,7 @@
 # <del>&lt;u-dialog&gt;</del> <mark data-badge="html"></mark>
 There is no longer need for `<u-dialog>` :tada:
-<br />[Native `<dialog>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog) now has sufficient screen reader 
-<br />support in all major browsers and screen readers.
+Native [`<dialog>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog) now has sufficient support
+in all major browsers and screen readers.
 
 **Quick intro:**
 - Use `<dialog>` to create a modal or non-modal dialog box

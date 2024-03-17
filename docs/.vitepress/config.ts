@@ -21,7 +21,6 @@ export default defineConfig({
   ],
   themeConfig: {
     logo: '/logo.svg',
-    externalLinkIcon: true,
     editLink: {
       pattern: 'https://github.com/u-elements/u-elements/edit/main/docs/:path',
       text: 'Suggest changes to this page'

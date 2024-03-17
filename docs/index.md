@@ -22,16 +22,16 @@ hero:
 features:
   - icon: ☑️
     title: W3C standards compliant, accessible for everyone
-    details: Bridge the gap between assistive technologies and modern HTML tags, while still being able to use MDN et al. as documentation.
+    details: Some HTML tags/ARIA patterns are not yet supported by screen readers. u&#8209;elements bridges that gap, while still allowing you to use MDN et al. as documentation.
   - icon: 📋
     title: Battle-tested with real screen readers
-    details: No compatibility assumptions; all elements have been manually tested across all major screen readers, browsers and devices.
+    details: No compatibility assumptions; all u&#8209;elements have been manually tested across all major screen readers, browsers and devices.
   - icon: 🪽
     title: Lightweight, headless and framework independent
-    details: Zero dependencies. CSS styling. Compatible with any javascript framework, without, or even markdown - just like HTML.
+    details: Zero dependencies. CSS styling. Compatible with any javascript framework, without a framework, or even in markdown or server side strings - just like HTML.
   - icon: ⚙️
     title: Future proof and easy opt out
-    details: Think of u-elements as a HTML polyfill. As assistive technologies catch up, simply remove a "u-", and you're back on native HTML.
+    details: Think of u-elements as a HTML web standards compliant polyfill. As assistive technologies catch up, simply remove a "u-", and you're back on native HTML.
 ---
 <script setup>
 import { data } from './filesize.data.ts'

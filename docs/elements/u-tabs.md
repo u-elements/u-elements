@@ -3,12 +3,12 @@ import { data } from '../filesize.data.ts'
 </script>
 
 # &lt;u-tabs&gt; <mark data-badge="aria"></mark>
-`<u-tabs>` is not a native HTML element, but follows [ARIA best practice for tabs](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/). It lets you navigate between groups of information that appear in the same context.
+`<u-tabs>` is not a native HTML element, but follows [ARIA authoring practices for tabs](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/). It lets you navigate between groups of information that appear in the same context.
 
 **Quick intro:**
-- Use `<u-tablist>` as first child, that groups multiple `<u-tab>` - these are the labels
+- Use `<u-tablist>` as first child, grouping multiple `<u-tab>` - these are the labels
 - Use `<u-tabpanel>` as adjacent children - these hide/show content of related `<u-tab>`
-- Use the `aria-selected="true"` on `<u-tab>` to set default open tab
+- Use `aria-selected="true"` on a `<u-tab>` to set the open tab (defaults to first tab)
 - **ARIA Authoring Practices Guide Docs:** [Tabs](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)
 
 ## Example

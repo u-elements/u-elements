@@ -6,9 +6,9 @@ In the early days of web development, crafting a website was like navigating a m
 
 Thankfully, as the web evolved, so did our tools and practices. Today, browsers mostly adhere to web standards and their [feature support is well documented](https://caniuse.com/).
 
-However, there's a challenge that often goes unnoticed; while browsers evolve rapidly, assistive technology does not. It is not uncommon for screen readers - the lifeline for visually impaired users - to become useless when encountering modern HTML elements or even (ironically) [W3C ARIA patterns](https://www.w3.org/WAI/ARIA/apg/patterns/). Debugging this is highly time-consuming, as both the browser, operating system and screen reader collectively affects the user experience.
+However, there's a challenge that often goes unnoticed; while browsers evolve rapidly, the landscape of assistive technology is more complex and therefore moves in a different pace. For instance, it is not uncommon for screen readers - the lifeline for visually impaired users - to become useless when encountering modern HTML elements or even (ironically) [W3C ARIA patterns](https://www.w3.org/WAI/ARIA/apg/patterns/). Debugging this is highly time-consuming, as now both the browser, operating system and screen reader collectively affects the user experience.
 
-u-elements aims to address this issue by providing W3C compliant re-implementations of modern HTML tags. It empowers you to learn and use web standards, while also being confident that under the hood, your code is augmented with thoroughly tested enhancements for screen reader compability. When all major browsers and screen readers sufficiently support an HTML element, simply removing the `u-` prefix to seamlessly transition from the u-elements implementation to the native HTML element.
+u-elements aims to address this issue by providing W3C compliant re-implementations of modern HTML tags. It empowers you to learn and use web standards, while also being confident that under the hood, your code is augmented with thoroughly tested enhancements for screen reader compability. When major browsers and assistive technologies sufficiently support an HTML element, simply removing the `u-` prefix to seamlessly transition from the u-elements implementation to the native HTML element.
 
 [Browse elements &rarr;](/elements/)
 

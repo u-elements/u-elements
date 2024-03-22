@@ -139,6 +139,7 @@ describe('u-datalist', () => {
     expect(document.activeElement).to.equal(uDatalist.options[0])
 
     await sendKeys({ press: 'Enter' })
+    await nextFrame() // Let keydown event bubble
     await nextFrame() // Let click event bubble
     await nextFrame() // Let setTimeout in onClick handler run
     expect(document.activeElement).to.equal(input)
@@ -163,6 +164,7 @@ describe('u-datalist', () => {
     const [, input, uDatalist] = items as [HTMLLabelElement, HTMLInputElement, UHTMLDataListElement]
 
     input.focus()
+    await nextFrame() // Let focus event run
     await sendKeys({ press: '1' })
     await nextFrame() // Let input event bubble
     expect(document.activeElement).to.equal(input)

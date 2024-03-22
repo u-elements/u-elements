@@ -21,13 +21,17 @@ import {
 // Does not set aria-activedescendant to prevent double reading on plattforms supprting this attribute
 // aria-activedescendant does not work in Safari on Mac unless wrapped inside combobox (non-standard)
 // aria-live="assertive" works as "polite" placed in shadow dom
-// DOCS: Vil du at det skal skifte side - bruk onChange og implemetner selv
+// DOCS: Want it do change URL? Use onChange to implement
 
 declare global {
   interface HTMLElementTagNameMap {
     'u-datalist': HTMLDataListElement
   }
 }
+
+// Store map of [u-datalist] => [related input] to speed up and prevent double focus
+const activeInput = new WeakMap<UHTMLDataListElement, HTMLInputElement>()
+const connectedRoot = new WeakMap<UHTMLDataListElement, Document | ShadowRoot>()
 
 /**
  * The `<u-datalist>` HTML element contains a set of `<u-option>` elements that represent the permissible or recommended options available to choose from within other controls.
@@ -39,19 +43,22 @@ export class UHTMLDataListElement extends UHTMLElement {
     attachStyle(this, DISPLAY_BLOCK)
   }
   connectedCallback() {
-    const root = getRoot(this)
+    const root = getConnectedRoot(this)
+    connectedRoot.set(this, root) // Cache to correcly unbind events on disconnectedCallback
     attr(this, { hidden: '', role: 'listbox' })
-    on(root, 'focusin', onFocus) // Only bind focus globally as this is needed to activate
-    on(root, 'focus', onFocus, true) // Need to also listen on focus with capturing to render before Firefox NVDA reads state
+    on(root, 'focusin', this) // Only bind focus globally as this is needed to activate
+    on(root, 'focus', this, true) // Need to also listen on focus with capturing to render before Firefox NVDA reads state
   }
   disconnectedCallback() {
-    const root = getRoot(this)
-    off(root, 'focusin', onFocus)
-    off(root, 'focus', onFocus, true)
-    clearActiveInput(this)
+    const root = getConnectedRoot(this)
+    off(root, 'focusin', this)
+    off(root, 'focus', this, true)
+    disconnectInput(this)
+    connectedRoot.delete(this)
   }
   handleEvent(event: Event) {
     if (event.defaultPrevented) return // Allow all events to be canceled
+    if (event.type === 'focus' || event.type === 'focusin') onFocus(this, event)
     if (event.type === 'click') onClick(this, event)
     if (event.type === 'focusout') onBlur(this)
     if (event.type === 'input' || event.type === 'mutation') setOptionAttributes(this)
@@ -62,10 +69,10 @@ export class UHTMLDataListElement extends UHTMLElement {
   }
 }
 
- // Store map of [u-datalist] => [related input] to speed up and prevent double focus
-const activeInput = new WeakMap<UHTMLDataListElement, HTMLInputElement>()
-const clearActiveInput = (self: UHTMLDataListElement) => {
-  off(getRoot(self), 'click,focusout,input,keydown', self)
+const getConnectedRoot = (self: UHTMLDataListElement) => connectedRoot.get(self) || getRoot(self)
+const getInput = (self: UHTMLDataListElement) => activeInput.get(self)
+const disconnectInput = (self: UHTMLDataListElement) => {
+  off(getConnectedRoot(self), 'click,focusout,input,keydown', self)
   mutationObserver(self, false)
   setExpanded(self, false)
   activeInput.delete(self)
@@ -73,13 +80,13 @@ const clearActiveInput = (self: UHTMLDataListElement) => {
 
 const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
   if (open) setOptionAttributes(self) // Esure correct state when opening in input.value has changed
-  attr(activeInput.get(self), ARIA_EXPANDED, open)
+  attr(getInput(self), ARIA_EXPANDED, open)
   self.hidden = !open
 }
 
 const setOptionAttributes = (self: UHTMLDataListElement) => {
   const hidden = self.hidden
-  const value = activeInput.get(self)?.value.toLowerCase().trim() || ''
+  const value = getInput(self)?.value.toLowerCase().trim() || ''
   const options = [...self.options]
 
   self.hidden = true // Speed up large lists by hiding during filtering
@@ -100,43 +107,40 @@ const setOptionAttributes = (self: UHTMLDataListElement) => {
   self.hidden = hidden // Restore hidden state
 }
 
-function onFocus({ target }: Event) {
-  if (target instanceof HTMLInputElement) {
-    const self = document.getElementById(attr(target, 'list') || '')
-
-    if (self instanceof UHTMLDataListElement && !activeInput.has(self)) {
-      activeInput.set(self, target)
-      attr(self, ARIA_LABELLEDBY, useId(target.labels?.[0]))
-      mutationObserver(self, {
-        attributeFilter: ['value'], // Listen for value changes to show u-options
-        attributes: true,
-        childList: true,
-        subtree: true
-      })
-      on(self.getRootNode(), 'click,focusout,input,keydown', self)
-      setExpanded(self, true)
-      attr(target, {
-        'aria-autocomplete': 'list',
-        [ARIA_CONTROLS]: useId(self),
-        autocomplete: 'off',
-        role: 'combobox'
-      })
-    }
+function onFocus(self: UHTMLDataListElement, { target }: Event) {
+  if (target instanceof HTMLInputElement && attr(target, 'list') === self.id && !activeInput.has(self)) {
+    activeInput.set(self, target)
+    attr(self, ARIA_LABELLEDBY, useId(target.labels?.[0]))
+    mutationObserver(self, {
+      attributeFilter: ['value'], // Listen for value changes to show u-options
+      attributes: true,
+      childList: true,
+      subtree: true
+    })
+    on(getConnectedRoot(self), 'click,focusout,input,keydown', self)
+    setExpanded(self, true)
+    attr(target, {
+      'aria-autocomplete': 'list',
+      [ARIA_CONTROLS]: useId(self),
+      autocomplete: 'off',
+      role: 'combobox'
+    })
   }
 }
 
 function onBlur(self: UHTMLDataListElement) {
   // Let event loop run first so focus can move before we check activeElement
   setTimeout(() => {
-    const focused = getRoot(self).activeElement
-    if (activeInput.get(self) !== focused && !self.contains(focused)) clearActiveInput(self)
+    const focused = getConnectedRoot(self).activeElement
+    if (getInput(self) !== focused && !self.contains(focused)) disconnectInput(self)
   })
 }
 
 function onClick(self: UHTMLDataListElement, { target }: Event) {
   const option = [...self.options].find((opt) => opt.contains(target as Node))
   const value = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value') 
-  const input = activeInput.get(self)
+  const input = getInput(self)
+  const readOnly = input?.readOnly || false; // Cache original readOnly state
 
   if (input === target) setExpanded(self, true) // Ensure click on input opens
   else if (input && option) {
@@ -151,7 +155,7 @@ function onClick(self: UHTMLDataListElement, { target }: Event) {
     setTimeout(() => {
       input.focus() // Change input.value before focus move to make screen reader read the correct value
       setExpanded(self, false)
-      setTimeout(() => (input.readOnly = false)) // Enable keyboard again
+      setTimeout(() => (input.readOnly = readOnly)) // Restore original readyOnly
     }, 16)
   }
 }
@@ -160,7 +164,7 @@ function onKeydown(self: UHTMLDataListElement, event: KeyboardEvent) {
   if (event.ctrlKey || event.metaKey || event.shiftKey) return
 
   const { key } = event
-  const active = getRoot(self).activeElement as UHTMLOptionElement
+  const active = getConnectedRoot(self).activeElement as UHTMLOptionElement
   const options = [...self.options].filter((opt) => !opt.hidden)
   const index = options.indexOf(active)
   let next = -1 // If hidden - first arrow down should exit input
@@ -178,7 +182,7 @@ function onKeydown(self: UHTMLDataListElement, event: KeyboardEvent) {
 
   // Open if not ESC, before moving focus
   if (key !== 'Escape') setExpanded(self, true)
-  ;(options[next] || activeInput.get(self) || document.body).focus()
+  ;(options[next] || getInput(self) || document.body).focus()
   if (options[next]) event.preventDefault() // Prevent scroll when on option
 
   // Close on ESC, after moving focus

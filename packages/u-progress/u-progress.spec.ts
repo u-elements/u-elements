@@ -25,7 +25,7 @@ describe('u-progress', () => {
   it('sets up attributes', () => {
     const uProgress = toDOM<UHTMLProgressElement>(`<u-progress value="5" max="10"></u-progress>`)
 
-    expect(uProgress.getAttribute(IS_IOS ? 'aria-label' : 'aria-valuenow')).to.equal('50%')
+    expect(uProgress.getAttribute(IS_IOS ? 'aria-description' : 'aria-valuenow')).to.equal(IS_IOS ? '50%' : '50')
     expect(uProgress.getAttribute('role')).to.equal(IS_IOS ? 'img' : 'progressbar')
     expect(uProgress.getAttribute('aria-valuemin')).to.equal('0')
     expect(uProgress.getAttribute('aria-valuemax')).to.equal('100')

@@ -23,138 +23,143 @@
     </style>
   </head>
   <body>
-    Hei
-    <u-test></u-test>
-    Hade
-    <label>
-      <u-progress value="5" max="10">70%</u-progress>
-    </label>
-    <br />
-    <br />
-    <label>
-      Velg type iskrem native<br />
-      <input type="text" list="native-list" />
-    </label>
-    <datalist id="native-list">
-      <option>Kokkos</option>
-      <option>Jordbær</option>
-      <option>Sjokolade</option>
-      <option>Vanilje</option>
-      <option>Lakris</option>
-      <option>Pistasj</option>
-      <option>Mango</option>
-      <option>Hasselnøtt</option>
-    </datalist>
-    <br />
-    <label>
-      Velg type iskrem<br />
-      <input type="text" list="u-list-1" />
-    </label>
-    <u-datalist id="u-list-1">
-      <u-option>Kokkos</u-option>
-      <u-option>Jordbær</u-option>
-      <u-option>Sjokolade</u-option>
-      <u-option>Vanilje</u-option>
-      <u-option>Lakris</u-option>
-      <u-option>Pistasj</u-option>
-      <u-option>Mango</u-option>
-      <u-option>Hasselnøtt</u-option>
-    </u-datalist>
-    <br />
-    <label>
-      Velg type iskrem<br />
-      <input type="text" list="u-list-2" />
-    </label>
-    <u-datalist id="u-list-2">
-      <u-option>Hasselnøtt</u-option>
-      <u-option>Kokkos</u-option>
-      <u-option>Jordbær</u-option>
-      <u-option>Sjokolade</u-option>
-      <u-option>Vanilje</u-option>
-      <u-option>Lakris</u-option>
-      <u-option>Pistasj</u-option>
-      <u-option>Mango</u-option>
-    </u-datalist>
-    <script>
-      // setTimeout(() => {
-        let i = 0
-        document.querySelectorAll('input[list]').forEach((input) => {
-          input.addEventListener('input', ({ target }) => {
-            // setTimeout(() => {
-              const { value, list } = target
-              const tag = list.nodeName.replace('DATALIST', 'option')
-              const pre = value.split('@')[0]
+    <main>
+      Hei
+      <u-test></u-test>
+      Hade
+      <br />
+      <br />
+      <label>
+        Label of progress
+        <br /><u-progress value="5" max="10">70%</u-progress>
+      </label>
+      <br />
+      <br />
+      <label>
+        Velg type iskrem native<br />
+        <input type="text" list="native-list" />
+      </label>
+      <datalist id="native-list">
+        <option>Kokkos</option>
+        <option>Jordbær</option>
+        <option>Sjokolade</option>
+        <option>Vanilje</option>
+        <option>Lakris</option>
+        <option>Pistasj</option>
+        <option>Mango</option>
+        <option>Hasselnøtt</option>
+      </datalist>
+      <br />
+      <label>
+        Velg type iskrem<br />
+        <input type="text" list="u-list-1" />
+      </label>
+      <u-datalist id="u-list-1">
+        <u-option>Kokkos</u-option>
+        <u-option>Jordbær</u-option>
+        <u-option>Sjokolade</u-option>
+        <u-option>Vanilje</u-option>
+        <u-option>Lakris</u-option>
+        <u-option>Pistasj</u-option>
+        <u-option>Mango</u-option>
+        <u-option>Hasselnøtt</u-option>
+      </u-datalist>
+      <br />
+      <label>
+        Velg type iskrem<br />
+        <input type="text" list="u-list-2" />
+      </label>
+      <u-datalist id="u-list-2">
+        <u-option>Hasselnøtt</u-option>
+        <u-option>Kokkos</u-option>
+        <u-option>Jordbær</u-option>
+        <u-option>Sjokolade</u-option>
+        <u-option>Vanilje</u-option>
+        <u-option>Lakris</u-option>
+        <u-option>Pistasj</u-option>
+        <u-option>Mango</u-option>
+      </u-datalist>
+      <script>
+        // setTimeout(() => {
+          let i = 0
+          document.querySelectorAll('input[list]').forEach((input) => {
+            input.addEventListener('input', ({ target }) => {
+              // setTimeout(() => {
+                const { value, list } = target
+                const tag = list.nodeName.replace('DATALIST', 'option')
+                const pre = value.split('@')[0]
 
-              list.innerHTML = `
-                <${tag} value="${pre}">@gmail.com</${tag}>
-                <${tag} value="${pre}">${pre}@icloud.com</${tag}>
-                <${tag} value="${pre}">${pre}@hotmail.com</${tag}>
-                <${tag} value="${pre}">${++i}</${tag}>
-              `
-              setTimeout(() => target.click(), 16)
-            // }, 200)
+                list.innerHTML = `
+                  <${tag} value="${pre}">@gmail.com</${tag}>
+                  <${tag} value="${pre}">${pre}@icloud.com</${tag}>
+                  <${tag} value="${pre}">${pre}@hotmail.com</${tag}>
+                  <${tag} value="${pre}">${++i}</${tag}>
+                `
+                setTimeout(() => target.click(), 16)
+              // }, 200)
+            })
           })
-        })
-      // }, 200)
-    </script>
-    <script type="module" src="/packages/u-datalist/u-datalist.ts"></script>
-    <script type="module" src="/packages/u-details/u-details.ts"></script>
-    <script type="module" src="/packages/u-progress/u-progress.ts"></script>
-    <script type="module" src="/packages/u-tabs/u-tabs.ts"></script>
-    <script>
-      class UTest extends HTMLElement {
-        connectedCallback() {
-          const shadowRoot = this.attachShadow({ mode: 'open' })
-          shadowRoot.innerHTML = `
-            <u-tabs>
-              <u-tablist>
-                <u-tab>Rosinbolle</u-tab>
-                <u-tab>Skolebolle</u-tab>
-                <u-tab aria-controls="panel-1">Kanelknute</u-tab>
-                <u-tab aria-controls="panel-outlier">Pistasjbolle</u-tab>
-                <u-tab-close hidden>Lukk</u-tab-close>
-              </u-tablist>
-              <u-tabpanel id="panel-1">
-                Panel 1
-                <u-tabs>
-                  <u-tablist>
-                    <u-tab>Nested 1</u-tab>
-                    <u-tab>Nested 2</u-tab>
-                  </u-tablist>
-                  <u-tabpanel>Nested panel 1</u-tabpanel>
-                  <u-tabpanel>Nested panel 2</u-tabpanel>
-                </u-tabs>
-              </u-tabpanel>
-              <u-tabpanel>Panel 2</u-tabpanel>
-              <u-tabpanel>Panel 3</u-tabpanel>
-              <u-tabpanel>Panel 4</u-tabpanel>
-            </u-tabs>
-            <br />
-            <u-details name="group-1">
-              <u-summary>Test 1</u-summary>
-              <div>Innhold 1</div>
-              <div>Innhold 2</div>
-              <div>Innhold 3</div>
-              Innhold 4
-            </u-details>
-            <u-details name="group-1">
-              <u-summary>Test 2</u-summary>
-              <div>Innhold test 2</div>
-            </u-details>
-            <br />
-            <style>
-              u-tab { padding: 2px 5px }
-              u-tab[aria-selected="true"] { background: black; color: white }
-              u-tabpanel { padding: 10px; border: 1px solid }
-              u-option[aria-selected="true"] { color: red }
-              input { font-size: inherit }
-            </style>
-          `
+        // }, 200)
+      </script>
+      <script type="module" src="/packages/u-datalist/u-datalist.ts"></script>
+      <script type="module" src="/packages/u-details/u-details.ts"></script>
+      <script type="module" src="/packages/u-progress/u-progress.ts"></script>
+      <script type="module" src="/packages/u-tabs/u-tabs.ts"></script>
+      <script>
+        class UTest extends HTMLElement {
+          connectedCallback() {
+            const shadowRoot = this.attachShadow({ mode: 'open' })
+            shadowRoot.innerHTML = `
+              <u-tabs>
+                <u-tablist>
+                  <u-tab>Rosinbolle</u-tab>
+                  <u-tab>Skolebolle</u-tab>
+                  <u-tab aria-controls="panel-1">Kanelknute</u-tab>
+                  <u-tab aria-controls="panel-outlier">Pistasjbolle</u-tab>
+                  <u-tab-close hidden>Lukk</u-tab-close>
+                </u-tablist>
+                <u-tabpanel id="panel-1">
+                  Panel 1
+                  <u-tabs>
+                    <u-tablist>
+                      <u-tab>Nested 1</u-tab>
+                      <u-tab>Nested 2</u-tab>
+                    </u-tablist>
+                    <u-tabpanel>Nested panel 1</u-tabpanel>
+                    <u-tabpanel>Nested panel 2</u-tabpanel>
+                  </u-tabs>
+                </u-tabpanel>
+                <u-tabpanel>Panel 2</u-tabpanel>
+                <u-tabpanel>Panel 3</u-tabpanel>
+                <u-tabpanel>Panel 4</u-tabpanel>
+              </u-tabs>
+              <br />
+              <u-details name="group-1">
+                <u-summary>Test 1</u-summary>
+                <div>Innhold 1</div>
+                <div>Innhold 2</div>
+                <div>Innhold 3</div>
+                Innhold 4
+              </u-details>
+              <u-details name="group-1">
+                <u-summary>Test 2</u-summary>
+                <div>Innhold test 2</div>
+              </u-details>
+              <br />
+              <style>
+                u-tab { padding: 2px 5px }
+                u-tab[aria-selected="true"] { background: black; color: white }
+                u-tabpanel { padding: 10px; border: 1px solid }
+                u-option[aria-selected="true"] { color: red }
+                input { font-size: inherit }
+              </style>
+              <u-tabpanel id="panel-outlier">Panel outlier</u-tabpanel>
+            `
+          }
         }
-      }
-      window.customElements.define('u-test', UTest)
-    </script>
-    <u-tabpanel id="panel-outlier">Panel outlier</u-tabpanel>
+        window.customElements.define('u-test', UTest)
+      </script>
+    </main>
   </body>
 </html>
 

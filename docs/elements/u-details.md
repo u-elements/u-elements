@@ -73,7 +73,29 @@ details.addEventListener('toggle', (event) => {
 
 ## Styling
 
-Coming
+The `<summary>`/`<u-summary>` element is rendered with `display: list-item` to display the open/close triangle, which is also announced by screen readers. If you wish to remove the triangle and its announcement, you can use `list-style: none`.
+
+The `<details>`/`<u-details>` hides its *content*, implying that only the `open` attribute (not CSS) can alter its open state. Animating the open/close action consequently requires some workarounds: [example 1](https://linkedlist.ch/animate_details_element_60/) and [example 2](https://css-tricks.com/how-to-animate-the-details-element/).
+
+## Find-in-page
+Even when a `<details>`/`<u-details>` element is closed, all of its content remains discoverable through the find-in-page search feature (e.g., Ctrl or Command + F keys). This behavior is [supported by various browsers](https://caniuse.com/mdn-html_global_attributes_hidden_until-found_value). If a user conducts a search for content within a details element, it will automatically open and trigger the `toggle` event.
+
+## Accessibility
+
+| Screen reader | `<details>` | `<u-details>` |
+| --- | --- | --- |
+| VoiceOver (Mac) + Chrome | :white_check_mark: | :white_check_mark: |
+| VoiceOver (Mac) + Firefox | :x: Does not announce expanded state | :white_check_mark: |
+| VoiceOver (Mac) + Safari | :x: Does not announce expanded state + looses screen reader focus | :white_check_mark: |
+| VoiceOver (iOS) + Safari | :x: Does not announce role or expanded state | :white_check_mark: |
+| Jaws (PC) + Chrome | :white_check_mark: | :white_check_mark: |
+| Jaws (PC) + Firefox | :white_check_mark: | :white_check_mark: |
+| NVDA (PC) + Chrome | :white_check_mark: | :white_check_mark: |
+| NVDA (PC) + Firefox | :white_check_mark: | :white_check_mark: |
+| Narrator (PC) + Chrome | :white_check_mark: | :white_check_mark: |
+| Narrator (PC) + Firefox | :white_check_mark: | :white_check_mark: |
+| TalkBack (Android) + Chrome | :white_check_mark: | :white_check_mark: |
+| TalkBack (Android) + Firefox | :x: Does not announce expanded state | :white_check_mark: |
 
 ## Specifications
 

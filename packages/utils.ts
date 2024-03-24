@@ -102,12 +102,11 @@ export const useId = (el?: Element | null) =>
   el
     ? (el.id || (el.id = `:${el.nodeName.toLowerCase()}${(++id).toString(32)}`))
     : undefined
-
 /**
  * createElement with props
  * @return HTMLElement with props
  */
-export const createElement = (tagName: keyof HTMLElementTagNameMap, props?: unknown) => 
+export const createElement = <K extends keyof HTMLElementTagNameMap>(tagName: K, props?: unknown): HTMLElementTagNameMap[K] =>
   Object.assign(document.createElement(tagName), props)
 
 /**

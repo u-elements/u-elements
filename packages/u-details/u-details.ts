@@ -21,6 +21,8 @@ declare global {
   }
 }
 
+// TODO: Test aria-controls :slot1 not valid
+
 // Constants for better compression
 const OPEN = 'open'
 const USUMMARY_TAG = 'U-SUMMARY'

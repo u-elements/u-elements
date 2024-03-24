@@ -9,12 +9,12 @@ in all major browsers and screen readers.
 
 ## Example
 <Sandbox>
-&lt;button type=&quot;button&quot; onclick=&quot;this.nextElementSibling.showModal()&quot;&gt;
+&lt;button type="button" onclick="this.nextElementSibling.showModal()"&gt;
   Open dialog
 &lt;/button&gt;
 &lt;dialog&gt;
   &lt;p&gt;Greetings, one and all!&lt;/p&gt;
-  &lt;form method=&quot;dialog&quot;&gt;
+  &lt;form method="dialog"&gt;
     &lt;button&gt;OK&lt;/button&gt;
   &lt;/form&gt;
 &lt;/dialog&gt;
@@ -30,6 +30,10 @@ Nothing to install :tada:
 | - | - | - |
 | [Global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. ||
 | `open` | When the `open` attribute is present, the dialog is shown. By default this attribute is absent which means the dialog is hidden. **Note:** It `open` makes the dialog non-modal, so is instead recommended to use the `.show()` or `.showModal()` for greater control. | Not present |
+
+## Accessibility
+
+Note that older versions of Firefox may erroneously permit the screen reader focus to move out of the `<dialog>` element. However, this does not justify the creation of a `<u-dialog>`, as screen reader focus isn't detectable via JavaScript and thus cannot be controlled or prevented through JavaScript either.
 
 ## Specifications
 

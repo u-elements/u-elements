@@ -8,20 +8,20 @@ import { data } from '../filesize.data.ts'
 **Quick intro:**
 - Use `<u-option>` as child elements - these will show the suggestions while typing
 - Use matching `id` on `<u-datalist>` and `list` attribute on `<input>` to connect
-- **Want to show suggestions from a data source?** See [dynamic suggestions &rarr;](#example-dynamic-suggestions)
+- **Want to show suggestions from a data source?** See [dynamic suggestions &rarr;](#dynamic-suggestions)
 - **MDN Web Docs:** [&lt;datalist&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist), [&lt;option&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option)
 
 ## Example
 <Sandbox>
 &lt;style&gt;
-  u-option[aria-selected=&quot;true&quot;] { text-decoration: underline }
+  u-option[aria-selected="true"] { text-decoration: underline }
 &lt;/style&gt;
 &lt;label&gt;
   Choose flavour of ice cream
   &lt;br /&gt;
-  &lt;input type=&quot;text&quot; list=&quot;my-list&quot; /&gt;
+  &lt;input type="text" list="my-list" /&gt;
 &lt;/label&gt;
-&lt;u-datalist id=&quot;my-list&quot;&gt;
+&lt;u-datalist id="my-list"&gt;
   &lt;u-option&gt;Coconut&lt;/u-option&gt;
   &lt;u-option&gt;Strawberries&lt;/u-option&gt;
   &lt;u-option&gt;Chocolate&lt;/u-option&gt;
@@ -63,14 +63,33 @@ bun add -S @u-elements/u-datalist
 | - | - | - |
 | [Global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. ||
 
+## Events
+
+Coming
+
 ## Styling
 
 Coming
 
-## Examples
-
-### Example: Dynamic suggestions
+## Dynamic suggestions
 Coming
+
+<!--## Accessibility
+
+| Screen reader | `<datalist>` | `<u-datalist>` |
+| --- | --- | --- |
+| VoiceOver (Mac) + Chrome | :white_check_mark: | :white_check_mark: |
+| VoiceOver (Mac) + Firefox | :white_check_mark: | :white_check_mark: |
+| VoiceOver (Mac) + Safari | :white_check_mark: | :white_check_mark: |
+| VoiceOver (iOS) + Safari | :white_check_mark: | :white_check_mark: |
+| Jaws (PC) + Chrome | :white_check_mark: | :white_check_mark: |
+| Jaws (PC) + Firefox | :white_check_mark: | :white_check_mark: |
+| NVDA (PC) + Chrome | :white_check_mark: | :white_check_mark: |
+| NVDA (PC) + Firefox | :white_check_mark: | :white_check_mark: |
+| Narrator (PC) + Chrome | :white_check_mark: | :white_check_mark: |
+| Narrator (PC) + Firefox | :white_check_mark: | :white_check_mark: |
+| TalkBack (Android) + Chrome | :white_check_mark: | :white_check_mark: |
+| TalkBack (Android) + Firefox | :white_check_mark: | :white_check_mark: |-->
 
 ## Specifications
 

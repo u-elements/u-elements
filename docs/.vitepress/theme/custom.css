@@ -1,8 +1,7 @@
-:root {
-  --vp-c-brand-1: var(--vp-c-indigo-1);
-  --vp-c-brand-2: var(--vp-c-indigo-2);
-  --vp-c-brand-3: var(--vp-c-indigo-3);
-  --vp-c-brand-soft: var(--vp-c-indigo-soft);
+/* Ensure accessible focus */
+:focus-visible {
+  outline: 0!important;
+  box-shadow: 0 0 0 1px var(--vp-c-bg),0 0 0 3px var(--vp-c-brand-1),0 0 0 4px var(--vp-c-bg);
 }
 
 /* Ensure emoji and not unicode symbols are used */
@@ -20,9 +19,7 @@
 }
 
 /* Markdown: Tables */
-.vp-doc table { display: table; width: 100% }
-.vp-doc :is(th, td):first-child { width: 16em }
-.vp-doc :is(th, td):last-child { width: 8em }
+.vp-doc table { display: table; table-layout: fixed; width: 100% }
 .vp-doc tr { vertical-align: top }
 
 /* Front page: Background gradient */

@@ -57,7 +57,7 @@ export class UHTMLTabsElement extends UHTMLElement {
 export class UHTMLTabListElement extends UHTMLElement {
   constructor() {
     super()
-    attachStyle(this, ':host(:not([hidden])) { display: flex; flex-wrap: wrap }')
+    attachStyle(this, DISPLAY_BLOCK)
   }
   connectedCallback() {
     attr(this, 'role', 'tablist')
@@ -103,7 +103,7 @@ export class UHTMLTabElement extends UHTMLElement {
   }
   constructor() {
     super()
-    attachStyle(this, `${DISPLAY_BLOCK}:host { cursor: pointer }`)
+    attachStyle(this, `:host(:not([hidden])) { cursor: pointer; display: inline-block }`)
   }
   connectedCallback() {
     this.selected = !!this.selected // Ensure selected is set (which also triggers attributeChangedCallback)

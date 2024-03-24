@@ -12,12 +12,12 @@ hero:
     - theme: brand
       text: Get started
       link: /guide/
-    - theme: alt
+    - theme: brand
       text: Why u-elements?
       link: /guide/why
-    - theme: alt
-      text: View on GitHub
-      link: https://github.com/u-elements/u-elements
+    - theme: brand
+      text: Browse elements →
+      link: /elements/
 
 features:
   - icon: ☑️

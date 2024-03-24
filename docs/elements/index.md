@@ -18,6 +18,6 @@ const members = current?.items.map(({ text, link }) => ({
 
 # Elements
 
-Standard HTML tags, solving common user interactions in a flexible and accssible way.
+CustomElement implementations of modern HTML tags, ensuring outstanding accessibility.
 
 <VPTeamMembers size="small" :members="members" />

@@ -15,18 +15,28 @@ describe('u-progress', () => {
   })
 
   it('is defined', () => {
-    const uProgress = toDOM<UHTMLProgressElement>(`<u-progress value="5" max="10"></u-progress>`)
+    const uProgress = toDOM<UHTMLProgressElement>(
+      `<u-progress value="5" max="10"></u-progress>`
+    )
 
     expect(uProgress.max).to.equal(10)
     expect(uProgress).to.be.instanceOf(UHTMLProgressElement)
-    expect(window.customElements.get('u-progress')).to.equal(UHTMLProgressElement)
+    expect(window.customElements.get('u-progress')).to.equal(
+      UHTMLProgressElement
+    )
   })
 
   it('sets up attributes', () => {
-    const uProgress = toDOM<UHTMLProgressElement>(`<u-progress value="5" max="10"></u-progress>`)
+    const uProgress = toDOM<UHTMLProgressElement>(
+      `<u-progress value="5" max="10"></u-progress>`
+    )
 
-    expect(uProgress.getAttribute(IS_IOS ? 'aria-description' : 'aria-valuenow')).to.equal(IS_IOS ? '50%' : '50')
-    expect(uProgress.getAttribute('role')).to.equal(IS_IOS ? 'img' : 'progressbar')
+    expect(
+      uProgress.getAttribute(IS_IOS ? 'aria-description' : 'aria-valuenow')
+    ).to.equal(IS_IOS ? '50%' : '50')
+    expect(uProgress.getAttribute('role')).to.equal(
+      IS_IOS ? 'img' : 'progressbar'
+    )
     expect(uProgress.getAttribute('aria-valuemin')).to.equal('0')
     expect(uProgress.getAttribute('aria-valuemax')).to.equal('100')
     expect(uProgress.hasAttribute('aria-busy')).to.equal(false)
@@ -48,28 +58,30 @@ describe('u-progress', () => {
     `).querySelector('u-progress') as UHTMLProgressElement
 
     expect(uProgress.labels.length).to.equal(2)
-    expect(uProgress.position).to.equal(.5)
+    expect(uProgress.position).to.equal(0.5)
     expect(uProgress.max).to.equal(10)
     expect(uProgress.value).to.equal(5)
   })
 
   it('calculates position and percentage', () => {
-    const uProgress = toDOM<UHTMLProgressElement>(`<u-progress value="5" max="10"></u-progress>`)
+    const uProgress = toDOM<UHTMLProgressElement>(
+      `<u-progress value="5" max="10"></u-progress>`
+    )
 
     expect(uProgress.max).to.equal(10)
-    expect(uProgress.position).to.equal(.5)
+    expect(uProgress.position).to.equal(0.5)
     expect(uProgress.value).to.equal(5)
 
     uProgress.max = 20
 
     expect(uProgress.max).to.equal(20)
-    expect(uProgress.position).to.equal(.25)
+    expect(uProgress.position).to.equal(0.25)
     expect(uProgress.value).to.equal(5)
 
     uProgress.value = 10
 
     expect(uProgress.max).to.equal(20)
-    expect(uProgress.position).to.equal(.5)
+    expect(uProgress.position).to.equal(0.5)
     expect(uProgress.value).to.equal(10)
   })
 

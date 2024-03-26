@@ -4,7 +4,7 @@ import { UHTMLDetailsElement, UHTMLSummaryElement } from './u-details'
 import { IS_ANDROID } from '../utils'
 
 const nextFrame = async () =>
-  new Promise(resolve => requestAnimationFrame(resolve))
+  new Promise((resolve) => requestAnimationFrame(resolve))
 
 const toDOM = <T extends HTMLElement>(innerHTML: string): T =>
   Object.assign(document.body, { innerHTML }).firstElementChild as T
@@ -51,7 +51,10 @@ describe('u-details', () => {
 
   it('sets up attributes', () => {
     const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
-    const [uSummary, content] = [...uDetails.children] as [UHTMLSummaryElement, HTMLDivElement]
+    const [uSummary, content] = [...uDetails.children] as [
+      UHTMLSummaryElement,
+      HTMLDivElement
+    ]
 
     expect(uSummary.role).to.equal('button')
     expect(uSummary.tabIndex).to.equal(0)
@@ -61,17 +64,25 @@ describe('u-details', () => {
   })
 
   it('moves content to content slot when is appended', async () => {
-    const uDetails = toDOM<UHTMLDetailsElement>(`<u-details><u-summary>Summary 1</u-summary></u-details>`)
+    const uDetails = toDOM<UHTMLDetailsElement>(
+      `<u-details><u-summary>Summary 1</u-summary></u-details>`
+    )
     uDetails.insertAdjacentHTML('beforeend', '<div>Details 1</div>')
 
-    const [, content] = [...uDetails.children] as [UHTMLSummaryElement, HTMLDivElement]
+    const [, content] = [...uDetails.children] as [
+      UHTMLSummaryElement,
+      HTMLDivElement
+    ]
     await nextFrame() // Let MutationObserver run
     expect(content.checkVisibility()).to.equal(false)
   })
 
   it('handles open property and attributes change', () => {
     const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
-    const [uSummary, content] = [...uDetails.children] as [UHTMLSummaryElement, HTMLDivElement]
+    const [uSummary, content] = [...uDetails.children] as [
+      UHTMLSummaryElement,
+      HTMLDivElement
+    ]
 
     uDetails.open = true
     expect(uDetails.hasAttribute('open')).to.equal(true)
@@ -103,11 +114,11 @@ describe('u-details', () => {
 
     uSummary.focus()
     await sendKeys({ press: ' ' })
-    expect(uDetails.open).to.equal(false)   
+    expect(uDetails.open).to.equal(false)
   })
 
   it('sets name property', () => {
-    const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)    
+    const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
     expect(uDetails.name).to.equal('')
 
     uDetails.name = 'group-1'
@@ -118,8 +129,10 @@ describe('u-details', () => {
   })
 
   it('closes other uDetails with same name attribute', async () => {
-    const HTML_GROUP = DEFAULT_TEST_HTML.replace('>', ' name="group-1">');
-    const div = toDOM<UHTMLDetailsElement>(`<div>${HTML_GROUP}${HTML_GROUP}</div>`)
+    const HTML_GROUP = DEFAULT_TEST_HTML.replace('>', ' name="group-1">')
+    const div = toDOM<UHTMLDetailsElement>(
+      `<div>${HTML_GROUP}${HTML_GROUP}</div>`
+    )
     const [uDetails1, uDetails2] = div.querySelectorAll('u-details')
     const [uSummary1, uSummary2] = div.querySelectorAll('u-summary')
 
@@ -133,17 +146,32 @@ describe('u-details', () => {
   })
   it('triggers toggle event', async () => {
     const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
-    const [uSummary] = [...uDetails.children] as [UHTMLSummaryElement, HTMLDivElement]
+    const [uSummary] = [...uDetails.children] as [
+      UHTMLSummaryElement,
+      HTMLDivElement
+    ]
 
-    const onToggle = (event: Event) => expect(event).to.include({
-      bubbles: false,
-      cancelable: false,
-      currentTarget: uDetails,
-      target: uDetails,
-      type: 'toggle'
-    }).and.be.instanceOf(Event)
+    const onToggle = (event: Event) =>
+      expect(event)
+        .to.include({
+          bubbles: false,
+          cancelable: false,
+          currentTarget: uDetails,
+          target: uDetails,
+          type: 'toggle'
+        })
+        .and.be.instanceOf(Event)
 
-    uDetails.addEventListener('toggle', onToggle);
+    uDetails.addEventListener('toggle', onToggle)
     uSummary.click()
+  })
+  it('opens on beforematch', async () => {
+    const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
+    const content = uDetails.lastElementChild as HTMLDivElement
+
+    expect(uDetails.open).to.equal(false)
+    content.dispatchEvent(new Event('beforematch', { bubbles: true }))
+    await nextFrame() // Let beforematch event bubble
+    expect(uDetails.open).to.equal(true)
   })
 })

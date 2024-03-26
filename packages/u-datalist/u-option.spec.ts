@@ -36,8 +36,11 @@ describe('u-option', () => {
         </u-datalist>
       </form>
     `)
-    const [uOption1, uOption2] = form.querySelectorAll<UHTMLOptionElement>('u-option')
-    const uOptionEmptyAndIsolated = toDOM<UHTMLOptionElement>(`<u-option></u-option>`)
+    const [uOption1, uOption2] =
+      form.querySelectorAll<UHTMLOptionElement>('u-option')
+    const uOptionEmptyAndIsolated = toDOM<UHTMLOptionElement>(
+      `<u-option></u-option>`
+    )
 
     uOption1.defaultSelected = true
     uOption1.disabled = true
@@ -92,7 +95,7 @@ describe('u-option', () => {
 
     uOption.label = 'Label 1'
     expect(uOption.getAttribute('label')).to.equal('Label 1')
-    
+
     uOption.value = 'Value 1'
     expect(uOption.getAttribute('value')).to.equal('Value 1')
 

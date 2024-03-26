@@ -12,22 +12,39 @@ export const IS_IOS =
 // Constants for better compression and control
 export const ARIA_CONTROLS = 'aria-controls'
 export const ARIA_EXPANDED = 'aria-expanded'
-export const ARIA_LABELLEDBY = IS_ANDROID ? 'data-labelledby' : 'aria-labelledby' // Android <=13 reads tab text instead of content when labelledby
+export const ARIA_LABELLEDBY = IS_ANDROID
+  ? 'data-labelledby' // Android <=13 reads tab text instead of content when labelledby
+  : 'aria-labelledby'
 export const ARIA_SELECTED = 'aria-selected'
 export const DISPLAY_BLOCK = ':host(:not([hidden])) { display: block }'
 
-export const UHTMLElement = typeof HTMLElement === 'undefined' ? (class {} as typeof HTMLElement) : HTMLElement // Node compatibility
+// UHTMLElement defintion to use on Node, as server does not have HTMLElement
+export const UHTMLElement =
+  typeof HTMLElement === 'undefined'
+    ? (class {} as typeof HTMLElement)
+    : HTMLElement
 
 type EventListenerTarget = Node | Window
 type EventListenerParams = Parameters<typeof Element.prototype.addEventListener>
-const bind = (element: EventListenerTarget, rest: EventListenerParams, action: 'add' | 'remove'): void =>
+const bind = (
+  element: EventListenerTarget,
+  rest: EventListenerParams,
+  action: 'add' | 'remove'
+): void =>
   rest[0].split(',').forEach((type) => {
     rest[0] = type
     Element.prototype[`${action}EventListener`].apply(element, rest)
   })
 
-export const on = (element: EventListenerTarget, ...rest: EventListenerParams): void => bind(element, rest, 'add')
-export const off = (element: EventListenerTarget, ...rest: EventListenerParams): void => bind(element, rest, 'remove')
+export const on = (
+  element: EventListenerTarget,
+  ...rest: EventListenerParams
+): void => bind(element, rest, 'add')
+
+export const off = (
+  element: EventListenerTarget,
+  ...rest: EventListenerParams
+): void => bind(element, rest, 'remove')
 
 /**
  * style
@@ -50,7 +67,8 @@ export function attr(
       Object.entries(name).map(([name, value]) => attr(element, name, value))
     else if (value === undefined) return element.getAttribute(name)
     else if (value === null) element.removeAttribute(name)
-    else if (element.getAttribute(name) !== `${value}`) element.setAttribute(name, `${value}`)
+    else if (element.getAttribute(name) !== `${value}`)
+      element.setAttribute(name, `${value}`)
   }
 }
 
@@ -97,16 +115,19 @@ export const getRoot = (node: Node) =>
  * useId
  * @return A generated unique ID
  */
-let id = 0;
+let id = 0
 export const useId = (el?: Element | null) =>
   el
-    ? (el.id || (el.id = `:${el.nodeName.toLowerCase()}${(++id).toString(32)}`))
+    ? el.id || (el.id = `:${el.nodeName.toLowerCase()}${(++id).toString(32)}`)
     : undefined
 /**
  * createElement with props
  * @return HTMLElement with props
  */
-export const createElement = <K extends keyof HTMLElementTagNameMap>(tagName: K, props?: unknown): HTMLElementTagNameMap[K] =>
+export const createElement = <TagName extends keyof HTMLElementTagNameMap>(
+  tagName: TagName,
+  props?: unknown
+): HTMLElementTagNameMap[TagName] =>
   Object.assign(document.createElement(tagName), props)
 
 /**
@@ -116,5 +137,7 @@ export const createElement = <K extends keyof HTMLElementTagNameMap>(tagName: K,
  */
 export const customElements = {
   define: (name: string, instance: CustomElementConstructor) =>
-    !IS_BROWSER || window.customElements.get(name) || window.customElements.define(name, instance)
+    !IS_BROWSER ||
+    window.customElements.get(name) ||
+    window.customElements.define(name, instance)
 }

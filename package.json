@@ -38,12 +38,12 @@
     "@esm-bundle/chai": "^4.3.4-fix.0",
     "@remcovaes/web-test-runner-vite-plugin": "^1.2.1",
     "@sveltejs/vite-plugin-svelte": "^3.0.1",
-    "@tsconfig/svelte": "^5.0.2",
+    "@tsconfig/svelte": "^5.0.3",
     "@types/mocha": "^10.0.6",
-    "@types/react": "^18.2.69",
+    "@types/react": "^18.2.71",
     "@types/react-dom": "^18.2.22",
-    "@typescript-eslint/eslint-plugin": "7.3.1",
-    "@typescript-eslint/parser": "7.3.1",
+    "@typescript-eslint/eslint-plugin": "7.4.0",
+    "@typescript-eslint/parser": "7.4.0",
     "@vitejs/plugin-react": "^4.2.1",
     "@vitejs/plugin-vue": "^5.0.4",
     "@vue/runtime-dom": "^3.4.21",
@@ -64,7 +64,7 @@
     "tslib": "^2.6.2",
     "tsup": "^8.0.2",
     "typescript": "5.4.3",
-    "vite": "^5.2.4",
+    "vite": "^5.2.6",
     "vite-plugin-cem": "^0.8.0",
     "vite-plugin-solid": "^2.10.2",
     "vitepress": "^1.0.1",
@@ -98,10 +98,7 @@
     ],
     "root": true,
     "rules": {
-      "prettier/prettier": "error",
-      "@typescript-eslint/recommended": {
-        "allowDeclarations": true
-      }
+      "prettier/prettier": "error"
     }
   },
   "eslintIgnore": [

@@ -4,7 +4,7 @@ import { UHTMLDataListElement } from './u-datalist'
 import { ARIA_LABELLEDBY, IS_ANDROID, IS_IOS } from '../utils'
 
 const nextFrame = async () =>
-  new Promise(resolve => requestAnimationFrame(resolve))
+  new Promise((resolve) => requestAnimationFrame(resolve))
 
 const toDOM = <T extends HTMLElement>(innerHTML: string): T =>
   Object.assign(document.body, { innerHTML }).firstElementChild as T
@@ -30,19 +30,29 @@ describe('u-datalist', () => {
       content: toDOM(DEFAULT_TEST_HTML).outerHTML
     })
   })
-  
+
   it('is defined', () => {
     const items = [...toDOM(DEFAULT_TEST_HTML).querySelectorAll('*')]
-    const [, input, uDatalist] = items as [HTMLLabelElement, HTMLInputElement, UHTMLDataListElement]
+    const [, input, uDatalist] = items as [
+      HTMLLabelElement,
+      HTMLInputElement,
+      UHTMLDataListElement
+    ]
 
     expect(input.list).to.equal(uDatalist)
     expect(uDatalist).to.to.be.instanceOf(UHTMLDataListElement)
-    expect(window.customElements.get('u-datalist')).to.equal(UHTMLDataListElement)
+    expect(window.customElements.get('u-datalist')).to.equal(
+      UHTMLDataListElement
+    )
   })
 
   it('sets up propertis', () => {
     const items = [...toDOM(DEFAULT_TEST_HTML).querySelectorAll('*')]
-    const [,, uDatalist] = items as [HTMLLabelElement, HTMLInputElement, UHTMLDataListElement]
+    const [, , uDatalist] = items as [
+      HTMLLabelElement,
+      HTMLInputElement,
+      UHTMLDataListElement
+    ]
 
     expect(uDatalist.options.length).to.equal(3)
   })
@@ -55,9 +65,15 @@ describe('u-datalist', () => {
   })
 
   it('responds on focus and blur', async () => {
-    const div = toDOM(`<div>${DEFAULT_TEST_HTML}<input id="other-input" /></div>`)
+    const div = toDOM(
+      `<div>${DEFAULT_TEST_HTML}<input id="other-input" /></div>`
+    )
     const items = [...div.querySelectorAll('form *')]
-    const [label, input, uDatalist] = items as [HTMLLabelElement, HTMLInputElement, UHTMLDataListElement]
+    const [label, input, uDatalist] = items as [
+      HTMLLabelElement,
+      HTMLInputElement,
+      UHTMLDataListElement
+    ]
 
     expect(input.hasAttribute('aria-expanded')).to.equal(false)
     expect(uDatalist.hidden).to.equal(true)
@@ -83,7 +99,7 @@ describe('u-datalist', () => {
     expect(input.getAttribute('aria-expanded')).to.equal('true')
     expect(uDatalist.hidden).to.equal(false)
 
-    div.querySelector<HTMLInputElement>('#other-input')?.focus()    
+    div.querySelector<HTMLInputElement>('#other-input')?.focus()
     await nextFrame() // Let blur event bubble
     await nextFrame() // Let setTimout in onBlur run
     expect(input.getAttribute('aria-expanded')).to.equal('false')
@@ -92,12 +108,16 @@ describe('u-datalist', () => {
 
   it('handles keyboard arrow navigation', async () => {
     const items = [...toDOM(DEFAULT_TEST_HTML).querySelectorAll('*')]
-    const [, input, uDatalist] = items as [HTMLLabelElement, HTMLInputElement, UHTMLDataListElement]
+    const [, input, uDatalist] = items as [
+      HTMLLabelElement,
+      HTMLInputElement,
+      UHTMLDataListElement
+    ]
 
     input.focus()
     await nextFrame() // Let focus event bubble
     expect(document.activeElement).to.equal(input)
-      
+
     await sendKeys({ press: 'ArrowDown' })
     expect(document.activeElement).to.equal(uDatalist.options[0])
 
@@ -150,7 +170,11 @@ describe('u-datalist', () => {
 
   it('ignores keystrokes with meta keys', async () => {
     const items = [...toDOM(DEFAULT_TEST_HTML).querySelectorAll('*')]
-    const [, input] = items as [HTMLLabelElement, HTMLInputElement, UHTMLDataListElement]
+    const [, input] = items as [
+      HTMLLabelElement,
+      HTMLInputElement,
+      UHTMLDataListElement
+    ]
 
     input.focus()
     await sendKeys({ press: 'Control+ArrowDown' })
@@ -161,7 +185,11 @@ describe('u-datalist', () => {
 
   it('filters items when typing', async () => {
     const items = [...toDOM(DEFAULT_TEST_HTML).querySelectorAll('*')]
-    const [, input, uDatalist] = items as [HTMLLabelElement, HTMLInputElement, UHTMLDataListElement]
+    const [, input, uDatalist] = items as [
+      HTMLLabelElement,
+      HTMLInputElement,
+      UHTMLDataListElement
+    ]
 
     input.focus()
     await nextFrame() // Let focus event run
@@ -176,7 +204,11 @@ describe('u-datalist', () => {
 
   it('filters items when changing value', async () => {
     const items = [...toDOM(DEFAULT_TEST_HTML).querySelectorAll('*')]
-    const [, input, uDatalist] = items as [HTMLLabelElement, HTMLInputElement, UHTMLDataListElement]
+    const [, input, uDatalist] = items as [
+      HTMLLabelElement,
+      HTMLInputElement,
+      UHTMLDataListElement
+    ]
 
     input.value = 'test'
     input.focus()
@@ -199,7 +231,11 @@ describe('u-datalist', () => {
 
   it('re-opens on click on input', async () => {
     const items = [...toDOM(DEFAULT_TEST_HTML).querySelectorAll('*')]
-    const [, input, uDatalist] = items as [HTMLLabelElement, HTMLInputElement, UHTMLDataListElement]
+    const [, input, uDatalist] = items as [
+      HTMLLabelElement,
+      HTMLInputElement,
+      UHTMLDataListElement
+    ]
 
     input.focus()
     expect(uDatalist.hidden).to.equal(false)
@@ -221,8 +257,16 @@ describe('u-datalist', () => {
     `)
     const items1 = [...div.querySelectorAll('form:first-child *')]
     const items2 = [...div.querySelectorAll('form:last-child *')]
-    const [, input1, uDatalist1] = items1 as [HTMLLabelElement, HTMLInputElement, UHTMLDataListElement]
-    const [, input2, uDatalist2] = items2 as [HTMLLabelElement, HTMLInputElement, UHTMLDataListElement]
+    const [, input1, uDatalist1] = items1 as [
+      HTMLLabelElement,
+      HTMLInputElement,
+      UHTMLDataListElement
+    ]
+    const [, input2, uDatalist2] = items2 as [
+      HTMLLabelElement,
+      HTMLInputElement,
+      UHTMLDataListElement
+    ]
 
     input1.focus()
     await nextFrame() // Let focus event bubble
@@ -236,27 +280,62 @@ describe('u-datalist', () => {
     expect(uDatalist1.hidden).to.equal(true)
   })
 
+  it('handles being bound to multiple inputs', async () => {
+    const div = toDOM(`
+      <div>
+        <input type="text" list="datalist-1" />
+        ${DEFAULT_TEST_HTML}
+      </div>
+    `)
+    const [input1, input2] = [...div.querySelectorAll('input')]
+    const uDatalist = div.querySelector('u-datalist') as HTMLDataListElement
+
+    expect(uDatalist.hidden).to.equal(true)
+    input1.focus()
+    await nextFrame() // Let focus event bubble
+    expect(input1.getAttribute('aria-expanded')).to.equal('true')
+    expect(input2.getAttribute('aria-expanded')).to.not.equal('true')
+    expect(uDatalist.hidden).to.equal(false)
+
+    input2.focus()
+    await nextFrame() // Let focus event bubble
+    await nextFrame() // Let setTimout in onBlur run
+    expect(input1.getAttribute('aria-expanded')).to.not.equal('true')
+    expect(input2.getAttribute('aria-expanded')).to.equal('true')
+    expect(uDatalist.hidden).to.equal(false)
+  })
+
   it('triggers input and change events', async () => {
     const items = [...toDOM(DEFAULT_TEST_HTML).querySelectorAll('*')]
-    const [, input, uDatalist] = items as [HTMLLabelElement, HTMLInputElement, UHTMLDataListElement]
+    const [, input, uDatalist] = items as [
+      HTMLLabelElement,
+      HTMLInputElement,
+      UHTMLDataListElement
+    ]
 
-    const onInput = (event: Event) => expect(event).to.include({
-      composed: true,
-      bubbles: true,
-      cancelable: false,
-      currentTarget: input,
-      target: input,
-      type: 'input'
-    }).and.be.instanceOf(Event)
+    const onInput = (event: Event) =>
+      expect(event)
+        .to.include({
+          composed: true,
+          bubbles: true,
+          cancelable: false,
+          currentTarget: input,
+          target: input,
+          type: 'input'
+        })
+        .and.be.instanceOf(Event)
 
-    const onChange = (event: Event) => expect(event).to.include({
-      composed: false,
-      bubbles: true,
-      cancelable: false,
-      currentTarget: input,
-      target: input,
-      type: 'change'
-    }).and.be.instanceOf(Event)
+    const onChange = (event: Event) =>
+      expect(event)
+        .to.include({
+          composed: false,
+          bubbles: true,
+          cancelable: false,
+          currentTarget: input,
+          target: input,
+          type: 'change'
+        })
+        .and.be.instanceOf(Event)
 
     input.addEventListener('input', onInput)
     input.addEventListener('change', onChange)

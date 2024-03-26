@@ -1,4 +1,10 @@
-import { DISPLAY_BLOCK, UHTMLElement, attachStyle, attr, customElements } from '../utils'
+import {
+  DISPLAY_BLOCK,
+  UHTMLElement,
+  attachStyle,
+  attr,
+  customElements
+} from '../utils'
 
 declare global {
   interface HTMLElementTagNameMap {
@@ -80,7 +86,6 @@ export class UHTMLOptionElement extends UHTMLElement {
   }
 }
 
-const getContainer = (self: UHTMLOptionElement) =>
-  self.closest('u-datalist')
+const getContainer = (self: UHTMLOptionElement) => self.closest('u-datalist')
 
 customElements.define('u-option', UHTMLOptionElement)

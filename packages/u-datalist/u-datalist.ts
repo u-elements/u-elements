@@ -1,4 +1,5 @@
 import type { UHTMLOptionElement } from './u-option'
+export type { UHTMLOptionElement } from './u-option'
 import './u-option'
 import {
   ARIA_CONTROLS,
@@ -22,6 +23,7 @@ import {
 // aria-activedescendant does not work in Safari on Mac unless wrapped inside combobox (non-standard)
 // aria-live="assertive" works as "polite" placed in shadow dom
 // DOCS: Want it do change URL? Use onChange to implement
+// TODO: Do not autoselect based on input value
 
 declare global {
   interface HTMLElementTagNameMap {
@@ -61,7 +63,7 @@ export class UHTMLDataListElement extends UHTMLElement {
     if (event.type === 'focus' || event.type === 'focusin') onFocus(this, event)
     if (event.type === 'click') onClick(this, event)
     if (event.type === 'focusout') onBlur(this)
-    if (event.type === 'input' || event.type === 'mutation') setOptionAttributes(this)
+    if (event.type === 'input' || event.type === 'mutation') setupOptions(this)
     if (event.type === 'keydown') onKeydown(this, event as KeyboardEvent)
   }
   get options(): HTMLCollectionOf<HTMLOptionElement> {
@@ -69,7 +71,9 @@ export class UHTMLDataListElement extends UHTMLElement {
   }
 }
 
-const getConnectedRoot = (self: UHTMLDataListElement) => connectedRoot.get(self) || getRoot(self)
+const getConnectedRoot = (self: UHTMLDataListElement) =>
+  connectedRoot.get(self) || getRoot(self)
+
 const getInput = (self: UHTMLDataListElement) => activeInput.get(self)
 const disconnectInput = (self: UHTMLDataListElement) => {
   off(getConnectedRoot(self), 'click,focusout,input,keydown', self)
@@ -79,12 +83,12 @@ const disconnectInput = (self: UHTMLDataListElement) => {
 }
 
 const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
-  if (open) setOptionAttributes(self) // Esure correct state when opening in input.value has changed
+  if (open) setupOptions(self) // Esure correct state when opening in input.value has changed
   attr(getInput(self), ARIA_EXPANDED, open)
   self.hidden = !open
 }
 
-const setOptionAttributes = (self: UHTMLDataListElement) => {
+const setupOptions = (self: UHTMLDataListElement) => {
   const hidden = self.hidden
   const value = getInput(self)?.value.toLowerCase().trim() || ''
   const options = [...self.options]
@@ -108,7 +112,12 @@ const setOptionAttributes = (self: UHTMLDataListElement) => {
 }
 
 function onFocus(self: UHTMLDataListElement, { target }: Event) {
-  if (target instanceof HTMLInputElement && attr(target, 'list') === self.id && !activeInput.has(self)) {
+  if (
+    target instanceof HTMLInputElement &&
+    attr(target, 'list') === self.id &&
+    activeInput.get(self) !== target
+  ) {
+    if (activeInput.get(self)) disconnectInput(self) // If previously used by other input
     activeInput.set(self, target)
     attr(self, ARIA_LABELLEDBY, useId(target.labels?.[0]))
     mutationObserver(self, {
@@ -132,20 +141,25 @@ function onBlur(self: UHTMLDataListElement) {
   // Let event loop run first so focus can move before we check activeElement
   setTimeout(() => {
     const focused = getConnectedRoot(self).activeElement
-    if (getInput(self) !== focused && !self.contains(focused)) disconnectInput(self)
+    const isOutside = getInput(self) !== focused && !self.contains(focused)
+    if (isOutside) disconnectInput(self)
   })
 }
 
 function onClick(self: UHTMLDataListElement, { target }: Event) {
   const option = [...self.options].find((opt) => opt.contains(target as Node))
-  const value = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value') 
+  const value = Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    'value'
+  )
   const input = getInput(self)
-  const readOnly = input?.readOnly || false; // Cache original readOnly state
+  const readOnly = input?.readOnly || false // Cache original readOnly state
 
-  if (input === target) setExpanded(self, true) // Ensure click on input opens
+  if (input === target)
+    setExpanded(self, true) // Ensure click on input opens
   else if (input && option) {
     input.readOnly = true // Prevent showing mobile keyboard when moving focus back to input after selection
-    value?.set?.call(input, option.value); // Trigger value change - also React compatible
+    value?.set?.call(input, option.value) // Trigger value change - also React compatible
 
     // Trigger input.value change events
     input.dispatchEvent(new Event('input', { bubbles: true, composed: true }))
@@ -182,7 +196,7 @@ function onKeydown(self: UHTMLDataListElement, event: KeyboardEvent) {
 
   // Open if not ESC, before moving focus
   if (key !== 'Escape') setExpanded(self, true)
-  ;(options[next] || getInput(self) || document.body).focus()
+  ;(options[next] || getInput(self))?.focus()
   if (options[next]) event.preventDefault() // Prevent scroll when on option
 
   // Close on ESC, after moving focus
@@ -195,7 +209,9 @@ if (IS_BROWSER)
     configurable: true,
     enumerable: true,
     get(): HTMLDataElement | UHTMLDataListElement | null {
-      return document.querySelector(`[id="${attr(this, 'list')}"]:is(datalist,u-datalist)`)
+      const root = getRoot(this)
+      const list = attr(this, 'list')
+      return root.querySelector(`[id="${list}"]:is(datalist,u-datalist)`)
     }
   })
 

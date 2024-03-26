@@ -37,7 +37,9 @@ export class UHTMLTabsElement extends UHTMLElement {
   }
   get selectedIndex(): number {
     // Check with real attribute (not .selected) as UHTMLTabElement instance might not be created yet
-    return [...this.tabs].findIndex((tab) => attr(tab, ARIA_SELECTED) === 'true')
+    return [...this.tabs].findIndex(
+      (tab) => attr(tab, ARIA_SELECTED) === 'true'
+    )
   }
   set selectedIndex(index: number) {
     attr(this.tabs[index], ARIA_SELECTED, true)
@@ -103,7 +105,10 @@ export class UHTMLTabElement extends UHTMLElement {
   }
   constructor() {
     super()
-    attachStyle(this, `:host(:not([hidden])) { cursor: pointer; display: inline-block }`)
+    attachStyle(
+      this,
+      `:host(:not([hidden])) { cursor: pointer; display: inline-block }`
+    )
   }
   connectedCallback() {
     this.selected = !!this.selected // Ensure selected is set (which also triggers attributeChangedCallback)
@@ -115,7 +120,9 @@ export class UHTMLTabElement extends UHTMLElement {
       let selectedPanel: HTMLElement
 
       // Ensure correct state by always looping all tabs
-      panels.forEach((panel) => attr(panel, { [ARIA_LABELLEDBY]: null, hidden: '' })) // Reset all panels in case changing aria-controls
+      panels.forEach((panel) =>
+        attr(panel, { [ARIA_LABELLEDBY]: null, hidden: '' })
+      ) // Reset all panels in case changing aria-controls
       tabs.forEach((tab, index) => {
         const tabindex = selected === tab ? 0 : -1
         const panel = getPanel(tab) || panels[index] || null // Does not use tab.panel as UHTMLTabElement instance might not be created yet
@@ -174,9 +181,8 @@ export class UHTMLTabPanelElement extends UHTMLElement {
     this.hidden = Array.from(this.tabs).every((tab) => !tab.selected) // Hide if not connected to tab
   }
   attributeChangedCallback(_name: string, prev: string, next: string) {
-    if (!skipAttrChange && prev !== next) { // Prevent updates while running tab attributeChangedCallback
+    if (!skipAttrChange && prev !== next)
       Array.from(getTabs(this, prev), (tab) => attr(tab, ARIA_CONTROLS, next))
-    }
   }
   get tabsElement(): UHTMLTabsElement | null {
     return this.closest('u-tabs')

@@ -1,12 +1,15 @@
 import { expect } from '@esm-bundle/chai'
-import { a11ySnapshot, findAccessibilityNode, compareSnapshot, sendKeys } from '@web/test-runner-commands'
-import { UHTMLTabsElement, UHTMLTabListElement, UHTMLTabElement, UHTMLTabPanelElement } from './u-tabs'
+import { compareSnapshot, sendKeys } from '@web/test-runner-commands'
+import {
+  UHTMLTabsElement,
+  UHTMLTabListElement,
+  UHTMLTabElement,
+  UHTMLTabPanelElement
+} from './u-tabs'
 import { ARIA_LABELLEDBY, IS_ANDROID } from '../utils'
 
 const toDOM = <T extends HTMLElement>(innerHTML: string): T =>
   Object.assign(document.body, { innerHTML }).firstElementChild as T
-
-// TODO: https://modern-web.dev/docs/test-runner/commands/#accessibility-snapshot
 
 const DEFAULT_TEST_HTML = `
 <u-tabs>
@@ -44,7 +47,9 @@ describe('u-tabs', () => {
     expect(window.customElements.get('u-tabs')).to.equal(UHTMLTabsElement)
     expect(window.customElements.get('u-tablist')).to.equal(UHTMLTabListElement)
     expect(window.customElements.get('u-tab')).to.equal(UHTMLTabElement)
-    expect(window.customElements.get('u-tabpanel')).to.equal(UHTMLTabPanelElement)
+    expect(window.customElements.get('u-tabpanel')).to.equal(
+      UHTMLTabPanelElement
+    )
   })
 
   it('sets up attributes', () => {
@@ -60,19 +65,27 @@ describe('u-tabs', () => {
     `)
 
     expect(uTabs.tabList?.role).to.equal('tablist')
-    expect(uTabs.tabs[0].id).to.equal(uTabs.panels[0].getAttribute(ARIA_LABELLEDBY))
+    expect(uTabs.tabs[0].id).to.equal(
+      uTabs.panels[0].getAttribute(ARIA_LABELLEDBY)
+    )
     expect(uTabs.tabs[0].role).to.equal('tab')
     expect(uTabs.tabs[0].tabIndex).to.equal(0)
     expect(uTabs.tabs[0].panel?.role).to.equal('tabpanel')
     expect(uTabs.tabs[0].panel?.hidden).to.equal(false)
-    expect(uTabs.tabs[0].getAttribute('aria-controls')).to.equal(uTabs.panels[0].id)
+    expect(uTabs.tabs[0].getAttribute('aria-controls')).to.equal(
+      uTabs.panels[0].id
+    )
     expect(uTabs.tabs[0].getAttribute('aria-selected')).to.equal('true')
-    expect(uTabs.tabs[1].id).to.equal(uTabs.panels[1].getAttribute(ARIA_LABELLEDBY))
+    expect(uTabs.tabs[1].id).to.equal(
+      uTabs.panels[1].getAttribute(ARIA_LABELLEDBY)
+    )
     expect(uTabs.tabs[1].role).to.equal('tab')
     expect(uTabs.tabs[1].tabIndex).to.equal(-1)
     expect(uTabs.tabs[1].panel?.role).to.equal('tabpanel')
     expect(uTabs.tabs[1].panel?.hidden).to.equal(true)
-    expect(uTabs.tabs[1].getAttribute('aria-controls')).to.equal(uTabs.panels[1].id)
+    expect(uTabs.tabs[1].getAttribute('aria-controls')).to.equal(
+      uTabs.panels[1].id
+    )
     expect(uTabs.tabs[1].getAttribute('aria-selected')).to.equal('false')
   })
 
@@ -99,7 +112,9 @@ describe('u-tabs', () => {
     expect(uTabPanel.tabs).to.be.instanceOf(NodeList)
     expect(uTabPanel.tabs[0]).to.equal(uTab)
 
-    expect(toDOM<UHTMLTabPanelElement>(`<u-tabpanel></u-tabpanel>`).tabs.length).to.equal(0)
+    expect(
+      toDOM<UHTMLTabPanelElement>(`<u-tabpanel></u-tabpanel>`).tabs.length
+    ).to.equal(0)
   })
 
   it('updates attributes on selected prop change', () => {
@@ -249,13 +264,17 @@ describe('u-tabs', () => {
     expect(uTabs.tabs[1].panel?.getAttribute(ARIA_LABELLEDBY)).to.equal('tab-2')
 
     uTabs.tabs[0].id = 'tab-1-changed-id'
-    expect(uTabs.panels[0].getAttribute(ARIA_LABELLEDBY)).to.equal('tab-1-changed-id')
-    
+    expect(uTabs.panels[0].getAttribute(ARIA_LABELLEDBY)).to.equal(
+      'tab-1-changed-id'
+    )
+
     uTabs.tabs[1].setAttribute('aria-controls', 'panel-1')
     expect(uTabs.panels[1].hasAttribute(ARIA_LABELLEDBY)).to.equal(false)
 
     uTabs.panels[0].id = 'panel-1-changed-id'
-    expect(uTabs.tabs[0].getAttribute('aria-controls')).to.equal('panel-1-changed-id')
+    expect(uTabs.tabs[0].getAttribute('aria-controls')).to.equal(
+      'panel-1-changed-id'
+    )
 
     // NOTE: intentionnaly does not test changeing aria-labelledby,
     // as this attribute varies between OSes and is meant only to be used under the hood
@@ -384,7 +403,9 @@ describe('u-tabs', () => {
     expect(toDOM<UHTMLTabsElement>(`<u-tabs></u-tabs>`).tabList).to.equal(null)
     expect(toDOM<UHTMLTabElement>(`<u-tab></u-tab>`).tabsElement).to.equal(null)
     expect(toDOM<UHTMLTabElement>(`<u-tab></u-tab>`).index).to.equal(-1)
-    expect(toDOM<UHTMLTabPanelElement>(`<u-tabpanel></u-tabpanel>`).tabsElement).to.equal(null)
+    expect(
+      toDOM<UHTMLTabPanelElement>(`<u-tabpanel></u-tabpanel>`).tabsElement
+    ).to.equal(null)
   })
 
   it('respectes event.preventDefault', () => {
@@ -397,7 +418,9 @@ describe('u-tabs', () => {
       </u-tabs>
     `)
 
-    uTabs?.tabs[0].addEventListener('click', (event: MouseEvent) => event.preventDefault())
+    uTabs?.tabs[0].addEventListener('click', (event: MouseEvent) =>
+      event.preventDefault()
+    )
     uTabs?.tabs[0].click()
     expect(uTabs?.tabs[1].selected).to.equal(true)
   })
@@ -422,7 +445,7 @@ describe('u-tabs', () => {
 
     await sendKeys({ press: 'ArrowLeft' })
     expect(document.activeElement).to.equal(uTabs.tabs[0])
-      
+
     await sendKeys({ press: 'ArrowDown' })
     expect(document.activeElement).to.equal(uTabs.tabs[1])
 

@@ -106,7 +106,7 @@ describe('u-datalist', () => {
     expect(uDatalist.hidden).to.equal(true)
   })
 
-  it('handles keyboard arrow navigation', async () => {
+  it.only('handles keyboard arrow navigation', async () => {
     const items = [...toDOM(DEFAULT_TEST_HTML).querySelectorAll('*')]
     const [, input, uDatalist] = items as [
       HTMLLabelElement,

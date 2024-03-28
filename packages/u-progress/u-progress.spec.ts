@@ -31,9 +31,9 @@ describe('u-progress', () => {
       `<u-progress value="5" max="10"></u-progress>`
     )
 
-    expect(
-      uProgress.getAttribute(IS_IOS ? 'aria-description' : 'aria-valuenow')
-    ).to.equal(IS_IOS ? '50%' : '50')
+    expect(uProgress.getAttribute(IS_IOS ? 'title' : 'aria-valuenow')).to.equal(
+      IS_IOS ? '50%' : '50'
+    )
     expect(uProgress.getAttribute('role')).to.equal(
       IS_IOS ? 'img' : 'progressbar'
     )

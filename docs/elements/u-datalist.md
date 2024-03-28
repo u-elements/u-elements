@@ -64,32 +64,42 @@ bun add -S @u-elements/u-datalist
 | [Global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. ||
 
 ## Events
-
 Coming
 
 ## Styling
-
 Coming
 
 ## Dynamic suggestions
 Coming
 
-<!--## Accessibility
+## Fetch suggesions
+Coming
+
+## Link suggestions
+Coming
+
+## Accessibility
 
 | Screen reader | `<datalist>` | `<u-datalist>` |
 | --- | --- | --- |
-| VoiceOver (Mac) + Chrome | :white_check_mark: | :white_check_mark: |
-| VoiceOver (Mac) + Firefox | :white_check_mark: | :white_check_mark: |
-| VoiceOver (Mac) + Safari | :white_check_mark: | :white_check_mark: |
-| VoiceOver (iOS) + Safari | :white_check_mark: | :white_check_mark: |
+| VoiceOver (Mac) + Chrome | :x: Does not announce option count | :white_check_mark: |
+| VoiceOver (Mac) + Edge | :white_check_mark: | :white_check_mark: |
+| VoiceOver (Mac) + Firefox | :x: Does not announce option count  | :white_check_mark: |
+| VoiceOver (Mac) + Safari | :x: Does not announce option count | :white_check_mark: |
+| VoiceOver (iOS) + Chrome | :x: Does not announce options | :white_check_mark: |
+| VoiceOver (iOS) + Safari | :x: Does not announce options | :white_check_mark: |
 | Jaws (PC) + Chrome | :white_check_mark: | :white_check_mark: |
+| Jaws (PC) + Edge | :white_check_mark: | :white_check_mark: |
 | Jaws (PC) + Firefox | :white_check_mark: | :white_check_mark: |
 | NVDA (PC) + Chrome | :white_check_mark: | :white_check_mark: |
+| NVDA (PC) + Edge | :white_check_mark: | :white_check_mark: |
 | NVDA (PC) + Firefox | :white_check_mark: | :white_check_mark: |
 | Narrator (PC) + Chrome | :white_check_mark: | :white_check_mark: |
-| Narrator (PC) + Firefox | :white_check_mark: | :white_check_mark: |
+| Narrator (PC) + Edge | :white_check_mark: | :white_check_mark: |
+| Narrator (PC) + Firefox | :x: Does not show options | :white_check_mark: |
 | TalkBack (Android) + Chrome | :white_check_mark: | :white_check_mark: |
-| TalkBack (Android) + Firefox | :white_check_mark: | :white_check_mark: |-->
+| TalkBack (Android) + Firefox | :x: Does not show options | :white_check_mark: |
+| TalkBack (Android) + Samsung Internet | :white_check_mark: | :white_check_mark: |
 
 ## Specifications
 

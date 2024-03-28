@@ -59,7 +59,6 @@ describe('u-details', () => {
     expect(uSummary.role).to.equal('button')
     expect(uSummary.tabIndex).to.equal(0)
     expect(uSummary.getAttribute('aria-expanded')).to.equal('false')
-    expect(uSummary.getAttribute('aria-controls')).to.exist
     expect(content.checkVisibility()).to.equal(false)
   })
 

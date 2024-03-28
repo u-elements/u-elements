@@ -89,17 +89,23 @@ If the `<u-progress>` element is describing the loading progress of a region on 
 | Screen reader | `<progress>` | `<u-progress>` |
 | --- | --- | --- |
 | VoiceOver (Mac) + Chrome | :white_check_mark: | :white_check_mark: |
+| VoiceOver (Mac) + Edge | :white_check_mark: | :white_check_mark: |
 | VoiceOver (Mac) + Firefox | :white_check_mark: | :white_check_mark: |
 | VoiceOver (Mac) + Safari | :white_check_mark: | :white_check_mark: |
-| VoiceOver (iOS) + Safari | :x: Does not announce state | :white_check_mark: |
-| Jaws (PC) + Chrome | :white_check_mark: | :white_check_mark: |
+| VoiceOver (iOS) + Chrome | :x: Does not announce value | :white_check_mark: |
+| VoiceOver (iOS) + Safari | :x: Announces value, but not related max | :white_check_mark: |
+| Jaws (PC) + Chrome | :x: Announces value, but not related max | :white_check_mark: |
+| Jaws (PC) + Edge | :x: Announces value, but not related max | :white_check_mark: |
 | Jaws (PC) + Firefox | :white_check_mark: | :white_check_mark: |
-| NVDA (PC) + Chrome | :white_check_mark: | :white_check_mark: |
+| NVDA (PC) + Chrome | :x: Announces value, but not related max | :white_check_mark: |
+| NVDA (PC) + Edge | :x: Announces value, but not related max | :white_check_mark: |
 | NVDA (PC) + Firefox | :white_check_mark: | :white_check_mark: |
 | Narrator (PC) + Chrome | :white_check_mark: | :white_check_mark: |
+| Narrator (PC) + Edge | :white_check_mark: | :white_check_mark: |
 | Narrator (PC) + Firefox | :white_check_mark: | :white_check_mark: |
-| TalkBack (Android) + Chrome | :white_check_mark: | :white_check_mark: |
-| TalkBack (Android) + Firefox | :white_check_mark: | :white_check_mark: |
+| TalkBack (Android) + Chrome | :x: Announces value, but not related max | :white_check_mark: |
+| TalkBack (Android) + Firefox | :x: Announces value, but not related max | :white_check_mark: |
+| TalkBack (Android) + Samsung Internet | :x: Announces value, but not related max | :white_check_mark: |
 
 ## Specifications
 

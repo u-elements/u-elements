@@ -85,17 +85,23 @@ Even when a `<details>`/`<u-details>` element is closed, all of its content rema
 | Screen reader | `<details>` | `<u-details>` |
 | --- | --- | --- |
 | VoiceOver (Mac) + Chrome | :white_check_mark: | :white_check_mark: |
-| VoiceOver (Mac) + Firefox | :x: Does not announce expanded state | :white_check_mark: |
-| VoiceOver (Mac) + Safari | :x: Does not announce expanded state + looses screen reader focus | :white_check_mark: |
-| VoiceOver (iOS) + Safari | :x: Does not announce role or expanded state | :white_check_mark: |
+| VoiceOver (Mac) + Edge | :white_check_mark: | :white_check_mark: |
+| VoiceOver (Mac) + Firefox | :white_check_mark: | :white_check_mark: |
+| VoiceOver (Mac) + Safari | :x: Does not announce state + looses screen reader focus | :white_check_mark: |
+| VoiceOver (iOS) + Chrome | :white_check_mark: | :white_check_mark: |
+| VoiceOver (iOS) + Safari | :x: Does not announce role or state on focus | :white_check_mark: |
 | Jaws (PC) + Chrome | :white_check_mark: | :white_check_mark: |
+| Jaws (PC) + Edge | :white_check_mark: | :white_check_mark: |
 | Jaws (PC) + Firefox | :white_check_mark: | :white_check_mark: |
 | NVDA (PC) + Chrome | :white_check_mark: | :white_check_mark: |
+| NVDA (PC) + Edge | :white_check_mark: | :white_check_mark: |
 | NVDA (PC) + Firefox | :white_check_mark: | :white_check_mark: |
-| Narrator (PC) + Chrome | :white_check_mark: | :white_check_mark: |
+| Narrator (PC) + Chrome | :x: Does not announce state | :white_check_mark: |
+| Narrator (PC) + Edge | :white_check_mark: | :white_check_mark: |
 | Narrator (PC) + Firefox | :white_check_mark: | :white_check_mark: |
-| TalkBack (Android) + Chrome | :white_check_mark: | :white_check_mark: |
-| TalkBack (Android) + Firefox | :x: Does not announce expanded state | :white_check_mark: |
+| TalkBack (Android) + Chrome | :x: Does not announce role | :white_check_mark: |
+| TalkBack (Android) + Firefox | :x: Does not announce role or state on focus | :white_check_mark: |
+| TalkBack (Android) + Samsung Internet | :x: Does not announce role | :white_check_mark: |
 
 ## Specifications
 

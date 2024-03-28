@@ -1,4 +1,6 @@
 import {
+  ARIA_DISABLED,
+  ARIA_SELECTED,
   DISPLAY_BLOCK,
   UHTMLElement,
   attachStyle,
@@ -30,9 +32,13 @@ export class UHTMLOptionElement extends UHTMLElement {
   }
   connectedCallback() {
     attr(this, { role: 'option', tabindex: -1 })
+    this.attributeChangedCallback() // Setup attributes
   }
-  attributeChangedCallback(name: string, _prev: string, next: string) {
-    attr(this, `aria-${name}`, next !== null || next) // Reflect aria-selected|disabled
+  attributeChangedCallback() {
+    attr(this, {
+      [ARIA_DISABLED]: this.disabled,
+      [ARIA_SELECTED]: this.selected
+    })
   }
   /** Sets or retrieves whether the option in the list box is the default item. */
   get defaultSelected(): boolean {

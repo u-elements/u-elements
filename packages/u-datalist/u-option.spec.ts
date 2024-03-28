@@ -75,8 +75,8 @@ describe('u-option', () => {
   it('sets up attributes', () => {
     const uOption = toDOM<UHTMLOptionElement>(`<u-option>Option 1</u-option>`)
 
-    expect(uOption.hasAttribute('aria-selected')).to.equal(false)
-    expect(uOption.hasAttribute('aria-disabled')).to.equal(false)
+    expect(uOption.getAttribute('aria-selected')).to.equal('false')
+    expect(uOption.getAttribute('aria-disabled')).to.equal('false')
 
     uOption.setAttribute('selected', '')
     uOption.setAttribute('disabled', '')
@@ -90,8 +90,8 @@ describe('u-option', () => {
 
     uOption.removeAttribute('selected')
     uOption.removeAttribute('disabled')
-    expect(uOption.hasAttribute('aria-selected')).to.equal(false)
-    expect(uOption.hasAttribute('aria-disabled')).to.equal(false)
+    expect(uOption.getAttribute('aria-selected')).to.equal('false')
+    expect(uOption.getAttribute('aria-disabled')).to.equal('false')
 
     uOption.label = 'Label 1'
     expect(uOption.getAttribute('label')).to.equal('Label 1')
@@ -101,18 +101,18 @@ describe('u-option', () => {
 
     uOption.selected = true
     expect(uOption.hasAttribute('selected')).to.equal(true)
-    expect(uOption.hasAttribute('aria-selected')).to.equal(true)
+    expect(uOption.getAttribute('aria-selected')).to.equal('true')
 
     uOption.selected = false
     expect(uOption.hasAttribute('selected')).to.equal(false)
-    expect(uOption.hasAttribute('aria-selected')).to.equal(false)
+    expect(uOption.getAttribute('aria-selected')).to.equal('false')
 
     uOption.disabled = true
     expect(uOption.hasAttribute('disabled')).to.equal(true)
-    expect(uOption.hasAttribute('aria-disabled')).to.equal(true)
+    expect(uOption.getAttribute('aria-disabled')).to.equal('true')
 
     uOption.disabled = false
     expect(uOption.hasAttribute('disabled')).to.equal(false)
-    expect(uOption.hasAttribute('aria-disabled')).to.equal(false)
+    expect(uOption.getAttribute('aria-disabled')).to.equal('false')
   })
 })

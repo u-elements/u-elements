@@ -5,6 +5,7 @@ import {
   ARIA_CONTROLS,
   ARIA_EXPANDED,
   ARIA_LABELLEDBY,
+  ARIA_MULTISELECTABLE,
   DISPLAY_BLOCK,
   IS_BROWSER,
   IS_IOS,
@@ -18,12 +19,6 @@ import {
   on,
   useId
 } from '../utils'
-
-// Does not set aria-activedescendant to prevent double reading on plattforms supprting this attribute
-// aria-activedescendant does not work in Safari on Mac unless wrapped inside combobox (non-standard)
-// aria-live="assertive" works as "polite" placed in shadow dom
-// DOCS: Want it do change URL? Use onChange to implement
-// TODO: Do not autoselect based on input value
 
 declare global {
   interface HTMLElementTagNameMap {
@@ -42,7 +37,10 @@ const connectedRoot = new WeakMap<UHTMLDataListElement, Document | ShadowRoot>()
 export class UHTMLDataListElement extends UHTMLElement {
   constructor() {
     super()
-    attachStyle(this, DISPLAY_BLOCK)
+    attachStyle(
+      this,
+      `${DISPLAY_BLOCK}::slotted(u-option[disabled]) { display: none !important }` // Hide options that are disabled
+    )
   }
   connectedCallback() {
     const root = getConnectedRoot(this)
@@ -60,8 +58,8 @@ export class UHTMLDataListElement extends UHTMLElement {
   }
   handleEvent(event: Event) {
     if (event.defaultPrevented) return // Allow all events to be canceled
-    if (event.type === 'focus' || event.type === 'focusin') onFocus(this, event)
     if (event.type === 'click') onClick(this, event)
+    if (event.type === 'focus' || event.type === 'focusin') onFocus(this, event)
     if (event.type === 'focusout') onBlur(this)
     if (event.type === 'input' || event.type === 'mutation') setupOptions(this)
     if (event.type === 'keydown') onKeydown(this, event as KeyboardEvent)
@@ -90,15 +88,16 @@ const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
 
 const setupOptions = (self: UHTMLDataListElement) => {
   const hidden = self.hidden
-  const value = getInput(self)?.value.toLowerCase().trim() || ''
   const options = [...self.options]
+  const value = getInput(self)?.value.toLowerCase().trim() || ''
+  const isMulti = attr(self, ARIA_MULTISELECTABLE) === 'true'
 
   self.hidden = true // Speed up large lists by hiding during filtering
   options.forEach((opt) => {
     const text = `${opt.text}`.toLowerCase()
     const values = `${opt.value}${opt.label}${text}`.toLowerCase()
-    opt.hidden = !values.includes(value) || opt.disabled
-    opt.selected = value === text
+    opt.hidden = !values.includes(value)
+    if (!isMulti) opt.selected = text === value // Only autoselect if not single-select
   })
 
   // Needed to announce count in iOS
@@ -106,7 +105,7 @@ const setupOptions = (self: UHTMLDataListElement) => {
   if (IS_IOS)
     options
       .filter((opt) => !opt.hidden)
-      .map((opt, i, all) => (opt.title = `${i + 1}/${all.length}`))
+      .map((opt, i, { length }) => (opt.title = `${i + 1}/${length}`))
 
   self.hidden = hidden // Restore hidden state
 }
@@ -147,30 +146,23 @@ function onBlur(self: UHTMLDataListElement) {
 }
 
 function onClick(self: UHTMLDataListElement, { target }: Event) {
+  const input = getInput(self)
   const option = [...self.options].find((opt) => opt.contains(target as Node))
   const value = Object.getOwnPropertyDescriptor(
     HTMLInputElement.prototype,
     'value'
   )
-  const input = getInput(self)
-  const readOnly = input?.readOnly || false // Cache original readOnly state
 
   if (input === target)
-    setExpanded(self, true) // Ensure click on input opens
+    setExpanded(self, true) // Click on input should always open datalist
   else if (input && option) {
-    input.readOnly = true // Prevent showing mobile keyboard when moving focus back to input after selection
+    input.focus() // Change input.value before focus move to make screen reader read the correct value
     value?.set?.call(input, option.value) // Trigger value change - also React compatible
+    setExpanded(self, false) // Click on option shold always close datalist
 
     // Trigger input.value change events
     input.dispatchEvent(new Event('input', { bubbles: true, composed: true }))
     input.dispatchEvent(new Event('change', { bubbles: true }))
-
-    // Set timeout to 16ms to allow mobile keyboard to hide before moving focus
-    setTimeout(() => {
-      input.focus() // Change input.value before focus move to make screen reader read the correct value
-      setExpanded(self, false)
-      setTimeout(() => (input.readOnly = readOnly)) // Restore original readyOnly
-    }, 16)
   }
 }
 
@@ -179,7 +171,12 @@ function onKeydown(self: UHTMLDataListElement, event: KeyboardEvent) {
 
   const { key } = event
   const active = getConnectedRoot(self).activeElement as UHTMLOptionElement
-  const options = [...self.options].filter((opt) => !opt.hidden)
+  if (key !== 'Escape' && self.hidden) setExpanded(self, true) // Open if not ESC, before checking visible options
+
+  // Checks disabled or visibility (since hidden attribute can be overwritten by display: block)
+  const options = [...self.options].filter(
+    (opt) => !opt.disabled && opt.offsetWidth && opt.offsetHeight
+  )
   const index = options.indexOf(active)
   let next = -1 // If hidden - first arrow down should exit input
 
@@ -194,8 +191,6 @@ function onKeydown(self: UHTMLDataListElement, event: KeyboardEvent) {
     }
   }
 
-  // Open if not ESC, before moving focus
-  if (key !== 'Escape') setExpanded(self, true)
   ;(options[next] || getInput(self))?.focus()
   if (options[next]) event.preventDefault() // Prevent scroll when on option
 

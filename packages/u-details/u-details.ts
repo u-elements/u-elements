@@ -1,5 +1,4 @@
 import {
-  ARIA_CONTROLS,
   ARIA_EXPANDED,
   DISPLAY_BLOCK,
   UHTMLElement,
@@ -10,8 +9,7 @@ import {
   getRoot,
   mutationObserver,
   off,
-  on,
-  useId
+  on
 } from '../utils'
 
 declare global {
@@ -20,8 +18,6 @@ declare global {
     'u-summary': HTMLElement
   }
 }
-
-// TODO: Test aria-controls :slot1 not valid
 
 // Constants for better compression
 const OPEN = 'open'
@@ -71,10 +67,7 @@ export class UHTMLDetailsElement extends UHTMLElement {
     )
     const supportsHiddenUntilFound = 'onbeforematch' in this
 
-    attr(summary, {
-      [ARIA_CONTROLS]: useId(this.#contentSlot),
-      [ARIA_EXPANDED]: open
-    })
+    attr(summary, { [ARIA_EXPANDED]: open })
     attr(this.#contentSlot, {
       'aria-hidden': `${!open}`, // Needed to prevent announcing "group" when closed in Chrome on Mac
       hidden: open ? null : 'until-found' // Allows browsers to search inside content

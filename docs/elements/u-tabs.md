@@ -144,17 +144,22 @@ Setting `<u-tablist>` to `display: flex` gives you great control of how to align
 | Screen reader | `<u-tabs>` |
 | --- | --- |
 | VoiceOver (Mac) + Chrome | :white_check_mark: |
+| VoiceOver (Mac) + Edge | :white_check_mark: |
 | VoiceOver (Mac) + Firefox  | :white_check_mark: |
 | VoiceOver (Mac) + Safari | :white_check_mark: |
 | VoiceOver (iOS) + Safari | :white_check_mark: |
 | Jaws (PC) + Chrome | :white_check_mark: |
+| Jaws (PC) + Edge | :white_check_mark: |
 | Jaws (PC) + Firefox | :white_check_mark: |
 | NVDA (PC) + Chrome | :white_check_mark: |
+| NVDA (PC) + Edge | :white_check_mark: |
 | NVDA (PC) + Firefox | :white_check_mark: |
 | Narrator (PC) + Chrome | :white_check_mark: |
+| Narrator (PC) + Edge | :white_check_mark: |
 | Narrator (PC) + Firefox | :white_check_mark: |
 | TalkBack (Android) + Chrome | :white_check_mark: |
 | TalkBack (Android) + Firefox | :white_check_mark: |
+| TalkBack (Android) + Samsung Internet | :white_check_mark: |
 
 ## Specifications
 

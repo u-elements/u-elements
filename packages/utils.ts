@@ -6,15 +6,20 @@ export const IS_BROWSER =
 export const IS_ANDROID =
   IS_BROWSER && /android/i.test(window.navigator.userAgent) // Bad, but needed
 
+export const IS_FIREFOX =
+  IS_BROWSER && /firefox/i.test(window.navigator.userAgent) // Bad, but needed
+
 export const IS_IOS =
   IS_BROWSER && /iPad|iPhone|iPod/.test(window.navigator.userAgent) // Bad, but needed
 
 // Constants for better compression and control
 export const ARIA_CONTROLS = 'aria-controls'
+export const ARIA_DISABLED = 'aria-disabled'
 export const ARIA_EXPANDED = 'aria-expanded'
 export const ARIA_LABELLEDBY = IS_ANDROID
   ? 'data-labelledby' // Android <=13 reads tab text instead of content when labelledby
   : 'aria-labelledby'
+export const ARIA_MULTISELECTABLE = 'aria-multiselectable'
 export const ARIA_SELECTED = 'aria-selected'
 export const DISPLAY_BLOCK = ':host(:not([hidden])) { display: block }'
 

@@ -15,7 +15,7 @@
       }
       input { font: inherit }
       body {
-        margin: 20vh auto 0;
+        margin: 20vh auto 100vh;
         max-width: 500px;
       }
       u-option[aria-selected="true"] { color: red }
@@ -25,14 +25,21 @@
   <body>
     <main>
       Hei
+      <u-progress id="my-progress" value="5" max="10">70%</u-progress>
       <u-test></u-test>
       Hade
       <br />
       <br />
-      <label>
-        Label of progress
-        <br /><u-progress value="5" max="10">70%</u-progress>
+      <label for="my-progress">
+        Nested label of progress
+        <br /><u-progress id="my-progress" value="5" max="10">70%</u-progress>
       </label>
+      <br /><label for="my-progress">
+        For label of progress
+        <br /><u-progress id="my-progress" value="5" max="10">70%</u-progress>
+      </label>
+      <br />Aria-label of progress
+      <br /><u-progress aria-label="This is the aria-label" id="my-progress" value="5" max="10">70%</u-progress>
       <br />
       <br />
       <label>
@@ -82,23 +89,23 @@
       <script>
         // setTimeout(() => {
           let i = 0
-          document.querySelectorAll('input[list]').forEach((input) => {
-            input.addEventListener('input', ({ target }) => {
-              // setTimeout(() => {
-                const { value, list } = target
-                const tag = list.nodeName.replace('DATALIST', 'option')
-                const pre = value.split('@')[0]
+          // document.querySelectorAll('input[list]').forEach((input) => {
+          //   input.addEventListener('input', ({ target }) => {
+          //     // setTimeout(() => {
+          //       const { value, list } = target
+          //       const tag = list.nodeName.replace('DATALIST', 'option')
+          //       const pre = value.split('@')[0]
 
-                list.innerHTML = `
-                  <${tag} value="${pre}">@gmail.com</${tag}>
-                  <${tag} value="${pre}">${pre}@icloud.com</${tag}>
-                  <${tag} value="${pre}">${pre}@hotmail.com</${tag}>
-                  <${tag} value="${pre}">${++i}</${tag}>
-                `
-                setTimeout(() => target.click(), 16)
-              // }, 200)
-            })
-          })
+          //       list.innerHTML = `
+          //         <${tag} value="${pre}">@gmail.com</${tag}>
+          //         <${tag} value="${pre}">${pre}@icloud.com</${tag}>
+          //         <${tag} value="${pre}">${pre}@hotmail.com</${tag}>
+          //         <${tag} value="${pre}">${++i}</${tag}>
+          //       `
+          //       setTimeout(() => target.click(), 16)
+          //     // }, 200)
+          //   })
+          // })
         // }, 200)
       </script>
       <script type="module" src="/packages/u-datalist/u-datalist.ts"></script>

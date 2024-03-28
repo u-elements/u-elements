@@ -1,4 +1,5 @@
 import {
+  // IS_FIREFOX,
   IS_IOS,
   UHTMLElement,
   attr,
@@ -42,14 +43,16 @@ export class UHTMLProgressElement extends UHTMLElement {
   attributeChangedCallback() {
     const indeterminate = this.position < 0
     const percentage = Math.max(0, Math.round(this.position * 100)) // Always use percentage as iOS role="progressbar"
+    // const label = this.labels[0]
 
     attr(this, {
       /* c8 ignore next 7 */ // Because @web/test-runner code coverage only runs in chromium
-      [IS_IOS ? 'aria-description' : 'aria-valuenow']: IS_IOS
+      // [IS_FIREFOX ? 'aria-label' : 'data-label']: `${percentage}%`,
+      [IS_IOS ? 'title' : 'aria-valuenow']: IS_IOS
         ? `${percentage}%`
         : percentage,
       'aria-busy': indeterminate || null,
-      'aria-labelledby': attr(this, 'aria-label')
+      'aria-labelledby': attr(this, 'aria-label') // TODO: Firefox does not understand this
         ? null
         : useId(this.labels[0]),
       'aria-valuemax': 100,

@@ -106,7 +106,7 @@ describe('u-datalist', () => {
     expect(uDatalist.hidden).to.equal(true)
   })
 
-  it.only('handles keyboard arrow navigation', async () => {
+  it('handles keyboard arrow navigation', async () => {
     const items = [...toDOM(DEFAULT_TEST_HTML).querySelectorAll('*')]
     const [, input, uDatalist] = items as [
       HTMLLabelElement,
@@ -306,6 +306,8 @@ describe('u-datalist', () => {
   })
 
   it('triggers input and change events', async () => {
+    let inputEvent: Event | undefined
+    let changeEvent: Event | undefined
     const items = [...toDOM(DEFAULT_TEST_HTML).querySelectorAll('*')]
     const [, input, uDatalist] = items as [
       HTMLLabelElement,
@@ -313,36 +315,29 @@ describe('u-datalist', () => {
       UHTMLDataListElement
     ]
 
-    const onInput = (event: Event) =>
-      expect(event)
-        .to.include({
-          composed: true,
-          bubbles: true,
-          cancelable: false,
-          currentTarget: input,
-          target: input,
-          type: 'input'
-        })
-        .and.be.instanceOf(Event)
-
-    const onChange = (event: Event) =>
-      expect(event)
-        .to.include({
-          composed: false,
-          bubbles: true,
-          cancelable: false,
-          currentTarget: input,
-          target: input,
-          type: 'change'
-        })
-        .and.be.instanceOf(Event)
-
-    input.addEventListener('input', onInput)
-    input.addEventListener('change', onChange)
-
+    input.addEventListener('input', (event) => (inputEvent = event))
+    input.addEventListener('change', (event) => (changeEvent = event))
     input.focus()
     await nextFrame() // Let focus event bubble
 
     uDatalist.options[0].click()
+    expect(inputEvent)
+      .to.include({
+        composed: true,
+        bubbles: true,
+        cancelable: false,
+        target: input,
+        type: 'input'
+      })
+      .and.be.instanceOf(Event)
+    expect(changeEvent)
+      .to.include({
+        composed: false,
+        bubbles: true,
+        cancelable: false,
+        target: input,
+        type: 'change'
+      })
+      .and.be.instanceOf(Event)
   })
 })

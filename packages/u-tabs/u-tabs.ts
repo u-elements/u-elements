@@ -93,7 +93,7 @@ export class UHTMLTabListElement extends UHTMLElement {
 }
 
 // Speed up by not triggering attributeChangedCallback during attributeChangedCallback
-let skipAttrChange = false
+let SKIP_ATTR_CHANGE = false
 
 /**
  * The `<u-tab>` HTML element is an interactive element inside a `<u-tablist>` that, when activated, displays its associated `<u-tabpanel>`.
@@ -114,7 +114,7 @@ export class UHTMLTabElement extends UHTMLElement {
     this.selected = !!this.selected // Ensure selected is set (which also triggers attributeChangedCallback)
   }
   attributeChangedCallback(_name: string, prev: string, next: string) {
-    if (!skipAttrChange && prev !== next && (skipAttrChange = true)) {
+    if (!SKIP_ATTR_CHANGE && prev !== next && (SKIP_ATTR_CHANGE = true)) {
       const { tabs = [], panels = [], selectedIndex } = this.tabsElement || {}
       const selected = this.selected ? this : tabs[selectedIndex || 0] || this // Ensure always one selected tab
       let selectedPanel: HTMLElement
@@ -140,7 +140,7 @@ export class UHTMLTabElement extends UHTMLElement {
         })
       })
 
-      skipAttrChange = false
+      SKIP_ATTR_CHANGE = false
     }
   }
   get tabsElement(): UHTMLTabsElement | null {
@@ -181,7 +181,7 @@ export class UHTMLTabPanelElement extends UHTMLElement {
     this.hidden = Array.from(this.tabs).every((tab) => !tab.selected) // Hide if not connected to tab
   }
   attributeChangedCallback(_name: string, prev: string, next: string) {
-    if (!skipAttrChange && prev !== next)
+    if (!SKIP_ATTR_CHANGE && prev !== next)
       Array.from(getTabs(this, prev), (tab) => attr(tab, ARIA_CONTROLS, next))
   }
   get tabsElement(): UHTMLTabsElement | null {

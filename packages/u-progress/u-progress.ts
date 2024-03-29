@@ -1,5 +1,7 @@
 import {
-  // IS_FIREFOX,
+  ARIA_LABEL,
+  ARIA_LABELLEDBY,
+  IS_FIREFOX,
   IS_IOS,
   UHTMLElement,
   attr,
@@ -15,17 +17,13 @@ declare global {
   }
 }
 
-// TODO: Test aria-label + aria-valuenow
-// TODO: Test aria-label with <label> content
-// TODO: Test aria-label combined with user set aria-label
-
 /**
  * The `<u-progress value="70" max="100">` HTML element displays an indicator showing the completion progress of a task, typically displayed as a progress bar.
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/progress)
  */
 export class UHTMLProgressElement extends UHTMLElement {
   static get observedAttributes() {
-    return ['value', 'max']
+    return [ARIA_LABEL, 'value', 'max'] // Also watch label to sync Firefox/iOS
   }
   constructor() {
     super()
@@ -41,26 +39,30 @@ export class UHTMLProgressElement extends UHTMLElement {
     this.attributeChangedCallback() // We now know the element is in the DOM, so run a attribute setup
   }
   attributeChangedCallback() {
-    const indeterminate = this.position < 0
+    const asImage = IS_IOS || IS_FIREFOX // iOS and Firefox does not correcly read value of role="progress"
+    let labelText = (attr(this, ARIA_LABEL) || '').replace(/\d+%$/, '').trim() // Remove trailing percentage that we might have added
+    const labelElem = !IS_FIREFOX && !labelText && this.labels[0] // Firefox <label>-relation for role="progress"
     const percentage = Math.max(0, Math.round(this.position * 100)) // Always use percentage as iOS role="progressbar"
-    // const label = this.labels[0]
+    this.style.setProperty('--percentage', `${percentage}%`) // Write style before any read operation to avoid excess animation
+
+    // Connect aria-labelleby with relevant <label>, but as text in aria-label for iOS
+    if (labelElem) {
+      /* c8 ignore next 7 */ // Because @web/test-runner code coverage only runs in chromium
+      if (IS_IOS) labelText = this.labels[0]?.innerText || ''
+      else attr(this, ARIA_LABELLEDBY, useId(labelElem))
+    }
 
     attr(this, {
-      /* c8 ignore next 7 */ // Because @web/test-runner code coverage only runs in chromium
-      // [IS_FIREFOX ? 'aria-label' : 'data-label']: `${percentage}%`,
-      [IS_IOS ? 'title' : 'aria-valuenow']: IS_IOS
-        ? `${percentage}%`
+      [asImage ? ARIA_LABEL : 'aria-valuenow']: asImage
+        ? `${labelText} ${percentage}%`.trim()
         : percentage,
-      'aria-busy': indeterminate || null,
-      'aria-labelledby': attr(this, 'aria-label') // TODO: Firefox does not understand this
-        ? null
-        : useId(this.labels[0]),
+      'aria-valuenow': percentage,
+      'aria-busy': this.position === -1 || null, // true if indeterminate
       'aria-valuemax': 100,
       'aria-valuemin': 0,
       /* c8 ignore next 7 */ // Because @web/test-runner code coverage only runs in chromium
-      role: IS_IOS ? 'img' : 'progressbar'
+      role: asImage ? 'img' : 'progressbar'
     })
-    this.style.setProperty('--percentage', `${percentage}%`)
   }
   get labels(): NodeListOf<HTMLLabelElement> {
     const label = this.closest('label')

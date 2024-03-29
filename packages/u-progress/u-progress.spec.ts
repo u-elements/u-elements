@@ -1,7 +1,7 @@
 import { expect } from '@esm-bundle/chai'
 import { compareSnapshot } from '@web/test-runner-commands'
 import { UHTMLProgressElement } from './u-progress'
-import { IS_IOS } from '../utils'
+import { IS_FIREFOX, IS_IOS } from '../utils'
 
 const toDOM = <T extends HTMLElement>(innerHTML: string): T =>
   Object.assign(document.body, { innerHTML }).firstElementChild as T
@@ -9,7 +9,7 @@ const toDOM = <T extends HTMLElement>(innerHTML: string): T =>
 describe('u-progress', () => {
   it('matches snapshot', async () => {
     await compareSnapshot({
-      name: `u-progress${IS_IOS ? '-ios' : ''}`,
+      name: `u-progress${IS_IOS ? '-ios' : IS_FIREFOX ? '-firefox' : ''}`,
       content: toDOM(`<u-progress value="5" max="10"></u-progress>`).outerHTML
     })
   })
@@ -27,15 +27,16 @@ describe('u-progress', () => {
   })
 
   it('sets up attributes', () => {
+    const asImage = IS_IOS || IS_FIREFOX
     const uProgress = toDOM<UHTMLProgressElement>(
       `<u-progress value="5" max="10"></u-progress>`
     )
 
-    expect(uProgress.getAttribute(IS_IOS ? 'title' : 'aria-valuenow')).to.equal(
-      IS_IOS ? '50%' : '50'
-    )
+    expect(
+      uProgress.getAttribute(asImage ? 'aria-label' : 'aria-valuenow')
+    ).to.equal(asImage ? '50%' : '50')
     expect(uProgress.getAttribute('role')).to.equal(
-      IS_IOS ? 'img' : 'progressbar'
+      asImage ? 'img' : 'progressbar'
     )
     expect(uProgress.getAttribute('aria-valuemin')).to.equal('0')
     expect(uProgress.getAttribute('aria-valuemax')).to.equal('100')

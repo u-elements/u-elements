@@ -16,6 +16,7 @@ export const IS_IOS =
 export const ARIA_CONTROLS = 'aria-controls'
 export const ARIA_DISABLED = 'aria-disabled'
 export const ARIA_EXPANDED = 'aria-expanded'
+export const ARIA_LABEL = 'aria-label'
 export const ARIA_LABELLEDBY = IS_ANDROID
   ? 'data-labelledby' // Android <=13 reads tab text instead of content when labelledby
   : 'aria-labelledby'

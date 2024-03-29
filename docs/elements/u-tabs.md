@@ -78,7 +78,7 @@ bun add -S @u-elements/u-tabs
 
 ## Events
 
-No custom events. Changing tabs is done through `click` so listening for this is sufficient:
+No custom events beyond the [usual events supported by HTML elements](https://developer.mozilla.org/en-US/docs/Web/API/Element#events). Tabbing triggers a `click` (both with mouse and keyboard) so listen for this to check for tab change:
 ```js
 document.addEventListener('click', ({ target }) => {
   const tab = target instanceof Element && target.closest('u-tab');

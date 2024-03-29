@@ -64,7 +64,30 @@ bun add -S @u-elements/u-datalist
 | [Global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. ||
 
 ## Events
-Coming
+While `<u-datalist>` and `<u-option>` support all events, *native* datalist and option elements does not as they are rendered as part of the browser UI.  Therefore, it's recommended to avoid binding events to `<u-datalist>` or `<u-option>` to ensure native compatibility and seamless opt-out.
+
+Instead, if you want to detect the selection of an option element, 
+bind an `input` listener to the `<input>` element and check for a falsy `event.inputType`:
+
+```html
+<input type="text" list="my-list" />
+<datalist id="my-list">
+  <option>Option 1</option>
+  <option>Option 2</option>
+  <option>Option 3</option>
+</datalist>
+<script>
+  const input = document.querySelector('input')
+
+  input.addEventListener('input', (event) => {
+    if (!event.inputType) {
+      // Event triggered by user selecting an option in datalist
+    } else {
+      // Event triggered by user typing
+    }
+  })
+</script>
+```
 
 ## Styling
 Coming
@@ -76,7 +99,7 @@ Coming
 Coming
 
 ## Link suggestions
-Coming
+If you want suggestions to link to another page
 
 ## Accessibility
 

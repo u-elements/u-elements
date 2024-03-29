@@ -90,7 +90,7 @@ If the `<u-progress>` element is describing the loading progress of a region on 
 | --- | --- | --- |
 | VoiceOver (Mac) + Chrome | :white_check_mark: | :white_check_mark: |
 | VoiceOver (Mac) + Edge | :white_check_mark: | :white_check_mark: |
-| VoiceOver (Mac) + Firefox | :white_check_mark: | :white_check_mark: |
+| VoiceOver (Mac) + Firefox | :x: Does not announce value, unless nested in `<label>` | :white_check_mark: |
 | VoiceOver (Mac) + Safari | :white_check_mark: | :white_check_mark: |
 | VoiceOver (iOS) + Chrome | :x: Does not announce value | :white_check_mark: |
 | VoiceOver (iOS) + Safari | :x: Announces value, but not related max | :white_check_mark: |

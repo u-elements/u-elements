@@ -2,6 +2,7 @@
   import CodeMirror from 'vue-codemirror6';
   import { ref, watch } from 'vue'
   import { html } from '@codemirror/lang-html'
+  import jsBeautify from 'js-beautify'
   
   // Import all uElements
   const modules = Object.values(import.meta.glob('../../../packages/*/u-!(*.spec).ts'))
@@ -18,16 +19,22 @@
           { globalAttrs: true, attrs: Object.fromEntries(attr.map((v) => [v, null])) }
         ])
       )
-      htmlLang.value = html({ extraTags });
+      htmlLang.value = html({ extraTags })
   })
 
   let timer = null
   const code = ref('')
   const view = ref(null)
   const slots = ref(null)
-  const updateView = () => view.value && (view.value.innerHTML = code.value);
+  const updateView = () => {
+    if (!view.value) return
+    view.value.innerHTML = code.value
+    view.value.querySelectorAll('script').forEach((script) =>
+      Function(script.textContent)() // Exec scripts
+    )
+  }
   
-  watch(slots, () => updateView(code.value = slots.value.textContent.trim()))
+  watch(slots, () => updateView(code.value = jsBeautify.html(slots.value.textContent.trim(), { indent_size: 2 })))
   watch(code, () => clearTimeout(timer) || (timer = setTimeout(updateView, 300)))
 </script>
 <style>
@@ -35,7 +42,7 @@
   .demo-code, .demo-view { box-sizing: border-box; min-width: 0; flex: 1 0 100%; }
   .demo-code > * { font-size: .875rem; height: 100%; outline: none!important }
   .demo-view { border: inherit; min-height: 200px; padding: 1rem; margin: -2px }
-  .demo-view :is(button,input) { all: revert }
+  .demo-view :where(button,input) { all: revert }
   @media (min-width: 800px) { .demo-code, .demo-view { flex-basis: 50% } }
 </style>
 <template>

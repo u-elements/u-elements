@@ -8,13 +8,13 @@ import { data } from '../filesize.data.ts'
 **Quick intro:**
 - Use `<u-option>` as child elements - these will show the suggestions while typing
 - Use matching `id` on `<u-datalist>` and `list` attribute on `<input>` to connect
-- **Want to show suggestions from a data source?** See [dynamic suggestions &rarr;](#dynamic-suggestions)
+- **Want to show suggestions from a data source?** See [example fetch &rarr;](#example-fetch)
 - **MDN Web Docs:** [&lt;datalist&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist), [&lt;option&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option)
 
 ## Example
 <Sandbox>
 &lt;style&gt;
-  u-option[aria-selected="true"] { text-decoration: underline }
+  u-option[selected] { text-decoration: underline }
 &lt;/style&gt;
 &lt;label&gt;
   Choose flavour of ice cream
@@ -64,42 +64,197 @@ bun add -S @u-elements/u-datalist
 | [Global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. ||
 
 ## Events
-While `<u-datalist>` and `<u-option>` support all events, *native* datalist and option elements does not as they are rendered as part of the browser UI.  Therefore, it's recommended to avoid binding events to `<u-datalist>` or `<u-option>` to ensure native compatibility and seamless opt-out.
+While `<u-datalist>` support all events, *native* datalist does not as it is rendered as part of the browser UI.  Therefore, it's recommended to avoid binding events to `<u-datalist>` or `<u-option>` if you want to ensure native compatibility and future seamless opt-out.
 
-Instead, if you want to detect the selection of an option element, 
-bind an `input` listener to the `<input>` element and check for a falsy `event.inputType`:
+Instead, you can detect the selection of an option element by
+binding an `input` listener to the `<input>` element and check for a falsy `event.inputType`:
 
 ```html
 <input type="text" list="my-list" />
 <datalist id="my-list">
   <option>Option 1</option>
   <option>Option 2</option>
-  <option>Option 3</option>
 </datalist>
 <script>
   const input = document.querySelector('input')
 
   input.addEventListener('input', (event) => {
     if (!event.inputType) {
-      // Event triggered by user selecting an option in datalist
+      // Event is triggered by user selecting an option in datalist
     } else {
-      // Event triggered by user typing
+      // Event is triggered by user typing in input
     }
   })
 </script>
 ```
 
 ## Styling
+
+
+While `<u-datalist>` and `<u-option>` are styleable, *native* datalist and option elements are currently not. However, there is a possibility that the [native elements may become styleable in the future](https://open-ui.org/components/selectlist/#styling).
+
+### Styling with the display property
+
+`<u-datalist>` and `<u-option>` are both rendered as `display: block` when visible, and are hidden by the `hidden` attribute. Styling with a `display` property will override the `hidden` attribute, thus disabling datalist show/hide and option filtering, unless you wrap your styling in a `:not([hidden])` selector:
+
+```css
+u-datalist:not([hidden]) {
+  display: flex;
+  /* Use :not([hidden]) if you wish to change u-datalist display
+   * without disabling open/close */
+}
+u-option:not([hidden]) {
+  display: flex;
+  /* Use :not([hidden]) if you wish to change u-option display
+   * without disabling filtering */
+}
+```
+
+### Styling focus and selected state
+Selected `<u-option>` elements gets a `selected` attribute, and receive real focus on keyboard navigation, making both states easy to style:
+
+```css
+u-option:focus {
+  /* Focused option styling here */
+}
+u-option:not(:focus) {
+  /* Un-focused option styling here */
+}
+u-option[selected] {
+  /* Selected option styling here */
+}
+u-option:not([selected]) {
+  /* Un-selected option styling here */
+}
+```
+
+### Example styling datalist position and animation:
+
+<Sandbox>
+&lt;style&gt;
+  .my-input,
+  .my-list {
+    background: #fff;
+    border-radius: .25em;
+    border: 2px solid #090C33;
+    box-sizing: border-box;
+    color: #090C33;
+    font: inherit;
+    padding: .5em;
+    width: 13em;
+    transition: .2s; /* Animate */
+  }
+  .my-input {
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%23000' stroke-width='2' d='m3 8 9 9 9-9'/%3E%3C/svg%3E") center right/2rem 1rem no-repeat;
+  }
+  .my-input[aria-expanded="true"] {
+    background-color: #f9ffd7;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  .my-input:focus-visible,
+  .my-list u-option:focus {
+    box-shadow: 0 0 0 1px #fff,0 0 0 3px #6325e7,0 0 0 4px #fff;
+    outline: none;
+  }
+  .my-list {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    box-shadow: 0 .3em 1em #090C3333;
+    display: block; /* Overwrites hidden attribute */
+    margin-top: -2px;
+    position: absolute;
+  }
+  .my-list[hidden] {
+    opacity: 0;
+    translate: 0 -.5em;
+    visibility: hidden;
+  }
+  .my-list u-option {
+    border-radius: .1em;
+    padding: .5em;
+    transition: .2s;
+  }
+  .my-list u-option:focus {
+    background-color: #EBF0FA;
+  }
+  .my-list u-option[selected] {
+    font-weight: bold;
+    text-decoration: underline;
+  }
+&lt;/style&gt;
+&lt;label&gt;
+  Choose flavour of ice cream
+  &lt;br /&gt;
+  &lt;input type="text" class="my-input" list="my-styling" /&gt;
+&lt;/label&gt;
+&lt;u-datalist class="my-list" id="my-styling"&gt;
+  &lt;u-option&gt;Coconut&lt;/u-option&gt;
+  &lt;u-option&gt;Strawberries&lt;/u-option&gt;
+  &lt;u-option&gt;Chocolate&lt;/u-option&gt;
+  &lt;u-option&gt;Vanilla&lt;/u-option&gt;
+&lt;/u-datalist&gt;
+&lt;p&gt;
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tellus massa, eget sollicitudin arcu luctus vel. Cras non purus accumsan, ultricies mi ut, blandit magna.
+&lt;/p&gt;
+</Sandbox>
+
+## Example: Fetch
+
+<Sandbox>
+&lt;label&gt;
+  Choose country
+  &lt;br /&gt;
+  &lt;input type="text" id="my-fetch-input" list="my-fetch-list" /&gt;
+&lt;/label&gt;
+&lt;u-datalist id="my-fetch-list"&gt;
+  Type to search for countries...
+&lt;/u-datalist&gt;
+&lt;script&gt;
+  let debounceTimer; // Debounce so we do not spam API
+  const xhr = new XMLHttpRequest(); // Easy to abort
+  const input = document.getElementById('my-fetch-input');
+  const list = input.list;
+
+  // Same handler every time
+  xhr.onload = () => {
+    const data = JSON.parse(xhr.responseText);
+    const options = data.map(({ name }, index) =>
+      Object.assign(document.createElement('u-option'), {
+        textContent: name,
+        value: \`${index}: ${input.value}` // Set value to same as input to avoid filtering
+      })
+    );
+
+    list.replaceChildren(...options);
+  };
+
+  input.addEventListener('input', (event) => {
+    if (!event.inputType) { // User clicked u-option
+      const index = Number(input.value.split(\`:\`)[0])
+      const option = list.options[index];
+      input.value = option.text; // Set input value to text of option
+    } else {
+      const value = encodeURIComponent(event.target.value.trim());
+      const url = \`https://restcountries.com/v2/name/${value}?fields=name`;
+      list.textContent = 'Loading...';
+
+      xhr.abort();
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        xhr.open('GET', url, true);
+        xhr.send();
+      }, 300);
+    }
+  });
+&lt;/script&gt;
+</Sandbox>
+
+## Example: Dynamic
 Coming
 
-## Dynamic suggestions
+## Example: Link
 Coming
-
-## Fetch suggesions
-Coming
-
-## Link suggestions
-If you want suggestions to link to another page
 
 ## Accessibility
 

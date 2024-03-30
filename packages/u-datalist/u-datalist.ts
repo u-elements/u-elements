@@ -91,15 +91,15 @@ const setupOptions = (self: UHTMLDataListElement, event?: Event) => {
   const hidden = self.hidden
   const options = [...self.options]
   const value = getInput(self)?.value.toLowerCase().trim() || ''
+  const isMulti = attr(self, ARIA_MULTISELECTABLE) === 'true'
   const isTyping = event instanceof InputEvent && event.inputType
-  const isUnselect = isTyping && attr(self, ARIA_MULTISELECTABLE) !== 'true'
 
   self.hidden = true // Speed up large lists by hiding during filtering
   options.forEach((opt) => {
     const text = `${opt.text}`.toLowerCase()
     const values = `${opt.value}${opt.label}${text}`.toLowerCase()
     opt.hidden = !values.includes(value)
-    if (isUnselect) opt.selected = false // Turn off selected when typing in single select
+    if (!isMulti && isTyping) opt.selected = false // Turn off selected when typing in single select
   })
 
   // Needed to announce count in iOS
@@ -158,7 +158,12 @@ function onClick(self: UHTMLDataListElement, { target }: Event) {
   if (input === target)
     setExpanded(self, true) // Click on input should always open datalist
   else if (input && option) {
-    option.selected = true // Activate selected
+    const isMulti = attr(self, ARIA_MULTISELECTABLE) === 'true'
+    Array.from(self.options, (opt) => {
+      if (opt === option) opt.selected = true
+      else if (!isMulti) opt.selected = false // Ensure single selected
+    })
+
     input.focus() // Change input.value before focus move to make screen reader read the correct value
     value?.set?.call(input, option.value) // Trigger value change - also React compatible
     setExpanded(self, false) // Click on option shold always close datalist

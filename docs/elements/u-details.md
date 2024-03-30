@@ -73,9 +73,9 @@ details.addEventListener('toggle', (event) => {
 
 ## Styling
 
-The `<summary>`/`<u-summary>` element is rendered with `display: list-item` to display the open/close triangle, which is also announced by screen readers. If you wish to remove the triangle and its announcement, you can use `list-style: none`.
+`<summary>`/`<u-summary>` is rendered with `display: list-item` to display the open/close triangle, which is also announced by screen readers. If you wish to remove the triangle and its announcement, you can use `list-style: none`.
 
-The `<details>`/`<u-details>` hides its *content*, implying that only the `open` attribute (not CSS) can alter its open state. Animating the open/close action consequently requires some workarounds: [example 1](https://linkedlist.ch/animate_details_element_60/) and [example 2](https://css-tricks.com/how-to-animate-the-details-element/).
+`<details>`/`<u-details>` hides its *content*, implying that only the `open` attribute (not CSS) can alter its open state. Animating the open/close action consequently requires some workarounds: [example 1](https://linkedlist.ch/animate_details_element_60/) and [example 2](https://css-tricks.com/how-to-animate-the-details-element/).
 
 ## Find-in-page
 Even when a `<details>`/`<u-details>` element is closed, all of its content remains discoverable through the find-in-page search feature (e.g., Ctrl or Command + F keys). This behavior is [supported by various browsers](https://caniuse.com/mdn-html_global_attributes_hidden_until-found_value). If a user conducts a search for content within a details element, it will automatically open and trigger the `toggle` event.

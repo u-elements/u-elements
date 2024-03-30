@@ -8,7 +8,7 @@ import { data } from '../filesize.data.ts'
 **Quick intro:**
 - Use `<u-option>` as child elements - these will show the suggestions while typing
 - Use matching `id` on `<u-datalist>` and `list` attribute on `<input>` to connect
-- **Want to show suggestions from a data source?** See [example fetch &rarr;](#example-fetch)
+- **Want to show suggestions from a data source?** See [example: API &rarr;](#example-api)
 - **MDN Web Docs:** [&lt;datalist&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist), [&lt;option&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option)
 
 ## Example
@@ -110,8 +110,8 @@ u-option:not([hidden]) {
 }
 ```
 
-### Styling focus and selected state
-Selected `<u-option>` elements gets a `selected` attribute, and receive real focus on keyboard navigation, making both states easy to style:
+### Styling option focus and selected state
+`<u-option>` receive real focus on keyboard navigation, and a `selected` attribute on selection, which both can be utilized for styling:
 
 ```css
 u-option:focus {
@@ -128,7 +128,7 @@ u-option:not([selected]) {
 }
 ```
 
-### Example styling datalist position and animation:
+### Styling example: Datalist position and animation
 
 <Sandbox>
 &lt;style&gt;
@@ -199,33 +199,37 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
 &lt;/p&gt;
 </Sandbox>
 
-## Example: Fetch
+## Example: API
 
 <Sandbox>
 &lt;label&gt;
   Choose country
   &lt;br /&gt;
-  &lt;input type="text" id="my-fetch-input" list="my-fetch-list" /&gt;
+  &lt;input type="text" id="my-api-input" list="my-api-list" /&gt;
 &lt;/label&gt;
-&lt;u-datalist id="my-fetch-list"&gt;
+&lt;u-datalist id="my-api-list"&gt;
   Type to search for countries...
 &lt;/u-datalist&gt;
 &lt;script&gt;
   let debounceTimer; // Debounce so we do not spam API
-  const xhr = new XMLHttpRequest(); // Easy to abort
-  const input = document.getElementById('my-fetch-input');
+  const input = document.getElementById('my-api-input');
   const list = input.list;
+  const xhr = new XMLHttpRequest(); // Easy to abort
 
   // Same handler every time
   xhr.onload = () => {
-    const data = JSON.parse(xhr.responseText);
-    const options = data.map(({ name }, index) =>
-      Object.assign(document.createElement('u-option'), {
-        textContent: name,
-        value: \`${index}: ${input.value}` // Prevent filtering by matching value and input
-      })
-    );
-    list.replaceChildren(...options);
+    try {
+      const data = JSON.parse(xhr.responseText);
+      const options = data.map(({ name }, index) =>
+        Object.assign(document.createElement('u-option'), {
+          text: name,
+          value: \`${index}: ${input.value}` // Prevent filtering by matching value and input
+        })
+      );
+      list.replaceChildren(...options);
+    } catch (err) {
+      list.textContent = 'No results';
+    }
   };
 
   input.addEventListener('input', (event) => {
@@ -234,6 +238,8 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
       const index = Number(input.value.split(\`:\`)[0])
       const option = list.options[index];
       input.value = option.text;
+    } else if (!input.value) {
+      list.textContent = 'Type to search for countries...';
     } else {
       // User is typing
       const value = encodeURIComponent(event.target.value.trim());
@@ -251,10 +257,63 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
 </Sandbox>
 
 ## Example: Dynamic
-Coming
+
+<Sandbox>
+&lt;label&gt;
+  Choose your email
+  &lt;br /&gt;
+  &lt;input type="text" id="my-dynamic-input" list="my-dynamic-list" /&gt;
+&lt;/label&gt;
+&lt;u-datalist id="my-dynamic-list"&gt;
+  Type to choose email...
+&lt;/u-datalist&gt;
+&lt;script&gt;
+  const input = document.getElementById('my-dynamic-input');
+
+  input.addEventListener('input', (event) => {
+    if (!event.inputType) return; // User clicked u-option
+    const value = input.value.split('@')[0]
+    const values = [
+        \`${value}@live.com`,
+        \`${value}@icloud.com`,
+        \`${value}@hotmail.com`,
+        \`${value}@gmail.com`
+    ];
+
+    if (!value) input.list.textContent = 'Type to choose email...';
+    else input.list.replaceChildren(...values.map((text) =>
+      Object.assign(document.createElement('u-option'), { text })
+    ));
+  });
+&lt;/script&gt;
+</Sandbox>
 
 ## Example: Link
-Coming
+<Sandbox>
+&lt;label&gt;
+  Open u-element documentation
+  &lt;br /&gt;
+  &lt;input type="text" id="my-link-input" list="my-link-list" /&gt;
+&lt;/label&gt;
+&lt;u-datalist id="my-link-list"&gt;
+  &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-datalist"&gt;u-datalist&lt;/u-option&gt;
+  &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-details"&gt;u-details&lt;/u-option&gt;
+  &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-dialog"&gt;u-dialog&lt;/u-option&gt;
+  &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-progress"&gt;u-progress&lt;/u-option&gt;
+  &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-select"&gt;u-select&lt;/u-option&gt;
+  &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-tabs"&gt;u-tabs&lt;/u-option&gt;
+&lt;/u-datalist&gt;
+&lt;script&gt;
+  const input = document.getElementById('my-link-input');
+
+  input.addEventListener('input', (event) => {
+    if (!event.inputType) { // User clicked u-option
+      window.location.href = input.value;
+      input.value = ''; // Clear input
+    }
+  });
+&lt;/script&gt;
+</Sandbox>
 
 ## Accessibility
 

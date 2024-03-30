@@ -91,9 +91,11 @@ document.addEventListener('click', ({ target }) => {
 
 ## Styling
 
+`<u-tabs>`, `<u-tablist>` and `<u-tabpanel>` renders as `display: block`, while `<u-tab>` renders as `display: inline-block`.
+
 ### Styling the tab state
 
-`<u-tab>` automatically gets a `aria-selected="true"` or `aria-selected="false"` attribute, which can be utilized for styling purposes:
+`<u-tab>` automatically gets a `aria-selected="true"` or `aria-selected="false"` attribute, which can be utilized for styling:
 
 ```css
 .my-tab[aria-selected="true"] {
@@ -104,12 +106,7 @@ document.addEventListener('click', ({ target }) => {
 }
 ```
 
-
-### Styling the tablist
-
-`<u-tabs>`, `<u-tablist>` and `<u-tabpanel>` renders as `display: block`, while `<u-tab>` renders as `display: inline-block`.
-Setting `<u-tablist>` to `display: flex` gives you great control of how to align tabs, and whether or not to allow horizontal scroll or wrapping:
-
+### Styling example: Scrolling tablist
 
 <Sandbox>
 &lt;style&gt;
@@ -117,10 +114,6 @@ Setting `<u-tablist>` to `display: flex` gives you great control of how to align
     display: flex;
     overflow: auto;
     white-space: nowrap;
-  }
-  .my-tablist-wrapps {
-    display: flex;
-    flex-wrap: wrap;
   }
 &lt;/style&gt;
 .my-tablist-scrolls:
@@ -130,7 +123,19 @@ Setting `<u-tablist>` to `display: flex` gives you great control of how to align
   &lt;/u-tablist&gt;
   &lt;u-tabpanel&gt;Panel 1&lt;/u-tabpanel&gt;
 &lt;/u-tabs&gt;
-&lt;br /&gt;.my-tablist-wrapps:
+</Sandbox>
+
+
+
+### Styling example: Wrapping tablist
+
+<Sandbox>
+&lt;style&gt;
+  .my-tablist-wrapps {
+    display: flex;
+    flex-wrap: wrap;
+  }
+&lt;/style&gt;
 &lt;u-tabs&gt;
   &lt;u-tablist class="my-tablist-wrapps"&gt;
     &lt;u-tab&gt;Tab 1&lt;/u-tab&gt;&lt;u-tab&gt;Tab 2&lt;/u-tab&gt;&lt;u-tab&gt;Tab 3&lt;/u-tab&gt;&lt;u-tab&gt;Tab 4&lt;/u-tab&gt;&lt;u-tab&gt;Tab 5&lt;/u-tab&gt;&lt;u-tab&gt;Tab 6&lt;/u-tab&gt;&lt;u-tab&gt;Tab 7&lt;/u-tab&gt;

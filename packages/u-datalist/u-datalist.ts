@@ -61,8 +61,9 @@ export class UHTMLDataListElement extends UHTMLElement {
     if (event.type === 'click') onClick(this, event)
     if (event.type === 'focus' || event.type === 'focusin') onFocus(this, event)
     if (event.type === 'focusout') onBlur(this)
-    if (event.type === 'input' || event.type === 'mutation') setupOptions(this)
     if (event.type === 'keydown') onKeydown(this, event as KeyboardEvent)
+    if (event.type === 'mutation' || event.type === 'input')
+      setupOptions(this, event)
   }
   get options(): HTMLCollectionOf<HTMLOptionElement> {
     return this.getElementsByTagName('u-option')
@@ -86,18 +87,19 @@ const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
   self.hidden = !open
 }
 
-const setupOptions = (self: UHTMLDataListElement) => {
+const setupOptions = (self: UHTMLDataListElement, event?: Event) => {
   const hidden = self.hidden
   const options = [...self.options]
   const value = getInput(self)?.value.toLowerCase().trim() || ''
-  const isMulti = attr(self, ARIA_MULTISELECTABLE) === 'true'
+  const isTyping = event instanceof InputEvent && event.inputType
+  const isUnselect = isTyping && attr(self, ARIA_MULTISELECTABLE) !== 'true'
 
   self.hidden = true // Speed up large lists by hiding during filtering
   options.forEach((opt) => {
     const text = `${opt.text}`.toLowerCase()
     const values = `${opt.value}${opt.label}${text}`.toLowerCase()
     opt.hidden = !values.includes(value)
-    if (!isMulti) opt.selected = text === value // Only autoselect if not single-select
+    if (isUnselect) opt.selected = false // Turn off selected when typing in single select
   })
 
   // Needed to announce count in iOS
@@ -156,6 +158,7 @@ function onClick(self: UHTMLDataListElement, { target }: Event) {
   if (input === target)
     setExpanded(self, true) // Click on input should always open datalist
   else if (input && option) {
+    option.selected = true // Activate selected
     input.focus() // Change input.value before focus move to make screen reader read the correct value
     value?.set?.call(input, option.value) // Trigger value change - also React compatible
     setExpanded(self, false) // Click on option shold always close datalist

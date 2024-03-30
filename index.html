@@ -14,16 +14,33 @@
         text-rendering: optimizeLegibility;
       }
       input { font: inherit }
-      body {
-        margin: 20vh auto 100vh;
-        max-width: 500px;
-      }
+      body { margin: 15vh auto 100vh; max-width: 500px }
       u-option[aria-selected="true"] { color: red }
       u-tabpanel { padding: 10px; border: 1px solid }
     </style>
   </head>
   <body>
     <main>
+      <u-tags>
+        <u-tag>Kokkos</u-tag>
+        <u-tag>Banana</u-tag>
+        <u-tag>Pineapple</u-tag>
+        <u-tag>Orange</u-tag>
+        <input type="text" list="u-tags-list" />
+        <u-datalist id="u-tags-list">
+          <u-option>Kokkos</u-option>
+          <u-option>Jordbær</u-option>
+          <u-option>Sjokolade</u-option>
+          <u-option>Vanilje</u-option>
+          <u-option>Lakris</u-option>
+          <u-option>Pistasj</u-option>
+          <u-option>Mango</u-option>
+          <u-option>Hasselnøtt</u-option>
+        </u-datalist>
+      </u-tags>
+      <!-- <template></template> -->
+      <br />
+      <br />
       <u-test></u-test>
       <label>
         Nested label of apple
@@ -33,22 +50,6 @@
       <br /><u-progress id="my-for-progress" value="5" max="10">70%</u-progress>
       <br />Aria-label of apple
       <br /><u-progress aria-label="This is the aria-label" id="my-progress" value="5" max="10">70%</u-progress>
-      <br />
-      <br />
-      <label>
-        Velg type iskrem native<br />
-        <input type="text" list="native-list" />
-      </label>
-      <datalist id="native-list">
-        <option>Kokkos</option>
-        <option>Jordbær</option>
-        <option>Sjokolade</option>
-        <option>Vanilje</option>
-        <option>Lakris</option>
-        <option>Pistasj</option>
-        <option>Mango</option>
-        <option>Hasselnøtt</option>
-      </datalist>
       <br />
       <label>
         Velg type iskrem<br />
@@ -64,47 +65,33 @@
         <u-option>Mango</u-option>
         <u-option>Hasselnøtt</u-option>
       </u-datalist>
-      <br />
-      <label>
-        Velg type iskrem<br />
-        <input type="text" list="u-list-2" />
-      </label>
-      <u-datalist id="u-list-2">
-        <u-option>Hasselnøtt</u-option>
-        <u-option>Kokkos</u-option>
-        <u-option>Jordbær</u-option>
-        <u-option>Sjokolade</u-option>
-        <u-option>Vanilje</u-option>
-        <u-option>Lakris</u-option>
-        <u-option>Pistasj</u-option>
-        <u-option>Mango</u-option>
-      </u-datalist>
       <script>
         // setTimeout(() => {
-          let i = 0
-          // document.querySelectorAll('input[list]').forEach((input) => {
-          //   input.addEventListener('input', ({ target }) => {
-          //     // setTimeout(() => {
-          //       const { value, list } = target
-          //       const tag = list.nodeName.replace('DATALIST', 'option')
-          //       const pre = value.split('@')[0]
+        //   let i = 0
+        //   document.querySelectorAll('input[list]').forEach((input) => {
+        //     input.addEventListener('input', ({ target }) => {
+        //       setTimeout(() => {
+        //         const { value, list } = target
+        //         const tag = list.nodeName.replace('DATALIST', 'option')
+        //         const pre = value.split('@')[0]
 
-          //       list.innerHTML = `
-          //         <${tag} value="${pre}">@gmail.com</${tag}>
-          //         <${tag} value="${pre}">${pre}@icloud.com</${tag}>
-          //         <${tag} value="${pre}">${pre}@hotmail.com</${tag}>
-          //         <${tag} value="${pre}">${++i}</${tag}>
-          //       `
-          //       setTimeout(() => target.click(), 16)
-          //     // }, 200)
-          //   })
-          // })
+        //         list.innerHTML = `
+        //           <${tag} value="${pre}">@gmail.com</${tag}>
+        //           <${tag} value="${pre}">${pre}@icloud.com</${tag}>
+        //           <${tag} value="${pre}">${pre}@hotmail.com</${tag}>
+        //           <${tag} value="${pre}">${++i}</${tag}>
+        //         `
+        //         setTimeout(() => target.click(), 16)
+        //       }, 200)
+        //     })
+        //   })
         // }, 200)
       </script>
       <script type="module" src="/packages/u-datalist/u-datalist.ts"></script>
       <script type="module" src="/packages/u-details/u-details.ts"></script>
       <script type="module" src="/packages/u-progress/u-progress.ts"></script>
       <script type="module" src="/packages/u-tabs/u-tabs.ts"></script>
+      <script type="module" src="/packages/u-tags/u-tags.ts"></script>
       <script>
         class UTest extends HTMLElement {
           connectedCallback() {

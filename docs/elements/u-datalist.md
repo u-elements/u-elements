@@ -222,27 +222,27 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
     const options = data.map(({ name }, index) =>
       Object.assign(document.createElement('u-option'), {
         textContent: name,
-        value: \`${index}: ${input.value}` // Set value to same as input to avoid filtering
+        value: \`${index}: ${input.value}` // Prevent filtering by matching value and input
       })
     );
-
     list.replaceChildren(...options);
   };
 
   input.addEventListener('input', (event) => {
-    if (!event.inputType) { // User clicked u-option
+    if (!event.inputType) {
+      // User clicked u-option, lets get option.text
       const index = Number(input.value.split(\`:\`)[0])
       const option = list.options[index];
-      input.value = option.text; // Set input value to text of option
+      input.value = option.text;
     } else {
+      // User is typing
       const value = encodeURIComponent(event.target.value.trim());
-      const url = \`https://restcountries.com/v2/name/${value}?fields=name`;
       list.textContent = 'Loading...';
 
       xhr.abort();
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
-        xhr.open('GET', url, true);
+        xhr.open('GET', `https://restcountries.com/v2/name/${value}?fields=name`, true);
         xhr.send();
       }, 300);
     }

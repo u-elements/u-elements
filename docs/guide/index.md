@@ -6,15 +6,6 @@ You might already know u-elements :tada:
 
 [Browse elements &rarr;](/elements/)
 
-<!-- `u-elements` comply with W3C spesifications of existing HTML tags. This means that your existing knowledge and the abundance of online resources about the HTML tags
-[details](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details),
-[summary](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/summary),
-[datalist](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist),
-[option](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option) and 
-[progress](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/progress) is applicable to their `u-elements` counterparts.
-<br />The only difference, is that you need to load the u-elements javascript: -->
-
-
 ## Install
 
 Install the elements you want through `@u-elements/[u-element-name-here]`.
@@ -82,7 +73,7 @@ Add a `u-` to the relevant HTML tags in your markup.
 ## Usage in a framework
 
 Works with [every framework supporting CustomElements](https://custom-elements-everywhere.com/) (even React as we do not need any CustomEvents).
-As an added bonus; All `u-elements` shipps with Typescript definitions for both React, Svelte, Vue, Solid and Qwick.
+As an added bonus; All `u-elements` ships with Typescript definitions for  React, Svelte, Vue, Solid and Qwick.
 
 :::warning Note:
 React does not support [`className` on CustomElements](https://github.com/facebook/react/issues/4933) yet,
@@ -98,4 +89,24 @@ but you can work around this:
 
 ## Usage in VSCode
 
-Documentation on how to get autocompletion coming
+If you want autocompletion and inline documentation for u-elements while writing HTML in VSCode, 
+create folder + file `.vscode/settings.json` in your project, with the content:
+
+```json
+{
+  "html.customData": [
+    "./node_modules/@u-elements/[u-element-name-here]/dist/[u-element-name-here].vscode.json"
+  ]
+}
+```
+
+Example with `<u-datalist>` and `<u-details>`:
+
+```json
+{
+  "html.customData": [
+    "./node_modules/@u-elements/u-datalist/dist/u-datalist.vscode.json",
+    "./node_modules/@u-elements/u-details/dist/u-details.vscode.json"
+  ]
+}
+```

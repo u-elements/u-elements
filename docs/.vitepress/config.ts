@@ -53,7 +53,7 @@ export default defineConfig({
       }
     ],
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/u-elements/u-tags' }
+      { icon: 'github', link: 'https://github.com/u-elements/u-elements' }
     ],
     footer: {
       message: 'Released under the MIT License'

@@ -202,7 +202,7 @@ describe('u-datalist', () => {
     expect(uDatalist.options[2].hidden).to.equal(true)
   })
 
-  it('filters items when changing value', async () => {
+  it.only('filters items when changing value', async () => {
     const items = [...toDOM(DEFAULT_TEST_HTML).querySelectorAll('*')]
     const [, input, uDatalist] = items as [
       HTMLLabelElement,

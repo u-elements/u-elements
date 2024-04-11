@@ -22,7 +22,10 @@ export const ARIA_LABELLEDBY = IS_ANDROID
   : 'aria-labelledby'
 export const ARIA_MULTISELECTABLE = 'aria-multiselectable'
 export const ARIA_SELECTED = 'aria-selected'
+
 export const DISPLAY_BLOCK = ':host(:not([hidden])) { display: block }'
+export const FOCUS_OUTLINE =
+  ':host(:focus){ outline: 1px dotted; outline: 5px auto Highlight; outline: 5px auto -webkit-focus-ring-color }' // Outline styles in order: fallback, Mozilla, WebKit
 
 // UHTMLElement defintion to use on Node, as server does not have HTMLElement
 export const UHTMLElement =

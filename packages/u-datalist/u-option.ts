@@ -2,6 +2,7 @@ import {
   ARIA_DISABLED,
   ARIA_SELECTED,
   DISPLAY_BLOCK,
+  FOCUS_OUTLINE,
   UHTMLElement,
   attachStyle,
   attr,
@@ -28,7 +29,7 @@ export class UHTMLOptionElement extends UHTMLElement {
   }
   constructor() {
     super()
-    attachStyle(this, `${DISPLAY_BLOCK}:host { cursor: pointer }`)
+    attachStyle(this, `${DISPLAY_BLOCK}${FOCUS_OUTLINE}:host{cursor:pointer}`)
   }
   connectedCallback() {
     attr(this, { role: 'option', tabindex: -1 })

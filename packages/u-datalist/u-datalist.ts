@@ -29,6 +29,7 @@ declare global {
 // Store map of [u-datalist] => [related input] to speed up and prevent double focus
 const activeInput = new WeakMap<UHTMLDataListElement, HTMLInputElement>()
 const connectedRoot = new WeakMap<UHTMLDataListElement, Document | ShadowRoot>()
+const filterValue = new WeakMap<UHTMLDataListElement, string>()
 
 /**
  * The `<u-datalist>` HTML element contains a set of `<u-option>` elements that represent the permissible or recommended options available to choose from within other controls.
@@ -60,7 +61,7 @@ export class UHTMLDataListElement extends UHTMLElement {
     if (event.defaultPrevented) return // Allow all events to be canceled
     if (event.type === 'click') onClick(this, event)
     if (event.type === 'focus' || event.type === 'focusin') onFocus(this, event)
-    if (event.type === 'focusout') onBlur(this)
+    if (event.type === 'focusout') onFocusOut(this)
     if (event.type === 'keydown') onKeydown(this, event as KeyboardEvent)
     if (event.type === 'mutation' || event.type === 'input')
       setupOptions(this, event)
@@ -79,6 +80,7 @@ const disconnectInput = (self: UHTMLDataListElement) => {
   mutationObserver(self, false)
   setExpanded(self, false)
   activeInput.delete(self)
+  filterValue.delete(self)
 }
 
 const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
@@ -88,17 +90,21 @@ const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
 }
 
 const setupOptions = (self: UHTMLDataListElement, event?: Event) => {
+  const value = getInput(self)?.value.toLowerCase().trim() || ''
+  const changed = event?.type === 'mutation' || filterValue.get(self) !== value
+  if (!changed) return // Skip if identical value or options
+
   const hidden = self.hidden
   const options = [...self.options]
-  const value = getInput(self)?.value.toLowerCase().trim() || ''
   const isMulti = attr(self, ARIA_MULTISELECTABLE) === 'true'
   const isTyping = event instanceof InputEvent && event.inputType
 
   self.hidden = true // Speed up large lists by hiding during filtering
+  filterValue.set(self, value) // Cache value from this run
   options.forEach((opt) => {
     const text = `${opt.text}`.toLowerCase()
-    const values = `${opt.value}${opt.label}${text}`.toLowerCase()
-    opt.hidden = !values.includes(value)
+    const content = `${opt.value}${opt.label}${text}`.toLowerCase()
+    opt.hidden = !content.includes(value)
     if (!isMulti && isTyping) opt.selected = false // Turn off selected when typing in single select
   })
 
@@ -138,8 +144,9 @@ function onFocus(self: UHTMLDataListElement, { target }: Event) {
   }
 }
 
-function onBlur(self: UHTMLDataListElement) {
+function onFocusOut(self: UHTMLDataListElement) {
   // Let event loop run first so focus can move before we check activeElement
+  // focusout has event.relatedTarget, but Firefox incorrectly sets this to null when pressing Home or End key
   setTimeout(() => {
     const focused = getConnectedRoot(self).activeElement
     const isOutside = getInput(self) !== focused && !self.contains(focused)
@@ -179,7 +186,7 @@ function onKeydown(self: UHTMLDataListElement, event: KeyboardEvent) {
 
   const { key } = event
   const active = getConnectedRoot(self).activeElement as UHTMLOptionElement
-  if (key !== 'Escape' && self.hidden) setExpanded(self, true) // Open if not ESC, before checking visible options
+  if (key !== 'Escape') setExpanded(self, true) // Open if not ESC, before checking visible options
 
   // Checks disabled or visibility (since hidden attribute can be overwritten by display: block)
   const options = [...self.options].filter(

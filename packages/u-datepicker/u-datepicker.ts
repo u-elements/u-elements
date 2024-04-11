@@ -1,3 +1,201 @@
+import {
+  ARIA_DISABLED,
+  ARIA_LABEL,
+  DISPLAY_BLOCK,
+  UHTMLElement,
+  attachStyle,
+  attr,
+  getRoot,
+  off,
+  on
+} from '../utils'
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'u-datepicker': UHTMLDatePickerElement
+  }
+}
+
+// TODO: Announce button change also on year
+// TODO: Add year to label if changing year
+// TODO: Add month to label if changing month
+// TODO: Read lang from parent or from <html> element
+// TODO: Add custom days and months texts and firstDay
+// TODO: WeekNumber?
+// TODO: change month when focusing a date outside month
+
+/**
+ * The `<u-datepicker>` HTML element contains lets you pick a date from a grid.
+ * No MDN reference available.
+ */
+export class UHTMLDatePickerElement extends UHTMLElement {
+  #date = new Date()
+  daysS: string[] = []
+  daysL: string[] = []
+  months: string[] = []
+  firstDay = 1
+
+  static get observedAttributes() {
+    return ['lang', 'data-value', 'data-week-start']
+  }
+  constructor() {
+    super()
+    attachStyle(this, DISPLAY_BLOCK)
+  }
+  connectedCallback() {
+    on(this, 'change', this)
+    on(this, 'click', this)
+    on(this, 'keydown', this)
+    this.attributeChangedCallback('lang') // Setup attributes
+  }
+  disconnectedCallback() {
+    off(this, 'change', this)
+    off(this, 'click', this)
+    off(this, 'keydown', this)
+  }
+  attributeChangedCallback(name?: string) {
+    // if (this.disabled(this.date) && !this.disabled(this._date)) return (this.date = this._date) // Jump back
+    if (name === 'lang') {
+      const date = new Date(2023, 0, 1) // 2023 started on a Sunday
+      const lang = this.lang || undefined
+      const dayS = new Intl.DateTimeFormat(lang, { weekday: 'short' }).format
+      const dayL = new Intl.DateTimeFormat(lang, { weekday: 'long' }).format
+      const month = new Intl.DateTimeFormat(lang, { month: 'long' }).format
+
+      this.daysL = Array.from(Array(7), (_, i) => dayL(date.setDate(i + 1)))
+      this.daysS = Array.from(Array(7), (_, i) =>
+        dayS(date.setDate(i + 1)).replace(/\.$/, '')
+      ) // Remove trailing dot
+      this.months = Array.from(Array(12), (_, i) => month(date.setMonth(i)))
+    }
+    const shouldFocus = this.contains(getRoot(this).activeElement)
+
+    this.querySelectorAll('table').forEach((table) =>
+      setupTable(this, table, shouldFocus)
+    )
+  }
+  handleEvent(event: Event) {
+    if (event.type === 'keydown') onKeyDown(this, event as KeyboardEvent)
+  }
+  get date(): Date {
+    return new Date(this.#date) // return clone for immutability
+  }
+  set date(date: Date | number) {
+    this.#date = new Date(date)
+    this.attributeChangedCallback()
+  }
+}
+
+const getYMD = (d: Date) => [d.getFullYear(), d.getMonth(), d.getDate()]
+
+const setupTable = (
+  self: UHTMLDatePickerElement,
+  table: HTMLTableElement,
+  focus: boolean
+) => {
+  if (!table.tHead) {
+    table.innerHTML = `
+    <caption></caption><thead><tr><th><abbr>${Array(8).join('</abbr></th><th><abbr>')}</abbr></tr></thead>
+    <tbody>${Array(7).join(`<tr>${Array(8).join('<td><button type="button"></button></td>')}</tr>`)}</tbody>`
+  }
+
+  const [y, m, d] = getYMD(self.date)
+  const todayYMD = getYMD(new Date()).join('-')
+  const dateYMD = [y, m, d].join('-')
+  const days = table.querySelectorAll<HTMLElement>('th abbr')
+  const date = new Date(y, m, 1) // Set first day of month
+  date.setDate(1 - date.getDay() + self.firstDay) // And move to first day of week
+
+  if (table.caption) table.caption.textContent = `${self.months[m]}, ${y}`
+
+  table.querySelectorAll('button').forEach((button, index) => {
+    if (index < 7)
+      Object.assign(days[index], {
+        title: self.daysL[index],
+        textContent: self.daysS[index]
+      })
+    const dayMonth = date.getMonth()
+    const dayOfMonth = date.getDate()
+    const dayYMD = getYMD(date).join('-')
+
+    //button.disabled = false TODO
+    if (focus && dayYMD === dateYMD) button.focus()
+    button.tabIndex = dayYMD === dateYMD ? 0 : -1
+    button.textContent = `${dayOfMonth}`
+    button.value = `${date.getTime()}`
+    attr(button, {
+      'aria-current': dayYMD === todayYMD && 'date',
+      [ARIA_DISABLED]: dayMonth !== m,
+      [ARIA_LABEL]: `${dayOfMonth}., ${self.months[dayMonth]}`
+    })
+    date.setDate(dayOfMonth + 1)
+  })
+}
+
+customElements.define('u-datepicker', UHTMLDatePickerElement)
+
+function onKeyDown(self: UHTMLDatePickerElement, event: KeyboardEvent) {
+  const { key } = event
+  const [y, m, d] = getYMD(self.date)
+  const day = self.date.getDay() + self.firstDay
+  event.preventDefault()
+
+  if (key === 'ArrowUp') self.date = new Date(y, m, d - 7) // Prev week
+  if (key === 'ArrowDown') self.date = new Date(y, m, d + 7) // Next week
+  if (key === 'ArrowLeft') self.date = new Date(y, m, d - 1) // Next day
+  if (key === 'ArrowRight') self.date = new Date(y, m, d + 1) // Prev day
+
+  if (key === 'PageUp' && !event.shiftKey) self.date = new Date(y, m - 1, d) // Prev month
+  if (key === 'PageDown' && !event.shiftKey) self.date = new Date(y, m + 1, d) // Next month
+  if (key === 'PageUp' && event.shiftKey) self.date = new Date(y - 1, m, d) // Prev year
+  if (key === 'PageDown' && event.shiftKey) self.date = new Date(y + 1, m, d) // Next year
+  if (key === 'Home') self.date = new Date(y, m, d - day)
+  if (key === 'End') return // Last day of week
+}
+
+// const ADD = /([+-]\s*\d+)\s*(second|minute|hour|day|week|month|year)/g
+// const DATE = {
+//   year: 'FullYear',
+//   month: 'Month',
+//   week: 'Date',
+//   day: 'Date',
+//   hour: 'Hours',
+//   minute: 'Minutes',
+//   second: 'Seconds'
+// }
+
+// function parse(parse, from) {
+//   if (isFinite(parse)) return new Date(Number(parse)) // Allow timestamps and Date instances
+
+//   const text = String(parse).toLowerCase()
+//   const date = new Date(from)
+//   let m: RegExpExecArray | null
+
+//   // match = [fullMatch, number, unit, mon, tue, etc...]
+//   while ((m = ADD.exec(text)) !== null) {
+//     const unit = DATE[m[2] as keyof typeof DATE]
+//     const size = +`${m[1]}`.replace(/\s/g, '') * (m[2] === 'week' ? 7 : 1) // Strip whitespace and correct week
+//     const before = date.getDate()
+
+//     date[`set${unit}`](date[`get${unit}`]() + size) // Add day/month/week etc
+
+//     // If day of month has changed, we have encountered dfferent length months, or leap year
+//     if ((unit === 'month' || unit === 'year') && before !== date.getDate()) date.setDate(0)
+//   }
+
+//   return date
+// }
+
+// if (name === 'lang' || !this.#focus) {
+//   const date = new Date(2023, 0, 1) // 2023 started on a Sunday
+//   const lang = this.lang || undefined
+//   const day = new Intl.DateTimeFormat(lang, { weekday: 'long' }).format
+//   const month = new Intl.DateTimeFormat(lang, { month: 'long' }).format
+
+//   this.#days = Array.from(Array(7), (_, i) => day(date.setDate(i + 1)))
+//   this.#months = Array.from(Array(12), (_, i) => month(date.setMonth(i)))
+// }
+
 // import { addStyle, closest, dispatchEvent, toggleAttribute, queryAll } from '../utils'
 // import parse from '@nrk/simple-date-parse'
 
@@ -272,5 +470,20 @@
 //     if ((unit === 'month' || unit === 'year') && before !== date.getDate()) date.setDate(0)
 //   }
 
+//   return date
+// }
+
+// const DATE = { year: 'FullYear', week: 'Date', day: 'Date', month: 'Month' }
+// type DateSize = `${'+' | '-' | ''}${number}`
+// type DateUnit = 'day' | 'week' | 'month'
+// type DateStr = `${DateSize} ${DateUnit}`
+
+// const parseDate = (str: DateStr, from: Date | number = Date.now()) => {
+//   const [rawSize, rawUnit] = str.split(' ') as [DateSize, DateUnit]
+//   const size = rawUnit === 'week' ? 7 : Number(rawSize)
+//   const unit = DATE[rawUnit]
+//   const date = new Date(from)
+
+//   date[`set${unit}`](date[`get${unit}`]() + size)
 //   return date
 // }

@@ -5,6 +5,7 @@ import {
   UHTMLElement,
   attachStyle,
   attr,
+  customElements,
   getRoot,
   off,
   on

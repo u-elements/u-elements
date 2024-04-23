@@ -32,8 +32,9 @@ export class UHTMLProgressElement extends UHTMLElement {
       createElement('style', {
         textContent: `:host(:not([hidden])) { box-sizing: border-box; border: 1px solid; display: inline-block; height: .5em; width: 10em; overflow: hidden }
         :host::before { content: ''; display: block; height: 100%; background: currentColor; width: var(--percentage, 0%); transition: width .2s }
-        :host(:not([value])) { animation: indeterminate 2s linear infinite; background: linear-gradient(90deg,currentColor 25%, transparent 50%, currentColor 75%) 100%/400% }
-        @keyframes indeterminate { to { background-position-x: 0 } }`
+        :host { --empty-bg: linear-gradient(90deg,currentColor 25%, transparent 50%, currentColor 75%) 100%/400%; }
+        @media (prefers-reduced-motion: no-preference) { :host(:not([value])) { animation: indeterminate 2s linear infinite; background: var(--empty-bg); } @keyframes indeterminate { to { background-position-x: 0 } } }
+        @media (prefers-reduced-motion: reduce) { :host(:not([value])) { background: var(--empty-bg)} }`
       })
     )
     this.attributeChangedCallback() // We now know the element is in the DOM, so run a attribute setup

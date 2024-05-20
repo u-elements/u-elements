@@ -106,5 +106,8 @@
     "dist",
     "frameworks",
     "node_modules"
-  ]
+  ],
+  "dependencies": {
+    "weekstart": "^2.0.0"
+  }
 }

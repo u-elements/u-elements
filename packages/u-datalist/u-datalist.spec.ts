@@ -1,7 +1,7 @@
 import { expect } from '@esm-bundle/chai'
 import { compareSnapshot, sendKeys } from '@web/test-runner-commands'
 import { UHTMLDataListElement } from './u-datalist'
-import { ARIA_LABELLEDBY, IS_ANDROID, IS_IOS } from '../utils'
+import { SAFE_LABELLEDBY, IS_ANDROID, IS_IOS } from '../utils'
 
 const nextFrame = async () =>
   new Promise((resolve) => requestAnimationFrame(resolve))
@@ -84,7 +84,7 @@ describe('u-datalist', () => {
     expect(input.getAttribute('autocomplete')).to.equal('off')
     expect(input.getAttribute('aria-autocomplete')).to.equal('list')
     expect(input.getAttribute('aria-controls')).to.equal(uDatalist.id)
-    expect(uDatalist.getAttribute(ARIA_LABELLEDBY)).to.equal(label.id)
+    expect(uDatalist.getAttribute(SAFE_LABELLEDBY)).to.equal(label.id)
     expect(input.getAttribute('aria-expanded')).to.equal('true')
     expect(uDatalist.hidden).to.equal(false)
 

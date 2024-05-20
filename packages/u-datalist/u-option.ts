@@ -1,11 +1,8 @@
 import {
-  ARIA_DISABLED,
-  ARIA_SELECTED,
   DISPLAY_BLOCK,
   FOCUS_OUTLINE,
   UHTMLElement,
   attachStyle,
-  attr,
   customElements
 } from '../utils'
 
@@ -24,22 +21,22 @@ const SELECTED = 'selected'
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option)
  */
 export class UHTMLOptionElement extends UHTMLElement {
-  static get observedAttributes() {
-    return [DISABLED, SELECTED]
-  }
+  static observedAttributes = [DISABLED, SELECTED]
   constructor() {
     super()
-    attachStyle(this, `${DISPLAY_BLOCK}${FOCUS_OUTLINE}:host{cursor:pointer}`)
+    attachStyle(
+      this,
+      `${DISPLAY_BLOCK}:host(:focus){${FOCUS_OUTLINE}}:host{ cursor: pointer }`
+    )
   }
   connectedCallback() {
-    attr(this, { role: 'option', tabindex: -1 })
-    this.attributeChangedCallback() // Setup attributes
+    this.role = 'option'
+    this.tabIndex = -1
+    this.attributeChangedCallback() // Setup aria attributes
   }
   attributeChangedCallback() {
-    attr(this, {
-      [ARIA_DISABLED]: this.disabled,
-      [ARIA_SELECTED]: this.selected
-    })
+    this.ariaDisabled = `${this.disabled}`
+    this.ariaSelected = `${this.selected}`
   }
   /** Sets or retrieves whether the option in the list box is the default item. */
   get defaultSelected(): boolean {
@@ -49,10 +46,10 @@ export class UHTMLOptionElement extends UHTMLElement {
     this[SELECTED] = value
   }
   get disabled(): boolean {
-    return attr(this, DISABLED) !== null
+    return this.getAttribute(DISABLED) !== null
   }
   set disabled(value: boolean) {
-    attr(this, DISABLED, value ? '' : null)
+    this.toggleAttribute(DISABLED, value)
   }
   /** Retrieves a reference to the form that the object is embedded in. */
   get form(): HTMLFormElement | null {
@@ -60,39 +57,36 @@ export class UHTMLOptionElement extends UHTMLElement {
   }
   /** Sets or retrieves the ordinal position of an option in a list box. */
   get index(): number {
-    const container = getContainer(this)
-    if (!container) return 0
-    return [...container.getElementsByTagName(this.nodeName)].indexOf(this)
+    const options = this.closest('u-datalist')?.getElementsByTagName('u-option')
+    return Array.from(options || [this]).indexOf(this) // Fallback to 0 complies with spesification
   }
   /** Sets or retrieves a value that you can use to implement your own label functionality for the object. */
   get label(): string {
-    return attr(this, 'label') || this.text
+    return this.getAttribute('label') || this.text
   }
   set label(value: string) {
-    attr(this, 'label', value)
+    this.setAttribute('label', value)
   }
   get selected(): boolean {
-    return attr(this, SELECTED) !== null
+    return this.getAttribute(SELECTED) !== null
   }
   set selected(value: boolean) {
-    attr(this, SELECTED, value ? '' : null)
+    this.toggleAttribute(SELECTED, value)
   }
   /** Sets or retrieves the text string specified by the option tag. */
   get text(): string {
-    return (this.textContent || '').trim()
+    return this.textContent?.trim() || ''
   }
   set text(text: string) {
     this.textContent = text
   }
   /** Sets or retrieves the value which is returned to the server when the form control is submitted. */
   get value(): string {
-    return attr(this, 'value') || this.text
+    return this.getAttribute('value') || this.text
   }
   set value(value: string) {
-    attr(this, 'value', value)
+    this.setAttribute('value', value)
   }
 }
-
-const getContainer = (self: UHTMLOptionElement) => self.closest('u-datalist')
 
 customElements.define('u-option', UHTMLOptionElement)

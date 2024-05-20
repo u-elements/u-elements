@@ -75,14 +75,14 @@ Add a `u-` to the relevant HTML tags in your markup.
 Works with [every framework supporting CustomElements](https://custom-elements-everywhere.com/) (even React as we do not need any CustomEvents).
 As an added bonus; All `u-elements` ships with Typescript definitions for  React, Svelte, Vue, Solid and Qwick.
 
-:::warning Note:
-React does not support [`className` on CustomElements](https://github.com/facebook/react/issues/4933) yet,
-but you can work around this:
+:::warning Using React 18 or older?
+React 18 and lower does not support [`className` on CustomElements](https://github.com/facebook/react/issues/4933),
+but you can [work around this](https://react.dev/reference/react-dom/components#custom-html-elements) by using `class` instead:
 
 ```jsx
 <u-datalist
   className="your-className-here" // [!code --]
-  ref={(el) => el?.classList.add('your-className-here')} // [!code ++]
+  class="your-className-here" // [!code ++]
 >
 ```
 :::

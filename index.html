@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="no">
+<html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>u-elements</title>
     <style>
       :root {
@@ -15,24 +15,50 @@
       }
       input { font: inherit }
       body { margin: 15vh auto 100vh; max-width: 500px }
-      u-option[aria-selected="true"] { color: red }
+      u-tags { border: 2px solid; border-radius: 4px; display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; padding: 5px; }
+      u-option[selected] { color: red; font-weight: bold; }
       u-tabpanel { padding: 10px; border: 1px solid }
+      u-datepicker::part(row-0) { border: 1px solid red }
+      u-datepicker::part(saturday),
+      u-datepicker::part(sunday) { border: 1px solid red }
+      u-datepicker u-option { border: 1px solid blue }
     </style>
   </head>
   <body>
     <main>
-      <!-- <u-datepicker lang="no">
-        <table></table>
-      </u-datepicker>
-      <br /> -->
-      <label for="u-tags-input">Velg iskrem</label>
-      <br />
-      <u-tags>
-        <u-tag>Kokkos</u-tag>
-        <u-tag>Banana</u-tag>
-        <u-tag>Pineapple</u-tag>
-        <u-tag>Orange</u-tag>
-        <input type="text" id="u-tags-input" list="u-tags-list" />
+      <script>
+        window.onDate = console.log
+      </script>
+      <button>Før</button>
+      <!-- <br>
+      <br>
+      <label>
+        Nested label of apple
+        <br><u-progress value="5" max="10">70%</u-progress>
+      </label>
+      <br /><label for="my-for-progress">For label of apple</label>
+      <br><u-progress id="my-for-progress" value="5" max="10">70%</u-progress>
+      <br /><span id="label-for-progress">Labelledby of apple</span>
+      <br><u-progress aria-labelledby="label-for-progress" value="5" max="10">70%</u-progress>
+      <br> -->
+      <br>
+      <form>
+        <label for="my-tags">Velg iskrem</label>
+        <u-tags
+          id="my-tags"
+          data-lang-added="Added"
+          data-lang-delete="Press to delete"
+          data-lang-deleted="Deleted"
+          data-lang-empty="No selected"
+          data-lang-found="Navigate left to find %d selected"
+          data-lang-of="of"
+        >
+          <data>Kokkos</data>
+          <data>Banana</data>
+          <data>Pineapple</data>
+          <data>Orange</data>
+          <input list="u-tags-list">
+        </u-tags>
         <u-datalist id="u-tags-list">
           <u-option>Kokkos</u-option>
           <u-option>Jordbær</u-option>
@@ -43,23 +69,152 @@
           <u-option>Mango</u-option>
           <u-option>Hasselnøtt</u-option>
         </u-datalist>
-      </u-tags>
+        <br>
+        <button type="submit">Send</button>
+      </form>
+      <br>
+      <br>
+      <br>
+      <form>
+        <u-datepicker data-value="2024-05-02, 2024-05-03, 2024-05-04" data-weeknumber="Week">
+          <time dateime="2024-05-02"></time>
+          <time dateime="2024-05-03"></time>
+          <time dateime="2024-05-04"></time>
+          <time dateime="2024-05-07"><slot></slot>🌟<br><span>Special!</span><div>Heisann</div></time>
+        </u-datepicker>
+        <button type="submit">Send</button>
+      </form>
+      <!-- <u-datepicker-head></u-datepicker-head> -->
+      <!-- <u-datepicker-option value="2024-05-02" selected></u-datepicker-option>
+      <u-datepicker-option value="2024-05-07">Special!</u-datepicker-option> -->
+      <!-- <u-datepicker-head aria-label="Mandag">Man</u-datepicker-head>
+      <u-datepicker-head aria-label="Tirsdag">Tir</u-datepicker-head>
+      <u-datepicker-head aria-label="Onsdag">Ons</u-datepicker-head>
+      <u-datepicker-head aria-label="Torsdag">Tor</u-datepicker-head>
+      <u-datepicker-head aria-label="Fredag">Fre</u-datepicker-head>
+      <u-datepicker-head aria-label="Lørdag">Lør</u-datepicker-head>
+      <u-datepicker-head aria-label="Søndag">Søn</u-datepicker-head>
+      <u-datepicker-item>#1</u-datepicker-item>
+      <u-datepicker-item>1</u-datepicker-item>
+      <u-datepicker-item>2</u-datepicker-item>
+      <u-datepicker-item>3</u-datepicker-item>
+      <u-datepicker-item>4</u-datepicker-item>
+      <u-datepicker-item>5</u-datepicker-item>
+      <u-datepicker-item>6</u-datepicker-item>
+      <u-datepicker-item>7</u-datepicker-item> -->
+      <!-- </u-datepicker-row> -->
+      <!--<u-datepicker-row>
+        <u-datepicker-item>#2</u-datepicker-item>
+        <u-datepicker-item>1</u-datepicker-item>
+        <u-datepicker-item>2</u-datepicker-item>
+        <u-datepicker-item>3</u-datepicker-item>
+        <u-datepicker-item>4</u-datepicker-item>
+        <u-datepicker-item>5</u-datepicker-item>
+        <u-datepicker-item>6</u-datepicker-item>
+        <u-datepicker-item>7</u-datepicker-item>
+      </u-datepicker-row>
+      <u-datepicker-row>
+        <u-datepicker-item>#3</u-datepicker-item>
+        <u-datepicker-item>1</u-datepicker-item>
+        <u-datepicker-item>2</u-datepicker-item>
+        <u-datepicker-item>3</u-datepicker-item>
+        <u-datepicker-item>4</u-datepicker-item>
+        <u-datepicker-item>5</u-datepicker-item>
+        <u-datepicker-item>6</u-datepicker-item>
+        <u-datepicker-item>7</u-datepicker-item>
+      </u-datepicker-row>
+      <u-datepicker-item>#4</u-datepicker-item>
+      <u-datepicker-item>1</u-datepicker-item>
+      <u-datepicker-item>2</u-datepicker-item>
+      <u-datepicker-item>3</u-datepicker-item>
+      <u-datepicker-item>4</u-datepicker-item>
+      <u-datepicker-item>5</u-datepicker-item>
+      <u-datepicker-item>6</u-datepicker-item>
+      <u-datepicker-item>7</u-datepicker-item>
+      <u-datepicker-row>
+        <u-datepicker-item>#5</u-datepicker-item>
+        <u-datepicker-item>1</u-datepicker-item>
+        <u-datepicker-item>2</u-datepicker-item>
+        <u-datepicker-item>3</u-datepicker-item>
+        <u-datepicker-item>4</u-datepicker-item>
+        <u-datepicker-item>5</u-datepicker-item>
+        <u-datepicker-item>6</u-datepicker-item>
+        <u-datepicker-item>7</u-datepicker-item>
+      </u-datepicker-row>
+      <u-datepicker-item>#6</u-datepicker-item>
+      <u-datepicker-item>1</u-datepicker-item>
+      <u-datepicker-item>2</u-datepicker-item>
+      <u-datepicker-item>3</u-datepicker-item>
+      <u-datepicker-item>4</u-datepicker-item>
+      <u-datepicker-item>5</u-datepicker-item>
+      <u-datepicker-item>6</u-datepicker-item>
+      <u-datepicker-item>7</u-datepicker-item>
+      <u-datepicker-item>#7</u-datepicker-item>
+      <u-datepicker-item>1</u-datepicker-item>
+      <u-datepicker-item>2</u-datepicker-item>
+      <u-datepicker-item>3</u-datepicker-item>
+      <u-datepicker-item>4</u-datepicker-item>
+      <u-datepicker-item>5</u-datepicker-item>
+      <u-datepicker-item>6</u-datepicker-item>
+      <u-datepicker-item>7</u-datepicker-item> -->
+      <!-- <span slot="weeknumber-0">Hei</span>
+      <span slot="date-0">Hei</span> -->
+
+      <!-- Kanskje -->
+      <!-- <div slot="head">
+        <span slot="day-0">Sun</span>
+        <span slot="day-1">Man</span>
+        <span slot="day-2">Tue</span>
+        <span slot="day-3">Wed</span>
+        <span slot="day-4">Thur</span>
+        <span slot="day-5">Fri</span>
+        <span slot="day-6">Sat</span>
+      </div>
+      <div slot="body">
+        
+      </div> -->
+
+      <!--<button slot="weekday">Hei</button>
+      <div slot="weeknumber" class="kake"><div class="kake-innhold"><slot slot="weeknumber-text">Hei</slot></div></div>
+      <div slot="date" onclick="onDate(event)">Hade</div> -->
+      <!-- <template>
+        <slot name="weekday"><div class="hei"></div></slot>
+        <slot name="weeknumber"></slot>
+        <slot name="date"></slot>
+      </template> -->
+      <!-- <div>
+        <u-datepicker-item>Mon</u-datepicker-item>
+        <u-datepicker-item>Thur</u-datepicker-item>
+        <u-datepicker-item>Wed</u-datepicker-item>
+        <u-datepicker-item>Thur</u-datepicker-item>
+        <u-datepicker-item>Fri</u-datepicker-item>
+        <u-datepicker-item>Sat</u-datepicker-item>
+        <u-datepicker-item>Sun</u-datepicker-item>
+      </div>
+      <u-datepicker-item>1</u-datepicker-item>
+      <u-datepicker-item>2</u-datepicker-item>
+      <u-datepicker-item>3</u-datepicker-item>
+      <u-datepicker-item>4</u-datepicker-item>
+      <u-datepicker-item>5</u-datepicker-item>
+      <u-datepicker-item>6</u-datepicker-item>
+      <u-datepicker-item>7</u-datepicker-item>
+      <u-datepicker-item>8</u-datepicker-item>
+      <u-datepicker-item>9</u-datepicker-item>
+      <u-datepicker-item>10</u-datepicker-item>
+      <table></table> -->
+      <button>Etter</button>
       <!-- <template></template> -->
-      <br />
-      <br />
+      <br>
+      <br>
       <!-- <u-test></u-test>
+      <br><label for="my-for-progress">For label of apple</label>
+      <br><u-progress id="my-for-progress" value="5" max="10">70%</u-progress>
+      <br>Aria-label of apple
+      <br><u-progress aria-label="This is the aria-label" id="my-progress" value="5" max="10">70%</u-progress>
+      <br>
       <label>
-        Nested label of apple
-        <br /><u-progress value="5" max="10">70%</u-progress>
-      </label>
-      <br /><label for="my-for-progress">For label of apple</label>
-      <br /><u-progress id="my-for-progress" value="5" max="10">70%</u-progress>
-      <br />Aria-label of apple
-      <br /><u-progress aria-label="This is the aria-label" id="my-progress" value="5" max="10">70%</u-progress>
-      <br />
-      <label>
-        Velg type iskrem<br />
-        <input type="text" list="u-list-1" />
+        Velg type iskrem<br>
+        <input type="text" list="u-list-1">
       </label>
       <u-datalist id="u-list-1">
         <u-option>Kokkos</u-option>
@@ -127,7 +282,7 @@
                 <u-tabpanel>Panel 3</u-tabpanel>
                 <u-tabpanel>Panel 4</u-tabpanel>
               </u-tabs>
-              <br />
+              <br>
               <u-details name="group-1">
                 <u-summary>Test 1</u-summary>
                 <div>Innhold 1</div>
@@ -139,7 +294,7 @@
                 <u-summary>Test 2</u-summary>
                 <div>Innhold test 2</div>
               </u-details>
-              <br />
+              <br>
               <style>
                 u-tab { padding: 2px 5px }
                 u-tab[aria-selected="true"] { background: black; color: white }
@@ -156,26 +311,3 @@
     </main>
   </body>
 </html>
-
-<!--
-UNIVERSAL ELEMENTS
-universal.dev
-github repo/prefix
-npm publish
-
-U-TAGS:
-x dialog?
-x datalist
-x details
-x progress (test "role")
-- selectlist
-x tabs (await closeability if no time)
-- scroll (drop)
-- filter-suite? (await)
-- datepicker (await)
-  - type="date"
-  - type="datetime-local"
-  - type="month"
-  - type="time"
-  - type="week"
--->

@@ -1,12 +1,9 @@
 import {
-  ARIA_CONTROLS,
-  ARIA_LABELLEDBY,
-  ARIA_SELECTED,
+  SAFE_LABELLEDBY,
   DISPLAY_BLOCK,
   UHTMLElement,
   asButton,
   attachStyle,
-  attr,
   customElements,
   getRoot,
   off,
@@ -23,6 +20,8 @@ declare global {
   }
 }
 
+const ARIA_CONTROLS = 'aria-controls'
+
 /**
  * The `<u-tabs>` HTML element is used to group a `<u-tablist>` and several `<u-tabpanel>` elements.
  * No MDN reference available.
@@ -37,12 +36,10 @@ export class UHTMLTabsElement extends UHTMLElement {
   }
   get selectedIndex(): number {
     // Check with real attribute (not .selected) as UHTMLTabElement instance might not be created yet
-    return [...this.tabs].findIndex(
-      (tab) => attr(tab, ARIA_SELECTED) === 'true'
-    )
+    return [...this.tabs].findIndex((tab) => tab.ariaSelected === 'true')
   }
   set selectedIndex(index: number) {
-    attr(this.tabs[index], ARIA_SELECTED, true)
+    this.tabs[index].ariaSelected = 'true'
   }
   get tabs(): NodeListOf<UHTMLTabElement> {
     return queryWithoutNested('u-tab', this)
@@ -62,7 +59,7 @@ export class UHTMLTabListElement extends UHTMLElement {
     attachStyle(this, DISPLAY_BLOCK)
   }
   connectedCallback() {
-    attr(this, 'role', 'tablist')
+    this.role = 'tablist'
     on(this, 'click,keydown', this) // Listen for tab events on tablist to minimize amount of listeners
   }
   disconnectedCallback() {
@@ -100,9 +97,7 @@ let SKIP_ATTR_CHANGE = false
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/tab_role)
  */
 export class UHTMLTabElement extends UHTMLElement {
-  static get observedAttributes() {
-    return ['id', ARIA_SELECTED, ARIA_CONTROLS]
-  }
+  static observedAttributes = ['id', 'aria-selected', ARIA_CONTROLS]
   constructor() {
     super()
     attachStyle(
@@ -119,25 +114,26 @@ export class UHTMLTabElement extends UHTMLElement {
       const selected = this.selected ? this : tabs[selectedIndex || 0] || this // Ensure always one selected tab
       let selectedPanel: HTMLElement
 
-      // Ensure correct state by always looping all tabs
-      panels.forEach((panel) =>
-        attr(panel, { [ARIA_LABELLEDBY]: null, hidden: '' })
-      ) // Reset all panels in case changing aria-controls
-      tabs.forEach((tab, index) => {
-        const tabindex = selected === tab ? 0 : -1
-        const panel = getPanel(tab) || panels[index] || null // Does not use tab.panel as UHTMLTabElement instance might not be created yet
-        if (!tabindex && panel) selectedPanel = panel // Store selectedPanel as multiple tabs can point to same panel
+      // Reset all panels in case changing aria-controls
+      panels.forEach((panel) => {
+        panel.removeAttribute(SAFE_LABELLEDBY)
+        panel.hidden = true
+      })
 
-        attr(tab, {
-          [ARIA_SELECTED]: !tabindex,
-          [ARIA_CONTROLS]: useId(panel),
-          role: 'tab',
-          tabindex
-        })
-        attr(panel, {
-          [ARIA_LABELLEDBY]: useId(selectedPanel === panel ? selected : tab),
-          hidden: selectedPanel === panel ? null : ''
-        })
+      // Ensure correct state by always looping all tabs
+      tabs.forEach((tab, index) => {
+        const panel = getPanel(tab) || panels[index] || null // Does not use tab.panel as UHTMLTabElement instance might not be created yet
+        if (selected === tab && panel) selectedPanel = panel // Store selectedPanel as multiple tabs can point to same panel
+
+        tab.role = 'tab'
+        tab.tabIndex = selected === tab ? 0 : -1
+        tab.ariaSelected = `${selected === tab}`
+        tab.setAttribute(ARIA_CONTROLS, useId(panel))
+        panel?.toggleAttribute('hidden', selectedPanel !== panel)
+        panel?.setAttribute(
+          SAFE_LABELLEDBY,
+          useId(selectedPanel === panel ? selected : tab)
+        )
       })
 
       SKIP_ATTR_CHANGE = false
@@ -150,10 +146,10 @@ export class UHTMLTabElement extends UHTMLElement {
     return this.closest('u-tablist')
   }
   get selected(): boolean {
-    return attr(this, ARIA_SELECTED) === 'true'
+    return this.ariaSelected === 'true'
   }
   set selected(value: boolean) {
-    attr(this, ARIA_SELECTED, !!value)
+    this.ariaSelected = `${value}`
   }
   /** Retrieves the ordinal position of an tab in a tablist. */
   get index(): number {
@@ -169,20 +165,18 @@ export class UHTMLTabElement extends UHTMLElement {
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/tabpanel_role)
  */
 export class UHTMLTabPanelElement extends UHTMLElement {
-  static get observedAttributes() {
-    return ['id']
-  }
+  static observedAttributes = ['id']
   constructor() {
     super()
     attachStyle(this, DISPLAY_BLOCK)
   }
   connectedCallback() {
-    attr(this, 'role', 'tabpanel')
+    this.role = 'tabpanel'
     this.hidden = Array.from(this.tabs).every((tab) => !tab.selected) // Hide if not connected to tab
   }
   attributeChangedCallback(_name: string, prev: string, next: string) {
-    if (!SKIP_ATTR_CHANGE && prev !== next)
-      Array.from(getTabs(this, prev), (tab) => attr(tab, ARIA_CONTROLS, next))
+    if (SKIP_ATTR_CHANGE || prev === next) return
+    getTabs(this, prev).forEach((tab) => tab.setAttribute(ARIA_CONTROLS, next))
   }
   get tabsElement(): UHTMLTabsElement | null {
     return this.closest('u-tabs')
@@ -204,7 +198,7 @@ const queryWithoutNested = <TagName extends keyof HTMLElementTagNameMap>(
 // Needs to be a utility function so it can be used independendtly from Element life cycle
 // Querys elements both inside ShadowRoot and in document just incase trying to access outside shadowRoot elements
 const getPanel = (self: Element): UHTMLTabPanelElement | null => {
-  const css = `u-tabpanel[id="${attr(self, ARIA_CONTROLS)}"]`
+  const css = `u-tabpanel[id="${self.getAttribute(ARIA_CONTROLS)}"]`
   return getRoot(self).querySelector(css) || document.querySelector(css)
 }
 

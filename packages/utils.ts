@@ -3,29 +3,19 @@ export const IS_BROWSER =
   typeof window.document !== 'undefined' &&
   typeof window.navigator !== 'undefined'
 
-export const IS_ANDROID =
-  IS_BROWSER && /android/i.test(window.navigator.userAgent) // Bad, but needed
-
-export const IS_FIREFOX =
-  IS_BROWSER && /firefox/i.test(window.navigator.userAgent) // Bad, but needed
-
-export const IS_IOS =
-  IS_BROWSER && /iPad|iPhone|iPod/.test(window.navigator.userAgent) // Bad, but needed
+// Bad, but needed
+export const IS_ANDROID = IS_BROWSER && /android/i.test(navigator.userAgent)
+export const IS_FIREFOX = IS_BROWSER && /firefox/i.test(navigator.userAgent)
+export const IS_IOS = IS_BROWSER && /iPad|iPhone|iPod/.test(navigator.userAgent)
+export const IS_SAFARI =
+  IS_BROWSER && /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
 
 // Constants for better compression and control
-export const ARIA_CONTROLS = 'aria-controls'
-export const ARIA_DISABLED = 'aria-disabled'
-export const ARIA_EXPANDED = 'aria-expanded'
-export const ARIA_LABEL = 'aria-label'
-export const ARIA_LABELLEDBY = IS_ANDROID
-  ? 'data-labelledby' // Android <=13 reads tab text instead of content when labelledby
-  : 'aria-labelledby'
-export const ARIA_MULTISELECTABLE = 'aria-multiselectable'
-export const ARIA_SELECTED = 'aria-selected'
-
+export const SAFE_LABELLEDBY = `${IS_ANDROID ? 'data' : 'aria'}-labelledby` // Android <=13 incorrectly reads labelledby instead of content
+export const SAFE_MULTISELECTABLE = `${IS_SAFARI ? 'aria' : 'data'}-multiselectable` // Use aria-multiselectable only in Safari as VoiceOver in Chrome and Firefox inncorrectly announces selected when aria-selected="false"
 export const DISPLAY_BLOCK = ':host(:not([hidden])) { display: block }'
 export const FOCUS_OUTLINE =
-  ':host(:focus){ outline: 1px dotted; outline: 5px auto Highlight; outline: 5px auto -webkit-focus-ring-color }' // Outline styles in order: fallback, Mozilla, WebKit
+  'outline: 1px dotted; outline: 5px auto Highlight; outline: 5px auto -webkit-focus-ring-color' // Outline styles in order: fallback, Mozilla, WebKit
 
 // UHTMLElement defintion to use on Node, as server does not have HTMLElement
 export const UHTMLElement =
@@ -33,12 +23,10 @@ export const UHTMLElement =
     ? (class {} as typeof HTMLElement)
     : HTMLElement
 
-type EventListenerTarget = Node | Window
-type EventListenerParams = Parameters<typeof Element.prototype.addEventListener>
-const bind = (
-  element: EventListenerTarget,
-  rest: EventListenerParams,
-  action: 'add' | 'remove'
+const events = (
+  action: 'add' | 'remove',
+  element: Node | Window,
+  rest: Parameters<typeof Element.prototype.addEventListener>
 ): void =>
   rest[0].split(',').forEach((type) => {
     rest[0] = type
@@ -46,14 +34,14 @@ const bind = (
   })
 
 export const on = (
-  element: EventListenerTarget,
-  ...rest: EventListenerParams
-): void => bind(element, rest, 'add')
+  element: Node | Window,
+  ...rest: Parameters<typeof Element.prototype.addEventListener>
+): void => events('add', element, rest)
 
 export const off = (
-  element: EventListenerTarget,
-  ...rest: EventListenerParams
-): void => bind(element, rest, 'remove')
+  element: Node | Window,
+  ...rest: Parameters<typeof Element.prototype.removeEventListener>
+): void => events('remove', element, rest)
 
 /**
  * style
@@ -65,21 +53,6 @@ export const attachStyle = (element: Element, css: string) =>
     createElement('slot'), // Unnamed slot does automatically render all top element nodes
     createElement('style', { textContent: css })
   )
-
-export function attr(
-  element: unknown,
-  name: string | object,
-  value?: string | number | boolean | null
-): string | null | void {
-  if (element instanceof Element) {
-    if (typeof name === 'object')
-      Object.entries(name).map(([name, value]) => attr(element, name, value))
-    else if (value === undefined) return element.getAttribute(name)
-    else if (value === null) element.removeAttribute(name)
-    else if (element.getAttribute(name) !== `${value}`)
-      element.setAttribute(name, `${value}`)
-  }
-}
 
 const observers = new WeakMap()
 export const mutationObserver = (
@@ -128,9 +101,11 @@ let id = 0
 export const useId = (el?: Element | null) =>
   el
     ? el.id || (el.id = `:${el.nodeName.toLowerCase()}${(++id).toString(32)}`)
-    : undefined
+    : ''
+
 /**
- * createElement with props
+ * createElement
+ * @description creates element and assigns properties
  * @return HTMLElement with props
  */
 export const createElement = <TagName extends keyof HTMLElementTagNameMap>(
@@ -149,4 +124,14 @@ export const customElements = {
     !IS_BROWSER ||
     window.customElements.get(name) ||
     window.customElements.define(name, instance)
+}
+
+export const getLabel = (el: Element) => {
+  const root = getRoot(el) // Might not return document, so can not use root.getElementById
+  const label = el.ariaLabel || ''
+  const labels = el.getAttribute('aria-labelledby')?.trim().split(/\s+/) || []
+  return [
+    ...labels.map((id) => root.querySelector<HTMLElement>(`[id="${id}"]`)), // Get all labelledby elements
+    ...Array.from((el as HTMLInputElement).labels || []) // Get all <label> elements
+  ].reduce((acc, el) => acc || el?.innerText?.trim() || '', label)
 }

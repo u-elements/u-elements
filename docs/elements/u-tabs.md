@@ -116,7 +116,6 @@ document.addEventListener('click', ({ target }) => {
     white-space: nowrap;
   }
 &lt;/style&gt;
-.my-tablist-scrolls:
 &lt;u-tabs&gt;
   &lt;u-tablist class="my-tablist-scrolls"&gt;
     &lt;u-tab&gt;Tab 1&lt;/u-tab&gt;&lt;u-tab&gt;Tab 2&lt;/u-tab&gt;&lt;u-tab&gt;Tab 3&lt;/u-tab&gt;&lt;u-tab&gt;Tab 4&lt;/u-tab&gt;&lt;u-tab&gt;Tab 5&lt;/u-tab&gt;&lt;u-tab&gt;Tab 6&lt;/u-tab&gt;&lt;u-tab&gt;Tab 7&lt;/u-tab&gt;

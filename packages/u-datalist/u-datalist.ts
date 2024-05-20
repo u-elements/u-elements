@@ -1,17 +1,13 @@
-import type { UHTMLOptionElement } from './u-option'
 export type { UHTMLOptionElement } from './u-option'
 import './u-option'
 import {
-  ARIA_CONTROLS,
-  ARIA_EXPANDED,
-  ARIA_LABELLEDBY,
-  ARIA_MULTISELECTABLE,
   DISPLAY_BLOCK,
   IS_BROWSER,
   IS_IOS,
+  SAFE_LABELLEDBY,
+  SAFE_MULTISELECTABLE,
   UHTMLElement,
   attachStyle,
-  attr,
   customElements,
   getRoot,
   mutationObserver,
@@ -25,6 +21,10 @@ declare global {
     'u-datalist': HTMLDataListElement
   }
 }
+
+let IS_PRESS = false
+let BLUR_TIMER: ReturnType<typeof setTimeout>
+const EVENTS = 'click,focusout,input,keydown,pointerdown,pointerup'
 
 // Store map of [u-datalist] => [related input] to speed up and prevent double focus
 const activeInput = new WeakMap<UHTMLDataListElement, HTMLInputElement>()
@@ -44,9 +44,11 @@ export class UHTMLDataListElement extends UHTMLElement {
     )
   }
   connectedCallback() {
+    this.hidden = true
+    this.role = 'listbox'
+
     const root = getConnectedRoot(this)
     connectedRoot.set(this, root) // Cache to correcly unbind events on disconnectedCallback
-    attr(this, { hidden: '', role: 'listbox' })
     on(root, 'focusin', this) // Only bind focus globally as this is needed to activate
     on(root, 'focus', this, true) // Need to also listen on focus with capturing to render before Firefox NVDA reads state
   }
@@ -58,13 +60,15 @@ export class UHTMLDataListElement extends UHTMLElement {
     connectedRoot.delete(this)
   }
   handleEvent(event: Event) {
+    const { type } = event
     if (event.defaultPrevented) return // Allow all events to be canceled
-    if (event.type === 'click') onClick(this, event)
-    if (event.type === 'focus' || event.type === 'focusin') onFocus(this, event)
-    if (event.type === 'focusout') onFocusOut(this)
-    if (event.type === 'keydown') onKeydown(this, event as KeyboardEvent)
-    if (event.type === 'mutation' || event.type === 'input')
-      setupOptions(this, event)
+    if (type === 'click') onClick(this, event)
+    if (type === 'focus' || type === 'focusin') onFocusIn(this, event)
+    if (type === 'focusout') onFocusOut(this)
+    if (type === 'keydown') onKeyDown(this, event as KeyboardEvent)
+    if (type === 'mutation' || type === 'input') setupOptions(this, event)
+    if (type === 'pointerup') IS_PRESS = false
+    if (type === 'pointerdown') IS_PRESS = this.contains(event.target as Node) // Prevent loosing focus on mousedown on <u-option> despite tabIndex -1
   }
   get options(): HTMLCollectionOf<HTMLOptionElement> {
     return this.getElementsByTagName('u-option')
@@ -76,7 +80,7 @@ const getConnectedRoot = (self: UHTMLDataListElement) =>
 
 const getInput = (self: UHTMLDataListElement) => activeInput.get(self)
 const disconnectInput = (self: UHTMLDataListElement) => {
-  off(getConnectedRoot(self), 'click,focusout,input,keydown', self)
+  off(getConnectedRoot(self), EVENTS, self)
   mutationObserver(self, false)
   setExpanded(self, false)
   activeInput.delete(self)
@@ -84,8 +88,9 @@ const disconnectInput = (self: UHTMLDataListElement) => {
 }
 
 const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
+  const input = getInput(self)
   if (open) setupOptions(self) // Esure correct state when opening in input.value has changed
-  attr(getInput(self), ARIA_EXPANDED, open)
+  if (input) input.ariaExpanded = `${open}`
   self.hidden = !open
 }
 
@@ -96,7 +101,7 @@ const setupOptions = (self: UHTMLDataListElement, event?: Event) => {
 
   const hidden = self.hidden
   const options = [...self.options]
-  const isMulti = attr(self, ARIA_MULTISELECTABLE) === 'true'
+  const isSingle = self.getAttribute(SAFE_MULTISELECTABLE) !== 'true'
   const isTyping = event instanceof InputEvent && event.inputType
 
   self.hidden = true // Speed up large lists by hiding during filtering
@@ -105,7 +110,7 @@ const setupOptions = (self: UHTMLDataListElement, event?: Event) => {
     const text = `${opt.text}`.toLowerCase()
     const content = `${opt.value}${opt.label}${text}`.toLowerCase()
     opt.hidden = !content.includes(value)
-    if (!isMulti && isTyping) opt.selected = false // Turn off selected when typing in single select
+    if (isSingle && isTyping) opt.selected = false // Turn off selected when typing in single select
   })
 
   // Needed to announce count in iOS
@@ -118,40 +123,34 @@ const setupOptions = (self: UHTMLDataListElement, event?: Event) => {
   self.hidden = hidden // Restore hidden state
 }
 
-function onFocus(self: UHTMLDataListElement, { target }: Event) {
-  if (
-    target instanceof HTMLInputElement &&
-    attr(target, 'list') === self.id &&
-    activeInput.get(self) !== target
-  ) {
+function onFocusIn(self: UHTMLDataListElement, event: Event) {
+  const { target: input } = event
+  const isInput = getInput(self) === input
+  const isBlur = BLUR_TIMER && (isInput || self.contains(input as Node)) // Prevent blur if receiving new focus
+
+  if (isBlur) return clearTimeout(BLUR_TIMER)
+  if (!isInput && input instanceof HTMLInputElement && input.list === self) {
     if (activeInput.get(self)) disconnectInput(self) // If previously used by other input
-    activeInput.set(self, target)
-    attr(self, ARIA_LABELLEDBY, useId(target.labels?.[0]))
+    activeInput.set(self, input)
+    self.setAttribute(SAFE_LABELLEDBY, useId(input.labels?.[0]))
     mutationObserver(self, {
       attributeFilter: ['value'], // Listen for value changes to show u-options
       attributes: true,
       childList: true,
       subtree: true
     })
-    on(getConnectedRoot(self), 'click,focusout,input,keydown', self)
+    on(getConnectedRoot(self), EVENTS, self)
     setExpanded(self, true)
-    attr(target, {
-      'aria-autocomplete': 'list',
-      [ARIA_CONTROLS]: useId(self),
-      autocomplete: 'off',
-      role: 'combobox'
-    })
+    input.setAttribute('aria-controls', useId(self))
+    input.ariaAutoComplete = 'list'
+    input.autocomplete = 'off'
+    input.role = 'combobox'
   }
 }
 
+// Only disconnect after event loop has run so we can cancel if receiving new focus
 function onFocusOut(self: UHTMLDataListElement) {
-  // Let event loop run first so focus can move before we check activeElement
-  // focusout has event.relatedTarget, but Firefox incorrectly sets this to null when pressing Home or End key
-  setTimeout(() => {
-    const focused = getConnectedRoot(self).activeElement
-    const isOutside = getInput(self) !== focused && !self.contains(focused)
-    if (isOutside) disconnectInput(self)
-  })
+  if (!IS_PRESS) BLUR_TIMER = setTimeout(() => disconnectInput(self))
 }
 
 function onClick(self: UHTMLDataListElement, { target }: Event) {
@@ -165,15 +164,15 @@ function onClick(self: UHTMLDataListElement, { target }: Event) {
   if (input === target)
     setExpanded(self, true) // Click on input should always open datalist
   else if (input && option) {
-    const isMulti = attr(self, ARIA_MULTISELECTABLE) === 'true'
+    const isSingle = self.getAttribute(SAFE_MULTISELECTABLE) !== 'true'
     Array.from(self.options, (opt) => {
       if (opt === option) opt.selected = true
-      else if (!isMulti) opt.selected = false // Ensure single selected
+      else if (isSingle) opt.selected = false // Ensure single selected
     })
 
-    input.focus() // Change input.value before focus move to make screen reader read the correct value
     value?.set?.call(input, option.value) // Trigger value change - also React compatible
-    setExpanded(self, false) // Click on option shold always close datalist
+    if (isSingle) input.focus() // Change input.value before focus move to make screen reader read the correct value
+    if (isSingle) setExpanded(self, false) // Click on single select option shold always close datalist
 
     // Trigger input.value change events
     input.dispatchEvent(new Event('input', { bubbles: true, composed: true }))
@@ -181,18 +180,18 @@ function onClick(self: UHTMLDataListElement, { target }: Event) {
   }
 }
 
-function onKeydown(self: UHTMLDataListElement, event: KeyboardEvent) {
-  if (event.ctrlKey || event.metaKey || event.shiftKey) return
+function onKeyDown(self: UHTMLDataListElement, event: KeyboardEvent) {
+  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
 
   const { key } = event
-  const active = getConnectedRoot(self).activeElement as UHTMLOptionElement
   if (key !== 'Escape') setExpanded(self, true) // Open if not ESC, before checking visible options
 
   // Checks disabled or visibility (since hidden attribute can be overwritten by display: block)
+  const active = getConnectedRoot(self).activeElement
   const options = [...self.options].filter(
-    (opt) => !opt.disabled && opt.offsetWidth && opt.offsetHeight
+    (opt) => !opt.disabled && opt.offsetWidth && opt.offsetHeight // Only include enabled, visible options
   )
-  const index = options.indexOf(active)
+  const index = options.indexOf(active as HTMLOptionElement)
   let next = -1 // If hidden - first arrow down should exit input
 
   if (key === 'ArrowDown') next = (index + 1) % options.length
@@ -220,7 +219,7 @@ if (IS_BROWSER)
     enumerable: true,
     get(): HTMLDataElement | UHTMLDataListElement | null {
       const root = getRoot(this)
-      const list = attr(this, 'list')
+      const list = this.getAttribute('list')
       return root.querySelector(`[id="${list}"]:is(datalist,u-datalist)`)
     }
   })

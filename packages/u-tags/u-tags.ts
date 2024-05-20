@@ -1,208 +1,215 @@
 import {
-  ARIA_MULTISELECTABLE,
   FOCUS_OUTLINE,
+  IS_FIREFOX,
+  IS_IOS,
+  SAFE_MULTISELECTABLE,
   UHTMLElement,
   asButton,
-  attachStyle,
-  attr,
   createElement,
   customElements,
-  // getRoot,
+  getRoot,
   mutationObserver,
   off,
   on
 } from '../utils'
-
-const INLINE_BLOCK = `:host(:not([hidden])){ display: inline-block }`
-
 declare global {
   interface HTMLElementTagNameMap {
     'u-tags': UHTMLTagsElement
-    'u-tag': UHTMLTagElement
   }
 }
-// TODO: Enter to edit tag?
-// TODO: Enable/disable tag creation
-// TODO: <template>
-// TODO: Do not loop as this makes it hard to find input when holding down arrow
-// TODO: Add x-button that is aria-hidden if focus it outside the current tag
+
+let FOCUS_TARGET: EventTarget | null
+let BLUR_TIMER: ReturnType<typeof setTimeout>
+const EVENTS = 'click,change,input,focusin,focusout,keydown'
+const LANG = {
+  added: 'Added',
+  delete: 'Press to delete',
+  deleted: 'Deleted',
+  empty: 'No selected',
+  found: 'Navigate left to find %d selected',
+  of: 'of'
+}
+// const LANG = {
+//   added: 'La til',
+//   removed: 'Slettet',
+//   navigateToTags: 'Naviger til venstre for å finne %d valgte',
+//   pressToDelete: 'Trykk for å slette',
+//   noTags: 'Ingen valgte',
+//   of: 'av'
+// }
+
+// KRISTOFFER: Announce datalist items count on type?
+// TODO: dispatch onChange (to fill select, or enable/disable tag creation/min/max)
+// TODO: Dnyamic language
+// - Announces changes on mutation
+// - Draws focus outline only around x, but focuses the whole data (helps when using zoom)
 
 /**
- * The `<u-tags>` HTML element contains a set of `<u-tag>` elements.
+ * The `<u-tags>` HTML element contains a set of `<data>` elements.
  * No MDN reference available.
  */
 export class UHTMLTagsElement extends UHTMLElement {
-  announce: HTMLSpanElement
   constructor() {
     super()
-    const slot = createElement('slot')
-    slot.appendChild((this.announce = createElement('span')))
     this.attachShadow({ mode: 'closed' }).append(
-      createElement('slot'), // Content slog
-      createElement('style', { textContent: INLINE_BLOCK }),
-      slot // Announcement slot
+      createElement('slot'), // Content slot
+      createElement('style', {
+        textContent: `:host(:not([hidden])){ display: inline-block }
+        ::slotted(data) { cursor: pointer; display: inline-block; outline: none; pointer-events: none }
+        ::slotted(data)::after { content: '\\00D7'; content: '\\00D7' / ''; display: inline-block; padding-inline: .5ch; pointer-events: auto }
+        ::slotted(data:focus)::after { ${FOCUS_OUTLINE} }` // Show focus outline around ::after only
+      })
     )
   }
   connectedCallback() {
-    mutationObserver(this, { childList: true, subtree: true }) // Observe u-datalist to add aria-multiselect="true"
-    attr(this.announce, { 'aria-live': 'assertive', role: 'alert' })
-    on(this, 'click', this)
-    on(this, 'input', this)
-    on(this, 'keydown', this)
-    setupDatalist(this)
+    mutationObserver(this, { childList: true }) // Observe u-datalist to add aria-multiselect="true"
+    on(this, EVENTS, this)
+    this.#assignSlots()
   }
   disconnectedCallback() {
     mutationObserver(this, false)
-    off(this, 'click', this)
-    off(this, 'input', this)
-    off(this, 'keydown', this)
+    off(this, EVENTS, this)
+  }
+  #assignSlots(event?: CustomEvent<MutationRecord[]>) {
+    const hasFocus = this.contains(FOCUS_TARGET as Node)
+    const change = hasFocus ? getChange(event?.detail) : null
+    const input = getInput(this)
+    const isAdd = change?.item?.parentNode && change.item
+    const isInput = FOCUS_TARGET === input && input
+    const items = this.items
+    const list = input?.list
+    const setFocus = isInput || isAdd || change?.prev || items[0] || input
+    const values: string[] = []
+
+    items.forEach((item) => {
+      const label = item.textContent?.trim() || ''
+      const value = (item.value = item.value || label)
+      item.role = 'button'
+      item.tabIndex = -1
+      values.push(value)
+    })
+
+    setLabels(this, change?.item)
+    list?.setAttribute(SAFE_MULTISELECTABLE, 'true') // Make <u-datalist> multiselect
+    Array.from(list?.options || [], (opt) => {
+      opt.selected = values.includes(opt.value)
+    })
+
+    if (change) {
+      setTimeout(() => !IS_IOS && setFocus?.focus(), 100) // 100ms delay so VoiceOver + Chrome announces new ariaLabel
+      setTimeout(() => {
+        if (!IS_FIREFOX) return setLabels(this) // FireFox announces ariaLabel changes
+        on(this, 'focusout', () => setLabels(this), { once: true }) //...so we rather remove on blur
+      }, 500)
+    }
   }
   handleEvent(event: Event) {
     if (event.defaultPrevented) return // Allow all events to be canceled
-    if (event.type === 'click') onClick(this, event)
+    if (event.type === 'click') onClick(this, event as MouseEvent)
+    if (event.type === 'focusin' || event.type === 'focusout') onFocus(event)
     if (event.type === 'input') onInput(this, event as InputEvent)
     if (event.type === 'keydown') onKeyDown(this, event as KeyboardEvent)
-    if (event.type === 'mutation') setupDatalist(this)
+    if (event.type === 'mutation') this.#assignSlots(event as CustomEvent)
   }
-  get tags(): HTMLCollectionOf<UHTMLTagElement> {
-    return this.getElementsByTagName('u-tag')
-  }
-  get values() {
-    return Array.from(this.tags, getValue) // Use getValue as UHTMLTagElement instance might not be created yet
+  get items(): NodeListOf<HTMLDataElement> {
+    return this.querySelectorAll('data')
   }
 }
 
-/**
- * The `<u-tag>` HTML element contains a set of `<u-tag>` elements.
- * No MDN reference available.
- */
-export class UHTMLTagElement extends UHTMLElement {
-  constructor() {
-    super()
-    attachStyle(this, `${INLINE_BLOCK}${FOCUS_OUTLINE}:host{cursor:pointer}`)
-  }
-  connectedCallback() {
-    attr(this, {
-      role: 'button',
-      title: 'Press Backspace to delete',
-      tabIndex: -1
-    }) // tabIndex -1 to prevent tabstop, but allow programatic focus
-  }
-  get value(): string {
-    return getValue(this)
-  }
-  set value(value: string) {
-    attr(this, 'data-value', value)
-  }
-}
-
-const getValue = (el: Element) => attr(el, 'data-value') || el.textContent || ''
 const getInput = (self: UHTMLTagsElement) => self.querySelector('input')
-const getOptions = (self: UHTMLTagsElement) => {
-  const datalist = self.querySelector('u-datalist')
-  attr(datalist, ARIA_MULTISELECTABLE, true) // Ensure multiselect
-  return Array.from(datalist?.options || [])
+const getChange = (mutations: MutationRecord[] = []) => {
+  const diff = mutations.flatMap((m) => [...m.addedNodes, ...m.removedNodes])
+  const item = !diff[1] && diff[0] instanceof HTMLDataElement ? diff[0] : null // Only return if single item has changed
+  let el = mutations[0] as Node | MutationRecord | null | undefined
+
+  while ((el = el?.previousSibling)) if (el instanceof HTMLDataElement) break // Get the previous sibling item
+  return { item, prev: el }
 }
 
-// Setup multiselct and select all relevant options
-const setupDatalist = (self: UHTMLTagsElement) => {
-  const options = getOptions(self)
-  const values = self.values
+const setLabels = (self: UHTMLTagsElement, item?: HTMLDataElement | null) => {
+  const input = getInput(self)
+  const items = self.items
+  const total = items.length
+  const label =
+    self.ariaLabel ||
+    getRoot(self).querySelector(`[for="${self.id}"]`)?.textContent?.trim()
 
-  options.forEach((opt) => (opt.selected = values.includes(opt.value)))
-}
+  const announce = item
+    ? `${item.parentNode ? LANG.added : LANG.deleted} ${item?.textContent?.trim() || ''}, `
+    : ''
 
-const add = (self: UHTMLTagsElement, value: string, text?: string) => {
-  const mount = [...self.tags].pop() || self
-  const where = mount === self ? 'afterbegin' : 'afterend'
-  const option = Object.assign(document.createElement('u-tag'), {
-    textContent: text || value,
-    value
+  self.ariaLabel = label || null
+  if (input)
+    input.ariaLabel = `${announce}${label}, ${total ? LANG.found.replace('%d', `${total}`) : LANG.empty}`
+
+  items.forEach((item, index) => {
+    item.ariaLabel = `${announce}${item.textContent?.trim()}, ${LANG.delete}, ${index + 1} ${LANG.of} ${total}`
   })
-
-  mount.insertAdjacentElement(where, option)
 }
 
-const remove = (tag: UHTMLTagElement) => tag.remove()
-
-function onClick(self: UHTMLTagsElement, { target }: Event) {
-  if (target === self) getInput(self)?.focus() // Focus input if click on u-tags
-  if (target instanceof Element) target.closest('u-tag')?.focus() // Focus tag on click
+const isMouseInside = (el: Element, { clientX: x, clientY: y }: MouseEvent) => {
+  const { top, right, bottom, left } = el.getBoundingClientRect()
+  return y >= top && y <= bottom && x >= left && x <= right
 }
 
-function onInput(self: UHTMLTagsElement, { target, inputType }: InputEvent) {
-  if (target instanceof HTMLInputElement && !inputType) {
-    const value = target.value
-    const option = getOptions(self).find((opt) => opt.value === value)
-    const removeIndex = self.values.indexOf(value)
+function onClick(self: UHTMLTagsElement, event: MouseEvent) {
+  const items = [...self.items]
+  const item = items.find((item) => isMouseInside(item, event)) // Use coordinates to inside since pointer-events: none will prevent correct event.target
+  const remove = items.find((item) => item.contains(event.target as Node)) // Only keyboard and screen reader can set event.target to element pointer-events: none
 
-    target.blur() // Blur so VoiceOver in Safari does not loose focus despite DOM being added before
-    target.value = '' // Reset value
+  if (remove) remove.remove()
+  else if (item) item.focus()
+  else if (event.target === self) self.querySelector('input')?.focus() // Focus <input> if click on <u-tags>
+}
 
-    if (~removeIndex) remove(self.tags[removeIndex])
-    else add(self, target.value, option?.text)
+function onFocus({ type, currentTarget }: Event) {
+  // Let event loop run before reseting FOCUS, and prevent reset if receiving new focus
+  if (type === 'focusout') BLUR_TIMER = setTimeout(() => (FOCUS_TARGET = null))
+  else clearTimeout(BLUR_TIMER), (FOCUS_TARGET = currentTarget)
+}
 
-    announceLabel(self, target, `Added ${value}, $text`)
-  }
+function onInput(self: UHTMLTagsElement, { inputType, target }: InputEvent) {
+  if (inputType || !(target instanceof HTMLInputElement)) return // Clicking item in <datalist> triggers onInput, but without inputType
+  const { list, value } = target
+  const items = [...self.items].reverse() // Reversed so it is easy to get last item
+  const remove = items.find((item) => item.value === value)
+  const textContent =
+    Array.from(list?.options || []).find((opt) => opt.value === value)?.text ||
+    value
+
+  FOCUS_TARGET = target // Set focus to input even thought it might be on a <u-option>
+  target.value = '' // Empty input
+  if (remove) return remove.remove()
+  ;(items[0] || self).insertAdjacentElement(
+    items[0] ? 'afterend' : 'afterbegin', // Insert after last item OR as first element if no items
+    createElement('data', { textContent, value })
+  )
 }
 
 function onKeyDown(self: UHTMLTagsElement, event: KeyboardEvent) {
-  const { key, target } = event
+  const { key, repeat, target: el } = event
   const input = getInput(self)
-  const tags = [...self.tags]
-  const tagIndex = tags.findIndex((tag) => tag.contains(target as Node))
+  const items = [...self.items, input].filter(Boolean)
+  const index = items.findIndex((item) => item?.contains(el as Node))
+  const isInsideText = input?.selectionEnd
+  let next = -1
 
-  const isInput = input && target === input
-  const isStart = !isInput || !input.selectionEnd // Tag or caret is in start of input
-  const isRemove = (key === 'Backspace' || key === 'Delete') && !event.repeat // Do not remove if pressing backspace multiple times
-  const isAdd = key === 'Enter' && isInput
-  let next: HTMLElement | null = null
-
-  if (!isInput && (tagIndex === -1 || asButton(event))) return // No input or tag focused or keydown to click on tag
-  if ((key === 'ArrowLeft' || isRemove) && isStart)
-    next = tags[(~tagIndex ? tagIndex : tags.length) - 1] || input
-  if (key === 'ArrowRight' && !isInput) next = tags[tagIndex + 1] || input
-  if (isAdd) {
-    const value = input.value
+  if (index === -1 || (el !== input && asButton(event))) return // No input or tag focused or keydown to click on tag
+  if (key === 'ArrowRight') next = index + 1
+  if (key === 'ArrowLeft' && !isInsideText) next = index - 1
+  if (key === 'Enter' && el === input) {
     event.preventDefault() // Prevent submit
-    input.blur() // Blur so VoiceOver in Safari does not loose focus despite DOM being added before
-    input.value = '' // Reset value
-    add(self, value)
-    announceLabel(self, input, `Added ${value}, $text`)
+    const hasValue = !!input?.value.trim()
+    if (hasValue) input?.dispatchEvent(new Event('input', { bubbles: true })) // Trigger input.value change
   }
-
-  if (next) {
+  if ((key === 'Backspace' || key === 'Delete') && !repeat && !isInsideText) {
+    if (el === input) next = index - 1
+    else items[index]?.remove()
+  }
+  if (items[next]) {
     event.preventDefault() // Prevent <u-datalist> moving focus to <input>
-    if (isRemove)
-      announceLabel(self, next, `Deleted ${tags[tagIndex].textContent}, $text`)
-    else next.focus()
-
-    if (isRemove && !isInput) remove(tags[tagIndex])
+    items[next]?.focus()
   }
-}
-
-function announceLabel(self: UHTMLTagsElement, el: HTMLElement, value: string) {
-  // // const role = el.role || null
-  // const label = el.ariaLabel
-  // const labelText = (el as HTMLInputElement).labels?.[0]?.textContent
-  // const labelledbyId = attr(el, 'aria-labelledby') || ''
-  // const labelledby = getRoot(el).getElementById(labelledbyId)?.textContent
-  // const text = label || labelledby || labelText || el.textContent || ''
-
-  // // if (el instanceof HTMLInputElement) el.role = null
-  // el.ariaLabel = value.replace('$text', text)
-  // el.focus()
-  // setTimeout(() => {
-  //   attr(el, {
-  //     'aria-labelledby': labelledbyId || null,
-  //     'aria-label': label || null
-  //     // role
-  //   })
-  // }, 2000)
-  self.announce.textContent = value.replace('$text', '')
-  setTimeout(() => (self.announce.textContent = ''), 500)
-  el.focus()
 }
 
 customElements.define('u-tags', UHTMLTagsElement)
-customElements.define('u-tag', UHTMLTagElement)

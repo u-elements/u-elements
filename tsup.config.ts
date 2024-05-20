@@ -66,7 +66,7 @@ ${tagDefinitions
 
     return `export type Vue${type} = VueJSX.IntrinsicElementAttributes['${tagNative}']
 export type Qwik${type} = QwikJSX.IntrinsicElements['${tagNative}']
-export type React${type} = ReactJSX.IntrinsicElements['${tagNative}']
+export type React${type} = ReactJSX.IntrinsicElements['${tagNative}'] & { class?: string }
 export type SolidJS${type} = SolidJSX.HTMLElementTags['${tagNative}']
 export type Svelte${type} = SvelteHTMLElements['${tagNative}']
 

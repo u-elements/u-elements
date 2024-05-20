@@ -10,7 +10,9 @@ describe('u-progress', () => {
   it('matches snapshot', async () => {
     await compareSnapshot({
       name: `u-progress${IS_IOS ? '-ios' : IS_FIREFOX ? '-firefox' : ''}`,
-      content: toDOM(`<u-progress value="5" max="10"></u-progress>`).outerHTML
+      content: toDOM(
+        `<u-progress value="5" max="10" aria-label="Test"></u-progress>`
+      ).outerHTML
     })
   })
 
@@ -40,7 +42,7 @@ describe('u-progress', () => {
     )
     expect(uProgress.getAttribute('aria-valuemin')).to.equal('0')
     expect(uProgress.getAttribute('aria-valuemax')).to.equal('100')
-    expect(uProgress.hasAttribute('aria-busy')).to.equal(false)
+    expect(uProgress.getAttribute('aria-busy')).to.equal('false')
 
     uProgress.value = null
     expect(uProgress.getAttribute('aria-busy')).to.equal('true')

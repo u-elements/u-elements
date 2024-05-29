@@ -23,6 +23,7 @@ export const UHTMLElement =
     ? (class {} as typeof HTMLElement)
     : HTMLElement
 
+// Internal helper for on / off
 const events = (
   action: 'add' | 'remove',
   element: Node | Window,
@@ -33,11 +34,23 @@ const events = (
     Element.prototype[`${action}EventListener`].apply(element, rest)
   })
 
+/**
+ * on
+ * @param element The Element to use as EventTarget
+ * @param types A comma separated string of event types
+ * @param listener An event listener function or listener object
+ */
 export const on = (
   element: Node | Window,
   ...rest: Parameters<typeof Element.prototype.addEventListener>
 ): void => events('add', element, rest)
 
+/**
+ * off
+ * @param element The Element to use as EventTarget
+ * @param types A comma separated string of event types
+ * @param listener An event listener function or listener object
+ */
 export const off = (
   element: Node | Window,
   ...rest: Parameters<typeof Element.prototype.removeEventListener>
@@ -54,6 +67,11 @@ export const attachStyle = (element: Element, css: string) =>
     createElement('style', { textContent: css })
   )
 
+/**
+ * mutationObserver
+ * @param element The Element to use as EventTarget
+ * @param listener An event listener object, false to disconnect or undefined to retrieve mutation observer
+ */
 const observers = new WeakMap()
 export const mutationObserver = (
   element: Element & EventListenerObject,
@@ -64,7 +82,7 @@ export const mutationObserver = (
     observers.get(element).disconnect() // Allways unbind previous listener
     observers.delete(element)
   } catch (err) {
-    // Could not unount since element is removed
+    // Could not unmount since element is removed
   }
   if (options) {
     const observer = new MutationObserver((detail) =>
@@ -75,6 +93,12 @@ export const mutationObserver = (
   }
 }
 
+/**
+ * asButton
+ * @description Helper to forward Enter and Space keyboard events to click events (typically used on role="button")
+ * @param event Any event object
+ * @return Whether the event should be forwarded to a click
+ */
 export const asButton = (event: Event): boolean => {
   const isClick = 'key' in event && (event.key === ' ' || event.key === 'Enter')
   if (isClick) event.preventDefault() // Prevent scroll
@@ -88,7 +112,6 @@ export const asButton = (event: Event): boolean => {
  * @param element The target object
  * @param name The event name
  * @param options Detail object (bubbles and cancelable is set to true)
- * @return Whether the event was canceled. Returns true if either event's cancelable attribute value is false or its preventDefault() method was not invoked, and false otherwise.
  */
 export const getRoot = (node: Node) =>
   node.getRootNode() as Document | ShadowRoot
@@ -117,7 +140,7 @@ export const createElement = <TagName extends keyof HTMLElementTagNameMap>(
 /**
  * customElements.define
  * @description Defines a customElement if running in browser and if not already registered
- * named customElements.define so @custom-elements-manifest/analyzer can find tag names
+ * Scoped/named "customElements.define" so @custom-elements-manifest/analyzer can find tag names
  */
 export const customElements = {
   define: (name: string, instance: CustomElementConstructor) =>
@@ -126,6 +149,11 @@ export const customElements = {
     window.customElements.define(name, instance)
 }
 
+/**
+ * getLabel
+ * @description Get the screen reader label or an element from aria-label, aria-labelledby or <label> elements
+ * @return string
+ */
 export const getLabel = (el: Element) => {
   const root = getRoot(el) // Might not return document, so can not use root.getElementById
   const label = el.ariaLabel || ''

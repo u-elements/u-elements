@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="no">
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -46,12 +46,12 @@
         <label for="my-tags">Velg iskrem</label>
         <u-tags
           id="my-tags"
-          data-lang-added="Added"
-          data-lang-delete="Press to delete"
-          data-lang-deleted="Deleted"
-          data-lang-empty="No selected"
-          data-lang-found="Navigate left to find %d selected"
-          data-lang-of="of"
+          data-added="La til"
+          data-delete="Trykk for å slette"
+          data-deleted="Slettet"
+          data-empty="Ingen valgte"
+          data-found="Naviger til venstre for å finne %d valgte"
+          data-of="av"
         >
           <data>Kokkos</data>
           <data>Banana</data>
@@ -75,15 +75,16 @@
       <br>
       <br>
       <br>
-      <form>
-        <u-datepicker data-value="2024-05-02, 2024-05-03, 2024-05-04" data-weeknumber="Week">
-          <time dateime="2024-05-02"></time>
-          <time dateime="2024-05-03"></time>
-          <time dateime="2024-05-04"></time>
+      <!-- <form>
+        <u-datepicker lang="no" data-value="2024-05-02, 2024-05-03, 2024-05-04">
+          <span name="2024-05-02">HEI</span>
+          <time dateime="2024-05-02">HADE</time>
+          <time dateime="2024-05-03">HEST</time>
+          <time dateime="2024-05-04">FEST</time>
           <time dateime="2024-05-07"><slot></slot>🌟<br><span>Special!</span><div>Heisann</div></time>
         </u-datepicker>
         <button type="submit">Send</button>
-      </form>
+      </form> -->
       <!-- <u-datepicker-head></u-datepicker-head> -->
       <!-- <u-datepicker-option value="2024-05-02" selected></u-datepicker-option>
       <u-datepicker-option value="2024-05-07">Special!</u-datepicker-option> -->

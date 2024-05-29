@@ -6,7 +6,7 @@ import { data } from '../filesize.data.ts'
 `<u-datalist>` lets you suggest values to a connected `<input>`. You can use it to make things like comboboxes, autosuggest, autocomplete, live search results, etc.
 
 **Quick intro:**
-- Use `<u-option>` as child elements - these will show the suggestions while typing
+- Use `<u-option>` as direct child elements - these will show the suggestions while typing
 - Use matching `id` on `<u-datalist>` and `list` attribute on `<input>` to connect
 - **Want to show suggestions from a data source?** See [example: API &rarr;](#example-api)
 - **MDN Web Docs:** [&lt;datalist&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist), [&lt;option&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option)

@@ -6,10 +6,11 @@ import { data } from '../filesize.data.ts'
 `<u-tabs>` is not a native HTML element, but follows [ARIA authoring practices for tabs](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/). It lets you navigate between groups of information that appear in the same context.
 
 **Quick intro:**
-- Use `<u-tablist>` as first child, grouping multiple `<u-tab>` - these are the labels
-- Use `<u-tabpanel>` as adjacent children - these hide/show content of related `<u-tab>`
+- Use `<u-tabs>` to group all tabbing-elements
+- Use `<u-tab>` around multiple `<u-tab>` direct children - these are the labels
 - Use `<u-tab aria-selected="true">` to set the open tab (defaults to first tab)
 - Use `<u-tab aria-controls="id-of-panel">` if you need panels outside `<u-tabs>`
+- Use `<u-tabpanel>`s after  `<u-tablist>` - these hide/show content of related `<u-tab>`
 - **ARIA Authoring Practices Guide Docs:** [Tabs](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)
 
 ## Example

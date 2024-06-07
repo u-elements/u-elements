@@ -72,7 +72,9 @@ export class UHTMLDetailsElement extends UHTMLElement {
         .forEach((uDetails) => uDetails === this || (uDetails[OPEN] = false))
 
     // Trigger toggle event if change of open state
-    if (prop === OPEN && prev !== next) this.dispatchEvent(new Event('toggle'))
+    // Comparing boolean version of prev and next since open attribute is truthy for "", "true" etc.
+    if (prop === OPEN && !!prev !== !!next)
+      this.dispatchEvent(new Event('toggle'))
   }
   handleEvent({ type }: Event) {
     if (type === 'beforematch') this[OPEN] = true

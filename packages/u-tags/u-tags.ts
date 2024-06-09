@@ -1,7 +1,6 @@
 import {
   FOCUS_OUTLINE,
   IS_FIREFOX,
-  IS_IOS,
   SAFE_MULTISELECTABLE,
   UHTMLElement,
   asButton,
@@ -12,6 +11,7 @@ import {
   off,
   on
 } from '../utils'
+
 declare global {
   interface HTMLElementTagNameMap {
     'u-tags': UHTMLTagsElement
@@ -30,7 +30,6 @@ const LANG = {
   of: 'of'
 }
 
-// TODO KRISTOFFER: IS_IOS check for VoiceOver - keep or remove?
 // TODO KRISTOFFER: Announce datalist items count on type?
 // TODO KRISTOFFER: What to include in dispatchChange detail?
 
@@ -136,9 +135,7 @@ function onMutation(
 
   setLabels(self, change?.item)
   list?.setAttribute(SAFE_MULTISELECTABLE, 'true') // Make <u-datalist> multiselect
-  options.forEach((opt) => {
-    opt.selected = values.includes(opt.value)
-  })
+  options.forEach((opt) => (opt.selected = values.includes(opt.value)))
 
   if (change) {
     const focusNext =
@@ -148,8 +145,10 @@ function onMutation(
       self.items[0] ||
       input
 
-    // Skip setting focus in iOS since it starts announcing u-option-selection before onMutation runs
-    setTimeout(() => !IS_IOS && focusNext?.focus(), 100) // 100ms delay so VoiceOver + Chrome announces new ariaLabel
+    // NOTE: VoiceOver iOS in will start announcing selected u-option, before moving focus to the input.
+    // This is still a better user experience than keeping focus on the u-option as input is cleared
+    // and the user gets information about wether the action was remove or add
+    setTimeout(() => focusNext?.focus(), 100) // 100ms delay so VoiceOver + Chrome announces new ariaLabel
     setTimeout(() => {
       if (!IS_FIREFOX) return setLabels(self) // FireFox announces ariaLabel changes
       on(self, 'focusout', () => setLabels(self), { once: true }) //...so we rather remove on blur

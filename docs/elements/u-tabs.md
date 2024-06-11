@@ -71,7 +71,7 @@ bun add -S @u-elements/u-tabs
 | - | - | - |
 | [Global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. ||
 | `aria-selected` | Specify `"true"` or `"false"` to set tab state | `"false"` |
-| `aria-controls` | Specify id of a `<u-panel>` to control panel regardless of DOM position | |
+| `aria-controls` | Specify id of a `<u-tabpanel>` to control panel regardless of DOM position | |
 
 | Attributes `<u-tabpanel>` | Description |  Default |
 | - | - | - |

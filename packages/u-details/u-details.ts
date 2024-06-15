@@ -42,11 +42,11 @@ export class UHTMLDetailsElement extends UHTMLElement {
     )
   }
   connectedCallback() {
-    on(this, 'beforematch', this) // Open if browsers Find in page reveals content
+    on(this.#content, 'beforematch', this) // Open if browsers Find in page reveals content
     this.attributeChangedCallback() // We now know the element is in the DOM, so run a attribute setup
   }
   disconnectedCallback() {
-    off(this, 'beforematch', this)
+    off(this.#content, 'beforematch', this)
   }
   attributeChangedCallback(prop?: string, prev?: string, next?: string) {
     const hide = 'onbeforematch' in this ? 'until-found' : true // Use "until-found" if supported
@@ -72,8 +72,8 @@ export class UHTMLDetailsElement extends UHTMLElement {
         .forEach((uDetails) => uDetails === this || (uDetails[OPEN] = false))
 
     // Trigger toggle event if change of open state
-    // Comparing boolean version of prev and next since open attribute is truthy for "", "true" etc.
-    if (prop === OPEN && !!prev !== !!next)
+    // Comparing null version of prev and next since open attribute is truthy for "", "true" etc.
+    if (prop === OPEN && (prev === null) !== (next === null))
       this.dispatchEvent(new Event('toggle'))
   }
   handleEvent({ type }: Event) {

@@ -157,6 +157,26 @@ describe('u-tabs', () => {
     expect(uTabs.tabs[1].getAttribute('aria-selected')).to.equal('true')
   })
 
+  it('skips invalid selectedIndex prop change', () => {
+    const uTabs = toDOM<UHTMLTabsElement>(DEFAULT_TEST_HTML)
+
+    expect(uTabs.tabs[0].tabIndex).to.equal(0)
+    expect(uTabs.tabs[0].panel?.hidden).to.equal(false)
+    expect(uTabs.tabs[0].getAttribute('aria-selected')).to.equal('true')
+    expect(uTabs.tabs[1].tabIndex).to.equal(-1)
+    expect(uTabs.tabs[1].panel?.hidden).to.equal(true)
+    expect(uTabs.tabs[1].getAttribute('aria-selected')).to.equal('false')
+
+    uTabs.selectedIndex = 999
+
+    expect(uTabs.tabs[0].tabIndex).to.equal(0)
+    expect(uTabs.tabs[0].panel?.hidden).to.equal(false)
+    expect(uTabs.tabs[0].getAttribute('aria-selected')).to.equal('true')
+    expect(uTabs.tabs[1].tabIndex).to.equal(-1)
+    expect(uTabs.tabs[1].panel?.hidden).to.equal(true)
+    expect(uTabs.tabs[1].getAttribute('aria-selected')).to.equal('false')
+  })
+
   it('updates attributes on aria-selected attribute change', () => {
     const uTabs = toDOM<UHTMLTabsElement>(DEFAULT_TEST_HTML)
 

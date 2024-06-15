@@ -39,7 +39,7 @@ export class UHTMLTabsElement extends UHTMLElement {
     return [...this.tabs].findIndex((tab) => tab.ariaSelected === 'true')
   }
   set selectedIndex(index: number) {
-    this.tabs[index].ariaSelected = 'true'
+    if (this.tabs[index]) this.tabs[index].ariaSelected = 'true'
   }
   get tabs(): NodeListOf<UHTMLTabElement> {
     return queryWithoutNested('u-tab', this)

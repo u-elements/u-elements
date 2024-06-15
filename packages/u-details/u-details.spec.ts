@@ -143,6 +143,7 @@ describe('u-details', () => {
     expect(uDetails1.open).to.equal(false)
     expect(uDetails2.open).to.equal(true)
   })
+
   it('triggers toggle event', async () => {
     const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
     const [uSummary] = [...uDetails.children] as [
@@ -164,6 +165,25 @@ describe('u-details', () => {
     uDetails.addEventListener('toggle', onToggle)
     uSummary.click()
   })
+
+  it('does not triggers toggle event if changing string value of open', async () => {
+    const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
+    let onToggleCount = 0
+
+    const onToggle = () => (onToggleCount += 1)
+    uDetails.addEventListener('toggle', onToggle)
+    expect(uDetails.open).to.equal(false)
+    expect(onToggleCount).to.equal(0)
+
+    uDetails.open = true
+    expect(uDetails.open).to.equal(true)
+    expect(onToggleCount).to.equal(1)
+
+    uDetails.setAttribute('open', 'test')
+    expect(uDetails.open).to.equal(true)
+    expect(onToggleCount).to.equal(1)
+  })
+
   it('opens on beforematch', async () => {
     const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
     const content = uDetails.lastElementChild as HTMLDivElement

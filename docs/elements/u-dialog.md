@@ -1,3 +1,6 @@
+---
+title: u-dialog
+---
 # <del>&lt;u-dialog&gt;</del> <mark data-badge="html"></mark>
 There is no longer need for `<u-dialog>` :tada:
 Native [`<dialog>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog) now has sufficient support
@@ -28,7 +31,7 @@ Nothing to install :tada:
 
 | Attributes `<dialog>` | Description |  Default |
 | - | - | - |
-| [Global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. ||
+| [All global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. ||
 | `open` | When the `open` attribute is present, the dialog is shown. By default this attribute is absent which means the dialog is hidden. **Note:** It `open` makes the dialog non-modal, so is instead recommended to use the `.show()` or `.showModal()` for greater control. | Not present |
 
 ## Accessibility

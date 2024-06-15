@@ -1,3 +1,6 @@
+---
+title: u-progress
+---
 <script setup>
 import { data } from '../filesize.data.ts'
 </script>
@@ -44,11 +47,11 @@ bun add -S @u-elements/u-progress
 
 ## Attributes
 
-| Attributes `<u-progress>` | Description |  Default |
-| - | - | - |
-| [Global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. ||
-| `max` | Amount of total work to be done. Must be a valid number greater than `0` | `1` |
-| `value` | Amount of completed work. If present, `value` must be a valid number between `0` and `max`. If there is no `value` attribute, the progress bar is indeterminate; indicating work is being done, but withouth knowing of how long it will take. | Not present |
+| Attributes `<u-progress>` | Description |
+| - | - |
+| [All global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. |
+| `max` | Amount of total work to be done. Must be a valid number greater than `0`. Defaults to `1` |
+| `value` | Amount of completed work. If present, `value` must be a valid number between `0` and `max`. If there is no `value` attribute, the progress bar is indeterminate; indicating work is being done, but withouth knowing of how long it will take. |
 
 ## Styling
 

@@ -1,7 +1,8 @@
 # Runtime
-node_modules
-dist
 coverage
+dist
+node_modules
+test-results
 
 # Logs
 **/logs

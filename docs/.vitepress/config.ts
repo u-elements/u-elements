@@ -48,7 +48,8 @@ export default defineConfig({
           { text: '<del>&lt;u-dialog&gt;</del> <mark data-badge="html"></mark>', link: '/elements/u-dialog' },
           { text: '&lt;u-progress&gt; <mark data-badge="html"></mark>', link: '/elements/u-progress' },
           { text: '<del>&lt;u-select&gt;</del> <mark data-badge="pending"></mark>', link: '/elements/u-select' },
-          { text: '&lt;u-tabs&gt; <mark data-badge="aria"></mark>', link: '/elements/u-tabs' }
+          { text: '&lt;u-tabs&gt; <mark data-badge="aria"></mark>', link: '/elements/u-tabs' },
+          { text: '&lt;u-tags&gt; <mark data-badge="pending"></mark>', link: '/elements/u-tags' },
         ]
       }
     ],

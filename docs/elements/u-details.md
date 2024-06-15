@@ -1,3 +1,6 @@
+---
+title: u-details
+---
 <script setup>
 import { data } from '../filesize.data.ts'
 </script>
@@ -48,15 +51,15 @@ bun add -S @u-elements/u-details
 
 ## Attributes
 
-| Attributes `<u-details>` | Description |  Default |
-| - | - | - |
-| [Global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. ||
-| `open` | When the `open` attribute is present, the content is shown. By default this attribute is absent which means the content is hidden. **Note:** Setting `open="false"` will not work as intended, as `open` is a boolean attribute you should provide or remove entirely. | Not present |
-| `name` | Set the same `name` on multiple `<u-details>` to connect them, with only one open at a time. This allows you to easily create UI features such as accordions without scripting.
+| Attributes `<u-details>` | Description |
+| - | - |
+| [All global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. |
+| `open` | When the `open` attribute is present, the content is shown. By default this attribute is absent which means the content is hidden. **Note:** Setting `open="false"` will not work as intended, as `open` is a boolean attribute you should provide or remove entirely. |
+| `name` | Set the same `name` on multiple `<u-details>` to connect them, with only one open at a time. This allows you to easily create UI features such as accordions without scripting. |
 
-| Attributes `<u-summary>` | Description |  Default |
-| - | - | - |
-| [Global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. ||
+| Attributes `<u-summary>` | Description |
+| - | - |
+| [All global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. |
 
 ## Events
 

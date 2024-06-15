@@ -1,3 +1,6 @@
+---
+title: u-datalist
+---
 <script setup>
 import { data } from '../filesize.data.ts'
 </script>
@@ -59,9 +62,9 @@ bun add -S @u-elements/u-datalist
 :::
 
 ## Attributes
-| Attributes `<u-datalist>` | Description |  Default |
-| - | - | - |
-| [Global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. ||
+| Attributes `<u-datalist>` | Description |
+| - | - |
+| [All global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. |
 
 ## Events
 While `<u-datalist>` support all events, *native* datalist does not as it is rendered as part of the browser UI.  Therefore, it's recommended to avoid binding events to `<u-datalist>` or `<u-option>` if you want to ensure native compatibility and future seamless opt-out.
@@ -302,6 +305,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
   &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-progress"&gt;u-progress&lt;/u-option&gt;
   &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-select"&gt;u-select&lt;/u-option&gt;
   &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-tabs"&gt;u-tabs&lt;/u-option&gt;
+  &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-tags"&gt;u-tags&lt;/u-option&gt;
 &lt;/u-datalist&gt;
 &lt;script&gt;
   const input = document.getElementById('my-link-input');

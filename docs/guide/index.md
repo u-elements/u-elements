@@ -9,7 +9,7 @@ You might already know u-elements :tada:
 ## Install
 
 Install the elements you want through `@u-elements/[u-element-name-here]`.
-<br />Refer to the [individual elements](/elements/) for exact install name.
+<br aria-hidden="true" />Refer to the [individual elements](/elements/) for exact install name.
 
 ::: code-group
 
@@ -51,7 +51,7 @@ import '@u-elements/[u-element-name-here]';
 ## Usage
 
 Add a `u-` to the relevant HTML tags in your markup.
-<br />Refer to the [individual elements](/elements/) for supported attributes and Javascript properties.
+<br aria-hidden="true" />Refer to the [individual elements](/elements/) for supported attributes and Javascript properties.
 
 ```html [u-progress]
 <!DOCTYPE html>

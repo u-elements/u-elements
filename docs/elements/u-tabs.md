@@ -1,3 +1,6 @@
+---
+title: u-tabs
+---
 <script setup>
 import { data } from '../filesize.data.ts'
 </script>
@@ -7,7 +10,7 @@ import { data } from '../filesize.data.ts'
 
 **Quick intro:**
 - Use `<u-tabs>` to group all tabbing-elements
-- Use `<u-tab>` around multiple `<u-tab>` direct children - these are the labels
+- Use `<u-tablist>` around multiple `<u-tab>` direct children - these are the labels
 - Use `<u-tab aria-selected="true">` to set the open tab (defaults to first tab)
 - Use `<u-tab aria-controls="id-of-panel">` if you need panels outside `<u-tabs>`
 - Use `<u-tabpanel>`s after  `<u-tablist>` - these hide/show content of related `<u-tab>`
@@ -59,23 +62,48 @@ bun add -S @u-elements/u-tabs
 
 ## Attributes
 
-| Attributes `<u-tabs>` | Description |  Default |
-| - | - | - |
-| [Global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. ||
+| Attributes `<u-tabs>` | Description |
+| - | - |
+| [Global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. |
 
-| Attributes `<u-tablist>` | Description |  Default |
-| - | - | - |
-| [Global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. ||
+| Attributes `<u-tablist>` | Description |
+| - | - |
+| [Global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. |
 
-| Attributes `<u-tab>` | Description |  Default |
-| - | - | - |
-| [Global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. ||
-| `aria-selected` | Specify `"true"` or `"false"` to set tab state | `"false"` |
-| `aria-controls` | Specify id of a `<u-tabpanel>` to control panel regardless of DOM position | |
+| Attributes `<u-tab>` | Description |
+| - | - |
+| [Global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. |
+| `aria-selected` | Specify `"true"` or `"false"` to set tab state. Defaults to `"false"` |
+| `aria-controls` | Specify id of a `<u-tabpanel>` to control panel regardless of DOM position |
 
-| Attributes `<u-tabpanel>` | Description |  Default |
-| - | - | - |
-| [Global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. ||
+| Attributes `<u-tabpanel>` | Description |
+| - | - |
+| [Global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. |
+
+## Properties
+
+| DOM interface `<u-tabs>` | Description |
+| - | - |
+| `UHTMLTabsElement.selectedIndex` | Set or get a `number` reflecting the index of the first selected `<u-tab>` element. Will ignore invalid indexes. |
+| `UHTMLTabsElement.tabList` | An `UHTMLTabListElement` referencing the `<u-tablist>` contained by this element. |
+| `UHTMLTabsElement.tabs` | An `NodeList` of `UHTMLTabElement` elements contained by this element. |
+| `UHTMLTabsElement.panels` | An `NodeList` of `UHTMLTabPanelElement` elements contained by this element. |
+
+| DOM interface `<u-tablist>` | Description |
+| - | - |
+| `UHTMLTabElement.tabsElement` | An `UHTMLTabsElement` associated with this element. |
+
+| DOM interface `<u-tab>` | Description |
+| - | - |
+| `UHTMLTabElement.tabsElement` | An `UHTMLTabsElement` associated with this element. |
+| `UHTMLTabElement.selected` | Set or get `true` or `false`, indicating whether this tab is currently selected. |
+| `UHTMLTabElement.index` | A `number`  representing the position of the option within the list of options it belongs to. |
+| `UHTMLTabElement.panel` | An `UHTMLTabPanelElement` associated with this element. |
+
+| DOM interface `<u-tabpanel>` | Description |
+| - | - |
+| `UHTMLTabPanelElement.tabsElement` | An `UHTMLTabsElement` associated with this element. |
+| `UHTMLTabPanelElement.tabs` | An `NodeList` of `UHTMLTabElement` associated with this element. |
 
 ## Events
 
@@ -168,4 +196,5 @@ document.addEventListener('click', ({ target }) => {
 
 ## Specifications
 
+- DOM interface: [HTMLElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement)
 - ARIA Authoring Practices: [Tabs](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)

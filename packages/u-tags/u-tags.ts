@@ -23,8 +23,8 @@ let FOCUS_NODE: Node | null // Store what node had focus so we can move focus to
 const EVENTS = 'click,change,input,focusin,focusout,keydown'
 const LANG = {
   added: 'Added',
-  delete: 'Press to delete',
-  deleted: 'Deleted',
+  remove: 'Press to remove',
+  removed: 'Removed',
   empty: 'No selected',
   found: 'Navigate left to find %d selected',
   of: 'of'
@@ -51,9 +51,9 @@ export class UHTMLTagsElement extends UHTMLElement {
     )
   }
   connectedCallback() {
+    setTimeout(onMutation, 0, this) // Set initial aria-labels and selected items in u-datalist (after render)
     mutationObserver(this, { childList: true }) // Observe u-datalist to add aria-multiselect="true"
     on(this, EVENTS, this)
-    onMutation(this) // Set initial aria-labels and selected items in u-datalist
   }
   disconnectedCallback() {
     mutationObserver(this, false)
@@ -74,7 +74,9 @@ export class UHTMLTagsElement extends UHTMLElement {
 }
 
 const getText = (el?: Node | null) => el?.textContent?.trim() || ''
-const getInput = (self: UHTMLTagsElement) => self.querySelector('input')
+const getInput = (self: UHTMLTagsElement) =>
+  self.querySelector<HTMLInputElement | HTMLSelectElement>('input,select')
+
 const getChange = (mutations: MutationRecord[] = []) => {
   const diff = mutations.flatMap((m) => [...m.addedNodes, ...m.removedNodes]) // Get all added and removed nodes
   const item = !diff[1] && diff[0] instanceof HTMLDataElement ? diff[0] : null // Only return if single item has changed
@@ -94,7 +96,7 @@ const setLabels = (
   const items = self.items
   const lang = { ...LANG, ...self.dataset }
   const action = itemChanged
-    ? `${itemChanged?.parentNode ? lang.added : lang.deleted} ${getText(itemChanged) || ''}, `
+    ? `${itemChanged?.parentNode ? lang.added : lang.removed} ${getText(itemChanged) || ''}, `
     : ''
 
   if (!self.ariaLabel)
@@ -104,7 +106,7 @@ const setLabels = (
     input.ariaLabel = `${action}${self.ariaLabel}, ${items.length ? lang.found.replace('%d', `${items.length}`) : lang.empty}`
 
   items.forEach((item, index, { length }) => {
-    item.ariaLabel = `${action}${getText(item)}, ${lang.delete}, ${index + 1} ${lang.of} ${length}`
+    item.ariaLabel = `${action}${getText(item)}, ${lang.remove}, ${index + 1} ${lang.of} ${length}`
   })
 }
 
@@ -124,18 +126,19 @@ function onMutation(
 ) {
   const change = self.contains(FOCUS_NODE) ? getChange(event?.detail) : null // Only calculate changes if focus is inside <u-tags>
   const input = getInput(self)
-  const list = input?.list
-  const options = Array.from(list?.options || [])
+  const list = (input as HTMLInputElement)?.list
+  const selected = list ? 'selected' : 'hidden' // Selected if <u-datalist>, hidden if <select>
+  const options = list?.options || (input as HTMLSelectElement)?.options || []
   const values = Array.from(self.items, (item) => {
     item.role = 'button'
     item.tabIndex = -1
-    item.value = item.value || getText(item)
+    if (!item.value) item.value = getText(item)
     return item.value
   })
 
   setLabels(self, change?.item)
   list?.setAttribute(SAFE_MULTISELECTABLE, 'true') // Make <u-datalist> multiselect
-  options.forEach((opt) => (opt.selected = values.includes(opt.value)))
+  Array.from(options, (opt) => (opt[selected] = values.includes(opt.value)))
 
   if (change) {
     const focusNext =
@@ -201,7 +204,7 @@ function onKeyDown(self: UHTMLTagsElement, event: KeyboardEvent) {
   const input = getInput(self)
   const items = [...self.items, input].filter(Boolean)
   const index = items.findIndex((item) => item?.contains(el as Node))
-  const isCaretAtStartOfInput = !input?.selectionEnd
+  const isCaretAtStartOfInput = !(input as HTMLInputElement)?.selectionEnd
   let next = -1
 
   if (index === -1 || (el !== input && asButton(event))) return // No input or item focused or keydown to click on item

@@ -17,13 +17,12 @@ import { data } from '../filesize.data.ts'
 ## Example
 <Sandbox>
 &lt;style&gt;
-  u-option[selected] { text-decoration: underline }
+  u-option[selected] { font-weight: bold }
 &lt;/style&gt;
-&lt;label&gt;
+&lt;label for="my-input"&gt;
   Choose flavour of ice cream
-  &lt;br /&gt;
-  &lt;input type="text" list="my-list" /&gt;
 &lt;/label&gt;
+&lt;input id="my-input" list="my-list" /&gt;
 &lt;u-datalist id="my-list"&gt;
   &lt;u-option&gt;Coconut&lt;/u-option&gt;
   &lt;u-option&gt;Strawberries&lt;/u-option&gt;

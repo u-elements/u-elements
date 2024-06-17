@@ -61,6 +61,7 @@ bun add -S @u-elements/u-details
 ### `<u-summary>`
 
 - **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
+- **DOM interface:** [`HTMLElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement)
 
 ## Events
 

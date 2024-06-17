@@ -8,7 +8,8 @@ in all major browsers and screen readers.
 
 **Quick intro:**
 - Use `<dialog>` to create a modal or non-modal dialog box
-- **MDN Web Docs:** [&lt;dialog&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog)
+- Use `open` attribute to set open state
+- **MDN Web Docs:** [&lt;dialog&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog) ([HTMLDialogElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDialogElement))
 
 ## Example
 <Sandbox>

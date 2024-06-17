@@ -12,7 +12,7 @@ import { data } from '../filesize.data.ts'
 - Use `<u-option>` as direct child elements - these will show the suggestions while typing
 - Use matching `id` on `<u-datalist>` and `list` attribute on `<input>` to connect
 - **Want to show suggestions from a data source?** See [example: API &rarr;](#example-api)
-- **MDN Web Docs:** [&lt;datalist&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist), [&lt;option&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option)
+- **MDN Web Docs:** [&lt;datalist&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist) ([HTMLDatalistElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDatalistElement)) / [&lt;option&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option) ([HTMLOptionElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLOptionElement))
 
 ## Example
 <Sandbox>
@@ -61,10 +61,31 @@ bun add -S @u-elements/u-datalist
 ```
 :::
 
-## Attributes
-| Attributes `<u-datalist>` | Description |
-| - | - |
-| [All global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. |
+## Attributes and props
+
+### `<u-datalist>`
+
+- **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
+  - `id` must be identical to value of `list` attribute on associated `<input>`
+- **DOM interface:** [`HTMLDataListElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDataListElement)
+  - `HTMLDataListElement.options` returns `HTMLCollectionOf<HTMLOptionElement>`
+
+### `<u-option>`
+
+- **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
+  - `disabled` disables and hides the element if present. **Note:** Setting `disabled="false"` will not work as intended, as `disabled` is a boolean attribute you should provide or remove entirely.
+  - `label` label sets text indicating the meaning of the option. If `label` isn't defined, its value is that of the element text content.
+  - `selected` sets option selected state. **Note:** Setting `selected="false"` will not work as intended, as `selected` is a boolean attribute you should provide or remove entirely.
+  - `value` represents the value to be filled into associated `<input>`. If `value` isn't defined, the value is taken from the text content of the option element.
+- **DOM interface:** [`HTMLOptionElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLOptionElement)
+  - `HTMLOptionElement.defaultSelected` returns `true` or `false` indicating state
+  - `HTMLOptionElement.disabled` returns `true` of `false` reflecting the `disabled` attribute
+  - `HTMLOptionElement.form` returns parent `HTMLFormElement`
+  - `HTMLOptionElement.index` returns a `number` representing the position/index within the list of options
+  - `HTMLOptionElement.label` sets or gets `string` of option `label`
+  - `HTMLOptionElement.selected` sets or gets `true` or `false` indicating state
+  - `HTMLOptionElement.text` sets og gets `string` of option text content
+  - `HTMLOptionElement.value` sets og gets `string` of option `value`
 
 ## Events
 While `<u-datalist>` support all events, *native* datalist does not as it is rendered as part of the browser UI.  Therefore, it's recommended to avoid binding events to `<u-datalist>` or `<u-option>` if you want to ensure native compatibility and future seamless opt-out.

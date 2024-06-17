@@ -13,8 +13,8 @@ You can use it to make things like accordions, expandables, FAQs, dropdowns, etc
 - Use `<u-summary>` as a direct child - this is the label
 - Use any other content in `<u-details>` - this will hide/show
 - Use the `open` attribute on `<u-details>` to change state
-- **MDN Web Docs:** [&lt;details&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details),
-[&lt;summary&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/summary)
+- **MDN Web Docs:** [&lt;details&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details) ([HTMLDetailsElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDetailsElement)) /
+[&lt;summary&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/summary) ([HTMLElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement))
 
 ## Example
 <Sandbox>
@@ -49,17 +49,18 @@ bun add -S @u-elements/u-details
 ```
 :::
 
-## Attributes
+## Attributes and props
 
-| Attributes `<u-details>` | Description |
-| - | - |
-| [All global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. |
-| `open` | When the `open` attribute is present, the content is shown. By default this attribute is absent which means the content is hidden. **Note:** Setting `open="false"` will not work as intended, as `open` is a boolean attribute you should provide or remove entirely. |
-| `name` | Set the same `name` on multiple `<u-details>` to connect them, with only one open at a time. This allows you to easily create UI features such as accordions without scripting. |
+### `<u-details>`
 
-| Attributes `<u-summary>` | Description |
-| - | - |
-| [All global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. |
+- **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
+  - `open` shows content if attribute is present. By default this attribute is absent which means the content is hidden. **Note:** Setting `open="false"` will not work as intended, as `open` is a boolean attribute you should provide or remove entirely.
+- **DOM interface:** [`HTMLDetailsElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDetailsElement)
+  - `HTMLDetailsElement.open` returns `true` of `false` reflecting the state
+
+### `<u-summary>`
+
+- **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
 
 ## Events
 

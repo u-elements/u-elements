@@ -12,7 +12,7 @@ import { data } from '../filesize.data.ts'
 - Use the `max` attribute to change the amount of total work to be done
 - Use the `value` attribute to change the amount of completed work
 - Remove the `value` attribute to change to indeterminate/unknown amount of work
-- **MDN Web Docs:** [&lt;progress&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/progress)
+- **MDN Web Docs:** [&lt;progress&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/progress) ([HTMLProgressElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLProgressElement))
 
 ## Example
 <Sandbox>
@@ -45,13 +45,18 @@ bun add -S @u-elements/u-progress
 ```
 :::
 
-## Attributes
+## Attributes and props
 
-| Attributes `<u-progress>` | Description |
-| - | - |
-| [All global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. |
-| `max` | Amount of total work to be done. Must be a valid number greater than `0`. Defaults to `1` |
-| `value` | Amount of completed work. If present, `value` must be a valid number between `0` and `max`. If there is no `value` attribute, the progress bar is indeterminate; indicating work is being done, but withouth knowing of how long it will take. |
+### `<u-progress>`
+
+- **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
+  - `max` can contain amount of total work to be done. Must be a valid number greater than 0. Defaults to 1.
+  - `value` can contain amount of completed work. If present, `value` must be a valid number between 0 and `max`. If there is no `value` attribute, the progress bar is indeterminate; indicating work is being done, but withouth knowing of how long it will take.
+- **DOM interface:** [`HTMLProgressElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLProgressElement)
+  - `HTMLProgressElement.max` returns `number` reflecting `max` attribute
+  - `HTMLProgressElement.position` returns `number` between 0 and 1 reflecting the calculation `value / max`
+  - `HTMLProgressElement.value` returns `number` reflecting `value` value attribute
+  - `HTMLProgressElement.labels` returns `NodeListOf<HTMLLabelElement>`
 
 ## Styling
 

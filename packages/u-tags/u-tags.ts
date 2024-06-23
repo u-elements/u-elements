@@ -1,5 +1,6 @@
 import {
   FOCUS_OUTLINE,
+  IS_ANDROID,
   IS_FIREFOX,
   SAFE_MULTISELECTABLE,
   UHTMLElement,
@@ -16,6 +17,9 @@ declare global {
   interface HTMLElementTagNameMap {
     'u-tags': UHTMLTagsElement
   }
+  interface GlobalEventHandlersEventMap {
+    tags: CustomEvent<HTMLDataElement>
+  }
 }
 
 let BLUR_TIMER: ReturnType<typeof setTimeout>
@@ -30,8 +34,9 @@ const LANG = {
   of: 'of'
 }
 
+// TODO: Announce create item Firefox
+// TODO: What to include in dispatchChange detail?
 // TODO KRISTOFFER: Announce datalist items count on type?
-// TODO KRISTOFFER: What to include in dispatchChange detail?
 
 /**
  * The `<u-tags>` HTML element contains a set of `<data>` elements.
@@ -99,9 +104,7 @@ const setLabels = (
     ? `${itemChanged?.parentNode ? lang.added : lang.removed} ${getText(itemChanged) || ''}, `
     : ''
 
-  if (!self.ariaLabel)
-    self.ariaLabel = getText(getRoot(self).querySelector(`[for="${self.id}"]`))
-
+  self.ariaLabel = getText(getRoot(self).querySelector(`[for="${self.id}"]`))
   if (input)
     input.ariaLabel = `${action}${self.ariaLabel}, ${items.length ? lang.found.replace('%d', `${items.length}`) : lang.empty}`
 
@@ -117,7 +120,7 @@ const isMouseInside = (el: Element, { clientX: x, clientY: y }: MouseEvent) => {
 
 const dispatchChange = (self: UHTMLTagsElement, item: HTMLDataElement) =>
   self.dispatchEvent(
-    new CustomEvent('change', { bubbles: true, cancelable: true, detail: item })
+    new CustomEvent('tags', { bubbles: true, cancelable: true, detail: item })
   )
 
 function onMutation(
@@ -141,6 +144,8 @@ function onMutation(
   Array.from(options, (opt) => (opt[selected] = values.includes(opt.value)))
 
   if (change) {
+    const isDesktopFirefox = IS_FIREFOX && !IS_ANDROID
+    const focusPrev = getRoot(self).activeElement
     const focusNext =
       (FOCUS_NODE === input && input) ||
       (change?.item?.parentNode && change.item) ||
@@ -151,9 +156,12 @@ function onMutation(
     // NOTE: VoiceOver iOS in will start announcing selected u-option, before moving focus to the input.
     // This is still a better user experience than keeping focus on the u-option as input is cleared
     // and the user gets information about wether the action was remove or add
-    setTimeout(() => focusNext?.focus(), 100) // 100ms delay so VoiceOver + Chrome announces new ariaLabel
+    if (focusNext === input) {
+      if (focusPrev === input) self.items[0]?.focus() // Move focus temporarily so we get ariaLabel change announced
+      setTimeout(() => focusNext?.focus(), 100) // 100ms delay so VoiceOver + Chrome announces new ariaLabel
+    } else focusNext?.focus() // Set focus to button right away to make NVDA happy
     setTimeout(() => {
-      if (!IS_FIREFOX) return setLabels(self) // FireFox announces ariaLabel changes
+      if (!isDesktopFirefox) return setLabels(self) // FireFox desktop announces ariaLabel changes
       on(self, 'focusout', () => setLabels(self), { once: true }) //...so we rather remove on blur
     }, 500)
   }

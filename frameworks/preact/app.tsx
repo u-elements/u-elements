@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import ReactDOM from 'react-dom/client'
-// import { render } from 'react-dom' // For React 16.8
+import { useRef, useState } from 'preact/hooks'
+import { render } from 'preact'
 import type { UHTMLTagsElement } from '../../packages/u-tags'
 import '../../packages/u-progress'
 import '../../packages/u-datalist'
@@ -11,17 +10,9 @@ export default function App() {
   const [value, setValue] = useState('')
   const ref = useRef<UHTMLTagsElement>(null);
 
-  useEffect(() => {
-    const self = ref.current
-    const onTags = (event: GlobalEventHandlersEventMap['tags']) => console.log(event.detail)
-
-    self?.addEventListener('tags', onTags)
-    return () => self?.removeEventListener('tags', onTags)
-  }, []);
-
   return (
     <div>
-      <h1>React + u-elements</h1>
+      <h1>Preact + u-elements</h1>
       <button onClick={() => setCount((count) => count + 1)}>
         count is {count}
       </button>
@@ -35,7 +26,7 @@ export default function App() {
         <u-option value="test-2">Test 2</u-option>
         <u-option value="test-3">Test 3</u-option>
       </u-datalist>
-      <u-tags ref={ref}>
+      <u-tags ref={ref} ontags={console.log}>
         <data>Kokkos</data>
         <data>Banan</data>
         <data>Jordbær</data>
@@ -45,7 +36,4 @@ export default function App() {
   )
 }
 
-// @ts-ignore
-const mount = window.mount = window.mount || ReactDOM.createRoot(document.getElementById('root')!)
-mount.render(<App />)
-// render(<App />, document.getElementById('root')!); // For React 16.8
+render(<App />, document.getElementById('root')!)

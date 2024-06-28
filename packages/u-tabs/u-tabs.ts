@@ -35,8 +35,7 @@ export class UHTMLTabsElement extends UHTMLElement {
     return queryWithoutNested('u-tablist', this)[0] || null
   }
   get selectedIndex(): number {
-    // Check with real attribute (not .selected) as UHTMLTabElement instance might not be created yet
-    return [...this.tabs].findIndex((tab) => tab.ariaSelected === 'true')
+    return getSelectedIndex(this.tabs)
   }
   set selectedIndex(index: number) {
     if (this.tabs[index]) this.tabs[index].ariaSelected = 'true'
@@ -68,29 +67,45 @@ export class UHTMLTabListElement extends UHTMLElement {
   handleEvent(event: Event) {
     const { key } = event as KeyboardEvent
     const tabs = [...this.getElementsByTagName('u-tab')]
-    let index = tabs.findIndex((tab) => tab.contains(event.target as Node))
+    const prev = tabs.findIndex((tab) => tab.contains(event.target as Node))
+    let next = prev
 
-    if (event.defaultPrevented || index === -1) return // Event pevented or not a tab
-    if (event.type === 'click') tabs[index].selected = true
+    if (event.defaultPrevented || prev === -1) return // Event pevented or not a tab
+    if (event.type === 'click') tabs[prev].selected = true
     if (event.type === 'keydown' && !asButton(event)) {
       if (key === 'ArrowDown' || key === 'ArrowRight')
-        index = ++index % tabs.length
+        next = (prev + 1) % tabs.length
       else if (key === 'ArrowUp' || key === 'ArrowLeft')
-        index = (index || tabs.length) - 1
-      else if (key === 'End') index = tabs.length - 1
-      else if (key === 'Home') index = 0
+        next = (prev || tabs.length) - 1
+      else if (key === 'End') next = tabs.length - 1
+      else if (key === 'Home') next = 0
+      else if (key === 'Tab') next = getSelectedIndex(tabs)
       else return // Do not hijack other keys
-      event.preventDefault() // Prevent scroll
-      tabs[index].focus()
+
+      setTimeout(() => {
+        tabs[prev].tabIndex = -1
+        tabs[next].tabIndex = 0
+      }) // Change tabIndex after event has run to make sure Tab works as expected
+
+      if (key !== 'Tab') {
+        event.preventDefault() // Prevent scroll
+        tabs[next].focus()
+      }
     }
   }
   get tabsElement(): UHTMLTabsElement | null {
     return this.closest('u-tabs')
   }
+  get tabs(): NodeListOf<UHTMLTabElement> {
+    return queryWithoutNested('u-tab', this)
+  }
+  get selectedIndex(): number {
+    return getSelectedIndex(this.tabs)
+  }
+  set selectedIndex(index: number) {
+    if (this.tabs[index]) this.tabs[index].ariaSelected = 'true'
+  }
 }
-
-// Speed up by not triggering attributeChangedCallback during attributeChangedCallback
-let SKIP_ATTR_CHANGE = false
 
 /**
  * The `<u-tab>` HTML element is an interactive element inside a `<u-tablist>` that, when activated, displays its associated `<u-tabpanel>`.
@@ -106,38 +121,44 @@ export class UHTMLTabElement extends UHTMLElement {
     )
   }
   connectedCallback() {
-    this.selected = !!this.selected // Ensure selected is set (which also triggers attributeChangedCallback)
+    const selected =
+      this.selected ||
+      [...queryWithoutNested('u-tab', this.tabList || this)].every(
+        (tab) => tab.ariaSelected !== 'true'
+      ) // If no tabs are selected, select this one
+
+    this.role = 'tab'
+    this.tabIndex = selected ? 0 : -1
+    this.ariaSelected = `${selected}`
   }
-  attributeChangedCallback(_name: string, prev: string, next: string) {
-    if (!SKIP_ATTR_CHANGE && prev !== next && (SKIP_ATTR_CHANGE = true)) {
-      const { tabs = [], panels = [], selectedIndex } = this.tabsElement || {}
-      const selected = this.selected ? this : tabs[selectedIndex || 0] || this // Ensure always one selected tab
-      let selectedPanel: HTMLElement
+  attributeChangedCallback(name: string, prev: string) {
+    if (!this.selected) return // Speed up by only updating attributes if selected
+    const nextPanel = getPanel(this)
+    const nextPanelId = useId(nextPanel)
 
-      // Reset all panels in case changing aria-controls
-      panels.forEach((panel) => {
-        panel.removeAttribute(SAFE_LABELLEDBY)
-        panel.hidden = true
+    // Unselect previous tab
+    if (this.tabList)
+      queryWithoutNested('u-tab', this.tabList).forEach((tab) => {
+        const isUnselect = tab !== this && tab.ariaSelected === 'true'
+        const prevPanel = isUnselect && getPanel(tab)
+
+        if (prevPanel && prevPanel !== nextPanel) prevPanel.hidden = true
+        if (isUnselect) {
+          tab.ariaSelected = 'false'
+          tab.tabIndex = -1
+        }
       })
 
-      // Ensure correct state by always looping all tabs
-      tabs.forEach((tab, index) => {
-        const panel = getPanel(tab) || panels[index] || null // Does not use tab.panel as UHTMLTabElement instance might not be created yet
-        if (selected === tab && panel) selectedPanel = panel // Store selectedPanel as multiple tabs can point to same panel
+    // Hide previous panel if changing aria-controls
+    if (name === ARIA_CONTROLS) getPanel(this, prev)?.setAttribute('hidden', '')
 
-        tab.role = 'tab'
-        tab.tabIndex = selected === tab ? 0 : -1
-        tab.ariaSelected = `${selected === tab}`
-        tab.setAttribute(ARIA_CONTROLS, useId(panel))
-        panel?.toggleAttribute('hidden', selectedPanel !== panel)
-        panel?.setAttribute(
-          SAFE_LABELLEDBY,
-          useId(selectedPanel === panel ? selected : tab)
-        )
-      })
+    // Only set aria-controls if needed to prevent infinite loop
+    if (this.getAttribute(ARIA_CONTROLS) !== nextPanelId)
+      this.setAttribute(ARIA_CONTROLS, nextPanelId)
 
-      SKIP_ATTR_CHANGE = false
-    }
+    this.tabIndex = 0
+    nextPanel?.setAttribute(SAFE_LABELLEDBY, useId(this))
+    nextPanel?.removeAttribute('hidden')
   }
   get tabsElement(): UHTMLTabsElement | null {
     return this.closest('u-tabs')
@@ -149,11 +170,12 @@ export class UHTMLTabElement extends UHTMLElement {
     return this.ariaSelected === 'true'
   }
   set selected(value: boolean) {
-    this.ariaSelected = `${value}`
+    this.ariaSelected = `${!!value}`
   }
   /** Retrieves the ordinal position of an tab in a tablist. */
   get index(): number {
-    return Array.from(this.tabsElement?.tabs || []).indexOf(this)
+    const tabList = this.tabList
+    return tabList ? [...queryWithoutNested('u-tab', tabList)].indexOf(this) : 0 // Fallback to 0 complies with HTMLOptionElement spesification
   }
   get panel(): UHTMLTabPanelElement | null {
     return getPanel(this)
@@ -165,24 +187,22 @@ export class UHTMLTabElement extends UHTMLElement {
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/tabpanel_role)
  */
 export class UHTMLTabPanelElement extends UHTMLElement {
-  static observedAttributes = ['id']
   constructor() {
     super()
     attachStyle(this, DISPLAY_BLOCK)
   }
   connectedCallback() {
+    // Check with real attribute (not .selected) as UHTMLTabElement instance might not be created yet
+    this.hidden = [...this.tabs].every((tab) => tab.ariaSelected !== 'true')
     this.role = 'tabpanel'
-    this.hidden = Array.from(this.tabs).every((tab) => !tab.selected) // Hide if not connected to tab
-  }
-  attributeChangedCallback(_name: string, prev: string, next: string) {
-    if (SKIP_ATTR_CHANGE || prev === next) return
-    getTabs(this, prev).forEach((tab) => tab.setAttribute(ARIA_CONTROLS, next))
   }
   get tabsElement(): UHTMLTabsElement | null {
     return this.closest('u-tabs')
   }
   get tabs(): NodeListOf<UHTMLTabElement> {
-    return getTabs(this, this.id)
+    const css = `u-tab[${ARIA_CONTROLS}="${this.id}"]`
+    const root = getRoot(this).querySelectorAll<UHTMLTabElement>(css)
+    return root.length ? root : document.querySelectorAll<UHTMLTabElement>(css)
   }
 }
 
@@ -191,22 +211,30 @@ const queryWithoutNested = <TagName extends keyof HTMLElementTagNameMap>(
   tag: TagName,
   self: Element
 ): NodeListOf<HTMLElementTagNameMap[TagName]> => {
-  const selector = `${tag}:not(:scope ${self.nodeName}:not(:scope) ${tag})`
-  return self.querySelectorAll(selector)
+  const css = `${tag}:not(:scope ${self.nodeName}:not(:scope) ${tag})`
+  return self.querySelectorAll(css)
 }
 
-// Needs to be a utility function so it can be used independendtly from Element life cycle
-// Querys elements both inside ShadowRoot and in document just incase trying to access outside shadowRoot elements
-const getPanel = (self: Element): UHTMLTabPanelElement | null => {
-  const css = `u-tabpanel[id="${self.getAttribute(ARIA_CONTROLS)}"]`
-  return getRoot(self).querySelector(css) || document.querySelector(css)
-}
+const getSelectedIndex = (tabs: Iterable<UHTMLTabElement>) =>
+  [...tabs].findIndex((tab) => tab.ariaSelected === 'true')
 
-// Needs to be a utility function so it can be used independendtly from Element life cycle
-// Querys elements both inside ShadowRoot and in document just incase trying to access outside shadowRoot elements
-const getTabs = (self: Element, id: string): NodeListOf<UHTMLTabElement> => {
-  const css = `u-tab[${ARIA_CONTROLS}="${id}"]`
-  return getRoot(self).querySelectorAll(css)
+const getPanel = (
+  self: UHTMLTabElement,
+  id?: string
+): UHTMLTabPanelElement | null => {
+  const css = `u-tabpanel[id="${id || self.getAttribute(ARIA_CONTROLS)}"]`
+  const tabsElement = self.closest('u-tabs')
+
+  // If no panels was found, but we have a tabsElement, lets find relevant panel based on index
+  return (
+    getRoot(self).querySelector(css) ||
+    document.querySelector(css) ||
+    (tabsElement &&
+      queryWithoutNested('u-tabpanel', tabsElement)[
+        [...queryWithoutNested('u-tab', tabsElement)].indexOf(self)
+      ]) ||
+    null
+  )
 }
 
 customElements.define('u-tabs', UHTMLTabsElement)

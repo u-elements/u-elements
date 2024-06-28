@@ -29,9 +29,9 @@ import { data } from '../filesize.data.ts'
     &lt;u-tab&gt;Tab 2&lt;/u-tab&gt;
     &lt;u-tab&gt;Tab 3&lt;/u-tab&gt;
   &lt;/u-tablist&gt;
-  &lt;u-tabpanel&gt;Panel 1&lt;/u-tabpanel&gt;
-  &lt;u-tabpanel&gt;Panel 2&lt;/u-tabpanel&gt;
-  &lt;u-tabpanel&gt;Panel 3&lt;/u-tabpanel&gt;
+  &lt;u-tabpanel&gt;Panel 1 with &lt;a href="#"&gt;link&lt;/a&gt;&lt;/u-tabpanel&gt;
+  &lt;u-tabpanel&gt;Panel 2 with &lt;a href="#"&gt;link&lt;/a&gt;&lt;/u-tabpanel&gt;
+  &lt;u-tabpanel&gt;Panel 3 with &lt;a href="#"&gt;link&lt;/a&gt;&lt;/u-tabpanel&gt;
 &lt;/u-tabs&gt;
 </Sandbox>
 
@@ -66,8 +66,8 @@ bun add -S @u-elements/u-tabs
 
 - **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
 - **DOM interface:** `UHTMLTabsElement` extends [`HTMLElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement)
-  - `UHTMLTabsElement.selectedIndex` sets or gets a `number` reflecting the index of the first selected `<u-tab>` element. Will ignore invalid indexes.
   - `UHTMLTabsElement.tabList` returns the contained `UHTMLTabListElement`
+  - `UHTMLTabsElement.selectedIndex` sets or gets a `number` reflecting the index of the first selected `<u-tab>` element. Will ignore invalid indexes.
   - `UHTMLTabsElement.tabs` returns a `NodeListOf<UHTMLTabElement>`
   - `UHTMLTabsElement.panels` returns a `NodeListOf<UHTMLTabPanelElement>`
 
@@ -75,6 +75,8 @@ bun add -S @u-elements/u-tabs
 - **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
 - **DOM interface:** `UHTMLTabListElement` extends [`HTMLElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement)
   - `UHTMLTabListElement.tabsElement` returns the parent `UHTMLTabsElement`
+  - `UHTMLTabsElement.selectedIndex` sets or gets a `number` reflecting the index of the first selected `<u-tab>` element. Will ignore invalid indexes.
+  - `UHTMLTabsElement.tabs` returns a `NodeListOf<UHTMLTabElement>`
 
 ### `<u-tab>`
 - **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`

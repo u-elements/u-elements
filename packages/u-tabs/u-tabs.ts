@@ -123,34 +123,33 @@ export class UHTMLTabElement extends UHTMLElement {
   connectedCallback() {
     const selected =
       this.selected ||
-      [...queryWithoutNested('u-tab', this.tabList || this)].every(
-        (tab) => tab.ariaSelected !== 'true'
-      ) // If no tabs are selected, select this one
+      ![...queryWithoutNested('u-tab', this.tabList || this)].some(isSelected) // If no tabs are selected, select this one
 
     this.role = 'tab'
     this.tabIndex = selected ? 0 : -1
     this.ariaSelected = `${selected}`
+
+    if (!this.hasAttribute(ARIA_CONTROLS))
+      this.setAttribute(ARIA_CONTROLS, useId(getPanel(this)))
   }
   attributeChangedCallback(name: string, prev: string) {
     if (!this.selected) return // Speed up by only updating attributes if selected
     const nextPanel = getPanel(this)
     const nextPanelId = useId(nextPanel)
 
-    // Unselect previous tab
-    if (this.tabList)
+    // Unselect previous tab if changing aria-selected
+    if (name === 'aria-selected' && this.tabList)
       queryWithoutNested('u-tab', this.tabList).forEach((tab) => {
-        const isUnselect = tab !== this && tab.ariaSelected === 'true'
-        const prevPanel = isUnselect && getPanel(tab)
-
-        if (prevPanel && prevPanel !== nextPanel) prevPanel.hidden = true
-        if (isUnselect) {
+        if (tab !== this && isSelected(tab)) {
+          getPanel(tab)?.setAttribute('hidden', '')
           tab.ariaSelected = 'false'
           tab.tabIndex = -1
         }
       })
 
     // Hide previous panel if changing aria-controls
-    if (name === ARIA_CONTROLS) getPanel(this, prev)?.setAttribute('hidden', '')
+    if (name === ARIA_CONTROLS && prev)
+      getPanel(this, prev)?.setAttribute('hidden', '')
 
     // Only set aria-controls if needed to prevent infinite loop
     if (this.getAttribute(ARIA_CONTROLS) !== nextPanelId)
@@ -167,7 +166,7 @@ export class UHTMLTabElement extends UHTMLElement {
     return this.closest('u-tablist')
   }
   get selected(): boolean {
-    return this.ariaSelected === 'true'
+    return isSelected(this)
   }
   set selected(value: boolean) {
     this.ariaSelected = `${!!value}`
@@ -192,8 +191,7 @@ export class UHTMLTabPanelElement extends UHTMLElement {
     attachStyle(this, DISPLAY_BLOCK)
   }
   connectedCallback() {
-    // Check with real attribute (not .selected) as UHTMLTabElement instance might not be created yet
-    this.hidden = [...this.tabs].every((tab) => tab.ariaSelected !== 'true')
+    this.hidden = getSelectedIndex(this.tabs) === -1
     this.role = 'tabpanel'
   }
   get tabsElement(): UHTMLTabsElement | null {
@@ -215,8 +213,9 @@ const queryWithoutNested = <TagName extends keyof HTMLElementTagNameMap>(
   return self.querySelectorAll(css)
 }
 
+const isSelected = (tab: UHTMLTabElement) => tab.ariaSelected === 'true'
 const getSelectedIndex = (tabs: Iterable<UHTMLTabElement>) =>
-  [...tabs].findIndex((tab) => tab.ariaSelected === 'true')
+  [...tabs].findIndex(isSelected)
 
 const getPanel = (
   self: UHTMLTabElement,

@@ -1,6 +1,7 @@
 import {
   FOCUS_OUTLINE,
   IS_ANDROID,
+  IS_BROWSER,
   IS_FIREFOX,
   SAFE_MULTISELECTABLE,
   UHTMLElement,
@@ -10,7 +11,8 @@ import {
   getRoot,
   mutationObserver,
   off,
-  on
+  on,
+  useId
 } from '../utils'
 
 declare global {
@@ -25,7 +27,7 @@ declare global {
 let BLUR_TIMER: ReturnType<typeof setTimeout>
 let FOCUS_NODE: Node | null // Store what node had focus so we can move focus to relevant element on delete
 const EVENTS = 'click,change,input,focusin,focusout,keydown'
-const LANG = {
+const TEXTS = {
   added: 'Added',
   remove: 'Press to remove',
   removed: 'Removed',
@@ -76,7 +78,23 @@ export class UHTMLTagsElement extends UHTMLElement {
   get items(): NodeListOf<HTMLDataElement> {
     return this.querySelectorAll('data')
   }
+  get labels(): NodeListOf<HTMLLabelElement> {
+    // Note: <label for=""> should point to <u-tags> instead of <input>,
+    // since label pointing to the input overwrites input's aria-label in Firefox
+    return getRoot(this).querySelectorAll<HTMLLabelElement>(
+      `label[for="${useId(this)}"]`
+    )
+  }
 }
+
+// Forward click on label to u-tags input
+if (IS_BROWSER)
+  document.addEventListener('click', ({ target }) => {
+    const label = target instanceof Element && target.closest('label')?.htmlFor
+    const utags = label && document.getElementById(label)
+
+    if (utags instanceof UHTMLTagsElement) getInput(utags)?.focus()
+  })
 
 const getText = (el?: Node | null) => el?.textContent?.trim() || ''
 const getInput = (self: UHTMLTagsElement) =>
@@ -97,19 +115,19 @@ const setLabels = (
   self: UHTMLTagsElement,
   itemChanged?: HTMLDataElement | null
 ) => {
-  const input = getInput(self)
   const items = self.items
-  const lang = { ...LANG, ...self.dataset }
+  const input = getInput(self)
+  const texts = { ...TEXTS, ...self.dataset }
   const action = itemChanged
-    ? `${itemChanged?.parentNode ? lang.added : lang.removed} ${getText(itemChanged) || ''}, `
+    ? `${itemChanged?.parentNode ? texts.added : texts.removed} ${getText(itemChanged) || ''}, `
     : ''
 
-  self.ariaLabel = getText(getRoot(self).querySelector(`[for="${self.id}"]`))
+  self.ariaLabel = getText(self.labels[0])
   if (input)
-    input.ariaLabel = `${action}${self.ariaLabel}, ${items.length ? lang.found.replace('%d', `${items.length}`) : lang.empty}`
+    input.ariaLabel = `${action}${self.ariaLabel}, ${items.length ? texts.found.replace('%d', `${items.length}`) : texts.empty}`
 
   items.forEach((item, index, { length }) => {
-    item.ariaLabel = `${action}${getText(item)}, ${lang.remove}, ${index + 1} ${lang.of} ${length}`
+    item.ariaLabel = `${action}${getText(item)}, ${texts.remove}, ${index + 1} ${texts.of} ${length}`
   })
 }
 
@@ -157,9 +175,12 @@ function onMutation(
     // This is still a better user experience than keeping focus on the u-option as input is cleared
     // and the user gets information about wether the action was remove or add
     if (focusNext === input) {
-      if (focusPrev === input) self.items[0]?.focus() // Move focus temporarily so we get ariaLabel change announced
+      if (focusPrev === input && input instanceof HTMLInputElement)
+        input.list?.options[0]?.focus() // Move focus temporarily so we get ariaLabel change announced
+
       setTimeout(() => focusNext?.focus(), 100) // 100ms delay so VoiceOver + Chrome announces new ariaLabel
     } else focusNext?.focus() // Set focus to button right away to make NVDA happy
+
     setTimeout(() => {
       if (!isDesktopFirefox) return setLabels(self) // FireFox desktop announces ariaLabel changes
       on(self, 'focusout', () => setLabels(self), { once: true }) //...so we rather remove on blur

@@ -68,7 +68,9 @@ export class UHTMLProgressElement extends UHTMLElement {
     const id = useId(this)
 
     if (label) label.htmlFor = id // Set for of parent label to include it in returned NodeList
-    const el = getRoot(this).querySelectorAll<HTMLLabelElement>(`[for="${id}"]`)
+    const el = getRoot(this).querySelectorAll<HTMLLabelElement>(
+      `label[for="${id}"]`
+    )
     return el
   }
   get position(): number {

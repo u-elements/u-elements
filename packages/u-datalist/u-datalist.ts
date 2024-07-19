@@ -26,10 +26,9 @@ let IS_PRESS = false
 let BLUR_TIMER: ReturnType<typeof setTimeout>
 const EVENTS = 'click,focusout,input,keydown,pointerdown,pointerup'
 
-// Store map of [u-datalist] => [related input] to speed up and prevent double focus
-const activeInput = new WeakMap<UHTMLDataListElement, HTMLInputElement>()
-const connectedRoot = new WeakMap<UHTMLDataListElement, Document | ShadowRoot>()
-const filterValue = new WeakMap<UHTMLDataListElement, string>()
+const activeInput = new WeakMap<UHTMLDataListElement, HTMLInputElement>() // Store map of [u-datalist] => [related input] to speed up and prevent double focus
+const connectedRoot = new WeakMap<UHTMLDataListElement, Document | ShadowRoot>() // Store connectedRoot to unbind
+const filterValue = new WeakMap<UHTMLDataListElement, string>() // Store sanitized value to speed up option filtering
 
 /**
  * The `<u-datalist>` HTML element contains a set of `<u-option>` elements that represent the permissible or recommended options available to choose from within other controls.
@@ -156,10 +155,6 @@ function onFocusOut(self: UHTMLDataListElement) {
 function onClick(self: UHTMLDataListElement, { target }: Event) {
   const input = getInput(self)
   const option = [...self.options].find((opt) => opt.contains(target as Node))
-  const value = Object.getOwnPropertyDescriptor(
-    HTMLInputElement.prototype,
-    'value'
-  )
 
   if (input === target)
     setExpanded(self, true) // Click on input should always open datalist
@@ -170,9 +165,16 @@ function onClick(self: UHTMLDataListElement, { target }: Event) {
       else if (isSingle) opt.selected = false // Ensure single selected
     })
 
-    value?.set?.call(input, option.value) // Trigger value change - also React compatible
-    if (isSingle) input.focus() // Change input.value before focus move to make screen reader read the correct value
-    if (isSingle) setExpanded(self, false) // Click on single select option shold always close datalist
+    // Trigger value change in React compatible manor https://stackoverflow.com/a/46012210
+    Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      'value'
+    )?.set?.call(input, option.value)
+
+    if (isSingle) {
+      input.focus() // Change input.value before focus move to make screen reader read the correct value
+      setExpanded(self, false) // Click on single select option shold always close datalist
+    }
 
     // Trigger input.value change events
     input.dispatchEvent(new Event('input', { bubbles: true, composed: true }))
@@ -182,11 +184,10 @@ function onClick(self: UHTMLDataListElement, { target }: Event) {
 
 function onKeyDown(self: UHTMLDataListElement, event: KeyboardEvent) {
   if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
-
-  const { key } = event
-  if (key !== 'Escape') setExpanded(self, true) // Open if not ESC, before checking visible options
+  if (event.key !== 'Escape') setExpanded(self, true) // Open if not ESC, open before checking visible options
 
   // Checks disabled or visibility (since hidden attribute can be overwritten by display: block)
+  const { key } = event
   const active = getConnectedRoot(self).activeElement
   const options = [...self.options].filter(
     (opt) => !opt.disabled && opt.offsetWidth && opt.offsetHeight // Only include enabled, visible options
@@ -205,7 +206,7 @@ function onKeyDown(self: UHTMLDataListElement, event: KeyboardEvent) {
     }
   }
 
-  ;(options[next] || getInput(self))?.focus()
+  ;(options[next] || getInput(self))?.focus() // Move focus to next option or input
   if (options[next]) event.preventDefault() // Prevent scroll when on option
 
   // Close on ESC, after moving focus

@@ -43,10 +43,12 @@ export class UHTMLDetailsElement extends UHTMLElement {
   }
   connectedCallback() {
     on(this.#content, 'beforematch', this) // Open if browsers Find in page reveals content
+    on(this, 'click,keydown', this)
     this.attributeChangedCallback() // We now know the element is in the DOM, so run a attribute setup
   }
   disconnectedCallback() {
     off(this.#content, 'beforematch', this)
+    off(this, 'click,keydown', this)
   }
   attributeChangedCallback(prop?: string, prev?: string, next?: string) {
     const hide = 'onbeforematch' in this ? 'until-found' : true // Use "until-found" if supported
@@ -76,8 +78,14 @@ export class UHTMLDetailsElement extends UHTMLElement {
     if (prop === OPEN && (prev === null) !== (next === null))
       this.dispatchEvent(new Event('toggle'))
   }
-  handleEvent({ type }: Event) {
-    if (type === 'beforematch') this[OPEN] = true
+  handleEvent(event: Event) {
+    const summary = this.querySelector('u-summary')
+    const isSummary = summary?.contains(event.target as Node)
+
+    if (event.defaultPrevented) return // Allow all events to be canceled
+    if (event.type === 'beforematch') this[OPEN] = true
+    if (isSummary && event.type === 'keydown') asButton(event)
+    if (isSummary && event.type === 'click') this[OPEN] = !this[OPEN]
   }
   get open(): boolean {
     return this.hasAttribute('open')
@@ -102,16 +110,6 @@ export class UHTMLSummaryElement extends UHTMLElement {
     this.role = 'button'
     this.slot = 'summary'
     this.tabIndex = 0
-    on(this, 'click,keydown', this)
-  }
-  disconnectedCallback() {
-    off(this, 'click,keydown', this)
-  }
-  handleEvent(event: CustomEvent) {
-    const details = this.parentElement
-    if (event.type === 'keydown') asButton(event)
-    if (event.type === 'click' && details instanceof UHTMLDetailsElement)
-      details[OPEN] = !details[OPEN]
   }
 }
 

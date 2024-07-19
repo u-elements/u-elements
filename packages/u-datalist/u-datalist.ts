@@ -25,9 +25,15 @@ declare global {
 let IS_PRESS = false
 let BLUR_TIMER: ReturnType<typeof setTimeout>
 const EVENTS = 'click,focusout,input,keydown,pointerdown,pointerup'
+const ARIA_LIVE =
+  IS_BROWSER &&
+  Object.assign(document.createElement('div'), {
+    ariaLive: 'polite',
+    style: 'position:fixed;overflow:hidden;width:1px;white-space:nowrap'
+  })
 
 const activeInput = new WeakMap<UHTMLDataListElement, HTMLInputElement>() // Store map of [u-datalist] => [related input] to speed up and prevent double focus
-const connectedRoot = new WeakMap<UHTMLDataListElement, Document | ShadowRoot>() // Store connectedRoot to unbind
+const connectedRoot = new WeakMap<UHTMLDataListElement, Document | ShadowRoot>() // Store connectedRoot to unbind correct root, as root can change during lifespan
 const filterValue = new WeakMap<UHTMLDataListElement, string>() // Store sanitized value to speed up option filtering
 
 /**
@@ -39,7 +45,7 @@ export class UHTMLDataListElement extends UHTMLElement {
     super()
     attachStyle(
       this,
-      `${DISPLAY_BLOCK}::slotted(u-option[disabled]) { display: none !important }` // Hide options that are disabled
+      `${DISPLAY_BLOCK}::slotted(u-option[disabled]) { display: none !important }` // Hide disabled options
     )
   }
   connectedCallback() {
@@ -56,7 +62,7 @@ export class UHTMLDataListElement extends UHTMLElement {
     off(root, 'focusin', this)
     off(root, 'focus', this, true)
     disconnectInput(this)
-    connectedRoot.delete(this)
+    connectedRoot.delete(this) // Must run after disconnectInput
   }
   handleEvent(event: Event) {
     const { type } = event
@@ -79,6 +85,7 @@ const getConnectedRoot = (self: UHTMLDataListElement) =>
 
 const getInput = (self: UHTMLDataListElement) => activeInput.get(self)
 const disconnectInput = (self: UHTMLDataListElement) => {
+  if (ARIA_LIVE) ARIA_LIVE.remove()
   off(getConnectedRoot(self), EVENTS, self)
   mutationObserver(self, false)
   setExpanded(self, false)
@@ -86,11 +93,17 @@ const disconnectInput = (self: UHTMLDataListElement) => {
   filterValue.delete(self)
 }
 
+const getVisibleOptions = (self: UHTMLDataListElement) =>
+  [...self.options].filter(
+    (opt) => !opt.disabled && opt.offsetWidth && opt.offsetHeight // Checks disabled or visibility (since hidden attribute can be overwritten by display: block)
+  )
+
 const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
   const input = getInput(self)
-  if (open) setupOptions(self) // Esure correct state when opening in input.value has changed
-  if (input) input.ariaExpanded = `${open}`
   self.hidden = !open
+
+  if (input) input.ariaExpanded = `${open}`
+  if (open) setupOptions(self) // Esure correct state when opening if input.value has changed
 }
 
 const setupOptions = (self: UHTMLDataListElement, event?: Event) => {
@@ -111,15 +124,15 @@ const setupOptions = (self: UHTMLDataListElement, event?: Event) => {
     opt.hidden = !content.includes(value)
     if (isSingle && isTyping) opt.selected = false // Turn off selected when typing in single select
   })
+  self.hidden = hidden // Restore original hidden state
+
+  const visible = getVisibleOptions(self)
 
   // Needed to announce count in iOS
   /* c8 ignore next 4 */ // Because @web/test-runner code coverage iOS emulator only runs in chromium
   if (IS_IOS)
-    options
-      .filter((opt) => !opt.hidden)
-      .map((opt, i, { length }) => (opt.title = `${i + 1}/${length}`))
-
-  self.hidden = hidden // Restore hidden state
+    visible.map((opt, i, { length }) => (opt.title = `${i + 1}/${length}`))
+  // if (ARIA_LIVE) ARIA_LIVE.textContent = `${visible.length} vises` // TODO: Test with Kristoffer
 }
 
 function onFocusIn(self: UHTMLDataListElement, event: Event) {
@@ -130,6 +143,8 @@ function onFocusIn(self: UHTMLDataListElement, event: Event) {
   if (isBlur) return clearTimeout(BLUR_TIMER)
   if (!isInput && input instanceof HTMLInputElement && input.list === self) {
     if (activeInput.get(self)) disconnectInput(self) // If previously used by other input
+    if (ARIA_LIVE) document.body.append(ARIA_LIVE)
+
     activeInput.set(self, input)
     self.setAttribute(SAFE_LABELLEDBY, useId(input.labels?.[0]))
     mutationObserver(self, {
@@ -186,12 +201,9 @@ function onKeyDown(self: UHTMLDataListElement, event: KeyboardEvent) {
   if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
   if (event.key !== 'Escape') setExpanded(self, true) // Open if not ESC, open before checking visible options
 
-  // Checks disabled or visibility (since hidden attribute can be overwritten by display: block)
   const { key } = event
   const active = getConnectedRoot(self).activeElement
-  const options = [...self.options].filter(
-    (opt) => !opt.disabled && opt.offsetWidth && opt.offsetHeight // Only include enabled, visible options
-  )
+  const options = getVisibleOptions(self)
   const index = options.indexOf(active as HTMLOptionElement)
   let next = -1 // If hidden - first arrow down should exit input
 

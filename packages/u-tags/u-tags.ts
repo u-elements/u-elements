@@ -1,7 +1,6 @@
 import {
   FOCUS_OUTLINE,
   IS_ANDROID,
-  IS_BROWSER,
   IS_FIREFOX,
   SAFE_MULTISELECTABLE,
   UHTMLElement,
@@ -20,7 +19,10 @@ declare global {
     'u-tags': UHTMLTagsElement
   }
   interface GlobalEventHandlersEventMap {
-    tags: CustomEvent<HTMLDataElement>
+    tags: CustomEvent<{
+      item: HTMLDataElement
+      action: 'add' | 'remove'
+    }>
   }
 }
 
@@ -36,9 +38,10 @@ const TEXTS = {
   of: 'of'
 }
 
-// TODO: Announce create item Firefox
 // TODO: What to include in dispatchChange detail?
 // TODO KRISTOFFER: Announce datalist items count on type?
+
+const connectedRoot = new WeakMap<UHTMLTagsElement, Document | ShadowRoot>() // Store connectedRoot to unbind correct root, as root can change during lifespan
 
 /**
  * The `<u-tags>` HTML element contains a set of `<data>` elements.
@@ -58,13 +61,21 @@ export class UHTMLTagsElement extends UHTMLElement {
     )
   }
   connectedCallback() {
+    const root = getRoot(this)
+    connectedRoot.set(this, root)
+
     setTimeout(onMutation, 0, this) // Set initial aria-labels and selected items in u-datalist (after render)
     mutationObserver(this, { childList: true }) // Observe u-datalist to add aria-multiselect="true"
+    on(root, 'click', onDocumentClick) // Bind click-to-focus-input on root
     on(this, EVENTS, this)
   }
   disconnectedCallback() {
+    const root = connectedRoot.get(this) || this
+    connectedRoot.delete(this)
+
     mutationObserver(this, false)
     off(this, EVENTS, this)
+    off(root, 'click', onDocumentClick) // Unind click-to-focus-input on root
   }
   handleEvent(event: Event) {
     if (event.defaultPrevented) return // Allow all events to be canceled
@@ -88,13 +99,12 @@ export class UHTMLTagsElement extends UHTMLElement {
 }
 
 // Forward click on label to u-tags input
-if (IS_BROWSER)
-  document.addEventListener('click', ({ target }) => {
-    const label = target instanceof Element && target.closest('label')?.htmlFor
-    const utags = label && document.getElementById(label)
+const onDocumentClick = ({ target }: Event) => {
+  const label = target instanceof Element && target.closest('label')?.htmlFor
+  const utags = label && document.getElementById(label)
 
-    if (utags instanceof UHTMLTagsElement) getInput(utags)?.focus()
-  })
+  if (utags instanceof UHTMLTagsElement) getInput(utags)?.focus()
+}
 
 const getText = (el?: Node | null) => el?.textContent?.trim() || ''
 const getInput = (self: UHTMLTagsElement) =>
@@ -138,7 +148,11 @@ const isMouseInside = (el: Element, { clientX: x, clientY: y }: MouseEvent) => {
 
 const dispatchChange = (self: UHTMLTagsElement, item: HTMLDataElement) =>
   self.dispatchEvent(
-    new CustomEvent('tags', { bubbles: true, cancelable: true, detail: item })
+    new CustomEvent('tags', {
+      bubbles: true,
+      cancelable: true,
+      detail: { item, action: item.parentNode ? 'add' : 'remove' }
+    })
   )
 
 function onMutation(
@@ -175,9 +189,8 @@ function onMutation(
     // This is still a better user experience than keeping focus on the u-option as input is cleared
     // and the user gets information about wether the action was remove or add
     if (focusNext === input) {
-      if (focusPrev === input && input instanceof HTMLInputElement)
-        input.list?.options[0]?.focus() // Move focus temporarily so we get ariaLabel change announced
-
+      const focusTmps = (input as HTMLInputElement).list?.options || self.items // Prefer moving focus inside <datalist> if possible to prevent closing list
+      if (focusPrev === focusNext) focusTmps[0]?.focus() // Move focus temporarily so out of input we get ariaLabel change announced
       setTimeout(() => focusNext?.focus(), 100) // 100ms delay so VoiceOver + Chrome announces new ariaLabel
     } else focusNext?.focus() // Set focus to button right away to make NVDA happy
 

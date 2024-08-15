@@ -1,196 +1,188 @@
-import { expect } from '@esm-bundle/chai'
-import { compareSnapshot, sendKeys } from '@web/test-runner-commands'
-import { UHTMLDetailsElement, UHTMLSummaryElement } from './u-details'
-import { IS_ANDROID } from '../utils'
+import { expect, test } from "@playwright/test";
 
-const nextFrame = async () =>
-  new Promise((resolve) => requestAnimationFrame(resolve))
+test.beforeEach(async ({ page }) => {
+	await page.goto("index.html");
+	await page.evaluate(() => {
+		document.body.innerHTML =
+			"<u-details><u-summary>Summary 1</u-summary><div>Details 1</div></u-details>";
+	});
+});
 
-const toDOM = <T extends HTMLElement>(innerHTML: string): T =>
-  Object.assign(document.body, { innerHTML }).firstElementChild as T
+test.describe("u-details", () => {
+	test("matches snapshot", async ({ page }) => {
+		await page.evaluate(() => {
+			document.body.innerHTML = `
+        <u-details><u-summary id="summary-1">Summary 1</u-summary>Details 1</u-details>
+        <u-details open><u-summary id="summary-2">Summary 2</u-summary>Details 2</u-details>
+        <u-details><u-summary id="summary-3">Summary 3</u-summary>Details 3</u-details>`;
+		});
+		expect(await page.locator("body").innerHTML()).toMatchSnapshot("u-details");
+	});
 
-const DEFAULT_TEST_HTML = `
-<u-details>
-  <u-summary>Summary 1</u-summary>
-  <div>Details 1</div>
-</u-details>
-`
+	test("is is defined", async ({ page }) => {
+		const instances = await page.evaluate(() => {
+			const getElement = (name: string) => document.querySelector(name);
+			const getInstance = (name: string) => customElements.get(name) as never;
 
-describe('u-details', () => {
-  it('matches snapshot', async () => {
-    await compareSnapshot({
-      name: `u-details${IS_ANDROID ? '-android' : ''}`,
-      content: toDOM(`
-      <div>
-        <u-details>
-          <u-summary id="summary-1">Summary 1</u-summary>
-          <div id="details-1">Details 1</div>
-        </u-details>
-        <u-details open>
-          <u-summary id="summary-2">Summary 2</u-summary>
-          Details 2
-        </u-details>
-        <u-details>
-          <u-summary id="summary-3">Summary 3</u-summary>
-          <div id="details-3">Details 3</div>
-        </u-details>
-      </div>
-    `).outerHTML
-    })
-  })
+			return (
+				getElement("u-details") instanceof getInstance("u-details") &&
+				getElement("u-summary") instanceof getInstance("u-summary")
+			);
+		});
 
-  it('is defined', () => {
-    const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
+		expect(instances).toBeTruthy();
+		await expect(page.locator("u-details")).toBeAttached();
+		await expect(page.locator("u-summary")).toBeAttached();
+	});
 
-    expect(uDetails.open).to.equal(false)
-    expect(uDetails).to.be.instanceOf(UHTMLDetailsElement)
-    expect(uDetails.firstElementChild).to.be.instanceOf(UHTMLSummaryElement)
-    expect(window.customElements.get('u-details')).to.equal(UHTMLDetailsElement)
-    expect(window.customElements.get('u-summary')).to.equal(UHTMLSummaryElement)
-  })
+	test("sets up attributes", async ({ page }) => {
+		const uDetails = page.locator("u-details");
+		const uSummary = page.locator("u-summary");
+		const content = page.locator("div");
 
-  it('sets up attributes', () => {
-    const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
-    const [uSummary, content] = [...uDetails.children] as [
-      UHTMLSummaryElement,
-      HTMLDivElement
-    ]
+		await expect(uDetails).not.toHaveAttribute("open");
+		await expect(uSummary).toHaveRole("button");
+		await expect(uSummary).toHaveAttribute("tabindex", "0");
+		await expect(uSummary).toHaveAttribute("aria-expanded", "false");
+		await expect(content).toBeHidden();
+	});
 
-    expect(uSummary.role).to.equal('button')
-    expect(uSummary.tabIndex).to.equal(0)
-    expect(uSummary.getAttribute('aria-expanded')).to.equal('false')
-    expect(content.checkVisibility()).to.equal(false)
-  })
+	test("moves content to content slot when is prepended", async ({ page }) => {
+		await page.evaluate(() => {
+			document.body.innerHTML = "<u-details open></u-details>";
+			const uDetails = document.querySelector("u-details");
+			uDetails?.insertAdjacentHTML("afterbegin", "<u-summary>Sum</u-summary>");
+			uDetails?.insertAdjacentHTML("afterbegin", "<div>Details 1</div>");
+		});
 
-  it('moves content to content slot when is appended', async () => {
-    const uDetails = toDOM<UHTMLDetailsElement>(
-      `<u-details><u-summary>Summary 1</u-summary></u-details>`
-    )
-    uDetails.insertAdjacentHTML('beforeend', '<div>Details 1</div>')
+		const summaryY = (await page.locator("u-summary").boundingBox())?.y || 0;
+		const contentY = (await page.locator("div").boundingBox())?.y || 0;
 
-    const [, content] = [...uDetails.children] as [
-      UHTMLSummaryElement,
-      HTMLDivElement
-    ]
-    await nextFrame() // Let MutationObserver run
-    expect(content.checkVisibility()).to.equal(false)
-  })
+		expect(summaryY).toBeLessThan(contentY);
+	});
 
-  it('handles open property and attributes change', () => {
-    const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
-    const [uSummary, content] = [...uDetails.children] as [
-      UHTMLSummaryElement,
-      HTMLDivElement
-    ]
+	test("handles open property and attributes change", async ({ page }) => {
+		const uDetails = page.locator("u-details");
+		const uSummary = page.locator("u-summary");
+		const content = page.locator("div");
 
-    uDetails.open = true
-    expect(uDetails.hasAttribute('open')).to.equal(true)
-    expect(uSummary.getAttribute('aria-expanded')).to.equal('true')
-    expect(content.checkVisibility()).to.equal(true)
+		await uDetails.evaluate((el) => {
+			(el as HTMLDetailsElement).open = true;
+		});
+		await expect(uDetails).toHaveAttribute("open", "");
+		await expect(uSummary).toHaveAttribute("aria-expanded", "true");
+		await expect(content).toBeVisible();
 
-    uDetails.open = false
-    expect(uDetails.open).to.equal(false)
-    expect(uSummary.getAttribute('aria-expanded')).to.equal('false')
-    expect(content.checkVisibility()).to.equal(false)
+		await uDetails.evaluate((el) => {
+			(el as HTMLDetailsElement).open = false;
+		});
+		await expect(uDetails).not.toHaveAttribute("open");
+		await expect(uSummary).toHaveAttribute("aria-expanded", "false");
+		await expect(content).toBeHidden();
 
-    uDetails.setAttribute('open', 'banana')
-    expect(uDetails.open).to.equal(true)
-    expect(uSummary.getAttribute('aria-expanded')).to.equal('true')
-    expect(content.checkVisibility()).to.equal(true)
+		await uDetails.evaluate((el) => el.setAttribute("open", "banana"));
+		await expect(uDetails).toHaveJSProperty("open", true);
+		await expect(uSummary).toHaveAttribute("aria-expanded", "true");
+		await expect(content).toBeVisible();
 
-    uDetails.removeAttribute('open')
-    expect(uDetails.open).to.equal(false)
-    expect(uSummary.getAttribute('aria-expanded')).to.equal('false')
-    expect(content.checkVisibility()).to.equal(false)
-  })
+		await uDetails.evaluate((el) => el.removeAttribute("open"));
+		await expect(uDetails).not.toHaveAttribute("open");
+		await expect(uSummary).toHaveAttribute("aria-expanded", "false");
+		await expect(content).toBeHidden();
+	});
 
-  it('updates attributes on click', async () => {
-    const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
-    const [uSummary] = [...uDetails.children] as [UHTMLSummaryElement]
+	test("updates attributes on click", async ({ page }) => {
+		const uDetails = page.locator("u-details");
+		const uSummary = page.locator("u-summary");
 
-    uSummary.click()
-    expect(uDetails.open).to.equal(true)
+		await uSummary.click();
+		await expect(uDetails).toHaveJSProperty("open", true);
+		await expect(uDetails).toHaveAttribute("open", "");
+		await expect(uSummary).toHaveAttribute("aria-expanded", "true");
 
-    uSummary.focus()
-    await sendKeys({ press: ' ' })
-    expect(uDetails.open).to.equal(false)
-  })
+		await uSummary.press(" ");
+		await expect(uDetails).toHaveJSProperty("open", false);
+		await expect(uDetails).not.toHaveAttribute("open");
+		await expect(uSummary).toHaveAttribute("aria-expanded", "false");
+	});
 
-  it('sets name property', () => {
-    const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
-    expect(uDetails.name).to.equal('')
+	test("sets name property", async ({ page }) => {
+		const uDetails = page.locator("u-details");
+		await expect(uDetails).not.toHaveAttribute("name");
+		await expect(uDetails).toHaveJSProperty("name", "");
 
-    uDetails.name = 'group-1'
-    expect(uDetails.getAttribute('name')).to.equal('group-1')
+		await uDetails.evaluate((el) => el.setAttribute("name", "group-1"));
+		await expect(uDetails).toHaveJSProperty("name", "group-1");
 
-    uDetails.setAttribute('name', 'group-2')
-    expect(uDetails.name).to.equal('group-2')
-  })
+		// Using HTMLFormElement since Typescript does not know HTMLDetailsElement has name property yet
+		await uDetails.evaluate((el) => {
+			(el as HTMLFormElement).name = "group-2";
+		});
+		await expect(uDetails).toHaveAttribute("name", "group-2");
+	});
 
-  it('closes other uDetails with same name attribute', async () => {
-    const HTML_GROUP = DEFAULT_TEST_HTML.replace('>', ' name="group-1">')
-    const div = toDOM<UHTMLDetailsElement>(
-      `<div>${HTML_GROUP}${HTML_GROUP}</div>`
-    )
-    const [uDetails1, uDetails2] = div.querySelectorAll('u-details')
-    const [uSummary1, uSummary2] = div.querySelectorAll('u-summary')
+	test("closes other uDetails with same name attribute", async ({ page }) => {
+		await page.evaluate(() => {
+			document.body.innerHTML = `
+        <u-details name="group-1"><u-summary>Summary 1</u-summary>Details 1</u-details>
+        <u-details name="group-1"><u-summary>Summary 2</u-summary>Details 2</u-details>`;
+		});
+		const uDetails = page.locator("u-details");
+		const uSummary = page.locator("u-summary");
 
-    uSummary1.click()
-    expect(uDetails1.open).to.equal(true)
-    expect(uDetails2.open).to.equal(false)
+		await uSummary.nth(0).click();
+		await expect(uDetails.nth(0)).toHaveJSProperty("open", true);
+		await expect(uDetails.nth(1)).toHaveJSProperty("open", false);
 
-    uSummary2.click()
-    expect(uDetails1.open).to.equal(false)
-    expect(uDetails2.open).to.equal(true)
-  })
+		await uSummary.nth(1).click();
+		await expect(uDetails.nth(0)).toHaveJSProperty("open", false);
+		await expect(uDetails.nth(1)).toHaveJSProperty("open", true);
+	});
 
-  it('triggers toggle event', async () => {
-    const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
-    const [uSummary] = [...uDetails.children] as [
-      UHTMLSummaryElement,
-      HTMLDivElement
-    ]
+	test("triggers toggle event", async ({ page }) => {
+		const uDetails = page.locator("u-details");
+		const uSummary = page.locator("u-summary");
 
-    const onToggle = (event: Event) =>
-      expect(event)
-        .to.include({
-          bubbles: false,
-          cancelable: false,
-          currentTarget: uDetails,
-          target: uDetails,
-          type: 'toggle'
-        })
-        .and.be.instanceOf(Event)
+		await uDetails.evaluate((el) =>
+			el.addEventListener("toggle", (event) => {
+				const details = event.currentTarget as HTMLElement;
+				details.id = "clicked";
+			}),
+		);
 
-    uDetails.addEventListener('toggle', onToggle)
-    uSummary.click()
-  })
+		await uSummary.click();
+		await expect(uDetails).toHaveAttribute("id", "clicked");
+	});
 
-  it('does not triggers toggle event if changing string value of open', async () => {
-    const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
-    let onToggleCount = 0
+	test("skips toggle event if changing open string", async ({ page }) => {
+		const uDetails = page.locator("u-details");
 
-    const onToggle = () => (onToggleCount += 1)
-    uDetails.addEventListener('toggle', onToggle)
-    expect(uDetails.open).to.equal(false)
-    expect(onToggleCount).to.equal(0)
+		await uDetails.evaluate((el) =>
+			el.addEventListener("toggle", (event) => {
+				const details = event.currentTarget as HTMLElement;
+				details.id = `${Number(details.id || 0) + 1}`;
+			}),
+		);
 
-    uDetails.open = true
-    expect(uDetails.open).to.equal(true)
-    expect(onToggleCount).to.equal(1)
+		expect(uDetails).not.toHaveAttribute("id");
 
-    uDetails.setAttribute('open', 'test')
-    expect(uDetails.open).to.equal(true)
-    expect(onToggleCount).to.equal(1)
-  })
+		await uDetails.evaluate((el) => {
+			(el as HTMLDetailsElement).open = true;
+		});
+		await expect(uDetails).toHaveJSProperty("open", true);
+		await expect(uDetails).toHaveAttribute("id", "1");
 
-  it('opens on beforematch', async () => {
-    const uDetails = toDOM<UHTMLDetailsElement>(DEFAULT_TEST_HTML)
-    const content = uDetails.lastElementChild as HTMLDivElement
+		await uDetails.evaluate((el) => el.setAttribute("open", "banana"));
+		await expect(uDetails).toHaveJSProperty("open", true);
+		await expect(uDetails).toHaveAttribute("id", "1");
+	});
 
-    expect(uDetails.open).to.equal(false)
-    content.dispatchEvent(new Event('beforematch', { bubbles: true }))
-    await nextFrame() // Let beforematch event bubble
-    expect(uDetails.open).to.equal(true)
-  })
-})
+	test("opens on beforematch", async ({ page }) => {
+		const uDetails = page.locator("u-details");
+		const content = page.locator("div");
+
+		await expect(uDetails).toHaveJSProperty("open", false);
+		await content.dispatchEvent("beforematch", { bubbles: true });
+		await expect(uDetails).toHaveJSProperty("open", true);
+	});
+});

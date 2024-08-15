@@ -1,24 +1,27 @@
-import { expect } from '@esm-bundle/chai'
-import { compareSnapshot } from '@web/test-runner-commands'
-import { UHTMLTagsElement } from './u-tags'
-import { IS_FIREFOX } from '../utils'
+import { expect, test } from "@playwright/test";
 
-const toDOM = <T extends HTMLElement>(innerHTML: string): T =>
-  Object.assign(document.body, { innerHTML }).firstElementChild as T
+test.beforeEach(async ({ page }) => {
+	await page.goto("index.html");
+	await page.evaluate(() => {
+		document.body.innerHTML = "<u-tags></u-tags>";
+	});
+});
 
-describe('u-tabs', () => {
-  it('matches snapshot', async () => {
-    await compareSnapshot({
-      name: `u-tabs${IS_FIREFOX ? '-android' : ''}`,
-      content: toDOM(`<u-tags></u-tags>`).outerHTML
-    })
-  })
+test.describe("u-tags", () => {
+	test("matches snapshot", async ({ page }) => {
+		await page.evaluate(() => {
+			document.body.innerHTML = "<u-tags></u-tags>";
+		});
+		expect(await page.locator("body").innerHTML()).toMatchSnapshot("u-tags");
+	});
 
-  it('is defined', () => {
-    const uTags = toDOM<UHTMLTagsElement>(`<u-tags></u-tags>`)
+	test("is is defined", async ({ page }) => {
+		const uTags = page.locator("u-tags");
+		const instance = await uTags.evaluate(
+			(el) => el instanceof (customElements.get("u-tags") as never),
+		);
 
-    expect(uTags.items.length).to.equal(0)
-    expect(uTags).to.be.instanceOf(UHTMLTagsElement)
-    expect(window.customElements.get('u-tags')).to.equal(UHTMLTagsElement)
-  })
-})
+		expect(instance).toBeTruthy();
+		await expect(uTags).toBeAttached();
+	});
+});

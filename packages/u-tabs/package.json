@@ -1,25 +1,23 @@
 {
-  "name": "@u-elements/u-tabs",
-  "version": "0.0.5",
-  "license": "MIT",
-  "description": "HTML tags, just truly accessible",
-  "homepage": "https://u-elements.github.io/u-elements/",
-  "type": "module",
-  "main": "dist/u-tabs.cjs",
-  "module": "dist/u-tabs.js",
-  "types": "dist/u-tabs.d.ts",
-  "customElements": "dist/u-tabs.manifest.json",
-  "files": [
-    "dist"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/u-elements/u-elements.git"
-  },
-  "bugs": {
-    "url": "https://github.com/u-elements/u-elements/issues"
-  },
-  "scripts": {
-    "build": "tsup --config ../../tsup.config.ts"
-  }
+	"name": "@u-elements/u-tabs",
+	"version": "0.0.5",
+	"license": "MIT",
+	"description": "HTML tags, just truly accessible",
+	"homepage": "https://u-elements.github.io/u-elements/",
+	"type": "module",
+	"main": "dist/u-tabs.cjs",
+	"module": "dist/u-tabs.js",
+	"types": "dist/u-tabs.d.ts",
+	"customElements": "dist/u-tabs.manifest.json",
+	"files": ["dist"],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/u-elements/u-elements.git"
+	},
+	"bugs": {
+		"url": "https://github.com/u-elements/u-elements/issues"
+	},
+	"scripts": {
+		"build": "tsup --config ../../tsup.config.ts"
+	}
 }

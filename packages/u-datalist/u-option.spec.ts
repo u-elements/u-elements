@@ -1,118 +1,131 @@
-import { expect } from '@esm-bundle/chai'
-import { compareSnapshot } from '@web/test-runner-commands'
-import { UHTMLOptionElement } from './u-option'
+import { expect, test } from "@playwright/test";
 
-const toDOM = <T extends HTMLElement>(innerHTML: string): T =>
-  Object.assign(document.body, { innerHTML }).firstElementChild as T
+test.beforeEach(async ({ page }) => {
+	await page.goto("index.html");
+	await page.evaluate(() => {
+		document.body.innerHTML = "<u-option>Option 1</u-option>";
+	});
+});
 
-describe('u-option', () => {
-  it('matches snapshot', async () => {
-    await compareSnapshot({
-      name: 'u-option',
-      content: toDOM(`
-      <div>
-        <u-option>Option 1</u-option>
-        <u-option selected>Option 2</u-option>
-        <u-option disabled>Option 2</u-option>
-      </div>
-    `).outerHTML
-    })
-  })
+test.describe("u-option", () => {
+	test("matches snapshot", async ({ page }) => {
+		await page.evaluate(() => {
+			document.body.innerHTML =
+				"<u-option>Option 1</u-option><u-option selected>Option 2</u-option><u-option disabled>Option 2</u-option>";
+		});
+		expect(await page.locator("body").innerHTML()).toMatchSnapshot("u-option");
+	});
 
-  it('is defined', () => {
-    const uOption = toDOM<UHTMLOptionElement>(`<u-option>Option 1</u-option>`)
+	test("is is defined", async ({ page }) => {
+		const uOption = page.locator("u-option");
+		const instance = await uOption.evaluate(
+			(el) => el instanceof (customElements.get("u-option") as never),
+		);
 
-    expect(uOption.label).to.equal('Option 1')
-    expect(uOption).to.be.instanceOf(UHTMLOptionElement)
-    expect(window.customElements.get('u-option')).to.equal(UHTMLOptionElement)
-  })
+		expect(instance).toBeTruthy();
+		await expect(uOption).toHaveAccessibleName("Option 1");
+		await expect(uOption).toHaveJSProperty("label", "Option 1");
+		await expect(uOption).toBeAttached();
+	});
 
-  it('sets up properties', () => {
-    const form = toDOM(`
-      <form>
-        <u-datalist>
-          <u-option>Option 1</u-option>
-          <u-option>TMP</u-option>
-        </u-datalist>
-      </form>
-    `)
-    const [uOption1, uOption2] =
-      form.querySelectorAll<UHTMLOptionElement>('u-option')
-    const uOptionEmptyAndIsolated = toDOM<UHTMLOptionElement>(
-      `<u-option></u-option>`
-    )
+	test("sets up properties", async ({ page }) => {
+		await page.evaluate(() => {
+			document.body.innerHTML = `<form>
+          <u-datalist>
+            <u-option>Option 1</u-option>
+            <u-option>TMP</u-option>
+          </u-datalist>
+        </form>`;
+		});
+		const uOption0 = page.locator("u-option").nth(0);
+		const uOption1 = page.locator("u-option").nth(1);
 
-    uOption1.defaultSelected = true
-    uOption1.disabled = true
-    uOption1.selected = true
-    uOption2.label = 'Option 2'
-    uOption2.text = 'Text 2'
-    uOption2.value = 'Value 2'
-    uOption2.selected = false
-    uOption2.disabled = false
+		uOption0.evaluate<void, HTMLOptionElement>((uOption0) => {
+			uOption0.defaultSelected = true;
+			uOption0.disabled = true;
+			uOption0.selected = true;
+		});
+		uOption1.evaluate<void, HTMLOptionElement>((uOption1) => {
+			uOption1.label = "Option 2";
+			uOption1.text = "Text 2";
+			uOption1.value = "Value 2";
+			uOption1.selected = false;
+			uOption1.disabled = false;
+		});
 
-    expect(uOption1.form).to.equal(form)
-    expect(uOption1.disabled).to.equal(true)
-    expect(uOption1.defaultSelected).to.equal(true)
-    expect(uOption1.selected).to.equal(true)
-    expect(uOption1.index).to.equal(0)
-    expect(uOption1.label).to.equal('Option 1')
-    expect(uOption1.text).to.equal('Option 1')
-    expect(uOption1.value).to.equal('Option 1')
-    expect(uOption2.form).to.equal(form)
-    expect(uOption2.disabled).to.equal(false)
-    expect(uOption2.defaultSelected).to.equal(false)
-    expect(uOption2.selected).to.equal(false)
-    expect(uOption2.index).to.equal(1)
-    expect(uOption2.label).to.equal('Option 2')
-    expect(uOption2.text).to.equal('Text 2')
-    expect(uOption2.value).to.equal('Value 2')
+		expect(
+			await page.evaluate(() => {
+				const uOption = document.querySelectorAll("u-option");
+				const form = document.querySelector("form");
+				return uOption[0].form === form && uOption[1].form === form;
+			}),
+		).toBeTruthy();
 
-    expect(uOptionEmptyAndIsolated.index).to.equal(0)
-    expect(uOptionEmptyAndIsolated.text).to.equal('')
-  })
+		await expect(uOption0).toHaveJSProperty("disabled", true);
+		await expect(uOption0).toHaveJSProperty("defaultSelected", true);
+		await expect(uOption0).toHaveJSProperty("selected", true);
+		await expect(uOption0).toHaveJSProperty("index", 0);
+		await expect(uOption0).toHaveJSProperty("label", "Option 1");
+		await expect(uOption0).toHaveJSProperty("text", "Option 1");
+		await expect(uOption0).toHaveJSProperty("value", "Option 1");
 
-  it('sets up attributes', () => {
-    const uOption = toDOM<UHTMLOptionElement>(`<u-option>Option 1</u-option>`)
+		await expect(uOption1).toHaveJSProperty("disabled", false);
+		await expect(uOption1).toHaveJSProperty("defaultSelected", false);
+		await expect(uOption1).toHaveJSProperty("selected", false);
+		await expect(uOption1).toHaveJSProperty("index", 1);
+		await expect(uOption1).toHaveJSProperty("label", "Option 2");
+		await expect(uOption1).toHaveJSProperty("text", "Text 2");
+		await expect(uOption1).toHaveJSProperty("value", "Value 2");
 
-    expect(uOption.getAttribute('aria-selected')).to.equal('false')
-    expect(uOption.getAttribute('aria-disabled')).to.equal('false')
+		await page.evaluate(() => {
+			document.body.innerHTML = "<u-option></u-option>";
+		});
 
-    uOption.setAttribute('selected', '')
-    uOption.setAttribute('disabled', '')
-    expect(uOption.getAttribute('aria-selected')).to.equal('true')
-    expect(uOption.getAttribute('aria-disabled')).to.equal('true')
+		await expect(uOption0).toHaveJSProperty("index", 0);
+		await expect(uOption0).toHaveJSProperty("text", "");
+	});
 
-    uOption.setAttribute('selected', 'banana')
-    uOption.setAttribute('disabled', 'banana')
-    expect(uOption.getAttribute('aria-selected')).to.equal('true')
-    expect(uOption.getAttribute('aria-disabled')).to.equal('true')
+	test("sets up attributes", async ({ page }) => {
+		const uOption = page.locator("u-option");
 
-    uOption.removeAttribute('selected')
-    uOption.removeAttribute('disabled')
-    expect(uOption.getAttribute('aria-selected')).to.equal('false')
-    expect(uOption.getAttribute('aria-disabled')).to.equal('false')
+		await expect(uOption).toHaveAttribute("aria-selected", "false");
+		await expect(uOption).toHaveAttribute("aria-disabled", "false");
 
-    uOption.label = 'Label 1'
-    expect(uOption.getAttribute('label')).to.equal('Label 1')
+		await uOption.evaluate((el) => el.setAttribute("selected", ""));
+		await uOption.evaluate((el) => el.setAttribute("disabled", ""));
+		await expect(uOption).toHaveAttribute("aria-selected", "true");
+		await expect(uOption).toHaveAttribute("aria-disabled", "true");
 
-    uOption.value = 'Value 1'
-    expect(uOption.getAttribute('value')).to.equal('Value 1')
+		await uOption.evaluate((el) => el.setAttribute("selected", "banana"));
+		await uOption.evaluate((el) => el.setAttribute("disabled", "banana"));
+		await expect(uOption).toHaveAttribute("aria-selected", "true");
+		await expect(uOption).toHaveAttribute("aria-disabled", "true");
 
-    uOption.selected = true
-    expect(uOption.hasAttribute('selected')).to.equal(true)
-    expect(uOption.getAttribute('aria-selected')).to.equal('true')
+		await uOption.evaluate((el) => el.removeAttribute("selected"));
+		await uOption.evaluate((el) => el.removeAttribute("disabled"));
+		await expect(uOption).toHaveAttribute("aria-selected", "false");
+		await expect(uOption).toHaveAttribute("aria-disabled", "false");
 
-    uOption.selected = false
-    expect(uOption.hasAttribute('selected')).to.equal(false)
-    expect(uOption.getAttribute('aria-selected')).to.equal('false')
+		await uOption.evaluate<void, HTMLOptionElement>((el) => {
+			el.label = "Label 1";
+			el.value = "Value 1";
+			el.selected = true;
+			el.disabled = true;
+		});
+		await expect(uOption).toHaveAttribute("label", "Label 1");
+		await expect(uOption).toHaveAttribute("value", "Value 1");
+		await expect(uOption).toHaveAttribute("selected");
+		await expect(uOption).toHaveAttribute("aria-selected", "true");
+		await expect(uOption).toHaveAttribute("disabled");
+		await expect(uOption).toHaveAttribute("aria-disabled", "true");
 
-    uOption.disabled = true
-    expect(uOption.hasAttribute('disabled')).to.equal(true)
-    expect(uOption.getAttribute('aria-disabled')).to.equal('true')
-
-    uOption.disabled = false
-    expect(uOption.hasAttribute('disabled')).to.equal(false)
-    expect(uOption.getAttribute('aria-disabled')).to.equal('false')
-  })
-})
+		await uOption.evaluate<void, HTMLOptionElement>((el) => {
+			el.selected = false;
+			el.disabled = false;
+		});
+		await expect(uOption).not.toHaveAttribute("selected");
+		await expect(uOption).toHaveAttribute("aria-selected", "false");
+		await expect(uOption).not.toHaveAttribute("disabled");
+		await expect(uOption).toHaveAttribute("aria-disabled", "false");
+	});
+});

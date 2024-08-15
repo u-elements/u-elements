@@ -1,13 +1,13 @@
 # Runtime
-coverage
 dist
 node_modules
-test-results
 
 # Logs
 **/logs
 **/*.log
 **/npm-debug.log*
+playwright-report
+test-results
 
 # OS
 .DS_Store

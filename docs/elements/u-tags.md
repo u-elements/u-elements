@@ -12,8 +12,9 @@ Coming soon
 
 <Sandbox>
 &lt;style&gt;
-  u-tags { border: 1px solid; display: flex; flex-wrap: wrap; align-items: center; gap: .5em; padding: .5em }
+  u-tags { border: 1px solid; display: flex; flex-wrap: wrap; align-items: center; gap: .5em; padding: .5em; position: relative }
   u-option[selected] { font-weight: bold }
+  u-datalist { position: absolute; inset: 100% -1px auto; border: 1px solid; background: white; padding: .5em }
 &lt;/style&gt;
 &lt;label for="my-tags"&gt;
   Choose flavour of ice cream
@@ -24,15 +25,15 @@ Coming soon
   &lt;data&gt;Pineapple&lt;/data&gt;
   &lt;data&gt;Orange&lt;/data&gt;
   &lt;input list="my-list" /&gt;
+  &lt;u-datalist id="my-list"&gt;
+    &lt;u-option&gt;Coconut&lt;/u-option&gt;
+    &lt;u-option&gt;Strawberries&lt;/u-option&gt;
+    &lt;u-option&gt;Chocolate&lt;/u-option&gt;
+    &lt;u-option&gt;Vanilla&lt;/u-option&gt;
+    &lt;u-option&gt;Licorice&lt;/u-option&gt;
+    &lt;u-option&gt;Pistachios&lt;/u-option&gt;
+    &lt;u-option&gt;Mango&lt;/u-option&gt;
+    &lt;u-option&gt;Hazelnut&lt;/u-option&gt;
+  &lt;/u-datalist&gt;
 &lt;/u-tags&gt;
-&lt;u-datalist id="my-list"&gt;
-  &lt;u-option&gt;Coconut&lt;/u-option&gt;
-  &lt;u-option&gt;Strawberries&lt;/u-option&gt;
-  &lt;u-option&gt;Chocolate&lt;/u-option&gt;
-  &lt;u-option&gt;Vanilla&lt;/u-option&gt;
-  &lt;u-option&gt;Licorice&lt;/u-option&gt;
-  &lt;u-option&gt;Pistachios&lt;/u-option&gt;
-  &lt;u-option&gt;Mango&lt;/u-option&gt;
-  &lt;u-option&gt;Hazelnut&lt;/u-option&gt;
-&lt;/u-datalist&gt;
 </Sandbox>

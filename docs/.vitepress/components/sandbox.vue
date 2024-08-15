@@ -1,41 +1,54 @@
 <script setup>
-  import CodeMirror from 'vue-codemirror6';
-  import { ref, watch } from 'vue'
-  import { html } from '@codemirror/lang-html'
-  import jsBeautify from 'js-beautify'
-  
-  // Import all uElements
-  const modules = Object.values(import.meta.glob('../../../packages/*/u-!(*.spec).ts'))
-  const loading = Promise.all(modules.map((module) => module()))
-  const htmlLang = ref(html());
-  
-  // Auto generate htmlLang for codeMirror
-  loading.then((klasses) => {
-    const extraTags = Object.fromEntries(
-      klasses
-        .flatMap((module) => Object.entries(module))
-        .map(([type, { observedAttributes: attr = [] }]) => [
-          type.replace(/UHTML(\S+)Element/g, 'u-$1').toLowerCase(),
-          { globalAttrs: true, attrs: Object.fromEntries(attr.map((v) => [v, null])) }
-        ])
-      )
-      htmlLang.value = html({ extraTags })
-  })
+import { html } from "@codemirror/lang-html";
+import jsBeautify from "js-beautify";
+import { ref, watch } from "vue";
+import CodeMirror from "vue-codemirror6";
 
-  let timer = null
-  const code = ref('')
-  const view = ref(null)
-  const slots = ref(null)
-  const updateView = () => {
-    if (!view.value) return
-    view.value.innerHTML = code.value
-    view.value.querySelectorAll('script').forEach((script) =>
-      Function(script.textContent)() // Exec scripts
-    )
-  }
-  
-  watch(slots, () => updateView(code.value = jsBeautify.html(slots.value.textContent.trim(), { indent_size: 2 })))
-  watch(code, () => clearTimeout(timer) || (timer = setTimeout(updateView, 300)))
+// Import all uElements
+const modules = Object.values(
+	import.meta.glob("../../../packages/*/u-!(*.spec).ts"),
+);
+const loading = Promise.all(modules.map((module) => module()));
+const htmlLang = ref(html());
+
+// Auto generate htmlLang for codeMirror
+loading.then((klasses) => {
+	const extraTags = Object.fromEntries(
+		klasses
+			.flatMap((module) => Object.entries(module))
+			.map(([type, { observedAttributes: attr = [] }]) => [
+				type.replace(/UHTML(\S+)Element/g, "u-$1").toLowerCase(),
+				{
+					globalAttrs: true,
+					attrs: Object.fromEntries(attr.map((v) => [v, null])),
+				},
+			]),
+	);
+	htmlLang.value = html({ extraTags });
+});
+
+let timer = null;
+const code = ref("");
+const view = ref(null);
+const slots = ref(null);
+const updateView = () => {
+	if (!view.value) return;
+	view.value.innerHTML = code.value;
+
+	for (const script of view.value.querySelectorAll("script"))
+		Function(script.textContent)(); // Exec scripts
+};
+
+watch(slots, () => {
+	code.value = jsBeautify.html(slots.value.textContent.trim(), {
+		indent_size: 2,
+	});
+	updateView(code.value);
+});
+watch(code, () => {
+	clearTimeout(timer);
+	timer = setTimeout(updateView, 300);
+});
 </script>
 <style>
   .demo { border-radius: 8px; border: 2px dashed var(--vp-c-divider); display: flex; flex-wrap: wrap; margin-block: .5em; overflow: clip }

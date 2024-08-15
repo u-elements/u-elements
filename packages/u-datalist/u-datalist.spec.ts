@@ -1,343 +1,289 @@
-import { expect } from '@esm-bundle/chai'
-import { compareSnapshot, sendKeys } from '@web/test-runner-commands'
-import { UHTMLDataListElement } from './u-datalist'
-import { SAFE_LABELLEDBY, IS_ANDROID, IS_IOS } from '../utils'
+import { expect, test } from "@playwright/test";
 
-const nextFrame = async () =>
-  new Promise((resolve) => requestAnimationFrame(resolve))
+const attrLabelledby = () => {
+	const IS_ANDROID = test.info().project.name === "Mobile Chrome";
+	return IS_ANDROID ? "data-labelledby" : "aria-labelledby";
+};
 
-const toDOM = <T extends HTMLElement>(innerHTML: string): T =>
-  Object.assign(document.body, { innerHTML }).firstElementChild as T
-
-const DEFAULT_TEST_HTML = `
-<form>
-  <label>
-    Search here
-    <input type="text" list="datalist-1" />
-  </label>
-  <u-datalist id="datalist-1">
-    <u-option>Option 1</u-option>
-    <u-option>Option 2</u-option>
-    <u-option>Option 3</u-option>
-  </u-datalist>
-</form>
-`
-
-describe('u-datalist', () => {
-  it('matches snapshot', async () => {
-    await compareSnapshot({
-      name: `u-datalist${IS_IOS ? '-ios' : IS_ANDROID ? '-android' : ''}`,
-      content: toDOM(DEFAULT_TEST_HTML).outerHTML
-    })
-  })
-
-  it('is defined', () => {
-    const items = [...toDOM(DEFAULT_TEST_HTML).querySelectorAll('*')]
-    const [, input, uDatalist] = items as [
-      HTMLLabelElement,
-      HTMLInputElement,
-      UHTMLDataListElement
-    ]
-
-    expect(input.list).to.equal(uDatalist)
-    expect(uDatalist).to.to.be.instanceOf(UHTMLDataListElement)
-    expect(window.customElements.get('u-datalist')).to.equal(
-      UHTMLDataListElement
-    )
-  })
-
-  it('sets up propertis', () => {
-    const items = [...toDOM(DEFAULT_TEST_HTML).querySelectorAll('*')]
-    const [, , uDatalist] = items as [
-      HTMLLabelElement,
-      HTMLInputElement,
-      UHTMLDataListElement
-    ]
-
-    expect(uDatalist.options.length).to.equal(3)
-  })
-
-  it('sets up attributes', () => {
-    const uDatalist = toDOM(`<u-datalist></u-datalist>`)
-
-    expect(uDatalist.hidden).to.equal(true)
-    expect(uDatalist.role).to.equal('listbox')
-  })
-
-  it('responds on focus and blur', async () => {
-    const div = toDOM(
-      `<div>${DEFAULT_TEST_HTML}<input id="other-input" /></div>`
-    )
-    const items = [...div.querySelectorAll('form *')]
-    const [label, input, uDatalist] = items as [
-      HTMLLabelElement,
-      HTMLInputElement,
-      UHTMLDataListElement
-    ]
-
-    expect(input.hasAttribute('aria-expanded')).to.equal(false)
-    expect(uDatalist.hidden).to.equal(true)
-
-    input.focus()
-    await nextFrame() // Let focus event bubble
-    expect(input.role).to.equal('combobox')
-    expect(input.getAttribute('autocomplete')).to.equal('off')
-    expect(input.getAttribute('aria-autocomplete')).to.equal('list')
-    expect(input.getAttribute('aria-controls')).to.equal(uDatalist.id)
-    expect(uDatalist.getAttribute(SAFE_LABELLEDBY)).to.equal(label.id)
-    expect(input.getAttribute('aria-expanded')).to.equal('true')
-    expect(uDatalist.hidden).to.equal(false)
-
-    input.blur()
-    await nextFrame() // Let blur event bubble
-    await nextFrame() // Let setTimout in onBlur run
-    expect(input.getAttribute('aria-expanded')).to.equal('false')
-    expect(uDatalist.hidden).to.equal(true)
-
-    input.focus()
-    await nextFrame() // Let focus event bubble
-    expect(input.getAttribute('aria-expanded')).to.equal('true')
-    expect(uDatalist.hidden).to.equal(false)
-
-    div.querySelector<HTMLInputElement>('#other-input')?.focus()
-    await nextFrame() // Let blur event bubble
-    await nextFrame() // Let setTimout in onBlur run
-    expect(input.getAttribute('aria-expanded')).to.equal('false')
-    expect(uDatalist.hidden).to.equal(true)
-  })
-
-  it('handles keyboard arrow navigation', async () => {
-    const items = [...toDOM(DEFAULT_TEST_HTML).querySelectorAll('*')]
-    const [, input, uDatalist] = items as [
-      HTMLLabelElement,
-      HTMLInputElement,
-      UHTMLDataListElement
-    ]
-
-    input.focus()
-    await nextFrame() // Let focus event bubble
-    expect(document.activeElement).to.equal(input)
-
-    await sendKeys({ press: 'ArrowDown' })
-    expect(document.activeElement).to.equal(uDatalist.options[0])
-
-    await sendKeys({ press: 'ArrowUp' })
-    expect(document.activeElement).to.equal(input)
-
-    await sendKeys({ press: 'ArrowUp' })
-    expect(document.activeElement).to.equal(uDatalist.options[2])
-
-    await sendKeys({ press: 'ArrowDown' })
-    expect(document.activeElement).to.equal(uDatalist.options[0])
-
-    await sendKeys({ press: 'End' })
-    expect(document.activeElement).to.equal(uDatalist.options[2])
-
-    await sendKeys({ press: 'Home' })
-    expect(document.activeElement).to.equal(uDatalist.options[0])
-
-    await sendKeys({ press: 'Escape' })
-    await nextFrame() // Let focus event bubble
-    await nextFrame() // Let setTimout in onBlur run
-    expect(document.activeElement).to.equal(input)
-    expect(input.getAttribute('aria-expanded')).to.equal('false')
-    expect(uDatalist.hidden).to.equal(true)
-
-    await sendKeys({ press: 'ArrowDown' })
-    expect(document.activeElement).to.equal(uDatalist.options[0])
-    expect(input.getAttribute('aria-expanded')).to.equal('true')
-    expect(uDatalist.hidden).to.equal(false)
-
-    await sendKeys({ press: 'Escape' })
-    await nextFrame() // Let focus event bubble
-    await nextFrame() // Let setTimout in onBlur run
-    expect(document.activeElement).to.equal(input)
-    expect(input.getAttribute('aria-expanded')).to.equal('false')
-    expect(uDatalist.hidden).to.equal(true)
-
-    await sendKeys({ press: 'ArrowDown' })
-    expect(document.activeElement).to.equal(uDatalist.options[0])
-
-    await sendKeys({ press: 'Enter' })
-    await nextFrame() // Let keydown event bubble
-    await nextFrame() // Let click event bubble
-    await nextFrame() // Let setTimeout in onClick handler run
-    expect(document.activeElement).to.equal(input)
-    expect(input.value).to.equal(uDatalist.options[0].value)
-    expect(input.getAttribute('aria-expanded')).to.equal('false')
-    expect(uDatalist.hidden).to.equal(true)
-  })
-
-  it('ignores keystrokes with meta keys', async () => {
-    const items = [...toDOM(DEFAULT_TEST_HTML).querySelectorAll('*')]
-    const [, input] = items as [
-      HTMLLabelElement,
-      HTMLInputElement,
-      UHTMLDataListElement
-    ]
-
-    input.focus()
-    await sendKeys({ press: 'Control+ArrowDown' })
-    await sendKeys({ press: 'Meta+ArrowDown' })
-    await sendKeys({ press: 'Shift+ArrowDown' })
-    expect(document.activeElement).to.equal(input)
-  })
-
-  it('filters items when typing', async () => {
-    const items = [...toDOM(DEFAULT_TEST_HTML).querySelectorAll('*')]
-    const [, input, uDatalist] = items as [
-      HTMLLabelElement,
-      HTMLInputElement,
-      UHTMLDataListElement
-    ]
-
-    input.focus()
-    await nextFrame() // Let focus event run
-    await sendKeys({ press: '1' })
-    await nextFrame() // Let input event bubble
-    expect(document.activeElement).to.equal(input)
-    expect(input.value).to.equal('1')
-    expect(uDatalist.options[0].hidden).to.equal(false)
-    expect(uDatalist.options[1].hidden).to.equal(true)
-    expect(uDatalist.options[2].hidden).to.equal(true)
-  })
-
-  it.only('filters items when changing value', async () => {
-    const items = [...toDOM(DEFAULT_TEST_HTML).querySelectorAll('*')]
-    const [, input, uDatalist] = items as [
-      HTMLLabelElement,
-      HTMLInputElement,
-      UHTMLDataListElement
-    ]
-
-    input.value = 'test'
-    input.focus()
-    await nextFrame() // Let focus event bubble
-    expect(uDatalist.options[0].hidden).to.equal(true)
-    uDatalist.options[0].value = 'test'
-    await nextFrame() // Let MutationObserver run
-    expect(uDatalist.options[0].hidden).to.equal(false)
-  })
-
-  it('respects event.preventDefault', async () => {
-    const items = [...toDOM(DEFAULT_TEST_HTML).querySelectorAll('*')]
-    const [, input] = items as [HTMLLabelElement, HTMLInputElement]
-
-    input.addEventListener('keydown', (event) => event.preventDefault())
-    input.focus()
-    await sendKeys({ press: 'ArrowDown' })
-    expect(document.activeElement).to.equal(input)
-  })
-
-  it('re-opens on click on input', async () => {
-    const items = [...toDOM(DEFAULT_TEST_HTML).querySelectorAll('*')]
-    const [, input, uDatalist] = items as [
-      HTMLLabelElement,
-      HTMLInputElement,
-      UHTMLDataListElement
-    ]
-
-    input.focus()
-    expect(uDatalist.hidden).to.equal(false)
-
-    await sendKeys({ press: 'Escape' })
-    await nextFrame() // Let blur event bubble
-    expect(uDatalist.hidden).to.equal(true)
-
-    input.click()
-    expect(uDatalist.hidden).to.equal(false)
-  })
-
-  it('handles multiple u-datalist on same page', async () => {
-    const div = toDOM(`
-      <div>
-        ${DEFAULT_TEST_HTML}
-        ${DEFAULT_TEST_HTML.replace(/datalist-1/g, 'datalist-2')}
-      </div>
-    `)
-    const items1 = [...div.querySelectorAll('form:first-child *')]
-    const items2 = [...div.querySelectorAll('form:last-child *')]
-    const [, input1, uDatalist1] = items1 as [
-      HTMLLabelElement,
-      HTMLInputElement,
-      UHTMLDataListElement
-    ]
-    const [, input2, uDatalist2] = items2 as [
-      HTMLLabelElement,
-      HTMLInputElement,
-      UHTMLDataListElement
-    ]
-
-    input1.focus()
-    await nextFrame() // Let focus event bubble
-    expect(uDatalist1.hidden).to.equal(false)
-    expect(uDatalist2.hidden).to.equal(true)
-
-    input2.focus()
-    await nextFrame() // Let focus event bubble
-    await nextFrame() // Let setTimout in onBlur run
-    expect(uDatalist2.hidden).to.equal(false)
-    expect(uDatalist1.hidden).to.equal(true)
-  })
-
-  it('handles being bound to multiple inputs', async () => {
-    const div = toDOM(`
-      <div>
+test.beforeEach(async ({ page }) => {
+	await page.goto("index.html");
+	await page.evaluate(() => {
+		document.body.innerHTML = `<form>
+      <label>
+        Search here
         <input type="text" list="datalist-1" />
-        ${DEFAULT_TEST_HTML}
-      </div>
-    `)
-    const [input1, input2] = [...div.querySelectorAll('input')]
-    const uDatalist = div.querySelector('u-datalist') as HTMLDataListElement
+      </label>
+      <u-datalist id="datalist-1">
+        <u-option>Option 1</u-option>
+        <u-option>Option 2</u-option>
+        <u-option>Option 3</u-option>
+      </u-datalist>
+    </form>`;
+	});
+});
 
-    expect(uDatalist.hidden).to.equal(true)
-    input1.focus()
-    await nextFrame() // Let focus event bubble
-    expect(input1.getAttribute('aria-expanded')).to.equal('true')
-    expect(input2.getAttribute('aria-expanded')).to.not.equal('true')
-    expect(uDatalist.hidden).to.equal(false)
+test.describe("u-datalist", () => {
+	test("matches snapshot", async ({ page }) => {
+		expect(await page.locator("body").innerHTML()).toMatchSnapshot(
+			"u-datalist",
+		);
+	});
 
-    input2.focus()
-    await nextFrame() // Let focus event bubble
-    await nextFrame() // Let setTimout in onBlur run
-    expect(input1.getAttribute('aria-expanded')).to.not.equal('true')
-    expect(input2.getAttribute('aria-expanded')).to.equal('true')
-    expect(uDatalist.hidden).to.equal(false)
-  })
+	test("is is defined", async ({ page }) => {
+		const input = page.locator("input");
+		const uDatalist = page.locator("u-datalist");
+		const instance = await uDatalist.evaluate(
+			(el) => el instanceof (customElements.get("u-datalist") as never),
+		);
+		const listProp = await input.evaluate<boolean, HTMLInputElement>(
+			(el) => el.list === document.querySelector("u-datalist"),
+		);
 
-  it('triggers input and change events', async () => {
-    let inputEvent: Event | undefined
-    let changeEvent: Event | undefined
-    const items = [...toDOM(DEFAULT_TEST_HTML).querySelectorAll('*')]
-    const [, input, uDatalist] = items as [
-      HTMLLabelElement,
-      HTMLInputElement,
-      UHTMLDataListElement
-    ]
+		expect(instance).toBeTruthy();
+		expect(listProp).toBeTruthy();
+		await expect(uDatalist).toBeAttached();
+	});
 
-    input.addEventListener('input', (event) => (inputEvent = event))
-    input.addEventListener('change', (event) => (changeEvent = event))
-    input.focus()
-    await nextFrame() // Let focus event bubble
+	test("sets up propertis", async ({ page }) => {
+		const uDatalist = page.locator("u-datalist");
 
-    uDatalist.options[0].click()
-    expect(inputEvent)
-      .to.include({
-        composed: true,
-        bubbles: true,
-        cancelable: false,
-        target: input,
-        type: 'input'
-      })
-      .and.be.instanceOf(Event)
-    expect(changeEvent)
-      .to.include({
-        composed: false,
-        bubbles: true,
-        cancelable: false,
-        target: input,
-        type: 'change'
-      })
-      .and.be.instanceOf(Event)
-  })
-})
+		await expect(uDatalist).toHaveJSProperty("hidden", true);
+		expect(
+			await uDatalist.evaluate<number, HTMLDataListElement>((el) => {
+				return el.options.length;
+			}),
+		).toBe(3);
+	});
+
+	test("sets up attributes", async ({ page }) => {
+		const uDatalist = page.locator("u-datalist");
+
+		await expect(uDatalist).toHaveAttribute("hidden");
+		await expect(uDatalist).toHaveRole("listbox");
+	});
+
+	test("responds on focus and blur", async ({ page }) => {
+		await page.evaluate(() => {
+			document.body.innerHTML = `
+        <label>Search here <input type="text" list="datalist-1" /></label>
+        <u-datalist id="datalist-1">
+          <u-option>Option 1</u-option>
+          <u-option>Option 2</u-option>
+          <u-option>Option 3</u-option>
+        </u-datalist>
+        <input id="other-input" />`;
+		});
+		const uDatalist = page.locator("u-datalist");
+		const input = page.locator("input").first();
+		const label = page.locator("label");
+
+		await expect(input).not.toHaveAttribute("aria-expanded");
+		await expect(uDatalist).toBeHidden();
+
+		await input.focus();
+		const labelId = (await label.getAttribute("id")) || "";
+		const uDatalistId = (await uDatalist.getAttribute("id")) || "";
+
+		await expect(uDatalist).toBeVisible();
+		await expect(input).toHaveRole("combobox");
+		await expect(input).toHaveAttribute("autocomplete", "off");
+		await expect(input).toHaveAttribute("aria-autocomplete", "list");
+		await expect(input).toHaveAttribute("aria-expanded", "true");
+		await expect(input).toHaveAttribute("aria-controls", uDatalistId);
+		await expect(uDatalist).toHaveAttribute(attrLabelledby(), labelId);
+
+		await input.blur();
+		await expect(input).toHaveAttribute("aria-expanded", "false");
+		await expect(uDatalist).toBeHidden();
+
+		await input.focus();
+		await expect(input).toHaveAttribute("aria-expanded", "true");
+		await expect(uDatalist).toBeVisible();
+
+		await page.locator("input").last().focus();
+		await expect(input).toHaveAttribute("aria-expanded", "false");
+		await expect(uDatalist).toBeHidden();
+	});
+
+	test("handles keyboard arrow navigation", async ({ page }) => {
+		const uDatalist = page.locator("u-datalist");
+		const uOption0 = page.locator("u-option").nth(0);
+		const uOption2 = page.locator("u-option").nth(2);
+		const input = page.locator("input");
+
+		await input.focus();
+		await expect(input).toBeFocused();
+
+		await input.press("ArrowDown");
+		await expect(uOption0).toBeFocused();
+
+		await uOption0.press("ArrowUp");
+		await expect(input).toBeFocused();
+
+		await input.press("ArrowUp");
+		await expect(uOption2).toBeFocused();
+
+		await uOption2.press("ArrowDown");
+		await expect(uOption0).toBeFocused();
+
+		await uOption0.press("End");
+		await expect(uOption2).toBeFocused();
+
+		await uOption2.press("Home");
+		await expect(uOption0).toBeFocused();
+
+		await input.press("Escape");
+		await expect(input).toBeFocused();
+		await expect(input).toHaveAttribute("aria-expanded", "false");
+		await expect(uDatalist).toBeHidden();
+
+		await input.press("ArrowDown");
+		await expect(input).toHaveAttribute("aria-expanded", "true");
+		await expect(uDatalist).toBeVisible();
+		await expect(uOption0).toBeFocused();
+
+		await uOption0.press("Enter");
+		await expect(input).toBeFocused();
+		await expect(input).toHaveValue((await uOption0.textContent()) || "");
+		await expect(input).toHaveAttribute("aria-expanded", "false");
+		await expect(uDatalist).toBeHidden();
+	});
+
+	test("ignores keystrokes with meta keys", async ({ page }) => {
+		const input = page.locator("input");
+
+		await input.focus();
+		await input.press("Control+ArrowDown");
+		await input.press("Meta+ArrowDown");
+		await input.press("Shift+ArrowDown");
+		await expect(input).toBeFocused();
+	});
+
+	test("filters items when typing", async ({ page }) => {
+		const uOption = page.locator("u-option");
+		const input = page.locator("input");
+
+		await input.focus();
+		await input.press("1");
+		await expect(input).toBeFocused();
+		await expect(input).toHaveValue("1");
+		await expect(uOption.nth(0)).toBeVisible();
+		await expect(uOption.nth(1)).toBeHidden();
+		await expect(uOption.nth(1)).toBeHidden();
+	});
+
+	test("filters items when changing value", async ({ page }) => {
+		const uOption0 = page.locator("u-option").nth(0);
+		const input = page.locator("input");
+
+		await input.evaluate((el) => {
+			(el as HTMLInputElement).value = "test";
+		});
+		await input.focus();
+		await expect(uOption0).toBeHidden();
+		await uOption0.evaluate((el) => {
+			(el as HTMLOptionElement).value = "test";
+		});
+		await expect(uOption0).toBeVisible();
+	});
+
+	test("respects event.preventDefault", async ({ page }) => {
+		const input = page.locator("input");
+
+		await input.evaluate<void, HTMLInputElement>((el) =>
+			el.addEventListener("keydown", (event) => event.preventDefault()),
+		);
+		await input.press("ArrowDown");
+		await expect(input).toBeFocused();
+	});
+
+	test("re-opens on click on input", async ({ page }) => {
+		const uDatalist = page.locator("u-datalist");
+		const input = page.locator("input");
+
+		await input.focus();
+		await expect(uDatalist).toBeVisible();
+
+		await input.press("Escape");
+		await expect(uDatalist).toBeHidden();
+
+		await input.click();
+		await expect(uDatalist).toBeVisible();
+	});
+
+	test("handles multiple u-datalist on same page", async ({ page }) => {
+		await page.evaluate(() => {
+			document.body.innerHTML = `<form>
+        <label>Search here<input type="text" list="datalist-1" /></label>
+        <u-datalist id="datalist-1">
+          <u-option>Option 1</u-option>
+          <u-option>Option 2</u-option>
+          <u-option>Option 3</u-option>
+        </u-datalist>
+        <label>Search here<input type="text" list="datalist-2" /></label>
+        <u-datalist id="datalist-2">
+          <u-option>Option 1</u-option>
+          <u-option>Option 2</u-option>
+          <u-option>Option 3</u-option>
+        </u-datalist>
+      </form>`;
+		});
+
+		const input0 = page.locator("input").nth(0);
+		const input1 = page.locator("input").nth(1);
+		const uDatalist0 = page.locator("#datalist-1");
+		const uDatalist1 = page.locator("#datalist-2");
+
+		await input0.focus();
+		await expect(uDatalist0).toBeVisible();
+		await expect(uDatalist1).toBeHidden();
+
+		await input1.focus();
+		await expect(uDatalist0).toBeHidden();
+		await expect(uDatalist1).toBeVisible();
+	});
+
+	test("handles being bound to multiple inputs", async ({ page }) => {
+		await page.evaluate(() => {
+			document.body.innerHTML = `<form>
+        <label>Search here 1<input type="text" list="datalist-1" /></label>
+        <label>Search here 2<input type="text" list="datalist-1" /></label>
+        <u-datalist id="datalist-1">
+          <u-option>Option 1</u-option>
+          <u-option>Option 2</u-option>
+          <u-option>Option 3</u-option>
+        </u-datalist>
+      </form>`;
+		});
+
+		const input0 = page.locator("input").nth(0);
+		const input1 = page.locator("input").nth(1);
+		const uDatalist = page.locator("u-datalist");
+
+		expect(uDatalist).toBeHidden();
+		await input0.focus();
+		await expect(input0).toHaveAttribute("aria-expanded", "true");
+		await expect(input1).not.toHaveAttribute("aria-expanded", "true");
+		await expect(uDatalist).toBeVisible();
+
+		await input1.focus();
+		await expect(input0).not.toHaveAttribute("aria-expanded", "true");
+		await expect(input1).toHaveAttribute("aria-expanded", "true");
+		await expect(uDatalist).toBeVisible();
+	});
+
+	test("triggers input and change events", async ({ page }) => {
+		const input = page.locator("input");
+		const uOption0 = page.locator("u-option").nth(0);
+
+		await input.evaluate<void, HTMLInputElement>((el) => {
+			el.addEventListener("input", () => el.setAttribute("data-input", ""));
+			el.addEventListener("change", () => el.setAttribute("data-change", ""));
+		});
+
+		await input.focus();
+		await uOption0.click();
+		await expect(input).toHaveAttribute("data-input");
+		await expect(input).toHaveAttribute("data-change");
+	});
+});

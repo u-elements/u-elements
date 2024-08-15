@@ -1,116 +1,70 @@
 {
-  "type": "module",
-  "private": true,
-  "license": "MIT",
-  "description": "HTML tags, just truly accessible",
-  "workspaces": [
-    "packages/*"
-  ],
-  "homepage": "https://u-elements.github.io/u-elements/",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/u-elements/u-elements.git"
-  },
-  "bugs": {
-    "url": "https://github.com/u-elements/u-elements/issues"
-  },
-  "scripts": {
-    "build": "npm run build --workspaces",
-    "docs:build": "npm run build && vitepress build docs",
-    "docs:dev": "vitepress dev docs",
-    "docs:preview": "vitepress preview docs",
-    "lint": "eslint",
-    "prepublishOnly": "npm run build",
-    "start": "vite",
-    "start:preact": "vite --config=frameworks/preact/vite.config.ts",
-    "start:qwik": "vite --config=frameworks/qwik/vite.config.ts",
-    "start:react": "vite --config=frameworks/react/vite.config.ts",
-    "start:solid": "vite --config=frameworks/solid/vite.config.ts",
-    "start:svelte": "vite --config=frameworks/svelte/vite.config.ts",
-    "start:vue": "vite --config=frameworks/vue/vite.config.ts",
-    "test": "web-test-runner",
-    "test:coverage": "npm run test -- --coverage",
-    "test:update": "npm run test -- --update-snapshots"
-  },
-  "devDependencies": {
-    "@builder.io/qwik": "^1.7.1",
-    "@codemirror/lang-html": "^6.4.9",
-    "@custom-elements-manifest/analyzer": "^0.10.3",
-    "@esm-bundle/chai": "^4.3.4-fix.0",
-    "@preact/preset-vite": "^2.9.0",
-    "@remcovaes/web-test-runner-vite-plugin": "^1.2.1",
-    "@sveltejs/vite-plugin-svelte": "^3.1.1",
-    "@tsconfig/svelte": "^5.0.4",
-    "@types/mocha": "^10.0.7",
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
-    "@typescript-eslint/eslint-plugin": "7.16.1",
-    "@typescript-eslint/parser": "7.16.1",
-    "@vitejs/plugin-react": "^4.3.1",
-    "@vitejs/plugin-vue": "^5.0.5",
-    "@vue/runtime-dom": "^3.4.32",
-    "@web/test-runner": "^0.18.2",
-    "@web/test-runner-commands": "^0.9.0",
-    "@web/test-runner-playwright": "^0.11.0",
-    "codemirror": "^6.0.1",
-    "custom-element-vs-code-integration": "^1.3.0",
-    "eslint": "8.57.0",
-    "eslint-config-prettier": "9.1.0",
-    "eslint-plugin-prettier": "5.2.1",
-    "js-beautify": "^1.15.1",
-    "playwright": "^1.45.2",
-    "prettier": "3.3.3",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "solid-js": "^1.8.18",
-    "svelte": "^4.2.18",
-    "svelte-check": "^3.8.4",
-    "tslib": "^2.6.3",
-    "tsup": "^8.1.2",
-    "typescript": "5.5.3",
-    "vite": "^5.3.4",
-    "vite-plugin-cem": "^0.8.1",
-    "vite-plugin-solid": "^2.10.2",
-    "vitepress": "^1.3.1",
-    "vue": "^3.4.32",
-    "vue-codemirror6": "^1.3.4",
-    "vue-tsc": "^2.0.26"
-  },
-  "prettier": {
-    "endOfLine": "auto",
-    "semi": false,
-    "singleQuote": true,
-    "trailingComma": "none"
-  },
-  "eslintConfig": {
-    "env": {
-      "browser": true,
-      "es2020": true
-    },
-    "extends": [
-      "eslint:recommended",
-      "plugin:@typescript-eslint/recommended",
-      "prettier"
-    ],
-    "parser": "@typescript-eslint/parser",
-    "parserOptions": {
-      "ecmaVersion": "latest",
-      "sourceType": "module"
-    },
-    "plugins": [
-      "prettier"
-    ],
-    "root": true,
-    "rules": {
-      "prettier/prettier": "error"
-    }
-  },
-  "eslintIgnore": [
-    "dist",
-    "frameworks",
-    "node_modules"
-  ],
-  "dependencies": {
-    "weekstart": "^2.0.0"
-  }
+	"type": "module",
+	"private": true,
+	"license": "MIT",
+	"description": "HTML tags, just truly accessible",
+	"workspaces": ["packages/*"],
+	"homepage": "https://u-elements.github.io/u-elements/",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/u-elements/u-elements.git"
+	},
+	"bugs": {
+		"url": "https://github.com/u-elements/u-elements/issues"
+	},
+	"scripts": {
+		"build": "npm run build --workspaces",
+		"docs:build": "npm run build && vitepress build docs",
+		"docs:dev": "vitepress dev docs",
+		"docs:preview": "vitepress preview docs",
+		"lint": "npx @biomejs/biome check",
+		"prepublishOnly": "npm run build",
+		"start": "vite",
+		"start:preact": "vite --config=frameworks/preact/vite.config.ts",
+		"start:qwik": "vite --config=frameworks/qwik/vite.config.ts",
+		"start:react": "vite --config=frameworks/react/vite.config.ts",
+		"start:solid": "vite --config=frameworks/solid/vite.config.ts",
+		"start:svelte": "vite --config=frameworks/svelte/vite.config.ts",
+		"start:vue": "vite --config=frameworks/vue/vite.config.ts",
+		"test": "playwright test",
+		"test:update": "npm run test -- --update-snapshots"
+	},
+	"dependencies": {
+		"weekstart": "^2.0.0"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "1.8.3",
+		"@builder.io/qwik": "^1.7.1",
+		"@codemirror/lang-html": "^6.4.9",
+		"@custom-elements-manifest/analyzer": "^0.10.3",
+		"@playwright/test": "^1.45.3",
+		"@preact/preset-vite": "^2.9.0",
+		"@sveltejs/vite-plugin-svelte": "^3.1.1",
+		"@tsconfig/svelte": "^5.0.4",
+		"@types/node": "^22.1.0",
+		"@types/react": "^18.3.3",
+		"@types/react-dom": "^18.3.0",
+		"@vitejs/plugin-react": "^4.3.1",
+		"@vitejs/plugin-vue": "^5.0.5",
+		"@vue/runtime-dom": "^3.4.32",
+		"codemirror": "^6.0.1",
+		"custom-element-vs-code-integration": "^1.3.0",
+		"js-beautify": "^1.15.1",
+		"monocart-coverage-reports": "^2.10.0",
+		"react": "^18.3.1",
+		"react-dom": "^18.3.1",
+		"solid-js": "^1.8.18",
+		"svelte": "^4.2.18",
+		"svelte-check": "^3.8.4",
+		"tslib": "^2.6.3",
+		"tsup": "^8.1.2",
+		"typescript": "5.5.4",
+		"vite": "^5.3.5",
+		"vite-plugin-cem": "^0.8.1",
+		"vite-plugin-solid": "^2.10.2",
+		"vitepress": "^1.3.1",
+		"vue": "^3.4.32",
+		"vue-codemirror6": "^1.3.4",
+		"vue-tsc": "^2.0.26"
+	}
 }

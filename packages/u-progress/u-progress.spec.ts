@@ -1,99 +1,120 @@
-import { expect } from '@esm-bundle/chai'
-import { compareSnapshot } from '@web/test-runner-commands'
-import { UHTMLProgressElement } from './u-progress'
-import { IS_FIREFOX, IS_IOS } from '../utils'
+import { expect, test } from "@playwright/test";
 
-const toDOM = <T extends HTMLElement>(innerHTML: string): T =>
-  Object.assign(document.body, { innerHTML }).firstElementChild as T
+test.beforeEach(async ({ page }) => {
+	await page.goto("index.html");
+	await page.evaluate(() => {
+		document.body.innerHTML = `<u-progress value="5" max="10" aria-label="My progress"></u-progress>`;
+	});
+});
 
-describe('u-progress', () => {
-  it('matches snapshot', async () => {
-    await compareSnapshot({
-      name: `u-progress${IS_IOS ? '-ios' : IS_FIREFOX ? '-firefox' : ''}`,
-      content: toDOM(
-        `<u-progress value="5" max="10" aria-label="Test"></u-progress>`
-      ).outerHTML
-    })
-  })
+test.describe("u-progress", () => {
+	test("matches snapshot", async ({ page }) => {
+		await page.evaluate(() => {
+			document.body.innerHTML = `<u-progress id="my-progress" value="5" max="10" aria-label="My progress"></u-progress>`;
+		});
+		expect(await page.locator("body").innerHTML()).toMatchSnapshot(
+			"u-progress",
+		);
+	});
 
-  it('is defined', () => {
-    const uProgress = toDOM<UHTMLProgressElement>(
-      `<u-progress value="5" max="10"></u-progress>`
-    )
+	test("is is defined", async ({ page }) => {
+		const uProgress = page.locator("u-progress");
+		const instance = await uProgress.evaluate(
+			(el) => el instanceof (customElements.get("u-progress") as never),
+		);
 
-    expect(uProgress.max).to.equal(10)
-    expect(uProgress).to.be.instanceOf(UHTMLProgressElement)
-    expect(window.customElements.get('u-progress')).to.equal(
-      UHTMLProgressElement
-    )
-  })
+		expect(instance).toBeTruthy();
+		await expect(uProgress).toBeAttached();
+		await expect(uProgress).toHaveJSProperty("max", 10);
+	});
 
-  it('sets up attributes', () => {
-    const asImage = IS_IOS || IS_FIREFOX
-    const uProgress = toDOM<UHTMLProgressElement>(
-      `<u-progress value="5" max="10"></u-progress>`
-    )
+	test("sets up attributes", async ({ page }) => {
+		const browser = test.info().project.name;
+		const asImage = browser === "Mobile Safari" || browser === "Firefox";
+		const uProgress = page.locator("u-progress");
 
-    expect(
-      uProgress.getAttribute(asImage ? 'aria-label' : 'aria-valuenow')
-    ).to.equal(asImage ? '50%' : '50')
-    expect(uProgress.getAttribute('role')).to.equal(
-      asImage ? 'img' : 'progressbar'
-    )
-    expect(uProgress.getAttribute('aria-valuemin')).to.equal('0')
-    expect(uProgress.getAttribute('aria-valuemax')).to.equal('100')
-    expect(uProgress.getAttribute('aria-busy')).to.equal('false')
+		await expect(uProgress).toHaveAttribute("aria-valuemin", "0");
+		await expect(uProgress).toHaveAttribute("aria-valuemax", "100");
+		await expect(uProgress).toHaveAttribute("aria-busy", "false");
+		await expect(uProgress).toHaveRole(asImage ? "img" : "progressbar");
+		await expect(uProgress).toHaveAttribute(
+			asImage ? "aria-label" : "aria-valuenow",
+			asImage ? /My progress\s+50%/ : "50",
+		);
+		await expect(uProgress).toHaveAccessibleName(
+			asImage ? /My progress\s+50%/ : "My progress",
+		);
 
-    uProgress.value = null
-    expect(uProgress.getAttribute('aria-busy')).to.equal('true')
-  })
+		await uProgress.evaluate<void, HTMLProgressElement>((el) =>
+			el.removeAttribute("value"),
+		);
+		await expect(uProgress).toHaveAttribute("aria-busy", "true");
+	});
 
-  it('sets up properties', () => {
-    const uProgress = toDOM(`
-      <div>
-        <label for="progress-1">Label 1</label>
-        <label>
-          Label 2
-          <u-progress id="progress-1" value="5" max="10"></u-progress>
-        <label>
-        <label>Label 3</label>
-      </div>
-    `).querySelector('u-progress') as UHTMLProgressElement
+	test("sets up properties", async ({ page }) => {
+		await page.evaluate(() => {
+			document.body.innerHTML = `<label for="my-progress">Label 1</label>
+      <label>Label 2<u-progress id="my-progress" value="5" max="10"></u-progress><label>
+      <label>Label 3</label>`;
+		});
 
-    expect(uProgress.labels.length).to.equal(2)
-    expect(uProgress.position).to.equal(0.5)
-    expect(uProgress.max).to.equal(10)
-    expect(uProgress.value).to.equal(5)
-  })
+		const uProgress = page.locator("u-progress");
+		const labels = await uProgress.evaluate<number, HTMLProgressElement>(
+			(el) => el.labels.length,
+		);
 
-  it('calculates position and percentage', () => {
-    const uProgress = toDOM<UHTMLProgressElement>(
-      `<u-progress value="5" max="10"></u-progress>`
-    )
+		await expect(uProgress).toHaveJSProperty("position", 0.5);
+		await expect(uProgress).toHaveJSProperty("value", 5);
+		await expect(uProgress).toHaveJSProperty("max", 10);
+		expect(labels).toBe(2);
+	});
 
-    expect(uProgress.max).to.equal(10)
-    expect(uProgress.position).to.equal(0.5)
-    expect(uProgress.value).to.equal(5)
+	test("calculates position and percentage", async ({ page }) => {
+		const uProgress = page.locator("u-progress");
 
-    uProgress.max = 20
+		await expect(uProgress).toHaveJSProperty("position", 0.5);
+		await expect(uProgress).toHaveJSProperty("value", 5);
+		await expect(uProgress).toHaveJSProperty("max", 10);
 
-    expect(uProgress.max).to.equal(20)
-    expect(uProgress.position).to.equal(0.25)
-    expect(uProgress.value).to.equal(5)
+		await uProgress.evaluate<void, HTMLProgressElement>((el) => {
+			el.max = 20;
+		});
 
-    uProgress.value = 10
+		await expect(uProgress).toHaveJSProperty("position", 0.25);
+		await expect(uProgress).toHaveJSProperty("value", 5);
+		await expect(uProgress).toHaveJSProperty("max", 20);
 
-    expect(uProgress.max).to.equal(20)
-    expect(uProgress.position).to.equal(0.5)
-    expect(uProgress.value).to.equal(10)
-  })
+		await uProgress.evaluate<void, HTMLProgressElement>((el) => {
+			el.value = 10;
+		});
 
-  it('handles invalid numeric value and max', () => {
-    const uProgress = toDOM<UHTMLProgressElement>(`<u-progress></u-progress>`)
+		await expect(uProgress).toHaveJSProperty("position", 0.5);
+		await expect(uProgress).toHaveJSProperty("value", 10);
+		await expect(uProgress).toHaveJSProperty("max", 20);
+	});
 
-    expect(() => (uProgress.max = 'banana')).to.throw()
-    expect(() => (uProgress.value = 'banana')).to.throw()
-    expect(uProgress.value).to.equal(null)
-    expect(uProgress.max).to.equal(1)
-  })
-})
+	test("handles invalid numeric value and max", async ({ page }) => {
+		const uProgress = page.locator("u-progress");
+
+		expect(
+			uProgress.evaluate<boolean, HTMLProgressElement>((el) => {
+				try {
+					// @ts-expect-error Because we are testing
+					el.max = "banana";
+				} catch {
+					return true;
+				}
+				return false;
+			}),
+		).toBeTruthy();
+		await expect(uProgress).toHaveJSProperty("max", 10);
+
+		await uProgress.evaluate<void, HTMLProgressElement>((el) => {
+			// @ts-expect-error Because we are testing
+			el.value = el.max = null;
+		});
+
+		await expect(uProgress).toHaveJSProperty("value", null);
+		await expect(uProgress).toHaveJSProperty("max", 1);
+	});
+});

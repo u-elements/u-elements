@@ -25,7 +25,7 @@ let SKIP_ATTR_CHANGE = false;
 export class UHTMLProgressElement extends UHTMLElement {
 	static formAssociated = true; // Prevent Chrome DevTools warning about <label for=""> pointing to <u-progress>
 	static get observedAttributes() {
-		return ["aria-label", "aria-labelledby", "value", "max"]; // Also watch aria-label(ledby) to sync Firefox/iOS
+		return ["aria-label", "aria-labelledby", "value", "max"]; // Also watch aria labels to sync Firefox/iOS
 	}
 	constructor() {
 		super();
@@ -46,7 +46,7 @@ export class UHTMLProgressElement extends UHTMLElement {
 	attributeChangedCallback() {
 		if (SKIP_ATTR_CHANGE) return; // Skip attributeChangedCallback caused by attributeChangedCallback
 		SKIP_ATTR_CHANGE = true;
-		const roleImage = IS_IOS || IS_FIREFOX; // iOS and Firefox does not correcly read value of role="progress"
+		const roleImage = IS_IOS || IS_FIREFOX; // iOS and Firefox does not correctly read value of role="progress"
 		const percentage = Math.max(0, Math.round(this.position * 100)); // Always use percentage as iOS role="progressbar"
 		this.style.setProperty("--percentage", `${percentage}%`); // Write style before any read operation to avoid excess animation
 		let label = getLabel(this); // Uses innerText so must be after setting this.style
@@ -54,7 +54,7 @@ export class UHTMLProgressElement extends UHTMLElement {
 		if (roleImage) label = `${label.replace(/\d+%$/, "")} ${percentage}%`;
 		if (IS_FIREFOX)
 			Array.from(this.labels, (el) => {
-				el.ariaLabel = label; // Fixes double anouncment in Firefox
+				el.ariaLabel = label; // Fixes double announcement in Firefox
 			});
 
 		this.ariaLabel = label.trim();

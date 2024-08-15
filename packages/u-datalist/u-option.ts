@@ -59,7 +59,7 @@ export class UHTMLOptionElement extends UHTMLElement {
 	get index(): number {
 		const options =
 			this.closest("u-datalist")?.getElementsByTagName("u-option");
-		return Array.from(options || [this]).indexOf(this); // Fallback to 0 complies with spesification
+		return Array.from(options || [this]).indexOf(this); // Fallback to 0 complies with specification
 	}
 	/** Sets or retrieves a value that you can use to implement your own label functionality for the object. */
 	get label(): string {

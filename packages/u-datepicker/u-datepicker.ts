@@ -1,5 +1,5 @@
 export type { UHTMLOptionElement } from "../u-datalist/u-option";
-import { getWeekStartByRegion } from "weekstart";
+import { getWeekStartByRegion } from "./week-start";
 import "../u-datalist/u-option";
 import {
 	UHTMLElement,
@@ -24,7 +24,7 @@ declare global {
 // TODO: Find focus from selected (if not provided), and fallback to today if none provided
 // TODO: change month when screen reader focusing a date outside month (buggy now)
 // TODO: u-datepicker-date.value/.ymd? readOnly
-// TODO: weeknumber attribute
+// TODO: week number attribute
 // TODO: copy -item and -head elements - replacing <slot> for text
 // TODO: Remove trailing dot in short days?
 
@@ -195,7 +195,7 @@ export class UHTMLDatePickerElement extends UHTMLElement {
 const getYMD = (d: Date) =>
 	[d.getFullYear(), d.getMonth() + 1, d.getDate()].join("-");
 
-// Souce: https://stackoverflow.com/a/6117889
+// Source: https://stackoverflow.com/a/6117889
 // const getWeek = (d: Date) => {
 //   const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
 //   date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7)) // ISO-week starts on Monday

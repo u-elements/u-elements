@@ -59,7 +59,7 @@ export class UHTMLDataListElement extends UHTMLElement {
 		this.role = "listbox";
 
 		const root = getConnectedRoot(this);
-		connectedRoot.set(this, root); // Cache to correcly unbind events on disconnectedCallback
+		connectedRoot.set(this, root); // Cache to correctly unbind events on disconnectedCallback
 		on(root, "focusin", this); // Only bind focus globally as this is needed to activate
 		on(root, "focus", this, true); // Need to also listen on focus with capturing to render before Firefox NVDA reads state
 	}
@@ -109,7 +109,7 @@ const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
 	self.hidden = !open;
 
 	if (input) input.ariaExpanded = `${open}`;
-	if (open) setupOptions(self); // Esure correct state when opening if input.value has changed
+	if (open) setupOptions(self); // Ensure correct state when opening if input.value has changed
 };
 
 const setupOptions = (self: UHTMLDataListElement, event?: Event) => {
@@ -141,7 +141,6 @@ const setupOptions = (self: UHTMLDataListElement, event?: Event) => {
 		visible.map((opt, i, { length }) => {
 			opt.title = `${i + 1}/${length}`;
 		});
-	// if (ARIA_LIVE) ARIA_LIVE.textContent = `${visible.length} vises` // TODO: Test with Kristoffer
 };
 
 function onFocusIn(self: UHTMLDataListElement, event: Event) {
@@ -201,7 +200,7 @@ function onClick(self: UHTMLDataListElement, { target }: Event) {
 
 		if (isSingle) {
 			input.focus(); // Change input.value before focus move to make screen reader read the correct value
-			setExpanded(self, false); // Click on single select option shold always close datalist
+			setExpanded(self, false); // Click on single select option should always close datalist
 		}
 
 		// Trigger input.value change events

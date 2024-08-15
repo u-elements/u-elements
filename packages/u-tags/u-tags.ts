@@ -27,7 +27,7 @@ declare global {
 	}
 }
 
-// TESTE:
+// TEST:
 // If remove: Use ariaLabel
 // If add: Use ariaLive
 
@@ -47,7 +47,7 @@ const TEXTS = {
 };
 
 // TODO: What to include in dispatchChange detail?
-// TODO KRISTOFFER: Announce datalist items count on type?
+// TODO: Announce datalist items count on type?
 
 const connectedRoot = new WeakMap<UHTMLTagsElement, Document | ShadowRoot>(); // Store connectedRoot to unbind correct root, as root can change during lifespan
 // const LIVE = document.body.appendChild(
@@ -88,7 +88,7 @@ export class UHTMLTagsElement extends UHTMLElement {
 		FOCUS_NODE.delete(this);
 		mutationObserver(this, false);
 		off(this, EVENTS, this);
-		off(root, "click", onDocumentClick); // Unind click-to-focus-input on root
+		off(root, "click", onDocumentClick); // Unbind click-to-focus-input on root
 	}
 	handleEvent(event: Event) {
 		if (event.defaultPrevented) return; // Allow all events to be canceled
@@ -114,9 +114,9 @@ export class UHTMLTagsElement extends UHTMLElement {
 // Forward click on label to u-tags input
 const onDocumentClick = ({ target }: Event) => {
 	const label = target instanceof Element && target.closest("label")?.htmlFor;
-	const utags = label && document.getElementById(label);
+	const uTags = label && document.getElementById(label);
 
-	if (utags instanceof UHTMLTagsElement) getInput(utags)?.focus();
+	if (uTags instanceof UHTMLTagsElement) getInput(uTags)?.focus();
 };
 
 const getText = (el?: Node | null) => el?.textContent?.trim() || "";
@@ -212,8 +212,8 @@ function onMutation(
 		// This is still a better user experience than keeping focus on the u-option as input is cleared
 		// and the user gets information about wether the action was remove or add
 		if (focusNext === input) {
-			const focusTmps = (input as HTMLInputElement).list?.options || self.items; // Prefer moving focus inside <datalist> if possible to prevent closing list
-			if (focusPrev === focusNext) focusTmps[0]?.focus(); // Move focus temporarily so out of input we get ariaLabel change announced
+			const focusTmp = (input as HTMLInputElement).list?.options || self.items; // Prefer moving focus inside <datalist> if possible to prevent closing list
+			if (focusPrev === focusNext) focusTmp[0]?.focus(); // Move focus temporarily so out of input we get ariaLabel change announced
 			setTimeout(() => focusNext?.focus(), 100); // 100ms delay so VoiceOver + Chrome announces new ariaLabel
 		} else focusNext?.focus(); // Set focus to button right away to make NVDA happy
 
@@ -304,6 +304,6 @@ const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
   self.hidden = !open
 
   if (input) input.ariaExpanded = `${IS_MAC || open}` // VoiceOver on Mac expanded state change overrides label announcement so lets just always keep it ariaExpanded true
-  if (open) setupOptions(self) // Esure correct state when opening if input.value has changed
+  if (open) setupOptions(self) // Ensure correct state when opening if input.value has changed
 }
 */

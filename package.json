@@ -29,9 +29,6 @@
 		"test": "playwright test",
 		"test:update": "npm run test -- --update-snapshots"
 	},
-	"dependencies": {
-		"weekstart": "^2.0.0"
-	},
 	"devDependencies": {
 		"@biomejs/biome": "1.8.3",
 		"@builder.io/qwik": "^1.7.1",

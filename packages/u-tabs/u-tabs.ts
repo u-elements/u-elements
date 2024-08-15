@@ -70,7 +70,7 @@ export class UHTMLTabListElement extends UHTMLElement {
 		const prev = tabs.findIndex((tab) => tab.contains(event.target as Node));
 		let next = prev;
 
-		if (event.defaultPrevented || prev === -1) return; // Event pevented or not a tab
+		if (event.defaultPrevented || prev === -1) return; // Event prevented or not a tab
 		if (event.type === "click") tabs[prev].selected = true;
 		if (event.type === "keydown" && !asButton(event)) {
 			if (key === "ArrowDown" || key === "ArrowRight")
@@ -176,7 +176,7 @@ export class UHTMLTabElement extends UHTMLElement {
 		const tabList = this.tabList;
 		return tabList
 			? [...queryWithoutNested("u-tab", tabList)].indexOf(this)
-			: 0; // Fallback to 0 complies with HTMLOptionElement spesification
+			: 0; // Fallback to 0 complies with HTMLOptionElement specification
 	}
 	get panel(): UHTMLTabPanelElement | null {
 		return getPanel(this);

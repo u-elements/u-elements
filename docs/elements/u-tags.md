@@ -17,7 +17,7 @@ Coming soon
   u-datalist { position: absolute; inset: 100% -1px auto; border: 1px solid; background: white; padding: .5em }
 &lt;/style&gt;
 &lt;label for="my-tags"&gt;
-  Choose flavour of ice cream
+  Choose flavor of ice cream
 &lt;/label&gt;
 &lt;u-tags id="my-tags"&gt;
   &lt;data&gt;Coconut&lt;/data&gt;

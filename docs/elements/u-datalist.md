@@ -20,7 +20,7 @@ import { data } from '../filesize.data.ts'
   u-option[selected] { font-weight: bold }
 &lt;/style&gt;
 &lt;label for="my-input"&gt;
-  Choose flavour of ice cream
+  Choose flavor of ice cream
 &lt;/label&gt;
 &lt;input id="my-input" list="my-list" /&gt;
 &lt;u-datalist id="my-list"&gt;
@@ -207,7 +207,7 @@ u-option:not([selected]) {
   }
 &lt;/style&gt;
 &lt;label&gt;
-  Choose flavour of ice cream
+  Choose flavor of ice cream
   &lt;br /&gt;
   &lt;input type="text" class="my-input" list="my-styling" /&gt;
 &lt;/label&gt;

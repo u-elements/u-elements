@@ -29,7 +29,7 @@ export class UHTMLProgressElement extends UHTMLElement {
 	}
 	constructor() {
 		super();
-		this.attachShadow({ mode: "closed" }).append(
+		this.attachShadow({ mode: "open" }).append(
 			createElement("slot", { hidden: true }), // Slot hiding content meant for legacy user agents https://html.spec.whatwg.org/multipage/form-elements.html#the-progress-element
 			createElement("style", {
 				textContent: `:host(:not([hidden])) { box-sizing: border-box; border: 1px solid; display: inline-block; height: .5em; width: 10em; overflow: hidden }
@@ -53,9 +53,9 @@ export class UHTMLProgressElement extends UHTMLElement {
 
 		if (roleImage) label = `${label.replace(/\d+%$/, "")} ${percentage}%`;
 		if (IS_FIREFOX)
-			Array.from(this.labels, (el) => {
+			for (const el of this.labels) {
 				el.ariaLabel = label; // Fixes double announcement in Firefox
-			});
+			}
 
 		this.ariaLabel = label.trim();
 		this.ariaBusy = `${this.position === -1}`; // true if indeterminate

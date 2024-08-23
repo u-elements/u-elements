@@ -26,7 +26,7 @@ export class UHTMLDetailsElement extends UHTMLElement {
 	constructor() {
 		super();
 		this.#content = createElement("slot");
-		this.attachShadow({ mode: "closed" }).append(
+		this.attachShadow({ mode: "open" }).append(
 			createElement("slot", { name: "summary" }), // Summary slot
 			this.#content, // Content slot
 			createElement("style", {
@@ -51,10 +51,9 @@ export class UHTMLDetailsElement extends UHTMLElement {
 		const hide = "onbeforematch" in this ? "until-found" : true; // Use "until-found" if supported
 		const open = this.open; // Cache for speed
 
-		Array.from(this.children, (el) => {
-			// Uses nodeName (not instanceof), as UHTMLSummaryElement might not be initialized yet
+		// Uses nodeName (not instanceof) since UHTMLSummaryElement might not be initialized yet
+		for (const el of this.children)
 			if (el.nodeName === "U-SUMMARY") el.ariaExpanded = `${open}`;
-		});
 
 		this.#content.ariaHidden = `${!open}`; // Needed to prevent announcing "group" when closed in Chrome on Mac
 		this.#content.hidden = open ? false : (hide as boolean); // Make typescript accept "until-found"

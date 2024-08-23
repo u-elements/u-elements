@@ -215,25 +215,26 @@ const queryWithoutNested = <TagName extends keyof HTMLElementTagNameMap>(
 	return self.querySelectorAll(css);
 };
 
+// Is separate functions since UHTMLTabsElement and UHTMLTabElement instances might not be created yet
 const isSelected = (tab: UHTMLTabElement) => tab.ariaSelected === "true";
 const getSelectedIndex = (tabs: Iterable<UHTMLTabElement>) =>
 	[...tabs].findIndex(isSelected);
 
 const getPanel = (
-	self: UHTMLTabElement,
+	tab: UHTMLTabElement,
 	id?: string,
 ): UHTMLTabPanelElement | null => {
-	const panelId = id || self.getAttribute(ARIA_CONTROLS);
+	const panelId = id || tab.getAttribute(ARIA_CONTROLS);
 	const panelSelector = `u-tabpanel[id="${panelId}"]`;
-	const tabsElement = self.closest("u-tabs");
+	const tabsElement = tab.closest("u-tabs");
 
 	// If no panels was found, but we have a tabsElement, lets find relevant panel based on index
 	return (
-		(panelId && getRoot(self).querySelector(panelSelector)) ||
-		(panelId && getRoot(self).querySelector(panelSelector)) ||
+		(panelId && getRoot(tab).querySelector(panelSelector)) ||
+		(panelId && getRoot(tab).querySelector(panelSelector)) ||
 		(tabsElement &&
 			queryWithoutNested("u-tabpanel", tabsElement)[
-				[...queryWithoutNested("u-tab", tabsElement)].indexOf(self)
+				[...queryWithoutNested("u-tab", tabsElement)].indexOf(tab)
 			]) ||
 		null
 	);

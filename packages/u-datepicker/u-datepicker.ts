@@ -52,7 +52,7 @@ export class UHTMLDatePickerElement extends UHTMLElement {
       <thead><tr part="days"><th scope="col"><slot></slot></th>${`<th scope="col"><slot name="-"></slot></th>`.repeat(7)}</tr></thead>
       <tbody part="dates">${`<tr role="row" part="row"><th scope="row" part="weeknumber"></th>${`<td><div><slot name="-"></slot></div></td>`.repeat(7)}</tr>`.repeat(7)}</tbody>`,
 		});
-		this.attachShadow({ mode: "closed" }).append(
+		this.attachShadow({ mode: "open" }).append(
 			this.#grid,
 			createElement("style", {
 				textContent: `:host { text-align: center }

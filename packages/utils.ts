@@ -4,28 +4,28 @@ export const IS_BROWSER =
 	typeof window.navigator !== "undefined";
 
 // Bad, but needed
-type NavigatorUserAgentData = { userAgentData?: { platform: string } };
 export const IS_ANDROID = IS_BROWSER && /android/i.test(navigator.userAgent);
 export const IS_FIREFOX = IS_BROWSER && /firefox/i.test(navigator.userAgent);
 export const IS_IOS =
 	IS_BROWSER && /iPad|iPhone|iPod/.test(navigator.userAgent);
-export const IS_MAC =
-	IS_BROWSER &&
-	/^Mac/i.test(
-		(navigator as unknown as NavigatorUserAgentData).userAgentData?.platform ||
-			navigator.platform,
-	);
 export const IS_SAFARI =
 	IS_BROWSER && /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
+export const ARIA_LIVE = IS_BROWSER
+	? Object.assign(document.createElement("div"), {
+			ariaLive: "assertive",
+			style: "position:fixed;overflow:hidden;width:1px;white-space:nowrap",
+		})
+	: null;
+
 // Constants for better compression and control
 export const SAFE_LABELLEDBY = `${IS_ANDROID ? "data" : "aria"}-labelledby`; // Android <=13 incorrectly reads labelledby instead of content
-export const SAFE_MULTISELECTABLE = `${IS_SAFARI ? "aria" : "data"}-multiselectable`; // Use aria-multiselectable only in Safari as VoiceOver in Chrome and Firefox inncorrectly announces selected when aria-selected="false"
+export const SAFE_MULTISELECTABLE = `${IS_SAFARI ? "aria" : "data"}-multiselectable`; // Use aria-multiselectable only in Safari as VoiceOver in Chrome and Firefox incorrectly announces selected when aria-selected="false"
 export const DISPLAY_BLOCK = ":host(:not([hidden])) { display: block }";
 export const FOCUS_OUTLINE =
 	"outline: 1px dotted; outline: 5px auto Highlight; outline: 5px auto -webkit-focus-ring-color"; // Outline styles in order: fallback, Mozilla, WebKit
 
-// UHTMLElement defintion to use on Node, as server does not have HTMLElement
+// UHTMLElement definition to use on Node, as server does not have HTMLElement
 export const UHTMLElement =
 	typeof HTMLElement === "undefined"
 		? (class {} as typeof HTMLElement)
@@ -71,7 +71,7 @@ export const off = (
  * @param css The css to inject
  */
 export const attachStyle = (element: Element, css: string) =>
-	element.attachShadow({ mode: "closed" }).append(
+	element.attachShadow({ mode: "open" }).append(
 		createElement("slot"), // Unnamed slot does automatically render all top element nodes
 		createElement("style", { textContent: css }),
 	);
@@ -88,7 +88,7 @@ export const mutationObserver = (
 ) => {
 	if (options === undefined) return observers.get(element);
 	try {
-		observers.get(element).disconnect(); // Allways unbind previous listener
+		observers.get(element).disconnect(); // Always unbind previous listener
 		observers.delete(element);
 	} catch (err) {
 		// Could not unmount since element is removed

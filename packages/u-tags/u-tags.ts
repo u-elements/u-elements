@@ -203,17 +203,18 @@ export class UHTMLTagsElement extends UHTMLElement {
 		const input = this.control === target ? this.control : null;
 		let index = input ? this.items.length : this.#focusIndex ?? -1;
 
+		if (!input && (index === -1 || asButton(event))) return; // Skip if not input or if is clicking item
 		if (key === "ArrowRight" && !input) index += 1;
 		else if (key === "ArrowLeft" && !input?.selectionEnd) index -= 1;
 		else if (key === "Enter" && input) {
-			input.dispatchEvent(new Event("input", { bubbles: true }));
-			return event.preventDefault(); // Prevent submit
+			event.preventDefault(); // Prevent submit
+			return input.dispatchEvent(new Event("input", { bubbles: true }));
 		} else if (key === "Backspace" || key === "Delete") {
 			const remove = this.items[index];
 			if (repeat || input?.selectionEnd) return; // Prevent multiple deletes and only delete if in caret is at start
 			if (remove) return this.#dispatchChange(remove) && remove.remove();
 			if (input) index -= 1;
-		} else return this.#focusIndex === -1 || asButton(event); // Skip other keys and forward item clicks
+		} else return; // Skip other keys
 
 		event.preventDefault(); // Prevent datalist arrow events
 		(this.items[Math.max(0, index)] || this.control)?.focus();

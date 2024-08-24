@@ -25,6 +25,7 @@ declare global {
 
 let IS_PRESS = false; // Prevent loosing focus on mousedown on <u-option> despite tabIndex -1
 const EVENTS = "click,focusout,input,keydown,pointerdown,pointerup";
+// TODO: Announce datalist items count on type?
 
 /**
  * The `<u-datalist>` HTML element contains a set of `<u-option>` elements that represent the permissible or recommended options available to choose from within other controls.

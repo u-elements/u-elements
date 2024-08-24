@@ -11,13 +11,6 @@ export const IS_IOS =
 export const IS_SAFARI =
 	IS_BROWSER && /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
-export const ARIA_LIVE = IS_BROWSER
-	? Object.assign(document.createElement("div"), {
-			ariaLive: "assertive",
-			style: "position:fixed;overflow:hidden;width:1px;white-space:nowrap",
-		})
-	: null;
-
 // Constants for better compression and control
 export const SAFE_LABELLEDBY = `${IS_ANDROID ? "data" : "aria"}-labelledby`; // Android <=13 incorrectly reads labelledby instead of content
 export const SAFE_MULTISELECTABLE = `${IS_SAFARI ? "aria" : "data"}-multiselectable`; // Use aria-multiselectable only in Safari as VoiceOver in Chrome and Firefox incorrectly announces selected when aria-selected="false"
@@ -140,6 +133,8 @@ export const useId = (el?: Element | null) => {
 /**
  * createElement
  * @description creates element and assigns properties
+ * @param taName The tagname of element to create
+ * @param props The properties of the newly created element
  * @return HTMLElement with props
  */
 export const createElement = <TagName extends keyof HTMLElementTagNameMap>(
@@ -163,6 +158,7 @@ export const customElements = {
 /**
  * getLabel
  * @description Get the screen reader label or an element from aria-label, aria-labelledby or <label> elements
+ * @param element The target element to get accessible label from
  * @return string
  */
 export const getLabel = (el: Element) => {
@@ -173,4 +169,22 @@ export const getLabel = (el: Element) => {
 		...labels.map((id) => root.querySelector<HTMLElement>(`[id="${id}"]`)), // Get all labelledby elements
 		...Array.from((el as HTMLInputElement).labels || []), // Get all <label> elements
 	].reduce((acc, el) => acc || el?.innerText?.trim() || "", label);
+};
+
+/**
+ * ariaLive
+ * @description Adds a visibly hidden aria-live area to the document to later announce provided text
+ * @param announce A boolean indicating whether to get ready for announcements or text to announce
+ * @return string
+ */
+let LIVE: HTMLElement;
+export const ariaLive = (announce: string | boolean) => {
+	if (announce === false) return LIVE?.remove();
+	if (!LIVE)
+		LIVE = Object.assign(document.createElement("div"), {
+			ariaLive: "assertive",
+			style: "position:fixed;overflow:hidden;width:1px;white-space:nowrap",
+		});
+	if (announce !== true) LIVE.textContent = announce;
+	if (!LIVE.isConnected) document.body.appendChild(LIVE);
 };

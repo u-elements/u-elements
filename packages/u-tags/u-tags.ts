@@ -1,10 +1,10 @@
 import {
-	ARIA_LIVE,
 	FOCUS_OUTLINE,
 	IS_ANDROID,
 	IS_FIREFOX,
 	SAFE_MULTISELECTABLE,
 	UHTMLElement,
+	ariaLive,
 	asButton,
 	createElement,
 	customElements,
@@ -27,11 +27,7 @@ declare global {
 	}
 }
 
-// TEST:
-// If remove: Use ariaLabel
-// If add: Use ariaLive
-
-const EVENTS = "change,input,focusin,focusout,keydown";
+const EVENTS = "input,focusin,focusout,keydown";
 const TEXTS = {
 	added: "Added",
 	remove: "Press to remove",
@@ -41,16 +37,13 @@ const TEXTS = {
 	of: "of",
 };
 
-// TODO: What to include in dispatchChange detail?
-// TODO: Announce datalist items count on type?
-
 /**
  * The `<u-tags>` HTML element contains a set of `<data>` elements.
  * No MDN reference available.
  */
 export class UHTMLTagsElement extends UHTMLElement {
 	#blurTimer: ReturnType<typeof setTimeout> | number = 0;
-	#focusIndex = Number.NaN; // NaN = focus outside, -1 = focus inside, 0+ = focus on item
+	#focusIndex: number | null = null;
 	#root: null | Document | ShadowRoot = null;
 
 	constructor() {
@@ -67,7 +60,7 @@ export class UHTMLTagsElement extends UHTMLElement {
 	}
 	connectedCallback() {
 		this.#root = getRoot(this);
-		this.#render(); // Set initial aria-labels and selected items in u-datalist
+		this.#render(); // Set initial aria-labels and selected items in datalist
 
 		mutationObserver(this, { childList: true }); // Observe u-datalist to add aria-multiselect="true"
 		on(this.#root, "click", this); // Bind click-to-focus-input on root
@@ -75,8 +68,8 @@ export class UHTMLTagsElement extends UHTMLElement {
 	}
 	disconnectedCallback() {
 		mutationObserver(this, false);
-		off(this, EVENTS, this);
 		off(this.#root || this, "click", this); // Unbind click-to-focus-input on root
+		off(this, EVENTS, this);
 		this.#root = null;
 	}
 	handleEvent(event: Event) {
@@ -98,7 +91,6 @@ export class UHTMLTagsElement extends UHTMLElement {
 			`label[for="${useId(this)}"]`,
 		);
 	}
-	// A HTMLElement representing the control with which the u-tags is associated.
 	get control() {
 		return this.querySelector("input");
 	}
@@ -108,16 +100,16 @@ export class UHTMLTagsElement extends UHTMLElement {
 			new CustomEvent("tags", {
 				bubbles: true,
 				cancelable: true,
-				detail: { item, action: item.parentNode ? "remove" : "add" },
+				detail: { item, action: item.isConnected ? "remove" : "add" },
 			}),
 		);
 	}
 
 	#render(event?: CustomEvent<MutationRecord[]>) {
 		const texts = { ...TEXTS, ...this.dataset };
-		const change = Number.isNaN(this.#focusIndex) ? null : event?.detail[0]; // Skip announcing changes when no focus
+		const change = this.#focusIndex === null ? null : event?.detail[0]; // Skip announcing changes when no focus
 		const changeItem = change?.addedNodes[0] || change?.removedNodes[0];
-		const changeText = `${changeItem ? `${changeItem.parentNode ? texts.added : texts.removed} ${changeItem.textContent}, ` : ""}`;
+		const changeText = `${changeItem ? `${changeItem.isConnected ? texts.added : texts.removed} ${changeItem.textContent}, ` : ""}`;
 		const values: string[] = [];
 
 		// Setup self
@@ -134,23 +126,22 @@ export class UHTMLTagsElement extends UHTMLElement {
 		const control = this.control;
 		const options = control?.list?.options || [];
 		control?.list?.setAttribute(SAFE_MULTISELECTABLE, "true"); // Make <u-datalist> multiselect
-		for (const opt of options) opt.selected = values.includes(opt.value);
+		for (const opt of options) opt.selected = values.includes(opt.value); // Set selected options in datalist
 		if (control)
 			control.ariaLabel = `${changeText}${this.ariaLabel}, ${values.length ? texts.found.replace("%d", `${values.length}`) : texts.empty}`;
 
 		// Announce item change
-		if (changeItem) {
+		if (changeText) {
 			const isDesktopFireFox = IS_FIREFOX && !IS_ANDROID; // FireFox desktop announces ariaLabel changes
 			const nextFocus = this.items[(this.#focusIndex || 1) - 1] || control;
+			const nowFocus = getRoot(this).activeElement;
 
-			if (nextFocus === getRoot(this).activeElement) {
-				if (ARIA_LIVE) ARIA_LIVE.textContent = changeText; // If focus does not move, announce with ariaLive
-			} else if (nextFocus === control) {
-				setTimeout(() => nextFocus?.focus(), 100); // Add 100ms delay to avoid native input announcement in Chrome
-			} else nextFocus?.focus(); // Set focus right away if moving to item
+			if (nextFocus === nowFocus) ariaLive(changeText);
+			else if (nextFocus !== control) nextFocus?.focus();
+			else setTimeout(() => nextFocus?.focus(), 100); // Add 100ms delay to avoid native input announcement in Chrome
 
-			// Use timeout to reset ariaLabel as mobile phones does not trigger focusout
-			// but use focusout on only desktop Firefox since Firefox announces ariaLabel changes
+			// Reset ariaLabel with setTimeout as mobile phones does not trigger focusout,
+			// but use focusout on desktop Firefox as Firefox announces ariaLabel changes
 			setTimeout(() => {
 				if (!isDesktopFireFox) this.#render();
 				else on(self, "focusout", () => this.#render(), { once: true });
@@ -159,21 +150,21 @@ export class UHTMLTagsElement extends UHTMLElement {
 	}
 
 	#onFocusIn({ target }: Event) {
+		ariaLive(true);
 		clearTimeout(this.#blurTimer);
-		if (ARIA_LIVE) document.body.appendChild(ARIA_LIVE);
 		this.#focusIndex = [...this.items].indexOf(target as HTMLDataElement);
 	}
 
 	#onFocusOut() {
 		this.#blurTimer = setTimeout(() => {
-			this.#focusIndex = Number.NaN;
-			ARIA_LIVE?.remove();
+			this.#focusIndex = null;
+			ariaLive(false);
 		});
 	}
 
 	#onClick({ target, clientX: x, clientY: y }: MouseEvent) {
 		const label = (target as Element)?.closest?.("label")?.htmlFor;
-		const items = this.contains(target as Node) ? [...this.items] : null;
+		const items = this.contains(target as Node) ? [...this.items] : null; // Only care about items if click is inside
 		const itemRemove = items?.find((item) => item.contains(target as Node)); // Only keyboard and screen reader can set event.target to element pointer-events: none
 		const itemClicked = items?.find((item) => {
 			const { top, right, bottom, left } = item.getBoundingClientRect(); // Use coordinates to inside since pointer-events: none will prevent correct event.target
@@ -206,24 +197,24 @@ export class UHTMLTagsElement extends UHTMLElement {
 	}
 
 	#onKeyDown(event: KeyboardEvent) {
-		const { key, repeat, target: el } = event;
+		const { key, repeat, target } = event;
 		const input = this.control;
 		const items = [...this.items, input].filter(Boolean);
-		const index = items.findIndex((item) => item?.contains(el as Node));
+		const index = items.findIndex((item) => item?.contains(target as Node));
 		const isCaretAtStartOfInput = !input?.selectionEnd;
 		let next = -1;
 
-		if (index === -1 || (el !== input && asButton(event))) return; // No input or item focused or keydown to click on item
+		if (index === -1 || (target !== input && asButton(event))) return; // No input or item focused or keydown to click on item
 		if (key === "ArrowRight") next = index + 1;
 		if (key === "ArrowLeft" && isCaretAtStartOfInput) next = index - 1;
-		if (key === "Enter" && el === input) {
+		if (key === "Enter" && target === input) {
 			event.preventDefault(); // Prevent submit
 			const hasValue = !!input?.value.trim();
 			if (hasValue) input?.dispatchEvent(new Event("input", { bubbles: true })); // Trigger input.value change
 		}
 		if (key === "Backspace" || key === "Delete") {
 			if (repeat || !isCaretAtStartOfInput) return; // Prevent multiple deletes and only delete if in caret is at start
-			if (el === input) next = index - 1;
+			if (target === input) next = index - 1;
 			else if (this.#dispatchChange(this.items[index])) items[index]?.remove();
 		}
 		if (items[next]) {

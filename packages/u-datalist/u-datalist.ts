@@ -170,6 +170,13 @@ export class UHTMLDataListElement extends UHTMLElement {
 		if (key === "Escape") this.#expanded = false;
 	}
 
+	set #expanded(open: boolean) {
+		this.hidden = !open;
+
+		if (this.#input) this.#input.ariaExpanded = `${open}`;
+		if (open) this.#setupOptions(); // Ensure correct state when opening if input.value has changed
+	}
+
 	#disconnectInput() {
 		// ARIA_LIVE?.remove();
 		off(this.#root || this, EVENTS, this);
@@ -177,17 +184,13 @@ export class UHTMLDataListElement extends UHTMLElement {
 		this.#expanded = false;
 		this.#input = null;
 	}
+
 	#getVisibleOptions() {
 		return [...this.options].filter(
 			(opt) => !opt.disabled && opt.offsetWidth && opt.offsetHeight, // Checks disabled or visibility (since hidden attribute can be overwritten by display: block)
 		);
 	}
-	set #expanded(open: boolean) {
-		this.hidden = !open;
 
-		if (this.#input) this.#input.ariaExpanded = `${open}`;
-		if (open) this.#setupOptions(); // Ensure correct state when opening if input.value has changed
-	}
 	#setupOptions(event?: Event) {
 		const value = this.#input?.value.toLowerCase().trim() || "";
 		const hasChange = event?.type === "mutation" || this.#value !== value;

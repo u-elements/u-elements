@@ -43,7 +43,7 @@ const TEXTS = {
  */
 export class UHTMLTagsElement extends UHTMLElement {
 	#blurTimer: ReturnType<typeof setTimeout> | number = 0;
-	#focusIndex = Number.NaN; // NaN if not focused
+	#focusIndex: number | null = null;
 	#root: null | Document | ShadowRoot = null;
 
 	constructor() {
@@ -124,9 +124,12 @@ export class UHTMLTagsElement extends UHTMLElement {
 
 		// Setup control
 		const control = this.control;
-		const options = control?.list?.options || [];
-		control?.list?.setAttribute(SAFE_MULTISELECTABLE, "true"); // Make <u-datalist> multiselect
-		for (const opt of options) opt.selected = values.includes(opt.value); // Set selected options in datalist
+		const list = document.getElementById(control?.getAttribute("list") || ""); // UHTMLDatalist might not be initialized yet
+		list?.setAttribute(SAFE_MULTISELECTABLE, "true"); // Make <u-datalist> multiselect
+		for (const option of list?.children || []) {
+			const value = option.getAttribute("value") || option.textContent || "";
+			option.toggleAttribute("selected", values.includes(value)); // Set selected options in datalist
+		}
 		if (control)
 			control.ariaLabel = `${changeText}${this.ariaLabel}, ${values.length ? texts.found.replace("%d", `${values.length}`) : texts.empty}`;
 
@@ -157,7 +160,7 @@ export class UHTMLTagsElement extends UHTMLElement {
 
 	#onFocusOut() {
 		this.#blurTimer = setTimeout(() => {
-			this.#focusIndex = Number.NaN;
+			this.#focusIndex = null;
 			ariaLive(false);
 		});
 	}
@@ -189,7 +192,7 @@ export class UHTMLTagsElement extends UHTMLElement {
 		});
 
 		if (input) input.value = "";
-		if (!this.#dispatchChange(itemRemove || itemAdd)) return this.#render(); // Restore datalist state if preventDefault
+		if (!this.#dispatchChange(itemRemove || itemAdd)) return;
 		if (itemRemove) return itemRemove.remove();
 		if (!items[0]) return this.prepend(itemAdd); // If no items, add first
 		items[items.length - 1].insertAdjacentElement("afterend", itemAdd); // Add after last item
@@ -198,7 +201,7 @@ export class UHTMLTagsElement extends UHTMLElement {
 	#onKeyDown(event: KeyboardEvent) {
 		const { key, repeat, target } = event;
 		const input = this.control === target ? this.control : null;
-		let index = input ? this.items.length : this.#focusIndex;
+		let index = input ? this.items.length : this.#focusIndex ?? -1;
 
 		if (key === "ArrowRight" && !input) index += 1;
 		else if (key === "ArrowLeft" && !input?.selectionEnd) index -= 1;

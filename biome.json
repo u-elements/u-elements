@@ -3,10 +3,11 @@
 	"files": {
 		"ignore": [
 			"dist",
-			"test-results",
-			"playwright-report",
+			"docs/.vitepress",
+			"frameworks",
 			"node_modules",
-			"frameworks"
+			"playwright-report",
+			"test-results"
 		]
 	},
 	"organizeImports": {

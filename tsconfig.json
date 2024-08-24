@@ -5,12 +5,13 @@
 		"module": "ESNext",
 
 		/* Bundler mode */
-		"moduleResolution": "bundler",
 		"allowImportingTsExtensions": true,
-		"resolveJsonModule": true,
 		"isolatedModules": true,
-		"noEmit": true,
 		"jsx": "preserve",
+		"moduleResolution": "bundler",
+		"noEmit": true,
+		"resolveJsonModule": true,
+		"skipLibCheck": true,
 
 		/* Linting */
 		"strict": true,
@@ -18,5 +19,6 @@
 		"noUnusedParameters": true,
 		"noFallthroughCasesInSwitch": true
 	},
-	"exclude": ["dist", "node_modules"]
+	"exclude": ["dist", "node_modules"],
+	"include": ["*.ts", "*.tsx"]
 }

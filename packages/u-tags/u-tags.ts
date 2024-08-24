@@ -75,11 +75,11 @@ export class UHTMLTagsElement extends UHTMLElement {
 	handleEvent(event: Event) {
 		if (event.defaultPrevented) return; // Allow all events to be canceled
 		if (event.type === "click") this.#onClick(event as MouseEvent);
+		if (event.type === "focusin") this.#onFocusIn(event);
+		if (event.type === "focusout") this.#onFocusOut();
 		if (event.type === "input") this.#onInputOptionClick(event as InputEvent);
 		if (event.type === "keydown") this.#onKeyDown(event as KeyboardEvent);
 		if (event.type === "mutation") this.#render(event as CustomEvent);
-		if (event.type === "focusin") this.#onFocusIn(event);
-		if (event.type === "focusout") this.#onFocusOut();
 	}
 	get items(): NodeListOf<HTMLDataElement> {
 		return this.querySelectorAll("data");

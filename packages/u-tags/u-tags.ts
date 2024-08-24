@@ -179,9 +179,9 @@ export class UHTMLTagsElement extends UHTMLElement {
 		else if (target === this || label === this.id) this.control?.focus(); // Focus if clicking <u-tags> or <label>
 	}
 
-	#onInputOptionClick(event?: InputEvent) {
-		if (event?.inputType) return; // Skip type events (clicking item in <datalist> or pressing "Enter" triggers onInput, but without inputType)
-		const input = this.control;
+	#onInputOptionClick(event: InputEvent) {
+		const input = event.target as HTMLInputElement;
+		if (event.inputType || !input.value.trim()) return; // Skip typing or empty (clicking item in <datalist> or pressing "Enter" triggers onInput, but without inputType)
 		const items = [...this.items];
 		const options = Array.from(input?.list?.options || []);
 		const optionClicked = options.find(({ value }) => value === input?.value);
@@ -206,7 +206,7 @@ export class UHTMLTagsElement extends UHTMLElement {
 		if (key === "ArrowRight" && !input) index += 1;
 		else if (key === "ArrowLeft" && !input?.selectionEnd) index -= 1;
 		else if (key === "Enter" && input) {
-			if (input.value.trim()) this.#onInputOptionClick();
+			input.dispatchEvent(new Event("input", { bubbles: true }));
 			return event.preventDefault(); // Prevent submit
 		} else if (key === "Backspace" || key === "Delete") {
 			const remove = this.items[index];

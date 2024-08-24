@@ -43,7 +43,7 @@ const TEXTS = {
  */
 export class UHTMLTagsElement extends UHTMLElement {
 	#blurTimer: ReturnType<typeof setTimeout> | number = 0;
-	#focusIndex: number | null = null;
+	#focusIndex = Number.NaN; // NaN if not focused
 	#root: null | Document | ShadowRoot = null;
 
 	constructor() {
@@ -107,7 +107,7 @@ export class UHTMLTagsElement extends UHTMLElement {
 
 	#render(event?: CustomEvent<MutationRecord[]>) {
 		const texts = { ...TEXTS, ...this.dataset };
-		const change = this.#focusIndex === null ? null : event?.detail[0]; // Skip announcing changes when no focus
+		const change = Number.isNaN(this.#focusIndex) ? null : event?.detail[0]; // Skip announcing changes when no focus
 		const changeItem = change?.addedNodes[0] || change?.removedNodes[0];
 		const changeText = `${changeItem ? `${changeItem.isConnected ? texts.added : texts.removed} ${changeItem.textContent}, ` : ""}`;
 		const values: string[] = [];
@@ -157,7 +157,7 @@ export class UHTMLTagsElement extends UHTMLElement {
 
 	#onFocusOut() {
 		this.#blurTimer = setTimeout(() => {
-			this.#focusIndex = null;
+			this.#focusIndex = Number.NaN;
 			ariaLive(false);
 		});
 	}
@@ -173,23 +173,22 @@ export class UHTMLTagsElement extends UHTMLElement {
 
 		if (itemRemove && this.#dispatchChange(itemRemove)) itemRemove.remove();
 		else if (itemClicked) itemClicked.focus();
-		else if (target === this || label === this.id) this.control?.focus(); // Focus <input> if click on <u-tags>
+		else if (target === this || label === this.id) this.control?.focus(); // Focus if clicking <u-tags> or <label>
 	}
 
-	#onInputOptionClick(event: InputEvent) {
-		if (event.inputType) return; // Skip typing - clicking item in <datalist> or pressing "Enter" triggers onInput, but without inputType
-		const input = event.target as HTMLInputElement;
+	#onInputOptionClick(event?: InputEvent) {
+		if (event?.inputType) return; // Skip type events (clicking item in <datalist> or pressing "Enter" triggers onInput, but without inputType)
+		const input = this.control;
 		const items = [...this.items];
-		const options = Array.from(input.list?.options || []);
-		const optionClicked = options.find(({ value }) => value === input.value);
-		const itemRemove = items.find((item) => item.value === input.value);
+		const options = Array.from(input?.list?.options || []);
+		const optionClicked = options.find(({ value }) => value === input?.value);
+		const itemRemove = items.find((item) => item.value === input?.value);
 		const itemAdd = createElement("data", {
-			textContent: optionClicked?.text || input.value,
-			value: input.value,
+			textContent: optionClicked?.text || input?.value,
+			value: input?.value,
 		});
 
-		input.value = "";
-
+		if (input) input.value = "";
 		if (!this.#dispatchChange(itemRemove || itemAdd)) return this.#render(); // Restore datalist state if preventDefault
 		if (itemRemove) return itemRemove.remove();
 		if (!items[0]) return this.prepend(itemAdd); // If no items, add first
@@ -198,29 +197,23 @@ export class UHTMLTagsElement extends UHTMLElement {
 
 	#onKeyDown(event: KeyboardEvent) {
 		const { key, repeat, target } = event;
-		const input = this.control;
-		const items = [...this.items, input].filter(Boolean);
-		const index = items.findIndex((item) => item?.contains(target as Node));
-		const isCaretAtStartOfInput = !input?.selectionEnd;
-		let next = -1;
+		const input = this.control === target ? this.control : null;
+		let index = input ? this.items.length : this.#focusIndex;
 
-		if (index === -1 || (target !== input && asButton(event))) return; // No input or item focused or keydown to click on item
-		if (key === "ArrowRight") next = index + 1;
-		if (key === "ArrowLeft" && isCaretAtStartOfInput) next = index - 1;
-		if (key === "Enter" && target === input) {
-			event.preventDefault(); // Prevent submit
-			const hasValue = !!input?.value.trim();
-			if (hasValue) input?.dispatchEvent(new Event("input", { bubbles: true })); // Trigger input.value change
-		}
-		if (key === "Backspace" || key === "Delete") {
-			if (repeat || !isCaretAtStartOfInput) return; // Prevent multiple deletes and only delete if in caret is at start
-			if (target === input) next = index - 1;
-			else if (this.#dispatchChange(this.items[index])) items[index]?.remove();
-		}
-		if (items[next]) {
-			event.preventDefault(); // Prevent <u-datalist> moving focus to <input>
-			items[next]?.focus();
-		}
+		if (key === "ArrowRight" && !input) index += 1;
+		else if (key === "ArrowLeft" && !input?.selectionEnd) index -= 1;
+		else if (key === "Enter" && input) {
+			if (input.value.trim()) this.#onInputOptionClick();
+			return event.preventDefault(); // Prevent submit
+		} else if (key === "Backspace" || key === "Delete") {
+			const remove = this.items[index];
+			if (repeat || input?.selectionEnd) return; // Prevent multiple deletes and only delete if in caret is at start
+			if (remove) return this.#dispatchChange(remove) && remove.remove();
+			if (input) index -= 1;
+		} else return this.#focusIndex === -1 || asButton(event); // Skip other keys and forward item clicks
+
+		event.preventDefault(); // Prevent datalist arrow events
+		(this.items[Math.max(0, index)] || this.control)?.focus();
 	}
 }
 

@@ -203,7 +203,7 @@ export class UHTMLTagsElement extends UHTMLElement {
 		const input = this.control === target ? this.control : null;
 		let index = input ? this.items.length : this.#focusIndex ?? -1;
 
-		if (!input && (index === -1 || asButton(event))) return; // Skip if not input or if is clicking item
+		if (index === -1 || (!input && asButton(event))) return; // Skip if focus is neither on item or input or if item click
 		if (key === "ArrowRight" && !input) index += 1;
 		else if (key === "ArrowLeft" && !input?.selectionEnd) index -= 1;
 		else if (key === "Enter" && input) {

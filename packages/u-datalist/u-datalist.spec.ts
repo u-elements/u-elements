@@ -44,7 +44,7 @@ test.describe("u-datalist", () => {
 		await expect(uDatalist).toBeAttached();
 	});
 
-	test("sets up propertis", async ({ page }) => {
+	test("sets up properties", async ({ page }) => {
 		const uDatalist = page.locator("u-datalist");
 
 		await expect(uDatalist).toHaveJSProperty("hidden", true);

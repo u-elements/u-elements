@@ -2,6 +2,8 @@ import {
 	FOCUS_OUTLINE,
 	IS_ANDROID,
 	IS_FIREFOX,
+	IS_IOS,
+	IS_MAC,
 	SAFE_MULTISELECTABLE,
 	UHTMLElement,
 	ariaLive,
@@ -21,12 +23,14 @@ declare global {
 	}
 	interface GlobalEventHandlersEventMap {
 		tags: CustomEvent<{
-			item: HTMLDataElement;
 			action: "add" | "remove";
+			item: HTMLDataElement;
 		}>;
 	}
 }
 
+const IS_MOBILE = IS_ANDROID || IS_IOS;
+const IS_FIREFOX_MAC = IS_FIREFOX || IS_MAC;
 const EVENTS = "input,focusin,focusout,keydown";
 const TEXTS = {
 	added: "Added",
@@ -42,6 +46,7 @@ const TEXTS = {
  * No MDN reference available.
  */
 export class UHTMLTagsElement extends UHTMLElement {
+	#blurAnnounceReset = false;
 	#blurTimer: ReturnType<typeof setTimeout> | number = 0;
 	#focusIndex: number | null = null;
 	#root: null | Document | ShadowRoot = null;
@@ -135,20 +140,20 @@ export class UHTMLTagsElement extends UHTMLElement {
 
 		// Announce item change
 		if (changeText) {
-			const isDesktopFireFox = IS_FIREFOX && !IS_ANDROID; // FireFox desktop announces ariaLabel changes
 			const nextFocus = this.items[(this.#focusIndex || 1) - 1] || control;
-			const nowFocus = getRoot(this).activeElement;
+			const sameFocus = nextFocus === getRoot(this).activeElement;
+			const tmpFocus = control?.list?.options || this.items; // Move focus temporarily so out of input we get ariaLabel change announced
+			this.#blurAnnounceReset = false; // Do not reset announce on next focus/blur
 
-			if (nextFocus === nowFocus) ariaLive(changeText);
-			else if (nextFocus !== control) nextFocus?.focus();
-			else setTimeout(() => nextFocus?.focus(), 100); // Add 100ms delay to avoid native input announcement in Chrome
+			if (nextFocus === control) {
+				if (sameFocus) IS_MOBILE ? ariaLive(changeText) : tmpFocus[0]?.focus(); // Mobile does not properly run .focus()
+				setTimeout(() => nextFocus?.focus(), 100); // 100ms delay so VoiceOver + Chrome announces new ariaLabel
+			} else nextFocus?.focus(); // Set focus to button right away to make NVDA happy
 
-			// Reset ariaLabel with setTimeout as mobile phones does not trigger focusout,
-			// but use focusout on desktop Firefox as Firefox announces ariaLabel changes
 			setTimeout(() => {
-				if (!isDesktopFireFox) this.#render();
-				else on(self, "focusout", () => this.#render(), { once: true });
-			}, 500);
+				if (!IS_FIREFOX_MAC) return this.#render(); // Reset with timer as this works on both mobile and in JAWS forms mode
+				this.#blurAnnounceReset = true; // But use blur to reset on Firefox Mac prevent announcing aria-label changes
+			}, 500); // Reset after 500ms to let focus move and screen reader announcement run first
 		}
 	}
 
@@ -159,6 +164,7 @@ export class UHTMLTagsElement extends UHTMLElement {
 	}
 
 	#onFocusOut() {
+		if (this.#blurAnnounceReset) this.#render();
 		this.#blurTimer = setTimeout(() => {
 			this.#focusIndex = null;
 			ariaLive(false);
@@ -201,17 +207,18 @@ export class UHTMLTagsElement extends UHTMLElement {
 	#onKeyDown(event: KeyboardEvent) {
 		const { key, repeat, target } = event;
 		const input = this.control === target ? this.control : null;
+		const isCaretInside = input?.selectionEnd;
 		let index = input ? this.items.length : this.#focusIndex ?? -1;
 
 		if (index === -1 || (!input && asButton(event))) return; // Skip if focus is neither on item or input or if item click
 		if (key === "ArrowRight" && !input) index += 1;
-		else if (key === "ArrowLeft" && !input?.selectionEnd) index -= 1;
+		else if (key === "ArrowLeft" && !isCaretInside) index -= 1;
 		else if (key === "Enter" && input) {
 			event.preventDefault(); // Prevent submit
 			return input.dispatchEvent(new Event("input", { bubbles: true }));
-		} else if (key === "Backspace" || key === "Delete") {
-			const remove = this.items[index];
-			if (repeat || input?.selectionEnd) return; // Prevent multiple deletes and only delete if in caret is at start
+		} else if ((key === "Backspace" || key === "Delete") && !isCaretInside) {
+			const remove = !repeat && this.items[index];
+			event.preventDefault(); // Prevent navigating away from page
 			if (remove) return this.#dispatchChange(remove) && remove.remove();
 			if (input) index -= 1;
 		} else return; // Skip other keys

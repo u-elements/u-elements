@@ -1,6 +1,6 @@
 export type { UHTMLOptionElement } from "./u-option";
 import {
-	// ARIA_LIVE,
+	// ariaLive,
 	DISPLAY_BLOCK,
 	IS_BROWSER,
 	IS_IOS,
@@ -84,7 +84,7 @@ export class UHTMLDataListElement extends UHTMLElement {
 			target.getAttribute("list") === this.id
 		) {
 			if (this.#input) this.#disconnectInput(); // If previously used by other input
-			// if (ARIA_LIVE) document.body.append(ARIA_LIVE);
+			// ariaLive(true);
 
 			this.#input = target;
 			this.#input.ariaAutoComplete = "list";
@@ -163,8 +163,10 @@ export class UHTMLDataListElement extends UHTMLElement {
 				return event.preventDefault(); // Prevent submit
 			}
 		}
-		(options[next] || this.#input)?.focus(); // Move focus to next option or input
+
+		if (options[next]) for (const option of options) option.tabIndex = -1; // Ensure u-options can have focus if iOS has a keyboard
 		if (options[next]) event.preventDefault(); // Prevent scroll when on option
+		(options[next] || this.#input)?.focus(); // Move focus to next option or input
 
 		// Close on ESC, after moving focus
 		if (key === "Escape") this.#expanded = false;
@@ -178,7 +180,7 @@ export class UHTMLDataListElement extends UHTMLElement {
 	}
 
 	#disconnectInput() {
-		// ARIA_LIVE?.remove();
+		// ariaLive(false);
 		off(this.#root || this, EVENTS, this);
 		mutationObserver(this, false);
 		this.#expanded = false;

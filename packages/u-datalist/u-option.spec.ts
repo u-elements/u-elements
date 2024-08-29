@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+const isOS = () => test.info().project.name.startsWith("Mobile Safari");
+
 test.beforeEach(async ({ page }) => {
 	await page.goto("index.html");
 	await page.evaluate(() => {
@@ -90,6 +92,8 @@ test.describe("u-option", () => {
 
 		await expect(uOption).toHaveAttribute("aria-selected", "false");
 		await expect(uOption).toHaveAttribute("aria-disabled", "false");
+		if (isOS()) await expect(uOption).not.toHaveAttribute("tabindex");
+		else await expect(uOption).toHaveAttribute("tabindex", "-1");
 
 		await uOption.evaluate((el) => el.setAttribute("selected", ""));
 		await uOption.evaluate((el) => el.setAttribute("disabled", ""));

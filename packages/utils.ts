@@ -10,6 +10,10 @@ export const IS_IOS =
 	IS_BROWSER && /iPad|iPhone|iPod/.test(navigator.userAgent);
 export const IS_SAFARI =
 	IS_BROWSER && /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+export const IS_MAC =
+	IS_BROWSER &&
+	// @ts-expect-error Typescript has not implemented userAgentData yet https://stackoverflow.com/a/71392474
+	/^Mac/i.test(navigator.userAgentData?.platform || navigator.platform);
 
 // Constants for better compression and control
 export const SAFE_LABELLEDBY = `${IS_ANDROID ? "data" : "aria"}-labelledby`; // Android <=13 incorrectly reads labelledby instead of content
@@ -182,7 +186,7 @@ export const ariaLive = (announce: string | boolean) => {
 	if (announce === false) return LIVE?.remove();
 	if (!LIVE)
 		LIVE = Object.assign(document.createElement("div"), {
-			ariaLive: "assertive",
+			ariaLive: "polite",
 			style: "position:fixed;overflow:hidden;width:1px;white-space:nowrap",
 		});
 	if (announce !== true) LIVE.textContent = announce;

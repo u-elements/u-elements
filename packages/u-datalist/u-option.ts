@@ -1,4 +1,5 @@
 import {
+	IS_IOS,
 	DISPLAY_BLOCK,
 	FOCUS_OUTLINE,
 	UHTMLElement,
@@ -30,8 +31,8 @@ export class UHTMLOptionElement extends UHTMLElement {
 		);
 	}
 	connectedCallback() {
+		if (!IS_IOS) this.tabIndex = -1; // Do not set tabIndex on iOS as this causes keyboard to toggle on and off
 		this.role = "option";
-		this.tabIndex = -1;
 		this.attributeChangedCallback(); // Setup aria attributes
 	}
 	attributeChangedCallback() {

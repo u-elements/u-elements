@@ -7,7 +7,7 @@
     <style>
       :root {
         color-scheme: light dark;
-        font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+        font-family: Inter, system-ui, Helvetica, Arial, sans-serif;
         font-synthesis: none;
         font-weight: 400;
         line-height: 1.5;
@@ -58,6 +58,22 @@
         Innhold 4
       </u-details> -->
       <button>Før</button>
+
+
+      <!-- <label>
+        Velg type iskrem<br>
+        <input type="text" list="u-list-1">
+      </label>
+      <u-datalist id="u-list-1">
+        <u-option>Kokkos</u-option>
+        <u-option>Jordbær</u-option>
+        <u-option>Sjokolade</u-option>
+        <u-option>Vanilje</u-option>
+        <u-option>Lakris</u-option>
+        <u-option>Pistasj</u-option>
+        <u-option>Mango</u-option>
+        <u-option>Hasselnøtt</u-option>
+      </u-datalist> -->
       <!-- <br>
       <br>
       <label>
@@ -70,16 +86,19 @@
       <br><u-progress aria-labelledby="label-for-progress" value="5" max="10">70%</u-progress>
       <br> -->
 
-      <!-- data-added="La til"
-      data-remove="Trykk for å fjerne"
-      data-removed="Fjernet"
-      data-empty="Ingen valgte"
-      data-found="Naviger til venstre for å finne %d valgte"
-      data-of="av" -->
+      <!--  -->
       <br>
       <form>
         <label for="my-tags">Velg iskrem</label>
-        <u-tags id="my-tags">
+        <u-tags
+          id="my-tags"
+          data-added="La til"
+          data-remove="Trykk for å fjerne"
+          data-removed="Fjernet"
+          data-empty="Ingen valgte"
+          data-found="Naviger til venstre for å finne %d valgte"
+          data-of="av"
+        >
           <data>Kokkos</data>
           <data>Banana</data>
           <data>Pineapple</data>
@@ -247,21 +266,7 @@
       <br><u-progress id="my-for-progress" value="5" max="10">70%</u-progress>
       <br>Aria-label of apple
       <br><u-progress aria-label="This is the aria-label" id="my-progress" value="5" max="10">70%</u-progress>
-      <br>
-      <label>
-        Velg type iskrem<br>
-        <input type="text" list="u-list-1">
-      </label>
-      <u-datalist id="u-list-1">
-        <u-option>Kokkos</u-option>
-        <u-option>Jordbær</u-option>
-        <u-option>Sjokolade</u-option>
-        <u-option>Vanilje</u-option>
-        <u-option>Lakris</u-option>
-        <u-option>Pistasj</u-option>
-        <u-option>Mango</u-option>
-        <u-option>Hasselnøtt</u-option>
-      </u-datalist> -->
+      <br>-->
       <script>
         // setTimeout(() => {
         //   let i = 0

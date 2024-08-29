@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import type { UHTMLTagsElement } from "./u-tags";
 
+const isMobile = () => test.info().project.name.startsWith("Mobile");
 const safeMultiselectable = () => {
 	const BROWSER = test.info().project.name;
 	const IS_SAFARI = BROWSER === "Webkit" || BROWSER === "Mobile Safari";
@@ -115,11 +116,13 @@ test.describe("u-tags", () => {
 		const items = page.locator("data");
 
 		await input.focus();
-		await input.fill("Test");
+		await input.pressSequentially("Test");
 		await expect(input).toBeFocused();
 		await expect(input).toHaveValue("Test");
+		await input.evaluate<void, HTMLInputElement>((input) => {
+			input.selectionStart = input.selectionEnd = 0; // Set caret to start of text
+		});
 
-		await input.press("Home"); // Move caret to start of text
 		await input.press("ArrowRight"); // Move caret into text
 		await input.press("ArrowLeft"); // Move caret back to start of text
 		await expect(input).toBeFocused(); // Input should therefore still be focused
@@ -151,12 +154,10 @@ test.describe("u-tags", () => {
 		const items = page.locator("data");
 
 		await input.focus();
-		await input.fill("Test");
-		await page.evaluate(() => {
-			const input = document.querySelector("input");
-			if (input) input.selectionStart = input.value.length; // Move caret to end
-		});
-		for (let i = 0; i < 4; i++) await input.press("Backspace");
+		await input.pressSequentially("Test");
+		await input.selectText();
+		await input.press("Backspace");
+		await expect(input).toHaveValue("");
 		await expect(input).toBeFocused(); // Should move focus as all backspaces should delete value "Test"
 
 		await input.press("ArrowRight");
@@ -167,6 +168,7 @@ test.describe("u-tags", () => {
 
 		await items.nth(2).press("Backspace");
 		await expect(items.nth(2)).not.toBeAttached();
+
 		await expect(items.nth(1)).toBeFocused();
 
 		await items.nth(1).press("ArrowRight");
@@ -184,11 +186,14 @@ test.describe("u-tags", () => {
 		const input = page.locator("input");
 		const live = page.locator("[aria-live]");
 		const item3 = page.locator("data").nth(3);
+		const added = /^Added Banana/;
+		const removed = /^Removed Banana/;
 
 		await input.focus();
 		await input.fill("Banana");
 		await input.press("Enter");
-		await expect(live).toHaveText(/^Added Banana/);
+		if (isMobile()) await expect(live).toHaveText(added);
+		else await expect(input).toHaveAccessibleName(added);
 		await expect(item3).toBeAttached();
 		await expect(item3).toHaveAttribute("value", "Banana");
 		await expect(item3).toHaveAttribute("role", "button");
@@ -198,7 +203,8 @@ test.describe("u-tags", () => {
 
 		await input.fill("Banana");
 		await input.press("Enter");
-		await expect(live).toHaveText(/^Removed Banana/);
+		if (isMobile()) await expect(live).toHaveText(removed);
+		else await expect(input).toHaveAccessibleName(removed);
 		await expect(item3).not.toBeAttached();
 		await expect(input).toBeFocused();
 	});

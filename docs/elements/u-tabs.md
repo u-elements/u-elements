@@ -5,7 +5,7 @@ title: u-tabs
 import { data } from '../filesize.data.ts'
 </script>
 
-# &lt;u-tabs&gt; <mark data-badge="aria"></mark>
+# &lt;u-tabs&gt; <mark data-badge="ARIA"></mark>
 `<u-tabs>` is not a native HTML element, but follows [ARIA authoring practices for tabs](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/). It lets you navigate between groups of information that appear in the same context.
 
 **Quick intro:**
@@ -18,11 +18,6 @@ import { data } from '../filesize.data.ts'
 
 ## Example
 <Sandbox>
-&lt;style&gt;
-  u-tab { padding: .5em }
-  u-tab[aria-selected="true"] { border-bottom: 4px solid }
-  u-tabpanel { padding: 1em; border: 1px solid }
-&lt;/style&gt;
 &lt;u-tabs&gt;
   &lt;u-tablist&gt;
     &lt;u-tab&gt;Tab 1&lt;/u-tab&gt;
@@ -33,6 +28,12 @@ import { data } from '../filesize.data.ts'
   &lt;u-tabpanel&gt;Panel 2 with &lt;a href="#"&gt;link&lt;/a&gt;&lt;/u-tabpanel&gt;
   &lt;u-tabpanel&gt;Panel 3 with &lt;a href="#"&gt;link&lt;/a&gt;&lt;/u-tabpanel&gt;
 &lt;/u-tabs&gt;
+&lt;style&gt;
+  /* Styling just for example: */
+  u-tab { padding: .5em }
+  u-tab[aria-selected="true"] { border-bottom: 4px solid }
+  u-tabpanel { padding: 1em; border: 1px solid }
+&lt;/style&gt;
 </Sandbox>
 
 ## Install <mark :data-badge="data['u-tabs']"></mark>

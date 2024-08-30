@@ -21,6 +21,7 @@
 /* Markdown: Tables */
 .vp-doc table { display: table; table-layout: fixed; width: 100% }
 .vp-doc tr { vertical-align: top }
+.vp-doc :not(pre) > code { white-space: nowrap }
 
 /* Front page: Background gradient */
 .is-home::after {
@@ -75,13 +76,11 @@ mark[data-badge]::before {
   letter-spacing: 0;
   line-height: 1;
   padding: 3px;
-  text-transform: uppercase;
   vertical-align: middle;
 }
 
-mark[data-badge="aria"]::before,
-mark[data-badge="html"]::before { content: '\2713\00A0 ' attr(data-badge); background: var(--vp-c-brand-soft); color: var(--vp-c-brand-1) }
-mark[data-badge="non-standard"]::before { content: '\26A0\00A0 ' attr(data-badge) }
+mark[data-badge="ARIA"]::before,
+mark[data-badge="HTML"]::before { content: '\2713\00A0 ' attr(data-badge); background: var(--vp-c-brand-soft); color: var(--vp-c-brand-1) }
 .VPSidebarItem mark[data-badge] { float: right }
 .VPLink.pager-link mark[data-badge] { display: none }
 

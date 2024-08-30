@@ -3,6 +3,7 @@ import { defineConfig } from "vitepress";
 const base = "/u-elements/";
 
 export default defineConfig({
+	appearance: false,
 	title: "u-elements",
 	base,
 	cleanUrls: true,
@@ -19,7 +20,7 @@ export default defineConfig({
 		["link", { rel: "icon", href: `${base}logo.svg` }],
 		[
 			"script",
-			{ acync: "", defer: "", src: "https://scripts.withcabin.com/hello.js" },
+			{ async: "", defer: "", src: "https://scripts.withcabin.com/hello.js" },
 		], // Analytics
 	],
 	themeConfig: {
@@ -47,31 +48,31 @@ export default defineConfig({
 				text: "Elements",
 				items: [
 					{
-						text: '&lt;u-datalist&gt; <mark data-badge="html"></mark>',
+						text: '&lt;u-datalist&gt; <mark data-badge="HTML"></mark>',
 						link: "/elements/u-datalist",
 					},
 					{
-						text: '&lt;u-details&gt; <mark data-badge="html"></mark>',
+						text: '&lt;u-details&gt; <mark data-badge="HTML"></mark>',
 						link: "/elements/u-details",
 					},
 					{
-						text: '<del>&lt;u-dialog&gt;</del> <mark data-badge="html"></mark>',
+						text: '<del>&lt;u-dialog&gt;</del> <mark data-badge="HTML"></mark>',
 						link: "/elements/u-dialog",
 					},
 					{
-						text: '&lt;u-progress&gt; <mark data-badge="html"></mark>',
+						text: '&lt;u-progress&gt; <mark data-badge="HTML"></mark>',
 						link: "/elements/u-progress",
 					},
 					{
-						text: '<del>&lt;u-select&gt;</del> <mark data-badge="pending"></mark>',
+						text: '<del>&lt;u-select&gt;</del> <mark data-badge="Pending"></mark>',
 						link: "/elements/u-select",
 					},
 					{
-						text: '&lt;u-tabs&gt; <mark data-badge="aria"></mark>',
+						text: '&lt;u-tabs&gt; <mark data-badge="ARIA"></mark>',
 						link: "/elements/u-tabs",
 					},
 					{
-						text: '&lt;u-tags&gt; <mark data-badge="pending"></mark>',
+						text: '&lt;u-tags&gt; <mark data-badge="Custom"></mark>',
 						link: "/elements/u-tags",
 					},
 				],

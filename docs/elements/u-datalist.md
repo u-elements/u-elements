@@ -5,7 +5,7 @@ title: u-datalist
 import { data } from '../filesize.data.ts'
 </script>
 
-# &lt;u-datalist&gt; <mark data-badge="html"></mark>
+# &lt;u-datalist&gt; <mark data-badge="HTML"></mark>
 `<u-datalist>` lets you suggest values to a connected `<input>`. You can use it to make things like comboboxes, autosuggest, autocomplete, live search results, etc.
 
 **Quick intro:**
@@ -16,9 +16,6 @@ import { data } from '../filesize.data.ts'
 
 ## Example
 <Sandbox>
-&lt;style&gt;
-  u-option[selected] { font-weight: bold }
-&lt;/style&gt;
 &lt;label for="my-input"&gt;
   Choose flavor of ice cream
 &lt;/label&gt;
@@ -33,6 +30,10 @@ import { data } from '../filesize.data.ts'
   &lt;u-option&gt;Mango&lt;/u-option&gt;
   &lt;u-option&gt;Hazelnut&lt;/u-option&gt;
 &lt;/u-datalist&gt;
+&lt;style&gt;
+  /* Styling just for example: */
+  u-option[selected] { font-weight: bold }
+&lt;/style&gt;
 </Sandbox>
 
 ## Install <mark :data-badge="data['u-datalist']"></mark>
@@ -114,7 +115,7 @@ binding an `input` listener to the `<input>` element and check for a falsy `even
 ## Styling
 
 
-While `<u-datalist>` and `<u-option>` are styleable, *native* datalist and option elements are currently not. However, there is a possibility that the [native elements may become styleable in the future](https://open-ui.org/components/selectlist/#styling).
+While `<u-datalist>` and `<u-option>` are styleable, *native* datalist and option elements are currently not. However, there is a possibility that the [native elements may support styling in the future](https://open-ui.org/components/customizableselect/#rich-content-in-options).
 
 ### Styling with the display property
 

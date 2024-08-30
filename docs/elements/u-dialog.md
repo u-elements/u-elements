@@ -1,7 +1,7 @@
 ---
 title: u-dialog
 ---
-# <del>&lt;u-dialog&gt;</del> <mark data-badge="html"></mark>
+# <del>&lt;u-dialog&gt;</del> <mark data-badge="HTML"></mark>
 There is no longer need for `<u-dialog>` :tada:
 Native [`<dialog>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog) now has sufficient support
 in all major browsers and screen readers.
@@ -30,10 +30,16 @@ Nothing to install :tada:
 
 ## Attributes
 
-| Attributes `<dialog>` | Description |  Default |
-| - | - | - |
-| [All global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) | Such as `id`, `class`, `data-`, `aria-`, etc. ||
-| `open` | When the `open` attribute is present, the dialog is shown. By default this attribute is absent which means the dialog is hidden. **Note:** It `open` makes the dialog non-modal, so is instead recommended to use the `.show()` or `.showModal()` for greater control. | Not present |
+### `<dialog>`
+
+- **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
+  - `open` shows dialog. By default this attribute is absent which means the dialog is hidden. **Note:** `open` makes the dialog non-modal, so is instead recommended to use the `.show()` or `.showModal()` for greater control.
+- **DOM interface:** [`HTMLDialogElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDialogElement)
+  - `HTMLDialogElement.open` returns `true` of `false` reflecting the state
+  - `HTMLDialogElement.returnValue` string reflecting the return value for the dialog
+  - `HTMLDialogElement.show()` opens as non-modal, allowing interaction outside
+  - `HTMLDialogElement.showModal()` opens as modal, preventing interaction outside
+  - `HTMLDialogElement.close()` closes the dialog
 
 ## Accessibility
 

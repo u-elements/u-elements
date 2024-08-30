@@ -5,7 +5,7 @@ title: u-details
 import { data } from '../filesize.data.ts'
 </script>
 
-# &lt;u-details&gt; <mark data-badge="html"></mark>
+# &lt;u-details&gt; <mark data-badge="HTML"></mark>
 `<u-details>` lets you open and close content when clicking on a child `<u-summary>`.
 You can use it to make things like accordions, expandables, FAQs, dropdowns, etc.
 

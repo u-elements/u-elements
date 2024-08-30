@@ -5,7 +5,7 @@ title: u-progress
 import { data } from '../filesize.data.ts'
 </script>
 
-# &lt;u-progress&gt; <mark data-badge="html"></mark>
+# &lt;u-progress&gt; <mark data-badge="HTML"></mark>
 `<u-progress>` lets you indicatate the amount of completed work, typically displayed as a progress bar.
 
 **Quick intro:**
@@ -64,7 +64,9 @@ bun add -S @u-elements/u-progress
 Currently, there are no standardized pseudo-element selectors specifically designated for `<progress>` elements (all existing selectors include a `::-vendor-` prefix). Consequently, `<u-progress>` simply renders its value bar using a `::before` pseudo-element:
 
 <Sandbox>
+&lt;u-progress class="my-progress" value="6" max="10"&gt;&lt;/u-progress&gt;
 &lt;style&gt;
+  /* Styling just for example: */
   .my-progress {
     border-radius: 9em;
     border: 1px solid gray;
@@ -74,7 +76,6 @@ Currently, there are no standardized pseudo-element selectors specifically desig
     background: tomato;
   }
 &lt;/style&gt;
-&lt;u-progress class="my-progress" value="6" max="10"&gt;&lt;/u-progress&gt;
 </Sandbox>
 
 ### Styling the indeterminate state

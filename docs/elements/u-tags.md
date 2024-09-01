@@ -81,7 +81,7 @@ bun add -S @u-elements/u-tags
   - `data-added` prefixes announcements about additions. Defaults to `"Added"`
   - `data-removed` prefixes announcements about removals. Defaults to `"Removed"`
   - `data-empty` announces no selected items. Defaults to `"No selected"`
-  - `data-found` announces where to find amount selected items. Defaults to `"Navigate left to find %d selected"`
+  - `data-found` announces where to find amount of selected items. Defaults to `"Navigate left to find %d selected"`
   - `data-of` separates "number _of_ total" in announcements. Defaults to `"of"`
 - **DOM interface:** `UHTMLTagsElement` extends [`HTMLElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement)
   - `UHTMLTagsElement.control` returns `HTMLInputElement` contained in `<u-tags>`

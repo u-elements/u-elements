@@ -64,16 +64,16 @@ export default defineConfig({
 						link: "/elements/u-progress",
 					},
 					{
-						text: '<del>&lt;u-select&gt;</del> <mark data-badge="Pending"></mark>',
-						link: "/elements/u-select",
-					},
-					{
 						text: '&lt;u-tabs&gt; <mark data-badge="ARIA"></mark>',
 						link: "/elements/u-tabs",
 					},
 					{
 						text: '&lt;u-tags&gt; <mark data-badge="Custom"></mark>',
 						link: "/elements/u-tags",
+					},
+					{
+						text: '<del>&lt;u-select&gt;</del> <mark data-badge="Pending"></mark>',
+						link: "/elements/u-select",
 					},
 				],
 			},

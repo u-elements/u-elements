@@ -1,8 +1,11 @@
 <script setup>
-import { html } from "@codemirror/lang-html";
-import jsBeautify from "js-beautify";
 import { ref, watch } from "vue";
+import { html } from "@codemirror/lang-html";
 import CodeMirror from "vue-codemirror6";
+
+const props = defineProps({
+  lang: String
+})
 
 // Import all uElements
 const modules = Object.values(
@@ -12,9 +15,9 @@ const loading = Promise.all(modules.map((module) => module()));
 const htmlLang = ref(html());
 
 // Auto generate htmlLang for codeMirror
-loading.then((klasses) => {
+loading.then((classes) => {
 	const extraTags = Object.fromEntries(
-		klasses
+		classes
 			.flatMap((module) => Object.entries(module))
 			.map(([type, { observedAttributes: attr = [] }]) => [
 				type.replace(/UHTML(\S+)Element/g, "u-$1").toLowerCase(),
@@ -40,9 +43,7 @@ const updateView = () => {
 };
 
 watch(slots, () => {
-	code.value = jsBeautify.html(slots.value.textContent.trim(), {
-		indent_size: 2,
-	});
+	code.value = slots.value.textContent.trim();
 	updateView(code.value);
 });
 watch(code, () => {
@@ -61,9 +62,9 @@ watch(code, () => {
 <template>
   <pre ref="slots" hidden><slot></slot></pre>
   <div class="demo">
+		<div class="demo-view" :lang="props.lang" ref="view"></div>
     <ClientOnly>
       <CodeMirror class="demo-code" basic :lang="htmlLang" v-model="code" />
     </ClientOnly>
-    <div class="demo-view" ref="view"></div>
   </div>
 </template>

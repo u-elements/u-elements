@@ -41,7 +41,7 @@ import { data } from '../filesize.data.ts'
 &lt;/u-tags&gt;
 &lt;style&gt;
   /* Styling just for example: */
-  u-tags { border: 1px solid; display: flex; flex-wrap: wrap; align-items: center; gap: .5em; padding: .5em; position: relative }
+  u-tags { border: 1px solid; display: flex; flex-wrap: wrap; gap: .5em; padding: .5em; position: relative }
   u-option[selected] { font-weight: bold }
   u-datalist { position: absolute; inset: 100% -1px auto; border: 1px solid; background: white; padding: .5em }
 &lt;/style&gt;
@@ -109,6 +109,46 @@ myUTags.addEventListener('tags', (event) => {
 ## Styling
 
 `<u-tags>` renders as `display: block`, while `<data>` renders as `display: inline-block` with a `::after` element to render the removal `×`.
+
+
+## Example: Norwegian
+
+<Sandbox lang="no">
+&lt;label for="my-tags"&gt;
+  Velg type iskrem
+&lt;/label&gt;
+&lt;u-tags
+  data-added="La til"
+  data-remove="Trykk for å fjerne"
+  data-removed="Fjernet"
+  data-empty="Ingen valgte"
+  data-found="Naviger til venstre for å finne %d valgte"
+  data-of="av"
+  id="my-tags"
+&gt;
+  &lt;data&gt;Kokkos&lt;/data&gt;
+  &lt;data&gt;Banan&lt;/data&gt;
+  &lt;data&gt;Ananas&lt;/data&gt;
+  &lt;data&gt;Appelsin&lt;/data&gt;
+  &lt;input list="my-list" /&gt;
+  &lt;u-datalist id="my-list"&gt;
+    &lt;u-option&gt;Kokkos&lt;/u-option&gt;
+    &lt;u-option&gt;Jordbær&lt;/u-option&gt;
+    &lt;u-option&gt;Sjokolade&lt;/u-option&gt;
+    &lt;u-option&gt;Vanilje&lt;/u-option&gt;
+    &lt;u-option&gt;Lakris&lt;/u-option&gt;
+    &lt;u-option&gt;Pistasj&lt;/u-option&gt;
+    &lt;u-option&gt;Mango&lt;/u-option&gt;
+    &lt;u-option&gt;Hasselnøtt&lt;/u-option&gt;
+  &lt;/u-datalist&gt;
+&lt;/u-tags&gt;
+&lt;style&gt;
+  /* Styling just for example: */
+  u-tags { border: 1px solid; display: flex; flex-wrap: wrap; gap: .5em; padding: .5em; position: relative }
+  u-option[selected] { font-weight: bold }
+  u-datalist { position: absolute; inset: 100% -1px auto; border: 1px solid; background: white; padding: .5em }
+&lt;/style&gt;
+</Sandbox>
 
 
 ## Accessibility

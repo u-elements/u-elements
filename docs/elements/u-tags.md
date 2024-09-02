@@ -5,8 +5,8 @@ title: u-tags
 import { data } from '../filesize.data.ts'
 </script>
 
-# &lt;u-tags&gt; <mark data-badge="Custom"></mark>
-`<u-tags>` enhances `<input>` with multiselect abilities. While multiselect combobox does not exist as a HTML element or ARIA pattern, `<u-tags>` adhere closely to HTML conventions while providing a thoroughly tested and accessible user experience.
+# &lt;u-tags&gt; <mark data-badge="EXTENSION"></mark>
+`<u-tags>` extends `<input>` with multiselect abilities. While multiselect combobox does not exist as a HTML element or ARIA pattern, `<u-tags>` adhere closely to HTML conventions while providing a thoroughly tested and accessible user experience.
 
 **Quick intro:**
 - Use `<data>` as direct child elements - these are the removable tags

@@ -68,11 +68,11 @@ export default defineConfig({
 						link: "/elements/u-tabs",
 					},
 					{
-						text: '&lt;u-tags&gt; <mark data-badge="Custom"></mark>',
+						text: '&lt;u-tags&gt; <mark data-badge="EXTENSION"></mark>',
 						link: "/elements/u-tags",
 					},
 					{
-						text: '<del>&lt;u-select&gt;</del> <mark data-badge="Pending"></mark>',
+						text: '<del>&lt;u-select&gt;</del> <mark data-badge="PENDING"></mark>',
 						link: "/elements/u-select",
 					},
 				],

@@ -582,4 +582,22 @@ test.describe("u-tabs", () => {
 		await uTab2.press(" ");
 		await expect(uTab2).toHaveJSProperty("selected", true);
 	});
+
+	test("sets tabindex on panels without interactive element as first child", async ({
+		page,
+	}) => {
+		await page.evaluate(() => {
+			document.body.innerHTML = `<u-tabs>
+        <u-tablist>
+          <u-tab>Tab 1</u-tab>
+          <u-tab>Tab 2</u-tab>
+        </u-tablist>
+				<u-tabpanel>Non interactive</u-tabpanel>
+				<u-tabpanel><a href="#">Interactive</a></u-tabpanel>
+      </u-tabs>`;
+		});
+		const uTabpanel = page.locator("u-tabpanel");
+		await expect(uTabpanel.nth(0)).toHaveAttribute("tabindex", "0");
+		await expect(uTabpanel.nth(0)).not.toHaveAttribute("tabindex");
+	});
 });

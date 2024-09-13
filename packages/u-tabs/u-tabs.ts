@@ -129,6 +129,8 @@ export class UHTMLTabElement extends UHTMLElement {
 		this.tabIndex = selected ? 0 : -1;
 		this.ariaSelected = `${selected}`;
 
+		// console.log(this.textContent, this.hasAttribute(ARIA_CONTROLS));
+
 		if (!this.hasAttribute(ARIA_CONTROLS))
 			this.setAttribute(ARIA_CONTROLS, useId(getPanel(this)));
 	}
@@ -152,7 +154,7 @@ export class UHTMLTabElement extends UHTMLElement {
 			getPanel(this, prev)?.setAttribute("hidden", "");
 
 		// Only set aria-controls if needed to prevent infinite loop
-		if (this.getAttribute(ARIA_CONTROLS) !== nextPanelId)
+		if (nextPanel && this.getAttribute(ARIA_CONTROLS) !== nextPanelId)
 			this.setAttribute(ARIA_CONTROLS, nextPanelId);
 
 		this.tabIndex = 0;
@@ -188,6 +190,7 @@ export class UHTMLTabElement extends UHTMLElement {
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/tabpanel_role)
  */
 export class UHTMLTabPanelElement extends UHTMLElement {
+	static observedAttributes = ["hidden"];
 	constructor() {
 		super();
 		attachStyle(this, DISPLAY_BLOCK);
@@ -195,6 +198,14 @@ export class UHTMLTabPanelElement extends UHTMLElement {
 	connectedCallback() {
 		this.hidden = getSelectedIndex(this.tabs) === -1;
 		this.role = "tabpanel";
+		this.attributeChangedCallback(); // Setup initial tabindex
+	}
+	attributeChangedCallback() {
+		// Set tabIndex=0 only if firstElementChild is not interactive
+		// Follows https://www.w3.org/WAI/ARIA/apg/patterns/tabs/
+		if (this.hidden || isFocusable(this.firstElementChild))
+			this.removeAttribute("tabindex");
+		else this.tabIndex = 0;
 	}
 	get tabsElement(): UHTMLTabsElement | null {
 		return this.closest("u-tabs");
@@ -210,15 +221,21 @@ export class UHTMLTabPanelElement extends UHTMLElement {
 const queryWithoutNested = <TagName extends keyof HTMLElementTagNameMap>(
 	tag: TagName,
 	self: Element,
-): NodeListOf<HTMLElementTagNameMap[TagName]> => {
-	const css = `${tag}:not(:scope ${self.nodeName}:not(:scope) ${tag})`;
-	return self.querySelectorAll(css);
-};
+): NodeListOf<HTMLElementTagNameMap[TagName]> =>
+	self.querySelectorAll(
+		`${tag}:not(:scope ${self.nodeName}:not(:scope) ${tag})`,
+	);
 
 // Is separate functions since UHTMLTabsElement and UHTMLTabElement instances might not be created yet
 const isSelected = (tab: UHTMLTabElement) => tab.ariaSelected === "true";
 const getSelectedIndex = (tabs: Iterable<UHTMLTabElement>) =>
 	[...tabs].findIndex(isSelected);
+
+const isFocusable = (el?: Node | null) =>
+	el instanceof Element &&
+	el.matches(
+		`:is([contenteditable],[controls],[href],[tabindex],input:not([type="hidden"]),select,textarea,button,summary,iframe):not(:disabled,[tabindex^="-"])`,
+	);
 
 const getPanel = (
 	tab: UHTMLTabElement,

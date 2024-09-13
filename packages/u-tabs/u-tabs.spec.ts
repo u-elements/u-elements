@@ -598,6 +598,6 @@ test.describe("u-tabs", () => {
 		});
 		const uTabpanel = page.locator("u-tabpanel");
 		await expect(uTabpanel.nth(0)).toHaveAttribute("tabindex", "0");
-		await expect(uTabpanel.nth(0)).not.toHaveAttribute("tabindex");
+		await expect(uTabpanel.nth(1)).not.toHaveAttribute("tabindex");
 	});
 });

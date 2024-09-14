@@ -154,7 +154,7 @@ export class UHTMLTabElement extends UHTMLElement {
 			getPanel(this, prev)?.setAttribute("hidden", "");
 
 		// Only set aria-controls if needed to prevent infinite loop
-		if (nextPanel && this.getAttribute(ARIA_CONTROLS) !== nextPanelId)
+		if (nextPanelId && this.getAttribute(ARIA_CONTROLS) !== nextPanelId)
 			this.setAttribute(ARIA_CONTROLS, nextPanelId);
 
 		this.tabIndex = 0;

@@ -15,10 +15,11 @@ import { data } from '../filesize.data.ts'
 - **MDN Web Docs:** [&lt;progress&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/progress) ([HTMLProgressElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLProgressElement))
 
 ## Example
-<Sandbox>
+<Sandbox />
+<pre hidden>
 &lt;u-progress value="7.5" max="10"&gt;&lt;/u-progress&gt;
 &lt;u-progress&gt;&lt;/u-progress&gt;
-</Sandbox>
+</pre>
 
 ## Install <mark :data-badge="data['u-progress']"></mark>
 
@@ -63,7 +64,8 @@ bun add -S @u-elements/u-progress
 ### Styling the value bar
 Currently, there are no standardized pseudo-element selectors specifically designated for `<progress>` elements (all existing selectors include a `::-vendor-` prefix). Consequently, `<u-progress>` simply renders its value bar using a `::before` pseudo-element:
 
-<Sandbox>
+<Sandbox />
+<pre hidden>
 &lt;u-progress class="my-progress" value="6" max="10"&gt;&lt;/u-progress&gt;
 &lt;style&gt;
   /* Styling just for example: */
@@ -76,7 +78,7 @@ Currently, there are no standardized pseudo-element selectors specifically desig
     background: tomato;
   }
 &lt;/style&gt;
-</Sandbox>
+</pre>
 
 ### Styling the indeterminate state
 Replicating the native CSS pseudo-class [`:indeterminate`](https://developer.mozilla.org/en-US/docs/Web/CSS/:indeterminate) is not possible. Instead, use the selector `:not([value])`, which is functionally identical, and compatible with both `<u-progress>` and native `<progress>`. Example:

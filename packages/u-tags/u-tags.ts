@@ -8,6 +8,7 @@ import {
 	UHTMLElement,
 	ariaLive,
 	asButton,
+	attr,
 	createElement,
 	customElements,
 	getRoot,
@@ -55,21 +56,22 @@ export class UHTMLTagsElement extends UHTMLElement {
 		super();
 		this.attachShadow({ mode: "open" }).append(
 			createElement("slot"), // Content slot
-			createElement("style", {
-				textContent: `:host(:not([hidden])){ display: inline-block }
+			createElement(
+				"style",
+				`:host(:not([hidden])){ display: inline-block }
         ::slotted(data) { cursor: pointer; display: inline-block; outline: none; pointer-events: none }
         ::slotted(data)::after { content: '\\00D7'; content: '\\00D7' / ''; padding-inline: .5ch; pointer-events: auto }
         ::slotted(data:focus)::after { ${FOCUS_OUTLINE} }`, // Show focus outline around ::after only
-			}),
+			),
 		);
 	}
 	connectedCallback() {
 		this.#root = getRoot(this);
-		this.#render(); // Set initial aria-labels and selected items in datalist
 
 		mutationObserver(this, { childList: true }); // Observe u-datalist to add aria-multiselect="true"
 		on(this.#root, "click", this); // Bind click-to-focus-input on root
 		on(this, EVENTS, this);
+		setTimeout(() => this.#render(), 500); // Set initial aria-labels and selected items in datalist after initial render
 	}
 	disconnectedCallback() {
 		mutationObserver(this, false);
@@ -115,13 +117,15 @@ export class UHTMLTagsElement extends UHTMLElement {
 		const change = Number.isNaN(this.#focusIndex) ? null : event?.detail[0]; // Skip announcing changes when no focus
 		const changeItem = change?.addedNodes[0] || change?.removedNodes[0];
 		const changeText = `${changeItem ? `${changeItem.isConnected ? texts.added : texts.removed} ${changeItem.textContent}, ` : ""}`;
+		const label = this.labels[0]?.textContent || "";
 		const values: string[] = [];
 
 		// Setup self
-		this.ariaLabel = this.labels[0]?.textContent;
+		attr(this, "aria-label", label);
 		this.items.forEach((item, index, { length }) => {
-			item.ariaLabel = `${changeText}${item.textContent}, ${texts.remove}, ${index + 1} ${texts.of} ${length}`;
-			item.role = "button";
+			const label = `${changeText}${item.textContent}, ${texts.remove}, ${index + 1} ${texts.of} ${length}`;
+			attr(item, "aria-label", label);
+			attr(item, "role", "button");
 			item.tabIndex = -1;
 			item.value = item.value || item.textContent?.trim() || "";
 			values.push(item.value);
@@ -129,19 +133,22 @@ export class UHTMLTagsElement extends UHTMLElement {
 
 		// Setup control
 		const control = this.control;
-		const list = document.getElementById(control?.getAttribute("list") || ""); // UHTMLDatalist might not be initialized yet
-		list?.setAttribute(SAFE_MULTISELECTABLE, "true"); // Make <u-datalist> multiselect
+		const list = document.getElementById(attr(control, "list") || ""); // UHTMLDatalist might not be initialized yet
+		attr(list, SAFE_MULTISELECTABLE, "true"); // Make <u-datalist> multiselect
+
 		for (const option of list?.children || []) {
-			const value = option.getAttribute("value") || option.textContent || "";
-			option.toggleAttribute("selected", values.includes(value)); // Set selected options in datalist
+			const value = attr(option, "value") || option.textContent || "";
+			attr(option, "selected", values.includes(value) ? "" : null); // Set selected options in datalist
 		}
-		if (control)
-			control.ariaLabel = `${changeText}${this.ariaLabel}, ${values.length ? texts.found.replace("%d", `${values.length}`) : texts.empty}`;
+		if (control) {
+			const controlLabel = `${changeText}${label}, ${values.length ? texts.found.replace("%d", `${values.length}`) : texts.empty}`;
+			attr(control, "aria-label", controlLabel);
+		}
 
 		// Announce item change
 		if (changeText) {
 			const nextFocus = this.items[(this.#focusIndex || 1) - 1] || control;
-			const sameFocus = nextFocus === getRoot(this).activeElement;
+			const sameFocus = nextFocus === getRoot(this)?.activeElement;
 			const tmpFocus = control?.list?.options || this.items; // Move focus temporarily so out of input we get ariaLabel change announced
 			this.#blurAnnounceReset = false; // Do not reset announce on next focus/blur
 
@@ -186,15 +193,14 @@ export class UHTMLTagsElement extends UHTMLElement {
 	}
 
 	#onInputOptionClick(event: InputEvent) {
-		const input = event.target as HTMLInputElement;
-		if (event.inputType || !input.value.trim()) return; // Skip typing or empty (clicking item in <datalist> or pressing "Enter" triggers onInput, but without inputType)
+		const input = event.target as HTMLInputElement | null;
+		if (event.inputType || !input?.value.trim()) return; // Skip typing or empty (clicking item in <datalist> or pressing "Enter" triggers onInput, but without inputType)
 		const items = [...this.items];
 		const options = Array.from(input?.list?.options || []);
 		const optionClicked = options.find(({ value }) => value === input?.value);
 		const itemRemove = items.find((item) => item.value === input?.value);
-		const itemAdd = createElement("data", {
-			textContent: optionClicked?.text || input?.value,
-			value: input?.value,
+		const itemAdd = createElement("data", optionClicked?.text || input?.value, {
+			value: input.value,
 		});
 
 		if (input) input.value = "";
@@ -208,7 +214,7 @@ export class UHTMLTagsElement extends UHTMLElement {
 		const { key, repeat, target } = event;
 		const input = this.control === target ? this.control : null;
 		const isCaretInside = input?.selectionEnd;
-		let index = input ? this.items.length : this.#focusIndex ?? -1;
+		let index = input ? this.items.length : (this.#focusIndex ?? -1);
 
 		if (index === -1 || (!input && asButton(event))) return; // Skip if focus is neither on item or input or if item click
 		if (key === "ArrowRight" && !input) index += 1;

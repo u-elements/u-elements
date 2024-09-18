@@ -15,7 +15,9 @@ import { data } from '../filesize.data.ts'
 - **MDN Web Docs:** [&lt;datalist&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist) ([HTMLDatalistElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDatalistElement)) / [&lt;option&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option) ([HTMLOptionElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLOptionElement))
 
 ## Example
-<Sandbox>
+
+<Sandbox />
+<pre hidden>
 &lt;label for="my-input"&gt;
   Choose flavor of ice cream
 &lt;/label&gt;
@@ -34,7 +36,7 @@ import { data } from '../filesize.data.ts'
   /* Styling just for example: */
   u-option[selected] { font-weight: bold }
 &lt;/style&gt;
-</Sandbox>
+</pre>
 
 ## Install <mark :data-badge="data['u-datalist']"></mark>
 
@@ -153,8 +155,8 @@ u-option:not([selected]) {
 ```
 
 ### Styling example: Datalist position and animation
-
-<Sandbox>
+<Sandbox />
+<pre hidden>
 &lt;style&gt;
   .my-input,
   .my-list {
@@ -221,11 +223,12 @@ u-option:not([selected]) {
 &lt;p&gt;
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tellus massa, eget sollicitudin arcu luctus vel. Cras non purus accumsan, ultricies mi ut, blandit magna.
 &lt;/p&gt;
-</Sandbox>
+</pre>
 
 ## Example: API
 
-<Sandbox>
+<Sandbox />
+<pre hidden>
 &lt;label&gt;
   Choose country
   &lt;br /&gt;
@@ -244,12 +247,12 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
   xhr.onload = () => {
     try {
       const data = JSON.parse(xhr.responseText);
-      const options = data.map(({ name }, index) =>
-        Object.assign(document.createElement('u-option'), {
-          text: name,
-          value: \`${index}: ${input.value}` // Prevent filtering by matching value and input
-        })
-      );
+      const options = data.map(({ name }, index) => {
+        const option = document.createElement('u-option');
+        option.text = name;
+        option.value = `${index}: ${input.value}`; // Prevent filtering by matching value and input
+        return option;
+      });
       list.replaceChildren(...options);
     } catch (err) {
       list.textContent = 'No results';
@@ -259,7 +262,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
   input.addEventListener('input', (event) => {
     if (!event.inputType) {
       // User clicked u-option, lets get option.text
-      const index = Number(input.value.split(\`:\`)[0])
+      const index = Number(input.value.split(':')[0])
       const option = list.options[index];
       input.value = option.text;
     } else if (!input.value) {
@@ -278,11 +281,12 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
     }
   });
 &lt;/script&gt;
-</Sandbox>
+</pre>
 
 ## Example: Dynamic
 
-<Sandbox>
+<Sandbox />
+<pre hidden>
 &lt;label&gt;
   Choose your email
   &lt;br /&gt;
@@ -298,22 +302,26 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
     if (!event.inputType) return; // User clicked u-option
     const value = input.value.split('@')[0]
     const values = [
-        \`${value}@live.com`,
-        \`${value}@icloud.com`,
-        \`${value}@hotmail.com`,
-        \`${value}@gmail.com`
+        `${value}@live.com`,
+        `${value}@icloud.com`,
+        `${value}@hotmail.com`,
+        `${value}@gmail.com`
     ];
 
     if (!value) input.list.textContent = 'Type to choose email...';
-    else input.list.replaceChildren(...values.map((text) =>
-      Object.assign(document.createElement('u-option'), { text })
-    ));
+    else input.list.replaceChildren(...values.map((text) => {
+      const option = document.createElement('u-option');
+      option.text = text;
+      return option;
+    }));
   });
 &lt;/script&gt;
-</Sandbox>
+</pre>
 
 ## Example: Link
-<Sandbox>
+
+<Sandbox />
+<pre hidden>
 &lt;label&gt;
   Open u-element documentation
   &lt;br /&gt;
@@ -338,7 +346,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
     }
   });
 &lt;/script&gt;
-</Sandbox>
+</pre>
 
 ## Accessibility
 

@@ -4,10 +4,12 @@ import {
 	DISPLAY_BLOCK,
 	IS_BROWSER,
 	IS_IOS,
+	IS_SAFARI,
 	SAFE_LABELLEDBY,
 	SAFE_MULTISELECTABLE,
 	UHTMLElement,
 	attachStyle,
+	attr,
 	customElements,
 	getRoot,
 	mutationObserver,
@@ -24,14 +26,20 @@ declare global {
 }
 
 let IS_PRESS = false; // Prevent loosing focus on mousedown on <u-option> despite tabIndex -1
+const IS_SAFARI_MAC = IS_SAFARI && !IS_IOS; // Used to prevent "expanded" announcement interrupting label in Safari Mac
 const EVENTS = "click,focusout,input,keydown,pointerdown,pointerup";
-// TODO: Announce datalist items count on type?
+// const TEXTS = {
+// 	hit: "hit",
+// 	hits: "hits",
+// };
 
 /**
  * The `<u-datalist>` HTML element contains a set of `<u-option>` elements that represent the permissible or recommended options available to choose from within other controls.
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist)
  */
 export class UHTMLDataListElement extends UHTMLElement {
+	// #announceCount = 0;
+	// #announceTimer: ReturnType<typeof setTimeout> | number = 0;
 	#blurTimer: ReturnType<typeof setTimeout> | number = 0;
 	#input: HTMLInputElement | null = null;
 	#root: null | Document | ShadowRoot = null;
@@ -46,11 +54,16 @@ export class UHTMLDataListElement extends UHTMLElement {
 	}
 	connectedCallback() {
 		this.hidden = true;
-		this.role = "listbox";
 		this.#root = getRoot(this);
 
+		attr(this, "role", "listbox");
 		on(this.#root, "focusin", this); // Only bind focus globally as this is needed to activate
 		on(this.#root, "focus", this, true); // Need to also listen on focus with capturing to render before Firefox NVDA reads state
+		setTimeout(() => {
+			const inputs = this.#root?.querySelectorAll(`input[list="${this.id}"]`);
+			if (!IS_SAFARI_MAC && inputs)
+				for (const input of inputs) attr(input, "aria-expanded", "false");
+		}); // Allow rendering full DOM tree before running querySelectorAll
 	}
 	disconnectedCallback() {
 		off(this.#root || this, "focus", this, true);
@@ -81,26 +94,26 @@ export class UHTMLDataListElement extends UHTMLElement {
 		if (
 			!isInput &&
 			target instanceof HTMLInputElement &&
-			target.getAttribute("list") === this.id
+			attr(target, "list") === this.id
 		) {
 			if (this.#input) this.#disconnectInput(); // If previously used by other input
-			// ariaLive(true);
-
 			this.#input = target;
-			this.#input.ariaAutoComplete = "list";
 			this.#input.autocomplete = "off";
-			this.#input.role = "combobox";
-			this.#input.setAttribute("aria-controls", useId(this));
-			this.#expanded = true;
-			this.setAttribute(SAFE_LABELLEDBY, useId(this.#input.labels?.[0]));
 
+			// ariaLive(true);
+			attr(this, SAFE_LABELLEDBY, useId(this.#input.labels?.[0]));
+			attr(this.#input, "aria-autocomplete", "list");
+			attr(this.#input, "aria-controls", useId(this));
+			attr(this.#input, "role", "combobox");
+			on(this.#root || this, EVENTS, this);
 			mutationObserver(this, {
 				attributeFilter: ["value"], // Listen for value changes to show u-options
 				attributes: true,
 				childList: true,
 				subtree: true,
 			});
-			on(this.#root || this, EVENTS, this);
+
+			this.#expanded = true;
 		}
 	}
 
@@ -110,7 +123,7 @@ export class UHTMLDataListElement extends UHTMLElement {
 	}
 
 	#onClick({ target }: Event) {
-		const isSingle = this.getAttribute(SAFE_MULTISELECTABLE) !== "true";
+		const isSingle = attr(this, SAFE_MULTISELECTABLE) !== "true";
 		const option = [...this.options].find((opt) =>
 			opt.contains(target as Node),
 		);
@@ -175,7 +188,8 @@ export class UHTMLDataListElement extends UHTMLElement {
 	set #expanded(open: boolean) {
 		this.hidden = !open;
 
-		if (this.#input) this.#input.ariaExpanded = `${open}`;
+		if (!IS_SAFARI_MAC && this.#input)
+			attr(this.#input, "aria-expanded", `${open}`);
 		if (open) this.#setupOptions(); // Ensure correct state when opening if input.value has changed
 	}
 
@@ -199,7 +213,7 @@ export class UHTMLDataListElement extends UHTMLElement {
 		if (!hasChange) return; // Skip if identical value or options
 
 		const hidden = this.hidden;
-		const isSingle = this.getAttribute(SAFE_MULTISELECTABLE) !== "true";
+		const isSingle = attr(this, SAFE_MULTISELECTABLE) !== "true";
 		const isTyping = event instanceof InputEvent && event.inputType;
 
 		this.hidden = true; // Speed up large lists by hiding during filtering
@@ -211,25 +225,34 @@ export class UHTMLDataListElement extends UHTMLElement {
 			if (isSingle && isTyping) opt.selected = false; // Turn off selected when typing in single select
 		}
 		this.hidden = hidden; // Restore original hidden state
+		const visible = this.#getVisibleOptions();
+
+		// ariaLive("");
+		// clearTimeout(this.#announceTimer);
+
+		// // Force screen reader to announce same text again by adding a non-breaking space on every even render
+		// this.#announceTimer = setTimeout(() => {
+		// 	const announceFix = ++this.#announceCount % 2 ? "\u{A0}" : "";
+		// 	ariaLive(`${visible.length} hits${announceFix}`);
+		// }, 1000);
 
 		// Needed to announce count in iOS
 		/* c8 ignore next 4 */ // Because @web/test-runner code coverage iOS emulator only runs in chromium
 		if (IS_IOS)
-			this.#getVisibleOptions().map((opt, i, { length }) => {
+			visible.map((opt, i, { length }) => {
 				opt.title = `${i + 1}/${length}`;
 			});
 	}
 }
 
 // Polyfill input.list so it also receives u-datalist
+type DataList = HTMLDataListElement | UHTMLDataListElement | null;
 if (IS_BROWSER)
 	Object.defineProperty(HTMLInputElement.prototype, "list", {
 		configurable: true,
 		enumerable: true,
-		get(): HTMLDataElement | UHTMLDataListElement | null {
-			const root = getRoot(this);
-			const list = this.getAttribute("list");
-			return root.querySelector(`[id="${list}"]:is(datalist,u-datalist)`);
+		get(): DataList {
+			return getRoot(this).getElementById(attr(this, "list") || "") as DataList;
 		},
 	});
 

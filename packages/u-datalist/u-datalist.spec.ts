@@ -1,4 +1,12 @@
-import { expect, test } from "@playwright/test";
+import { type Locator, expect, test } from "@playwright/test";
+
+const expectExpanded = async (locator: Locator, value: unknown) => {
+	const IS_SAFARI_MAC = test.info().project.name === "Webkit";
+
+	if (IS_SAFARI_MAC)
+		return await expect(locator).not.toHaveAttribute("aria-expanded");
+	return await expect(locator).toHaveAttribute("aria-expanded", `${value}`);
+};
 
 const attrLabelledby = () => {
 	const IS_ANDROID = test.info().project.name === "Mobile Chrome";
@@ -77,7 +85,7 @@ test.describe("u-datalist", () => {
 		const input = page.locator("input").first();
 		const label = page.locator("label");
 
-		await expect(input).not.toHaveAttribute("aria-expanded");
+		await expectExpanded(input, false);
 		await expect(uDatalist).toBeHidden();
 
 		await input.focus();
@@ -88,20 +96,20 @@ test.describe("u-datalist", () => {
 		await expect(input).toHaveRole("combobox");
 		await expect(input).toHaveAttribute("autocomplete", "off");
 		await expect(input).toHaveAttribute("aria-autocomplete", "list");
-		await expect(input).toHaveAttribute("aria-expanded", "true");
+		await expectExpanded(input, true);
 		await expect(input).toHaveAttribute("aria-controls", uDatalistId);
 		await expect(uDatalist).toHaveAttribute(attrLabelledby(), labelId);
 
 		await input.blur();
-		await expect(input).toHaveAttribute("aria-expanded", "false");
+		await expectExpanded(input, false);
 		await expect(uDatalist).toBeHidden();
 
 		await input.focus();
-		await expect(input).toHaveAttribute("aria-expanded", "true");
+		await expectExpanded(input, true);
 		await expect(uDatalist).toBeVisible();
 
 		await page.locator("input").last().focus();
-		await expect(input).toHaveAttribute("aria-expanded", "false");
+		await expectExpanded(input, false);
 		await expect(uDatalist).toBeHidden();
 	});
 
@@ -134,18 +142,18 @@ test.describe("u-datalist", () => {
 
 		await input.press("Escape");
 		await expect(input).toBeFocused();
-		await expect(input).toHaveAttribute("aria-expanded", "false");
+		await expectExpanded(input, false);
 		await expect(uDatalist).toBeHidden();
 
 		await input.press("ArrowDown");
-		await expect(input).toHaveAttribute("aria-expanded", "true");
+		await expectExpanded(input, true);
 		await expect(uDatalist).toBeVisible();
 		await expect(uOption0).toBeFocused();
 
 		await uOption0.press("Enter");
 		await expect(input).toBeFocused();
 		await expect(input).toHaveValue((await uOption0.textContent()) || "");
-		await expect(input).toHaveAttribute("aria-expanded", "false");
+		await expectExpanded(input, false);
 		await expect(uDatalist).toBeHidden();
 	});
 
@@ -262,13 +270,13 @@ test.describe("u-datalist", () => {
 
 		expect(uDatalist).toBeHidden();
 		await input0.focus();
-		await expect(input0).toHaveAttribute("aria-expanded", "true");
-		await expect(input1).not.toHaveAttribute("aria-expanded", "true");
+		await expectExpanded(input0, true);
+		await expectExpanded(input1, false);
 		await expect(uDatalist).toBeVisible();
 
 		await input1.focus();
-		await expect(input0).not.toHaveAttribute("aria-expanded", "true");
-		await expect(input1).toHaveAttribute("aria-expanded", "true");
+		await expectExpanded(input0, false);
+		await expectExpanded(input1, true);
 		await expect(uDatalist).toBeVisible();
 	});
 

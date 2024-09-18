@@ -9,9 +9,7 @@
 	"module": "dist/u-tabs.js",
 	"types": "dist/u-tabs.d.ts",
 	"customElements": "dist/u-tabs.manifest.json",
-	"files": [
-		"dist"
-	],
+	"files": ["dist"],
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/u-elements/u-elements.git"

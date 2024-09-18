@@ -17,7 +17,9 @@ import { data } from '../filesize.data.ts'
 - **ARIA Authoring Practices Guide Docs:** [Tabs](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)
 
 ## Example
-<Sandbox>
+
+<Sandbox />
+<pre hidden>
 &lt;u-tabs&gt;
   &lt;u-tablist&gt;
     &lt;u-tab&gt;Tab 1&lt;/u-tab&gt;
@@ -34,7 +36,7 @@ import { data } from '../filesize.data.ts'
   u-tab[aria-selected="true"] { border-bottom: 4px solid }
   u-tabpanel { padding: 1em; border: 1px solid }
 &lt;/style&gt;
-</Sandbox>
+</pre>
 
 ## Install <mark :data-badge="data['u-tabs']"></mark>
 
@@ -127,7 +129,8 @@ document.addEventListener('click', ({ target }) => {
 
 ### Styling example: Scrolling tablist
 
-<Sandbox>
+<Sandbox />
+<pre hidden>
 &lt;style&gt;
   .my-tablist-scrolls {
     display: flex;
@@ -141,13 +144,14 @@ document.addEventListener('click', ({ target }) => {
   &lt;/u-tablist&gt;
   &lt;u-tabpanel&gt;Panel 1&lt;/u-tabpanel&gt;
 &lt;/u-tabs&gt;
-</Sandbox>
+</pre>
 
 
 
 ### Styling example: Wrapping tablist
 
-<Sandbox>
+<Sandbox />
+<pre hidden>
 &lt;style&gt;
   .my-tablist-wrapps {
     display: flex;
@@ -160,7 +164,7 @@ document.addEventListener('click', ({ target }) => {
   &lt;/u-tablist&gt;
   &lt;u-tabpanel&gt;Panel 1&lt;/u-tabpanel&gt;
 &lt;/u-tabs&gt;
-</Sandbox>
+</pre>
 
 ## Accessibility
 

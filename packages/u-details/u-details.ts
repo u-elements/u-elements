@@ -2,6 +2,7 @@ import {
 	DISPLAY_BLOCK,
 	UHTMLElement,
 	asButton,
+	attr,
 	createElement,
 	customElements,
 	getRoot,
@@ -27,15 +28,14 @@ export class UHTMLDetailsElement extends UHTMLElement {
 		super();
 		this.#content = createElement("slot");
 		this.attachShadow({ mode: "open" }).append(
-			createElement("slot", { name: "summary" }), // Summary slot
+			createElement("slot", null, { name: "summary" }), // Summary slot
 			this.#content, // Content slot
-			createElement("style", {
-				textContent: `
-        ${DISPLAY_BLOCK}
+			createElement(
+				"style",
+				`${DISPLAY_BLOCK}
         ::slotted(u-summary) { cursor: pointer; display: list-item; counter-increment: list-item 0; list-style: disclosure-closed inside }
-        ::slotted(u-summary[aria-expanded="true"]) { list-style-type: disclosure-open }
-      `,
-			}),
+        ::slotted(u-summary[aria-expanded="true"]) { list-style-type: disclosure-open }`,
+			),
 		);
 	}
 	connectedCallback() {
@@ -53,9 +53,9 @@ export class UHTMLDetailsElement extends UHTMLElement {
 
 		// Uses nodeName (not instanceof) since UHTMLSummaryElement might not be initialized yet
 		for (const el of this.children)
-			if (el.nodeName === "U-SUMMARY") el.ariaExpanded = `${open}`;
+			if (el.nodeName === "U-SUMMARY") attr(el, "aria-expanded", `${open}`);
 
-		this.#content.ariaHidden = `${!open}`; // Needed to prevent announcing "group" when closed in Chrome on Mac
+		attr(this.#content, "aria-hidden", `${!open}`); // Needed to prevent announcing "group" when closed in Chrome on Mac
 		this.#content.hidden = open ? false : (hide as boolean); // Make typescript accept "until-found"
 
 		// Make <slot> display: block when hidden so content-visibility: hidden works
@@ -68,9 +68,8 @@ export class UHTMLDetailsElement extends UHTMLElement {
 				`${this.nodeName}[name="${this.name}"]`,
 			);
 
-			for (const uDetails of uDetailsList) {
+			for (const uDetails of uDetailsList)
 				if (uDetails !== this) uDetails.open = false;
-			}
 		}
 
 		// Trigger toggle event if change of open state
@@ -90,14 +89,14 @@ export class UHTMLDetailsElement extends UHTMLElement {
 	get open(): boolean {
 		return this.hasAttribute("open");
 	}
-	set open(open) {
-		this.toggleAttribute("open", open);
+	set open(value) {
+		attr(this, "open", value ? "" : null);
 	}
 	get name(): string {
-		return this.getAttribute("name") || "";
+		return attr(this, "name") || "";
 	}
 	set name(value: string) {
-		this.setAttribute("name", value);
+		attr(this, "name", value);
 	}
 }
 
@@ -107,7 +106,7 @@ export class UHTMLDetailsElement extends UHTMLElement {
  */
 export class UHTMLSummaryElement extends UHTMLElement {
 	connectedCallback() {
-		this.role = "button";
+		attr(this, "role", "button");
 		this.slot = "summary";
 		this.tabIndex = 0;
 	}

@@ -17,12 +17,13 @@ You can use it to make things like accordions, expandables, FAQs, dropdowns, etc
 [&lt;summary&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/summary) ([HTMLElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement))
 
 ## Example
-<Sandbox>
+<Sandbox />
+<pre hidden>
 &lt;u-details&gt;
   &lt;u-summary&gt;Details&lt;/u-summary&gt;
   Something small enough to escape casual notice.
 &lt;/u-details&gt;
-</Sandbox>
+</pre>
 
 ## Install <mark :data-badge="data['u-details']"></mark>
 
@@ -86,7 +87,7 @@ details.addEventListener('toggle', (event) => {
 ## Find-in-page
 Even when a `<details>`/`<u-details>` element is closed, all of its content remains discoverable through the find-in-page search feature (e.g., Ctrl or Command + F keys). This behavior is [supported by various browsers](https://caniuse.com/mdn-html_global_attributes_hidden_until-found_value). If a user conducts a search for content within a details element, it will automatically open and trigger the `toggle` event.
 
-## Accessibility
+## Accessibility (tested 16.09.24)
 
 | Screen reader | `<details>` | `<u-details>` |
 | --- | --- | --- |
@@ -95,7 +96,7 @@ Even when a `<details>`/`<u-details>` element is closed, all of its content rema
 | VoiceOver (Mac) + Firefox | :white_check_mark: | :white_check_mark: |
 | VoiceOver (Mac) + Safari | :x: Does not announce state + looses screen reader focus | :white_check_mark: |
 | VoiceOver (iOS) + Chrome | :white_check_mark: | :white_check_mark: |
-| VoiceOver (iOS) + Safari | :x: Does not announce role or state on focus | :white_check_mark: |
+| VoiceOver (iOS) + Safari | :white_check_mark: | :white_check_mark: |
 | Jaws (PC) + Chrome | :white_check_mark: | :white_check_mark: |
 | Jaws (PC) + Edge | :white_check_mark: | :white_check_mark: |
 | Jaws (PC) + Firefox | :white_check_mark: | :white_check_mark: |

@@ -47,15 +47,15 @@ export class UHTMLDatePickerElement extends UHTMLElement {
 	static observedAttributes = ["lang", "data-week"];
 	constructor() {
 		super();
-		this.#grid = createElement("table", {
-			innerHTML: `<caption></caption>
+		this.#grid = createElement("table");
+		this.#grid.innerHTML = `<caption></caption>
       <thead><tr part="days"><th scope="col"><slot></slot></th>${`<th scope="col"><slot name="-"></slot></th>`.repeat(7)}</tr></thead>
-      <tbody part="dates">${`<tr role="row" part="row"><th scope="row" part="weeknumber"></th>${`<td><div><slot name="-"></slot></div></td>`.repeat(7)}</tr>`.repeat(7)}</tbody>`,
-		});
+      <tbody part="dates">${`<tr role="row" part="row"><th scope="row" part="weeknumber"></th>${`<td><div><slot name="-"></slot></div></td>`.repeat(7)}</tr>`.repeat(7)}</tbody>`;
 		this.attachShadow({ mode: "open" }).append(
 			this.#grid,
-			createElement("style", {
-				textContent: `:host { text-align: center }
+			createElement(
+				"style",
+				`:host { text-align: center }
         :host table { border-collapse: collapse; table-layout: fixed ; width: 100% }
         :host th { text-align: inherit }
         /*:host(:not([hidden])) { display: grid; grid-template-columns: repeat(8, 1fr); grid-auto-rows: auto; text-align: center }
@@ -64,7 +64,7 @@ export class UHTMLDatePickerElement extends UHTMLElement {
         :host > div { display: contents }
         :host > div > div, :host > div > div > div { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid } */
         :host::before { content: attr(aria-label); position: absolute; margin-top: -2rem }`,
-			}),
+			),
 		);
 	}
 	connectedCallback() {

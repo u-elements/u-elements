@@ -2,6 +2,7 @@ import {
 	IS_FIREFOX,
 	IS_IOS,
 	UHTMLElement,
+	attr,
 	createElement,
 	customElements,
 	getLabel,
@@ -30,14 +31,15 @@ export class UHTMLProgressElement extends UHTMLElement {
 	constructor() {
 		super();
 		this.attachShadow({ mode: "open" }).append(
-			createElement("slot", { hidden: true }), // Slot hiding content meant for legacy user agents https://html.spec.whatwg.org/multipage/form-elements.html#the-progress-element
-			createElement("style", {
-				textContent: `:host(:not([hidden])) { box-sizing: border-box; border: 1px solid; display: inline-block; height: .5em; width: 10em; overflow: hidden }
+			createElement("slot", null, { hidden: "" }), // Slot hiding content meant for legacy user agents https://html.spec.whatwg.org/multipage/form-elements.html#the-progress-element
+			createElement(
+				"style",
+				`:host(:not([hidden])) { box-sizing: border-box; border: 1px solid; display: inline-block; height: .5em; width: 10em; overflow: hidden }
         :host::before { content: ''; display: block; height: 100%; background: currentColor; width: var(--percentage, 0%); transition: width .2s }
         :host(:not([value])) { background: linear-gradient(90deg,currentColor 25%, transparent 50%, currentColor 75%) 50%/400% }
         @media (prefers-reduced-motion: no-preference) { :host { animation: indeterminate 2s linear infinite }  }
         @keyframes indeterminate { from { background-position-x: 100% } to { background-position-x: 0 } }`,
-			}),
+			),
 		);
 	}
 	connectedCallback() {
@@ -52,18 +54,16 @@ export class UHTMLProgressElement extends UHTMLElement {
 		let label = getLabel(this); // Uses innerText so must be after setting this.style
 
 		if (roleImage) label = `${label.replace(/\d+%$/, "")} ${percentage}%`;
-		if (IS_FIREFOX)
-			for (const el of this.labels) {
-				el.ariaLabel = label; // Fixes double announcement in Firefox
-			}
+		if (IS_FIREFOX) for (const el of this.labels) attr(el, "aria-label", label); // Fixes double announcement in Firefox
 
-		this.ariaLabel = label.trim();
-		this.ariaBusy = `${this.position === -1}`; // true if indeterminate
-		this.ariaValueNow = `${percentage}`;
-		this.ariaValueMin = "0";
-		this.ariaValueMax = "100";
-		this.role = roleImage ? "img" : "progressbar";
-		this.removeAttribute("aria-labelledby"); // Since we always want to use aria-label
+		attr(this, "aria-busy", `${this.position === -1}`); // true if indeterminate
+		attr(this, "aria-label", label.trim());
+		attr(this, "aria-labelledby", null); // Since we always want to use aria-label
+		attr(this, "aria-valuemax", "100");
+		attr(this, "aria-valuemin", "0");
+		attr(this, "aria-valuenow", `${percentage}`);
+		attr(this, "role", roleImage ? "img" : "progressbar");
+
 		SKIP_ATTR_CHANGE = false;
 	}
 	get labels(): NodeListOf<HTMLLabelElement> {
@@ -97,13 +97,13 @@ const isNumeric = (value: unknown): value is number | string =>
 	!Number.isNaN(Number.parseFloat(`${value}`)) &&
 	Number.isFinite(Number(value));
 
-const getNumber = (el: Element, attr: string): number | null => {
-	const value = el.getAttribute(attr);
+const getNumber = (el: Element, key: string): number | null => {
+	const value = attr(el, key);
 	return isNumeric(value) ? Math.max(0, Number.parseFloat(value)) : null;
 };
 
-const setNumber = (el: Element, attr: string, val: unknown) => {
-	if (val === null || isNumeric(val)) el.setAttribute(attr, `${val}`);
+const setNumber = (el: Element, key: string, val: unknown) => {
+	if (val === null || isNumeric(val)) attr(el, key, `${val}`);
 	else throw new Error(`Failed to set non-numeric '${attr}': '${val}'`);
 };
 

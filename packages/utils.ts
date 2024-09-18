@@ -28,6 +28,24 @@ export const UHTMLElement =
 		? (class {} as typeof HTMLElement)
 		: HTMLElement;
 
+/**
+ * attr
+ * @description Utility to quickly get, set and remove attributes
+ * @param el The Element to use as EventTarget
+ * @param name The attribute name to get, set or remove, or a object to set multiple attributes
+ * @param value A valid attribute value or null to remove attribute
+ */
+export function attr(
+	el: Element | null,
+	name: string,
+	value?: string | null,
+): string | null {
+	if (value === undefined) return el?.getAttribute(name) ?? null; // Fallback to null only if el is undefined
+	if (value === null) el?.removeAttribute(name);
+	else if (el?.getAttribute(name) !== value) el?.setAttribute(name, value);
+	return null;
+}
+
 // Internal helper for on / off
 const events = (
 	action: "add" | "remove",
@@ -70,7 +88,7 @@ export const off = (
 export const attachStyle = (element: Element, css: string) =>
 	element.attachShadow({ mode: "open" }).append(
 		createElement("slot"), // Unnamed slot does automatically render all top element nodes
-		createElement("style", { textContent: css }),
+		createElement("style", css),
 	);
 
 /**
@@ -115,13 +133,16 @@ export const asButton = (event: Event): boolean => {
 
 /**
  * getRoot
- * @description Helper for minifying and better typescript typing
- * @param element The target object
- * @param name The event name
- * @param options Detail object (bubbles and cancelable is set to true)
+ * @description Helper for better compatibility
+ * @param node The target node
+ * @return The root document fragment or shadow root
  */
-export const getRoot = (node: Node) =>
-	node.getRootNode() as Document | ShadowRoot;
+export const getRoot = (node: Node): Document | ShadowRoot => {
+	const root = node.getRootNode?.() || node.ownerDocument;
+	return root instanceof Document || root instanceof ShadowRoot
+		? root
+		: document;
+};
 
 /**
  * useId
@@ -138,14 +159,19 @@ export const useId = (el?: Element | null) => {
  * createElement
  * @description creates element and assigns properties
  * @param taName The tagname of element to create
- * @param props The properties of the newly created element
+ * @param props Optional properties to add to the element
  * @return HTMLElement with props
  */
 export const createElement = <TagName extends keyof HTMLElementTagNameMap>(
 	tagName: TagName,
-	props?: unknown,
-): HTMLElementTagNameMap[TagName] =>
-	Object.assign(document.createElement(tagName), props);
+	text?: string | null,
+	attrs?: Record<string, string>,
+): HTMLElementTagNameMap[TagName] => {
+	const el = document.createElement(tagName);
+	if (text) el.textContent = text;
+	if (attrs) for (const [key, val] of Object.entries(attrs)) attr(el, key, val);
+	return el;
+};
 
 /**
  * customElements.define
@@ -167,10 +193,10 @@ export const customElements = {
  */
 export const getLabel = (el: Element) => {
 	const root = getRoot(el); // Might not return document, so can not use root.getElementById
-	const label = el.ariaLabel || "";
-	const labels = el.getAttribute("aria-labelledby")?.trim().split(/\s+/) || [];
+	const label = attr(el, "aria-label") || "";
+	const labels = attr(el, "aria-labelledby")?.trim().split(/\s+/) || [];
 	return [
-		...labels.map((id) => root.querySelector<HTMLElement>(`[id="${id}"]`)), // Get all labelledby elements
+		...labels.map((id) => root?.querySelector<HTMLElement>(`[id="${id}"]`)), // Get all labelledby elements
 		...Array.from((el as HTMLInputElement).labels || []), // Get all <label> elements
 	].reduce((acc, el) => acc || el?.innerText?.trim() || "", label);
 };
@@ -184,11 +210,12 @@ export const getLabel = (el: Element) => {
 let LIVE: HTMLElement;
 export const ariaLive = (announce: string | boolean) => {
 	if (announce === false) return LIVE?.remove();
-	if (!LIVE)
-		LIVE = Object.assign(document.createElement("div"), {
-			ariaLive: "polite",
-			style: "position:fixed;overflow:hidden;width:1px;white-space:nowrap",
-		});
+	if (!LIVE) {
+		LIVE = createElement("div");
+		LIVE.style.cssText =
+			"position:fixed;overflow:hidden;width:1px;white-space:nowrap";
+		attr(LIVE, "aria-live", "polite");
+	}
 	if (announce !== true) LIVE.textContent = announce;
 	if (!LIVE.isConnected) document.body.appendChild(LIVE);
 };

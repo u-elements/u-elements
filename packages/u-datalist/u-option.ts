@@ -1,9 +1,10 @@
 import {
-	IS_IOS,
 	DISPLAY_BLOCK,
 	FOCUS_OUTLINE,
+	IS_IOS,
 	UHTMLElement,
 	attachStyle,
+	attr,
 	customElements,
 } from "../utils";
 
@@ -32,12 +33,12 @@ export class UHTMLOptionElement extends UHTMLElement {
 	}
 	connectedCallback() {
 		if (!IS_IOS) this.tabIndex = -1; // Do not set tabIndex on iOS as this causes keyboard to toggle on and off
-		this.role = "option";
+		attr(this, "role", "option");
 		this.attributeChangedCallback(); // Setup aria attributes
 	}
 	attributeChangedCallback() {
-		this.ariaDisabled = `${this.disabled}`;
-		this.ariaSelected = `${this.selected}`;
+		attr(this, "aria-disabled", `${this.disabled}`);
+		attr(this, "aria-selected", `${this.selected}`);
 	}
 	/** Sets or retrieves whether the option in the list box is the default item. */
 	get defaultSelected(): boolean {
@@ -47,10 +48,10 @@ export class UHTMLOptionElement extends UHTMLElement {
 		this[SELECTED] = value;
 	}
 	get disabled(): boolean {
-		return this.getAttribute(DISABLED) !== null;
+		return attr(this, DISABLED) !== null;
 	}
 	set disabled(value: boolean) {
-		this.toggleAttribute(DISABLED, value);
+		attr(this, DISABLED, value ? "" : null);
 	}
 	/** Retrieves a reference to the form that the object is embedded in. */
 	get form(): HTMLFormElement | null {
@@ -64,16 +65,16 @@ export class UHTMLOptionElement extends UHTMLElement {
 	}
 	/** Sets or retrieves a value that you can use to implement your own label functionality for the object. */
 	get label(): string {
-		return this.getAttribute("label") || this.text;
+		return attr(this, "label") || this.text;
 	}
 	set label(value: string) {
-		this.setAttribute("label", value);
+		attr(this, "label", value);
 	}
 	get selected(): boolean {
-		return this.getAttribute(SELECTED) !== null;
+		return attr(this, SELECTED) !== null;
 	}
 	set selected(value: boolean) {
-		this.toggleAttribute(SELECTED, value);
+		attr(this, SELECTED, value ? "" : null);
 	}
 	/** Sets or retrieves the text string specified by the option tag. */
 	get text(): string {
@@ -84,10 +85,10 @@ export class UHTMLOptionElement extends UHTMLElement {
 	}
 	/** Sets or retrieves the value which is returned to the server when the form control is submitted. */
 	get value(): string {
-		return this.getAttribute("value") || this.text;
+		return attr(this, "value") || this.text;
 	}
 	set value(value: string) {
-		this.setAttribute("value", value);
+		attr(this, "value", value);
 	}
 }
 

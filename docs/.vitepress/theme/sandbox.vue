@@ -33,7 +33,7 @@ loading.then((classes) => {
 let timer = null;
 const code = ref("");
 const view = ref(null);
-const slots = ref(null);
+const demo = ref(null);
 const updateView = () => {
 	if (!view.value) return;
 	view.value.innerHTML = code.value;
@@ -42,8 +42,10 @@ const updateView = () => {
 		Function(script.textContent)(); // Exec scripts
 };
 
-watch(slots, () => {
-	code.value = slots.value.textContent.trim();
+watch(demo, () => {
+	const pre = demo.value.nextElementSibling;
+	if (pre.nodeName !== 'PRE') console.log('Sandbox is missing <pre> for source code', demo.value);
+	code.value = pre.textContent;
 	updateView(code.value);
 });
 watch(code, () => {
@@ -60,8 +62,8 @@ watch(code, () => {
   @media (min-width: 800px) { .demo-code, .demo-view { flex-basis: 50% } }
 </style>
 <template>
-  <pre ref="slots" hidden><slot></slot></pre>
-  <div class="demo">
+  <pre hidden><slot></slot></pre>
+  <div class="demo" ref="demo">
 		<div class="demo-view" :lang="props.lang" ref="view"></div>
     <ClientOnly>
       <CodeMirror class="demo-code" basic :lang="htmlLang" v-model="code" />

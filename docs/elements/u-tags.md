@@ -18,7 +18,8 @@ import { data } from '../filesize.data.ts'
 
 ## Example
 
-<Sandbox>
+<Sandbox />
+<pre hidden>
 &lt;label for="my-tags"&gt;
   Choose flavor of ice cream
 &lt;/label&gt;
@@ -45,7 +46,7 @@ import { data } from '../filesize.data.ts'
   u-option[selected] { font-weight: bold }
   u-datalist { position: absolute; inset: 100% -1px auto; border: 1px solid; background: white; padding: .5em }
 &lt;/style&gt;
-</Sandbox>
+</pre>
 
 ## Install <mark :data-badge="data['u-tags']"></mark>
 
@@ -113,8 +114,9 @@ myUTags.addEventListener('tags', (event) => {
 
 ## Example: Norwegian
 
-<Sandbox lang="no">
-&lt;label for="my-tags"&gt;
+<Sandbox lang="no" />
+<pre hidden>
+&lt;label for="my-norwegian-tags"&gt;
   Velg type iskrem
 &lt;/label&gt;
 &lt;u-tags
@@ -124,14 +126,14 @@ myUTags.addEventListener('tags', (event) => {
   data-empty="Ingen valgte"
   data-found="Naviger til venstre for å finne %d valgte"
   data-of="av"
-  id="my-tags"
+  id="my-norwegian-tags"
 &gt;
   &lt;data&gt;Kokkos&lt;/data&gt;
   &lt;data&gt;Banan&lt;/data&gt;
   &lt;data&gt;Ananas&lt;/data&gt;
   &lt;data&gt;Appelsin&lt;/data&gt;
-  &lt;input list="my-list" /&gt;
-  &lt;u-datalist id="my-list"&gt;
+  &lt;input list="my-norwegian-list" /&gt;
+  &lt;u-datalist id="my-norwegian-list"&gt;
     &lt;u-option&gt;Kokkos&lt;/u-option&gt;
     &lt;u-option&gt;Jordbær&lt;/u-option&gt;
     &lt;u-option&gt;Sjokolade&lt;/u-option&gt;
@@ -148,7 +150,7 @@ myUTags.addEventListener('tags', (event) => {
   u-option[selected] { font-weight: bold }
   u-datalist { position: absolute; inset: 100% -1px auto; border: 1px solid; background: white; padding: .5em }
 &lt;/style&gt;
-</Sandbox>
+</pre>
 
 
 ## Accessibility

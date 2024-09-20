@@ -113,7 +113,10 @@ export class UHTMLTabListElement extends UHTMLElement {
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/tab_role)
  */
 export class UHTMLTabElement extends UHTMLElement {
-	static observedAttributes = ["id", "aria-selected", ARIA_CONTROLS];
+	// Using ES2015 syntax for backwards compatibility
+	static get observedAttributes() {
+		return ["id", "aria-selected", ARIA_CONTROLS];
+	}
 	constructor() {
 		super();
 		attachStyle(
@@ -189,7 +192,10 @@ export class UHTMLTabElement extends UHTMLElement {
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/tabpanel_role)
  */
 export class UHTMLTabPanelElement extends UHTMLElement {
-	static observedAttributes = ["hidden"];
+	// Using ES2015 syntax for backwards compatibility
+	static get observedAttributes() {
+		return ["hidden"];
+	}
 	constructor() {
 		super();
 		attachStyle(this, DISPLAY_BLOCK);

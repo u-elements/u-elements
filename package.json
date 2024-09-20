@@ -3,7 +3,9 @@
 	"private": true,
 	"license": "MIT",
 	"description": "HTML tags, just truly accessible",
-	"workspaces": ["packages/*"],
+	"workspaces": [
+		"packages/*"
+	],
 	"homepage": "https://u-elements.github.io/u-elements/",
 	"repository": {
 		"type": "git",
@@ -34,6 +36,7 @@
 		"@builder.io/qwik": "^1.9.0",
 		"@codemirror/lang-html": "^6.4.9",
 		"@custom-elements-manifest/analyzer": "^0.10.3",
+		"@mdn/browser-compat-data": "^5.6.1",
 		"@playwright/test": "^1.47.1",
 		"@preact/preset-vite": "^2.9.1",
 		"@sveltejs/vite-plugin-svelte": "^3.1.2",

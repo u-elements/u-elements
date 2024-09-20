@@ -25,13 +25,14 @@ let SKIP_ATTR_CHANGE = false;
  */
 export class UHTMLProgressElement extends UHTMLElement {
 	static formAssociated = true; // Prevent Chrome DevTools warning about <label for=""> pointing to <u-progress>
+	// Using ES2015 syntax for backwards compatibility
 	static get observedAttributes() {
 		return ["aria-label", "aria-labelledby", "value", "max"]; // Also watch aria labels to sync Firefox/iOS
 	}
 	constructor() {
 		super();
 		this.attachShadow({ mode: "open" }).append(
-			createElement("slot", null, { hidden: "" }), // Slot hiding content meant for legacy user agents https://html.spec.whatwg.org/multipage/form-elements.html#the-progress-element
+			createElement("slot", null, { hidden: "" }), // Slot hiding content allows legacy browser to display fallback text
 			createElement(
 				"style",
 				`:host(:not([hidden])) { box-sizing: border-box; border: 1px solid; display: inline-block; height: .5em; width: 10em; overflow: hidden }

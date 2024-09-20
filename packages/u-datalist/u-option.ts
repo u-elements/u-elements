@@ -23,7 +23,10 @@ const SELECTED = "selected";
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option)
  */
 export class UHTMLOptionElement extends UHTMLElement {
-	static observedAttributes = [DISABLED, SELECTED];
+	// Using ES2015 syntax for backwards compatibility
+	static get observedAttributes() {
+		return [DISABLED, SELECTED];
+	}
 	constructor() {
 		super();
 		attachStyle(

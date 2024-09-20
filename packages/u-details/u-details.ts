@@ -22,14 +22,18 @@ declare global {
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details)
  */
 export class UHTMLDetailsElement extends UHTMLElement {
-	#content: HTMLSlotElement;
-	static observedAttributes = ["open"];
+	// Using underscore instead of private fields for backwards compatibility
+	_content: HTMLSlotElement | null = null;
+
+	// Using ES2015 syntax for backwards compatibility
+	static get observedAttributes() {
+		return ["open"];
+	}
 	constructor() {
 		super();
-		this.#content = createElement("slot");
 		this.attachShadow({ mode: "open" }).append(
-			createElement("slot", null, { name: "summary" }), // Summary slot
-			this.#content, // Content slot
+			createElement("slot", null, { name: "summary" }),
+			createElement("slot", null, { part: "details-content" }),
 			createElement(
 				"style",
 				`${DISPLAY_BLOCK}
@@ -39,13 +43,15 @@ export class UHTMLDetailsElement extends UHTMLElement {
 		);
 	}
 	connectedCallback() {
-		on(this.#content, "beforematch", this); // Open if browsers Find in page reveals content
+		this._content = this.shadowRoot?.children[1] as HTMLSlotElement;
+		on(this._content, "beforematch", this); // Open if browsers Find in page reveals content
 		on(this, "click,keydown", this);
 		this.attributeChangedCallback(); // We now know the element is in the DOM, so run a attribute setup
 	}
 	disconnectedCallback() {
-		off(this.#content, "beforematch", this);
+		if (this._content) off(this._content, "beforematch", this);
 		off(this, "click,keydown", this);
+		this._content = null;
 	}
 	attributeChangedCallback(prop?: string, prev?: string, next?: string) {
 		const hide = "onbeforematch" in this ? "until-found" : true; // Use "until-found" if supported
@@ -55,12 +61,12 @@ export class UHTMLDetailsElement extends UHTMLElement {
 		for (const el of this.children)
 			if (el.nodeName === "U-SUMMARY") attr(el, "aria-expanded", `${open}`);
 
-		attr(this.#content, "aria-hidden", `${!open}`); // Needed to prevent announcing "group" when closed in Chrome on Mac
-		this.#content.hidden = open ? false : (hide as boolean); // Make typescript accept "until-found"
+		attr(this._content, "aria-hidden", `${!open}`); // Needed to prevent announcing "group" when closed in Chrome on Mac
+		attr(this._content, "hidden", open ? null : `${hide || ""}`);
 
 		// Make <slot> display: block when hidden so content-visibility: hidden works
-		if (hide === "until-found")
-			this.#content.style.display = open ? "" : "block";
+		if (hide === "until-found" && this._content)
+			this._content.style.display = open ? "" : "block";
 
 		// Close other u-details with same name
 		if (open && this.name) {

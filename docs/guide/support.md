@@ -2,15 +2,10 @@
 title: Browser support
 ---
 <script setup>
-import '../../packages/u-details/'
 import { data } from '../support.data.ts'
 
 const percent = (num) => `${Number(num).toFixed(2)}%`
 </script>
-<style module>
-  u-summary { padding-block: .25em; border-top: 1px solid var(--vp-c-divider) }
-  u-summary span { float: right; font-family: monospace }
-</style>
 
 # Browser support
 

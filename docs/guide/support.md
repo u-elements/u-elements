@@ -1,5 +1,5 @@
 ---
-title: Support
+title: Browser support
 ---
 <script setup>
 import '../../packages/u-details/'

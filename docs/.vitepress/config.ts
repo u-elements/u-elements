@@ -42,6 +42,7 @@ export default defineConfig({
 				items: [
 					{ text: "Why u-elements", link: "/guide/why" },
 					{ text: "Getting started", link: "/guide/" },
+					{ text: "Browser support", link: "/guide/support" },
 				],
 			},
 			{

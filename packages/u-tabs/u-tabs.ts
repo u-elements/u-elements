@@ -83,10 +83,11 @@ export class UHTMLTabListElement extends UHTMLElement {
 			else if (key === "Tab") next = getSelectedIndex(tabs);
 			else return; // Do not hijack other keys
 
+			// Change tabIndex after event has run to make sure Tab works as expected
 			setTimeout(() => {
 				tabs[prev].tabIndex = -1;
 				tabs[next].tabIndex = 0;
-			}); // Change tabIndex after event has run to make sure Tab works as expected
+			});
 
 			if (key !== "Tab") {
 				event.preventDefault(); // Prevent scroll
@@ -145,23 +146,24 @@ export class UHTMLTabElement extends UHTMLElement {
 		if (name === "aria-selected" && this.tabList)
 			for (const tab of queryWithoutNested("u-tab", this.tabList)) {
 				if (tab !== this && isSelected(tab)) {
-					attr(getPanel(tab), "hidden", "");
+					const panel = getPanel(tab);
+					if (panel) panel.hidden = true;
 					attr(tab, "aria-selected", "false");
 					tab.tabIndex = -1;
 				}
 			}
 
 		// Hide previous panel if changing aria-controls
-		if (name === ARIA_CONTROLS && prev)
-			attr(getPanel(this, prev), "hidden", "");
+		const prevPanel = name === ARIA_CONTROLS && prev && getPanel(this, prev);
+		if (prevPanel) prevPanel.hidden = true;
 
 		// Only set aria-controls if needed to prevent infinite loop
 		if (nextPanelId && attr(this, ARIA_CONTROLS) !== nextPanelId)
 			attr(this, ARIA_CONTROLS, nextPanelId);
 
 		this.tabIndex = 0;
-		attr(nextPanel, SAFE_LABELLEDBY, useId(this));
-		attr(nextPanel, "hidden", null);
+		if (nextPanel) attr(nextPanel, SAFE_LABELLEDBY, useId(this));
+		if (nextPanel) nextPanel.hidden = false;
 	}
 	get tabsElement(): UHTMLTabsElement | null {
 		return this.closest("u-tabs");

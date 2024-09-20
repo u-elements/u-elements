@@ -28,11 +28,6 @@
       u-datepicker::part(saturday),
       u-datepicker::part(sunday) { border: 1px solid red }
       u-datepicker u-option { border: 1px solid blue }
-
-      #stats u-summary { display: flex; justify-content: space-between; padding-block: .25em; border-top: 1px solid }
-      #stats u-summary span:first-of-type { margin-left: auto }
-      #stats u-summary span { flex: 0 0 6rem }
-      #stats li small { float: right }
     </style>
     <script type="module" src="/packages/u-datalist/u-datalist.ts"></script>
     <script type="module" src="/packages/u-datepicker/u-datepicker.ts"></script>
@@ -43,103 +38,6 @@
   </head>
   <body>
     <main>
-      <div id="stats"></div>
-      <script type="module">
-        import caniuse from "caniuse-lite";
-        import bcd from "@mdn/browser-compat-data";
-        import no from "caniuse-lite/data/regions/NO";
-
-        const usageNorway = caniuse.region(no);
-        const features = [
-          bcd.css.selectors.hostfunction,
-          bcd.css.selectors.host,
-          bcd.css.selectors.scope,
-          bcd.api.CustomElementRegistry,
-          bcd.api.ShadowRoot,
-          bcd.api.MutationObserver,
-          bcd.javascript.classes.static,
-          bcd.javascript.operators.spread,
-          bcd.javascript.builtins.WeakMap,
-          bcd.javascript.builtins.String.trim,
-          bcd.javascript.builtins.Array.from,
-          bcd.javascript.builtins.Array.find,
-          bcd.javascript.builtins.Object.entries,
-          bcd.javascript.builtins.Object.getOwnPropertyDescriptor,
-          bcd.api.Node.getRootNode,
-          bcd.api.Node.contains,
-          bcd.api.Element.attachShadow,
-          bcd.api.Element.matches,
-          bcd.api.Element.closest,
-          bcd.api.Element.remove,
-        ].map((feature) => feature.__compat);
-
-        const datetime = new Intl.DateTimeFormat('en', { month: 'short', year: 'numeric' });
-        const agents = {}; // Both MDN and CIU compatible agents, with sorted releases
-        for(const [agent, { browser, release_date, usage_global }] of Object.entries(caniuse.agents)) {
-          const releases = Object.entries(release_date).filter(([, release]) => release).sort(([,a], [,b]) => a - b);
-          const mdnAgent = Object.entries(bcd.browsers).find(([key, { name }]) => name === browser)?.[0];
-          if (mdnAgent) agents[agent] = agents[mdnAgent] = { key: agent, usage: usage_global, releases, name: browser };
-        }
-
-        function getBrowserSupport(feature, region = {}) {
-          const stats = feature.stats || feature.support;
-          const supports = { total: { yes: 0, no: 0 } };
-          const toPercentage = (sup) => sup.yes / (sup.yes + sup.no) * 100;
-
-          for (const [browser, versions] of Object.entries(stats)) {
-            const added = ('version_added' in versions) && parseFloat(versions.version_added || Infinity);
-            const agent = agents[browser];
-            const usage = region[agent?.key] || agent?.usage;
-            const support = { yes: 0, no: 0, from: null };
-
-            if (!usage) continue;
-            for (const [version, release] of agent.releases) {
-              const noSupport = added ? parseFloat(version.split('-').pop()) < added : versions[version] === 'n';
-              const supportKey = noSupport ? 'no' : 'yes';
-              const percentage = parseFloat(usage[version]) || 0;
-
-              supports.total[supportKey] += percentage;
-              support[supportKey] += percentage;
-
-              if (!noSupport && !support.from) support.from = `version ${parseFloat(version)}, ${datetime.format(release * 1000)}`;
-            }
-            supports[agent.name] = { from: support.from, percentage: toPercentage(support) };
-          }
-          supports.total = toPercentage(supports.total);
-
-          return supports;
-        }
-
-        
-        document.getElementById('stats').innerHTML = features
-          .map((feature) => {
-            const world = getBrowserSupport(feature);
-            const norway = getBrowserSupport(feature, usageNorway);
-            const name = feature.title || feature.description || feature.mdn_url?.split('/').slice(-2).join('.').replace(/^API\./g, '') || '';
-
-            return { name, world, norway };
-          })
-          .sort((a, b) => a.norway.total - b.norway.total)
-          .map(({ name, world, norway }) => {
-            const round = (n) => Number(n).toFixed(2)
-    
-            return `
-              <u-details>
-                <u-summary>
-                  ${name.replace(/<[^>]+>/g, '')}
-                  <span>${round(world.total)}%</span>
-                  <span>${round(norway.total)}%</span>
-                </u-summary>
-                <ul>
-                ${Object.entries(world)
-                  .filter(([name, support]) => support.from)
-                  .map(([name, { from, percentage }]) => `<li>${name}: ${round(percentage)}% <small>since ${from.toLowerCase()}</small></li>`)
-                  .join('')}
-                </ul>
-              </u-details>`
-          })
-          .join('');
-      </script>
       <!-- <details name="group-1">
         <summary>Test 1</summary>
         <div>Innhold 1</div>

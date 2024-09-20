@@ -24,7 +24,9 @@ let SKIP_ATTR_CHANGE = false;
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/progress)
  */
 export class UHTMLProgressElement extends UHTMLElement {
-	static formAssociated = true; // Prevent Chrome DevTools warning about <label for=""> pointing to <u-progress>
+	// Prevent Chrome DevTools warning about <label for=""> pointing to <u-progress>
+	static formAssociated = true;
+
 	// Using ES2015 syntax for backwards compatibility
 	static get observedAttributes() {
 		return ["aria-label", "aria-labelledby", "value", "max"]; // Also watch aria labels to sync Firefox/iOS

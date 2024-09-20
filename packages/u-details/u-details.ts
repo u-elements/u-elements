@@ -61,12 +61,14 @@ export class UHTMLDetailsElement extends UHTMLElement {
 		for (const el of this.children)
 			if (el.nodeName === "U-SUMMARY") attr(el, "aria-expanded", `${open}`);
 
-		attr(this._content, "aria-hidden", `${!open}`); // Needed to prevent announcing "group" when closed in Chrome on Mac
-		attr(this._content, "hidden", open ? null : `${hide || ""}`);
+		if (this._content) {
+			attr(this._content, "aria-hidden", `${!open}`); // Needed to prevent announcing "group" when closed in Chrome on Mac
+			this._content.hidden = open ? false : (hide as boolean); // Make typescript accept "until-found"
 
-		// Make <slot> display: block when hidden so content-visibility: hidden works
-		if (hide === "until-found" && this._content)
-			this._content.style.display = open ? "" : "block";
+			// Make <slot> display: block when hidden so content-visibility: hidden works
+			if (hide === "until-found")
+				this._content.style.display = open ? "" : "block";
+		}
 
 		// Close other u-details with same name
 		if (open && this.name) {

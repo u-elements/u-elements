@@ -36,7 +36,7 @@ export const UHTMLElement =
  * @param value A valid attribute value or null to remove attribute
  */
 export function attr(
-	el: Element | null,
+	el: Element,
 	name: string,
 	value?: string | null,
 ): string | null {

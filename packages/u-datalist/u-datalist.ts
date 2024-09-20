@@ -27,7 +27,7 @@ declare global {
 
 let IS_PRESS = false; // Prevent loosing focus on mousedown on <u-option> despite tabIndex -1
 const IS_SAFARI_MAC = IS_SAFARI && !IS_IOS; // Used to prevent "expanded" announcement interrupting label in Safari Mac
-const EVENTS = "click,focusout,input,keydown,pointerdown,pointerup";
+const EVENTS = "click,focusout,input,keydown,mousedown,mouseup";
 // const TEXTS = {
 // 	hit: "hit",
 // 	hits: "hits",
@@ -80,8 +80,8 @@ export class UHTMLDataListElement extends UHTMLElement {
 		if (type === "focusout") onFocusOut(this);
 		if (type === "keydown") onKeyDown(this, event as KeyboardEvent);
 		if (type === "mutation" || type === "input") setupOptions(this, event);
-		if (type === "pointerup") IS_PRESS = false;
-		if (type === "pointerdown") IS_PRESS = this.contains(event.target as Node);
+		if (type === "mouseup") IS_PRESS = false;
+		if (type === "mousedown") IS_PRESS = this.contains(event.target as Node);
 	}
 	get options(): HTMLCollectionOf<HTMLOptionElement> {
 		return this.getElementsByTagName("u-option");

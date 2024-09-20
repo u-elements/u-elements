@@ -138,23 +138,24 @@ const render = (
 
 	// Setup control
 	const control = self.control;
-	const list = document.getElementById(attr(control, "list") || ""); // UHTMLDatalist might not be initialized yet
-	attr(list, SAFE_MULTISELECTABLE, "true"); // Make <u-datalist> multiselect
+	const controlLabel = `${changeText}${label}, ${values.length ? texts.found.replace("%d", `${values.length}`) : texts.empty}`;
+	const list = control && document.getElementById(attr(control, "list") || ""); // UHTMLDatalist might not be initialized yet
+	const options = list?.children as
+		| HTMLCollectionOf<HTMLOptionElement>
+		| undefined;
 
-	for (const option of list?.children || []) {
+	if (control) attr(control, "aria-label", controlLabel);
+	if (list) attr(list, SAFE_MULTISELECTABLE, "true"); // Make <u-datalist> multiselect
+	for (const option of options || []) {
 		const value = attr(option, "value") || option.textContent || "";
 		attr(option, "selected", values.includes(value) ? "" : null); // Set selected options in datalist
-	}
-	if (control) {
-		const controlLabel = `${changeText}${label}, ${values.length ? texts.found.replace("%d", `${values.length}`) : texts.empty}`;
-		attr(control, "aria-label", controlLabel);
 	}
 
 	// Announce item change
 	if (changeText) {
 		const nextFocus = self.items[(self._focusIndex || 1) - 1] || control;
 		const sameFocus = nextFocus === getRoot(self)?.activeElement;
-		const tmpFocus = control?.list?.options || self.items; // Move focus temporarily so out of input we get ariaLabel change announced
+		const tmpFocus = options || self.items; // Move focus temporarily so out of input we get ariaLabel change announced
 		self._blurAnnounceReset = false; // Do not reset announce on next focus/blur
 
 		if (nextFocus === control) {

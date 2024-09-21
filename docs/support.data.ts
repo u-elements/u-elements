@@ -1,6 +1,6 @@
 import type { CompatStatement } from "@mdn/browser-compat-data";
 import caniuse from "caniuse-lite";
-import bcd from "@mdn/browser-compat-data" with { type: "json" };
+import bcd from "@mdn/browser-compat-data/forLegacyNode";
 import no from "caniuse-lite/data/regions/NO";
 
 const usageNorway = caniuse.region(no);

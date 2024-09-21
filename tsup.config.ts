@@ -34,6 +34,7 @@ export default defineConfig({
 	clean: true,
 	entry: [pkgFile],
 	format: ["cjs", "esm"],
+	target: "es6", // For backwards compatibility
 	treeshake: true,
 	dts: {
 		footer: getFrameworkTypes(modules.flat().join("")),

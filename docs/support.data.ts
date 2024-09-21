@@ -2,6 +2,9 @@ import type { CompatStatement } from "@mdn/browser-compat-data";
 import caniuse from "caniuse-lite";
 import bcd from "@mdn/browser-compat-data/forLegacyNode";
 import no from "caniuse-lite/data/regions/NO";
+// import { JSHINT } from "jshint";
+// import path from "node:path";
+// import fs from "node:fs";
 
 const usageNorway = caniuse.region(no);
 const intlDate = new Intl.DateTimeFormat("en", {
@@ -180,6 +183,7 @@ export default {
 			bcd.javascript.functions.get,
 			bcd.javascript.functions.set,
 			bcd.javascript.grammar.template_literals,
+			bcd.javascript.operators.optional_chaining,
 			bcd.javascript.operators.spread,
 			bcd.javascript.statements.for_of,
 		].map(({ __compat: feature }) => ({
@@ -195,8 +199,59 @@ export default {
 				const prevVersion = browsers[name]?.version ?? 0;
 				if (browser.version > prevVersion) browsers[name] = browser;
 			}
+		// function isObject(item: unknown) {
+		// 	return item && typeof item === "object" && !Array.isArray(item);
+		// }
+
+		// function mergeDeep(target: object, ...sources: object[]) {
+		// 	if (!sources.length) return target;
+		// 	const source = sources.shift();
+
+		// 	if (isObject(target) && isObject(source)) {
+		// 		for (const key in source) {
+		// 			if (isObject(source[key])) {
+		// 				if (!target[key]) Object.assign(target, { [key]: {} });
+		// 				mergeDeep(target[key], source[key]);
+		// 			} else {
+		// 				Object.assign(target, { [key]: source[key] });
+		// 			}
+		// 		}
+		// 	}
+
+		// 	return mergeDeep(target, ...sources);
+		// }
+
+		// const flattenBCD = (obj: object, path: string[] = [], flat = {}) => {
+		// 	for (const [key, val] of Object.entries(obj)) {
+		// 		if (key === "__compat") flat[path.join(".")] = val;
+		// 		else flattenBCD(val, path.concat(key), flat);
+		// 	}
+		// 	return flat;
+		// };
+
+		// const miniBCD = Object.entries(
+		// 	flattenBCD({
+		// 		...bcd.api,
+		// 		...bcd.javascript,
+		// 		...bcd.css.selectors,
+		// 	}),
+		// );
+
+		// const jshint: Record<string, object> = {};
+		// const pkgsPath = path.resolve(__dirname, "../packages");
+		// fs.readdirSync(pkgsPath)
+		// 	.map((pkgName) => path.resolve(pkgsPath, pkgName, `dist/${pkgName}.js`))
+		// 	.filter((pkgDistFile) => fs.existsSync(pkgDistFile))
+		// 	.map((pkgDistFile) => {
+		// 		JSHINT(String(fs.readFileSync(pkgDistFile)), { esversion: 11 });
+		// 		const { functions, options, errors, globals, ...rest } = JSHINT.data();
+		// 		mergeDeep(jshint, rest);
+		// 	});
 
 		return {
+			// jshint: Object.keys(jshint.member).map((key) =>
+			// 	miniBCD.filter(([path]) => path.endsWith(key)).map(([path]) => path),
+			// ),
 			browsers,
 			features: features
 				.filter((a) => a.world.total !== 100)

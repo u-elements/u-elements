@@ -40,9 +40,9 @@ export function attr(
 	name: string,
 	value?: string | null,
 ): string | null {
-	if (value === undefined) return el?.getAttribute(name) ?? null; // Fallback to null only if el is undefined
-	if (value === null) el?.removeAttribute(name);
-	else if (el?.getAttribute(name) !== value) el?.setAttribute(name, value);
+	if (value === undefined) return el.getAttribute(name) ?? null; // Fallback to null only if el is undefined
+	if (value === null) el.removeAttribute(name);
+	else if (el.getAttribute(name) !== value) el.setAttribute(name, value);
 	return null;
 }
 

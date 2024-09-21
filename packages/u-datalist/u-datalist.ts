@@ -62,8 +62,8 @@ export class UHTMLDataListElement extends UHTMLElement {
 		on(this._root, "focus", this, true); // Need to also listen on focus with capturing to render before Firefox NVDA reads state
 		setTimeout(() => {
 			const inputs = this._root?.querySelectorAll(`input[list="${this.id}"]`);
-			if (!IS_SAFARI_MAC && inputs)
-				for (const input of inputs) attr(input, "aria-expanded", "false");
+			for (const input of inputs || [])
+				attr(input, "aria-expanded", `${IS_SAFARI_MAC}`);
 		}); // Allow rendering full DOM tree before running querySelectorAll
 	}
 	disconnectedCallback() {
@@ -187,8 +187,8 @@ const onKeyDown = (self: UHTMLDataListElement, event: KeyboardEvent) => {
 const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
 	self.hidden = !open;
 
-	if (!IS_SAFARI_MAC && self._input)
-		attr(self._input, "aria-expanded", `${open}`);
+	if (self._input)
+		attr(self._input, "aria-expanded", `${IS_SAFARI_MAC || open}`);
 	if (open) setupOptions(self); // Ensure correct state when opening if input.value has changed
 };
 

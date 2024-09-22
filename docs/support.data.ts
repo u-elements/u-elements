@@ -1,10 +1,10 @@
+import { JSHINT } from "jshint";
 import type { CompatStatement } from "@mdn/browser-compat-data";
+import path from "node:path";
+import no from "caniuse-lite/data/regions/NO";
+import fs from "node:fs";
 import caniuse from "caniuse-lite";
 import bcd from "@mdn/browser-compat-data/forLegacyNode";
-import no from "caniuse-lite/data/regions/NO";
-// import { JSHINT } from "jshint";
-// import path from "node:path";
-// import fs from "node:fs";
 
 const usageNorway = caniuse.region(no);
 const intlDate = new Intl.DateTimeFormat("en", {
@@ -108,89 +108,152 @@ function getFeatureName(feature?: CompatStatement) {
 	);
 }
 
+function isObject(item: unknown) {
+	return item && typeof item === "object" && !Array.isArray(item);
+}
+
+function mergeDeep(target: object, ...sources: object[]) {
+	if (!sources.length) return target;
+	const source = sources.shift();
+
+	if (isObject(target) && isObject(source)) {
+		for (const key in source) {
+			if (isObject(source[key])) {
+				if (!target[key]) Object.assign(target, { [key]: {} });
+				mergeDeep(target[key], source[key]);
+			} else {
+				Object.assign(target, { [key]: source[key] });
+			}
+		}
+	}
+
+	return mergeDeep(target, ...sources);
+}
+
+function flattenBCDName(...name: string[]) {
+	return name
+		.slice(-2)
+		.join(".")
+		.replace(/^HTML\S+Element\./, "HTMLElement.")
+		.replace(/^window\./i, "")
+		.toLowerCase();
+}
+
+function flattenBCD(obj: object, path: string[] = [], flat = {}) {
+	for (const [key, val] of Object.entries(obj)) {
+		if (key !== "__compat") flattenBCD(val, path.concat(key), flat);
+		else if (val.status.standard_track && path.length > 1) {
+			flat[flattenBCDName(...path)] = val;
+		}
+	}
+	return flat;
+}
+
+const miniBCD = flattenBCD({
+	...bcd.api,
+	...bcd.javascript,
+	...bcd.css.selectors,
+});
+
+// Features we _know_ are not strictly needed
+const skip = [
+	"array.entries",
+	"attr.name",
+	"attr.value",
+	"document.append",
+	"document.children",
+	"document.hidden",
+	"document.prepend",
+	"document.title",
+	"element.part",
+	"function.name",
+	"htmlelement.action",
+	"htmlelement.autocomplete",
+	"htmlelement.disabled",
+	"htmlelement.item",
+	"htmlelement.label",
+	"htmlelement.labels",
+	"htmlelement.length",
+	"htmlelement.list",
+	"htmlelement.remove",
+	"htmlelement.max",
+	"htmlelement.min",
+	"htmlelement.name",
+	"htmlelement.open",
+	"htmlelement.options",
+	"htmlelement.position",
+	"htmlelement.selected",
+	"htmlelement.selectionend",
+	"htmlelement.target",
+	"htmlelement.text",
+	"htmlelement.title",
+	"htmlelement.tostring",
+	"htmlelement.type",
+	"htmlelement.value",
+	"length",
+	"name",
+	"navigator.useragentdata",
+	"window.focus",
+	"window.name",
+];
+
 export default {
 	load() {
-		const features = [
-			bcd.api.CSSStyleDeclaration.setProperty,
-			bcd.api.CustomElementRegistry,
-			bcd.api.CustomEvent,
-			bcd.api.Document.createElement,
-			bcd.api.Document.getElementById,
-			bcd.api.Document.querySelector,
-			bcd.api.Document.querySelectorAll,
-			bcd.api.Element.append,
-			bcd.api.Element.attachShadow,
-			bcd.api.Element.blur_event,
-			bcd.api.Element.click_event,
-			bcd.api.Element.closest,
-			bcd.api.Element.focus_event,
-			bcd.api.Element.focusin_event,
-			bcd.api.Element.focusout_event,
-			bcd.api.Element.getAttribute,
-			bcd.api.Element.getBoundingClientRect,
-			bcd.api.Element.getElementsByTagName,
-			bcd.api.Element.hasAttribute,
-			bcd.api.Element.input_event,
-			bcd.api.Element.insertAdjacentElement,
-			bcd.api.Element.keydown_event,
-			bcd.api.Element.matches,
-			bcd.api.Element.mousedown_event,
-			bcd.api.Element.mouseup_event,
-			bcd.api.Element.prepend,
-			bcd.api.Element.querySelector,
-			bcd.api.Element.querySelectorAll,
-			bcd.api.Element.remove,
-			bcd.api.Element.removeAttribute,
-			bcd.api.Element.setAttribute,
-			bcd.api.Element.slot,
-			bcd.api.Event,
-			bcd.api.EventTarget.addEventListener,
-			bcd.api.EventTarget.dispatchEvent,
-			bcd.api.EventTarget.removeEventListener,
-			bcd.api.HTMLElement.focus,
-			bcd.api.HTMLElement.hidden,
-			bcd.api.HTMLInputElement.selectionEnd,
-			bcd.api.KeyboardEvent.key,
-			bcd.api.MutationObserver,
-			bcd.api.Node.contains,
-			bcd.api.Node.getRootNode,
-			bcd.api.ShadowRoot,
-			bcd.api.clearTimeout,
-			bcd.api.setTimeout,
-			bcd.css.selectors.host,
-			bcd.css.selectors.hostfunction,
-			bcd.css.selectors.scope,
-			bcd.javascript.builtins.Array.find,
-			bcd.javascript.builtins.Array.from,
-			bcd.javascript.builtins.Array.includes,
-			bcd.javascript.builtins.Array.indexOf,
-			bcd.javascript.builtins.Array.map,
-			bcd.javascript.builtins.Array.map,
-			bcd.javascript.builtins.Array.some,
-			bcd.javascript.builtins.Math,
-			bcd.javascript.builtins.Number.isFinite,
-			bcd.javascript.builtins.Number.isNaN,
-			bcd.javascript.builtins.Number.parseFloat,
-			bcd.javascript.builtins.Object.defineProperty,
-			bcd.javascript.builtins.Object.entries,
-			bcd.javascript.builtins.Object.getOwnPropertyDescriptor,
-			bcd.javascript.builtins.RegExp.test,
-			bcd.javascript.builtins.String.includes,
-			bcd.javascript.builtins.String.replace,
-			bcd.javascript.builtins.String.trim,
-			bcd.javascript.builtins.WeakMap,
-			bcd.javascript.classes.static,
-			bcd.javascript.functions.get,
-			bcd.javascript.functions.set,
-			bcd.javascript.grammar.template_literals,
-			bcd.javascript.operators.optional_chaining,
-			bcd.javascript.operators.spread,
-			bcd.javascript.statements.for_of,
-		].map(({ __compat: feature }) => ({
-			world: getBrowserSupport(feature as CompatStatement),
-			norway: getBrowserSupport(feature as CompatStatement, usageNorway),
-			name: getFeatureName(feature),
-		}));
+		const jshint: Record<string, object> = {};
+		const pkgsPath = path.resolve(__dirname, "../packages");
+		fs.readdirSync(pkgsPath)
+			.map((pkgName) => path.resolve(pkgsPath, pkgName, `dist/${pkgName}.js`))
+			.filter((pkgDistFile) => fs.existsSync(pkgDistFile))
+			.map((pkgDistFile) => {
+				JSHINT(String(fs.readFileSync(pkgDistFile)), { esversion: 11 });
+				const { functions, options, errors, ...rest } = JSHINT.data();
+				mergeDeep(jshint, rest);
+			});
+
+		const globals = [
+			"Array",
+			"Boolean",
+			"CSSStyleDeclaration",
+			"Element",
+			"Event",
+			"KeyboardEvent",
+			"MouseEvent",
+			"EventTarget",
+			"Function",
+			"HTMLElement",
+			"Node",
+			"Number",
+			"RegExp",
+			"String",
+		]
+			.concat(jshint.globals as string[])
+			.concat((jshint.implieds as { name: string }[]).map(({ name }) => name))
+			.map((name) => name.toLowerCase())
+			.filter((val, idx, all) => all.indexOf(val) === idx) // Make unique
+			.sort();
+
+		const found: [string, CompatStatement][] = [];
+		Object.keys(jshint.member).map((key) => {
+			for (const global of globals) {
+				const path = flattenBCDName(global, key);
+				if (miniBCD[path]) found.push([path, miniBCD[path]]);
+			}
+		});
+
+		const features = found
+			.filter(([path]) => !skip.includes(path))
+			.filter(([path]) => path.split(".")[0] !== path.split(".")[1]) // Remove document.document, array.array etc
+			.map(([, feature]) => feature)
+			.concat(
+				bcd.css.selectors.host.__compat as CompatStatement,
+				bcd.css.selectors.hostfunction.__compat as CompatStatement,
+				bcd.css.selectors.scope.__compat as CompatStatement,
+			)
+			.map((feature) => ({
+				world: getBrowserSupport(feature),
+				norway: getBrowserSupport(feature, usageNorway),
+				name: getFeatureName(feature),
+			}));
 
 		// Create object of supported browsers
 		const browsers = {};
@@ -199,59 +262,8 @@ export default {
 				const prevVersion = browsers[name]?.version ?? 0;
 				if (browser.version > prevVersion) browsers[name] = browser;
 			}
-		// function isObject(item: unknown) {
-		// 	return item && typeof item === "object" && !Array.isArray(item);
-		// }
-
-		// function mergeDeep(target: object, ...sources: object[]) {
-		// 	if (!sources.length) return target;
-		// 	const source = sources.shift();
-
-		// 	if (isObject(target) && isObject(source)) {
-		// 		for (const key in source) {
-		// 			if (isObject(source[key])) {
-		// 				if (!target[key]) Object.assign(target, { [key]: {} });
-		// 				mergeDeep(target[key], source[key]);
-		// 			} else {
-		// 				Object.assign(target, { [key]: source[key] });
-		// 			}
-		// 		}
-		// 	}
-
-		// 	return mergeDeep(target, ...sources);
-		// }
-
-		// const flattenBCD = (obj: object, path: string[] = [], flat = {}) => {
-		// 	for (const [key, val] of Object.entries(obj)) {
-		// 		if (key === "__compat") flat[path.join(".")] = val;
-		// 		else flattenBCD(val, path.concat(key), flat);
-		// 	}
-		// 	return flat;
-		// };
-
-		// const miniBCD = Object.entries(
-		// 	flattenBCD({
-		// 		...bcd.api,
-		// 		...bcd.javascript,
-		// 		...bcd.css.selectors,
-		// 	}),
-		// );
-
-		// const jshint: Record<string, object> = {};
-		// const pkgsPath = path.resolve(__dirname, "../packages");
-		// fs.readdirSync(pkgsPath)
-		// 	.map((pkgName) => path.resolve(pkgsPath, pkgName, `dist/${pkgName}.js`))
-		// 	.filter((pkgDistFile) => fs.existsSync(pkgDistFile))
-		// 	.map((pkgDistFile) => {
-		// 		JSHINT(String(fs.readFileSync(pkgDistFile)), { esversion: 11 });
-		// 		const { functions, options, errors, globals, ...rest } = JSHINT.data();
-		// 		mergeDeep(jshint, rest);
-		// 	});
 
 		return {
-			// jshint: Object.keys(jshint.member).map((key) =>
-			// 	miniBCD.filter(([path]) => path.endsWith(key)).map(([path]) => path),
-			// ),
 			browsers,
 			features: features
 				.filter((a) => a.world.total !== 100)

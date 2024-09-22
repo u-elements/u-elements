@@ -24,8 +24,8 @@ Based on up-to-date statistics from [caniuse.com](https://caniuse.com/), `u-elem
 
 ## Web features in use
 
-`u-elements` continuously monitors browser feature support and browser version market share by combining data from [caniuse.com](https://caniuse.com/) and [MDN Browser Compat data](https://github.com/mdn/browser-compat-data).
-Here are the web features used by `u-elements` currently not supported by 100% of browsers:
+`u-elements` tracks browser support by monitoring the web features it uses. This is done by analyzing source code with [JSHint](https://github.com/jshint/jshint/) and cross-referencing the identified features against with [MDN Browser Compatibility Data](https://github.com/mdn/browser-compat-data) and [caniuse.com usage statistics](https://caniuse.com/). 
+Here are the web features used by `u-elements` that are not yet fully supported by all browsers:
 
 <table>
   <thead><tr><th>Feature</th><th>Browser support</th></tr></thead>

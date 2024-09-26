@@ -28,6 +28,23 @@
       u-datepicker::part(saturday),
       u-datepicker::part(sunday) { border: 1px solid red }
       u-datepicker u-option { border: 1px solid blue }
+
+      u-details {
+        @media (prefers-reduced-motion: no-preference) {
+          interpolate-size: allow-keywords;
+        }
+        
+        &::part(details-content) {
+          block-size: 0;
+          overflow-y: clip; 
+          transition: content-visibility 500ms allow-discrete,
+                      height 500ms;
+        }
+        
+        &[open]::part(details-content) {
+          height: auto;
+        }
+      }
     </style>
     <script type="module" src="/packages/u-datalist/u-datalist.ts"></script>
     <script type="module" src="/packages/u-datepicker/u-datepicker.ts"></script>
@@ -38,22 +55,24 @@
   </head>
   <body>
     <main>
-      <!-- <details name="group-1">
-        <summary>Test 1</summary>
-        <div>Innhold 1</div>
-        <div>Innhold 2</div>
-        <div>Innhold 3</div>
-        Innhold 4
-      </details> -->
-      <!-- <u-details name="group-1">
+      <u-details name="group-1">
         <u-summary>Test 1</u-summary>
         <div>Innhold 1</div>
         <div>Innhold 2</div>
         <div>Innhold 3</div>
         Innhold 4
-      </u-details> -->
-      <button>Før</button>
+      </u-details>
+      <u-details name="group-1">
+        <u-summary>Test 2</u-summary>
+        <div>Innhold 1</div>
+        <div>Innhold 2</div>
+        <div>Innhold 3</div>
+        Innhold 4
+      </u-details>
 
+      <br />
+      <button>Før</button>
+      <br />
 
       <label>
         Velg type iskrem<br>

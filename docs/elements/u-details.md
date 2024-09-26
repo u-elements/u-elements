@@ -78,11 +78,38 @@ details.addEventListener('toggle', (event) => {
 });
 ```
 
-## Styling
+## Styling and animating
 
 `<summary>`/`<u-summary>` is rendered with `display: list-item` to display the open/close triangle, which is also announced by screen readers. If you wish to remove the triangle and its announcement, you can use `list-style: none`.
 
-`<details>`/`<u-details>` hides its *content*, implying that only the `open` attribute (not CSS) can alter its open state. Animating the open/close action consequently requires some workarounds: [example 1](https://linkedlist.ch/animate_details_element_60/) and [example 2](https://css-tricks.com/how-to-animate-the-details-element/).
+`<details>`/`<u-details>` hides its *content*, implying that only the `open` attribute (not CSS) can alter its open state. Animating the open/close action consequently requires animating `::details-content`. Since this pseudo selector is not
+possible to replicate in for custom elements, you can instead use `::part(details-content)`:
+
+<Sandbox />
+<pre hidden>
+&lt;u-details&gt;
+  &lt;u-summary&gt;Details&lt;/u-summary&gt;
+  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent interdum diam quis eros sollicitudin, et scelerisque arcu malesuada. Nunc pellentesque eleifend nulla a convallis.
+&lt;/u-details&gt;
+&lt;style&gt;
+  u-details {
+    @media (prefers-reduced-motion: no-preference) {
+      interpolate-size: allow-keywords;
+    }
+
+    &amp;::part(details-content) {
+      block-size: 0;
+      overflow-y: clip; 
+      transition: content-visibility 500ms allow-discrete,
+                  height 500ms;
+    }
+    
+    &amp;[open]::part(details-content) {
+      height: auto;
+    }
+  }
+&lt;/style&gt;
+</pre>
 
 ## Find-in-page
 Even when a `<details>`/`<u-details>` element is closed, all of its content remains discoverable through the find-in-page search feature (e.g., Ctrl or Command + F keys). This behavior is [supported by various browsers](https://caniuse.com/mdn-html_global_attributes_hidden_until-found_value). If a user conducts a search for content within a details element, it will automatically open and trigger the `toggle` event.

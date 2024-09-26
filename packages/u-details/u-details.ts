@@ -38,7 +38,8 @@ export class UHTMLDetailsElement extends UHTMLElement {
 				"style",
 				`${DISPLAY_BLOCK}
         ::slotted(u-summary) { cursor: pointer; display: list-item; counter-increment: list-item 0; list-style: disclosure-closed inside }
-        ::slotted(u-summary[aria-expanded="true"]) { list-style-type: disclosure-open }`,
+        ::slotted(u-summary[aria-expanded="true"]) { list-style-type: disclosure-open }
+				:host > [part="details-content"]:not([hidden=""]) { display: block }`,
 			),
 		);
 	}
@@ -64,10 +65,6 @@ export class UHTMLDetailsElement extends UHTMLElement {
 		if (this._content) {
 			attr(this._content, "aria-hidden", `${!open}`); // Needed to prevent announcing "group" when closed in Chrome on Mac
 			this._content.hidden = open ? false : (hide as boolean); // Make typescript accept "until-found"
-
-			// Make <slot> display: block when hidden so content-visibility: hidden works
-			if (hide === "until-found")
-				this._content.style.display = open ? "" : "block";
 		}
 
 		// Close other u-details with same name

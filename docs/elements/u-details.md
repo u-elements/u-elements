@@ -82,17 +82,18 @@ details.addEventListener('toggle', (event) => {
 
 `<summary>`/`<u-summary>` is rendered with `display: list-item` to display the open/close triangle, which is also announced by screen readers. If you wish to remove the triangle and its announcement, you can use `list-style: none`.
 
-`<details>`/`<u-details>` hides its *content*, implying that only the `open` attribute (not CSS) can alter its open state. Animating the open/close action consequently requires animating `::details-content`. Since this pseudo selector is not
-possible to replicate in for custom elements, you can instead use `::part(details-content)`:
+`<details>`/`<u-details>` hides its *content* - the `::details-content` pseudo element. Since custom pseudo selector are not
+possible to replicate in custom elements, `u-details` instead provide `::part(details-content)`.
+If your [browser supports `interpolate-size`](https://caniuse.com/mdn-css_properties_interpolate-size), you can animate open/close with pure css:
 
 <Sandbox />
 <pre hidden>
-&lt;u-details&gt;
-  &lt;u-summary&gt;Details&lt;/u-summary&gt;
+&lt;u-details class="animate"&gt;
+  &lt;u-summary&gt;Details animating if supported&lt;/u-summary&gt;
   Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent interdum diam quis eros sollicitudin, et scelerisque arcu malesuada. Nunc pellentesque eleifend nulla a convallis.
 &lt;/u-details&gt;
 &lt;style&gt;
-  u-details {
+  .animate{
     @media (prefers-reduced-motion: no-preference) {
       interpolate-size: allow-keywords;
     }

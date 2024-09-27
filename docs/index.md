@@ -25,7 +25,7 @@ features:
     details: Some HTML tags/ARIA patterns are not yet supported by screen readers. u&#8209;elements bridges that gap, while still allowing you to use MDN et al. as documentation.
   - icon: 📋
     title: Battle-tested with real screen readers
-    details: No compatibility assumptions; all u&#8209;elements have been manually tested across all major screen readers, browsers and devices.
+    details: No compatibility assumptions; all u&#8209;elements have been manually tested across all major screen readers, <span class="vp-doc"><a href="/u-elements/guide/support">browsers</a></span> and devices.
   - icon: 🪽
     title: Lightweight, headless and framework independent
     details: Zero dependencies. CSS styling. Compatible with any javascript framework, without a framework, or even in markdown or server side strings - just like HTML.

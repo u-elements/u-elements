@@ -18,7 +18,7 @@ import { data } from '../filesize.data.ts'
 
 ## Example
 
-<Sandbox />
+<Sandbox label="u-tags code example" />
 <pre hidden>
 &lt;label for="my-tags"&gt;
   Choose flavor of ice cream
@@ -114,7 +114,7 @@ myUTags.addEventListener('tags', (event) => {
 
 ## Example: Norwegian
 
-<Sandbox lang="no" />
+<Sandbox label="u-details language example" lang="no" />
 <pre hidden>
 &lt;label for="my-norwegian-tags"&gt;
   Velg type iskrem

@@ -1,52 +1,31 @@
-<script setup>
+<script setup lang="ts">
 import { ref, watch } from "vue";
-import { html } from "@codemirror/lang-html";
-import CodeMirror from "vue-codemirror6";
 
-const props = defineProps({
-  lang: String
-})
+const { label, lang } = defineProps<{label: string; lang?: string}>();
 
 // Import all uElements
-const modules = Object.values(
+Promise.all(Object.values(
+	// @ts-expect-error
 	import.meta.glob("../../../packages/*/u-!(*.spec).ts"),
-);
-const loading = Promise.all(modules.map((module) => module()));
-const htmlLang = ref(html());
+).map((module) => (module as (() => void))()));
 
-// Auto generate htmlLang for codeMirror
-loading.then((classes) => {
-	const extraTags = Object.fromEntries(
-		classes
-			.flatMap((module) => Object.entries(module))
-			.map(([type, { observedAttributes: attr = [] }]) => [
-				type.replace(/UHTML(\S+)Element/g, "u-$1").toLowerCase(),
-				{
-					globalAttrs: true,
-					attrs: Object.fromEntries(attr.map((v) => [v, null])),
-				},
-			]),
-	);
-	htmlLang.value = html({ extraTags });
-});
-
-let timer = null;
+let timer: ReturnType<typeof setTimeout> | number = 0;
 const code = ref("");
-const view = ref(null);
-const demo = ref(null);
+const view = ref<HTMLElement | null>(null);
+const demo = ref<HTMLElement | null>(null);
 const updateView = () => {
 	if (!view.value) return;
 	view.value.innerHTML = code.value;
 
 	for (const script of view.value.querySelectorAll("script"))
-		Function(script.textContent)(); // Exec scripts
+		Function(script.textContent || '')(); // Exec scripts
 };
 
 watch(demo, () => {
-	const pre = demo.value.nextElementSibling;
-	if (pre.nodeName !== 'PRE') console.log('Sandbox is missing <pre> for source code', demo.value);
-	code.value = pre.textContent;
-	updateView(code.value);
+	const pre = demo.value?.nextElementSibling;
+	if (pre?.nodeName !== 'PRE') console.log('Sandbox is missing <pre> for source code', demo.value);
+	code.value = pre?.textContent || '';
+	updateView();
 });
 watch(code, () => {
 	clearTimeout(timer);
@@ -54,19 +33,17 @@ watch(code, () => {
 });
 </script>
 <style>
-  .demo { border-radius: 8px; border: 2px dashed var(--vp-c-divider); display: flex; flex-wrap: wrap; margin-block: .5em; overflow: clip }
+  .demo { border-radius: 8px; border: 2px dashed var(--vp-c-divider); display: flex; flex-wrap: wrap; margin-block: .5em }
   .demo-code, .demo-view { box-sizing: border-box; min-width: 0; flex: 1 0 100%; }
-  .demo-code > * { font-size: .875rem; height: 100%; outline: none!important }
-  .demo-view { border: inherit; min-height: 200px; padding: 1rem; margin: -2px }
+  .demo-code { font: .875rem/1.5 var(--vp-font-family-mono); field-sizing: content; background: none; padding: .5em; resize: horizontal; }
+  .demo-view { border-right: inherit; min-height: 200px; padding: 1rem; margin: -2px }
   .demo-view :where(button,input) { all: revert }
   @media (min-width: 800px) { .demo-code, .demo-view { flex-basis: 50% } }
 </style>
 <template>
   <pre hidden><slot></slot></pre>
   <div class="demo" ref="demo">
-		<div class="demo-view" :lang="props.lang" ref="view"></div>
-    <ClientOnly>
-      <CodeMirror class="demo-code" basic :lang="htmlLang" v-model="code" />
-    </ClientOnly>
+		<div class="demo-view" :lang="lang" ref="view"></div>
+		<textarea :aria-label="label" class="demo-code" v-model="code" wrap="off" autocomplete="off"></textarea>
   </div>
 </template>

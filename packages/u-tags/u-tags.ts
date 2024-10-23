@@ -126,6 +126,7 @@ const render = (
 	const values: string[] = [];
 
 	// Setup self
+	attr(self, "role", "group");
 	attr(self, "aria-label", label);
 	self.items.forEach((item, index, { length }) => {
 		const label = `${changeText}${item.textContent}, ${texts.remove}, ${index + 1} ${texts.of} ${length}`;

@@ -1,11 +1,12 @@
 import type { Theme } from "vitepress";
 import DefaultTheme from "vitepress/theme";
-// @ts-ignore
 import Sandbox from "./sandbox.vue";
+import Layout from './layout.vue';
 import "./custom.css";
 
 export default {
-	...DefaultTheme,
+	Layout,
+	extends: DefaultTheme,
 	enhanceApp({ app }) {
 		app.component("Sandbox", Sandbox);
 	},

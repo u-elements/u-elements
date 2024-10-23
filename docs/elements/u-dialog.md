@@ -12,7 +12,7 @@ in all major browsers and screen readers.
 - **MDN Web Docs:** [&lt;dialog&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog) ([HTMLDialogElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDialogElement))
 
 ## Example
-<Sandbox />
+<Sandbox label="dialog code example" />
 <pre hidden>
 &lt;button type="button" onclick="this.nextElementSibling.showModal()"&gt;
   Open dialog

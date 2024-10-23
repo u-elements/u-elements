@@ -4,6 +4,9 @@ title: u-datalist
 <script setup>
 import { data } from '../filesize.data.ts'
 </script>
+<style>
+  .demo-view input { display: block }
+</style>
 
 # &lt;u-datalist&gt; <mark data-badge="HTML"></mark>
 `<u-datalist>` lets you suggest values to a connected `<input>`. You can use it to make things like comboboxes, autosuggest, autocomplete, live search results, etc.
@@ -16,7 +19,7 @@ import { data } from '../filesize.data.ts'
 
 ## Example
 
-<Sandbox />
+<Sandbox label="u-datalist code example" />
 <pre hidden>
 &lt;label for="my-input"&gt;
   Choose flavor of ice cream
@@ -155,7 +158,7 @@ u-option:not([selected]) {
 ```
 
 ### Styling example: Datalist position and animation
-<Sandbox />
+<Sandbox label="u-datalist position example" />
 <pre hidden>
 &lt;style&gt;
   .my-input,
@@ -209,10 +212,9 @@ u-option:not([selected]) {
     text-decoration: underline;
   }
 &lt;/style&gt;
-&lt;label&gt;
+&lt;label for="my-styling-input"&gt;
   Choose flavor of ice cream
-  &lt;br /&gt;
-  &lt;input type="text" class="my-input" list="my-styling" /&gt;
+  &lt;input type="text" id="my-styling-input" class="my-input" list="my-styling" /&gt;
 &lt;/label&gt;
 &lt;u-datalist class="my-list" id="my-styling"&gt;
   &lt;u-option&gt;Coconut&lt;/u-option&gt;
@@ -227,13 +229,12 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
 
 ## Example: API
 
-<Sandbox />
+<Sandbox label="u-datalist api example" />
 <pre hidden>
-&lt;label&gt;
+&lt;label for="my-api-input"&gt;
   Choose country
-  &lt;br /&gt;
-  &lt;input type="text" id="my-api-input" list="my-api-list" /&gt;
 &lt;/label&gt;
+&lt;input type="text" id="my-api-input" list="my-api-list" /&gt;
 &lt;u-datalist id="my-api-list"&gt;
   Type to search for countries...
 &lt;/u-datalist&gt;
@@ -285,13 +286,12 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
 
 ## Example: Dynamic
 
-<Sandbox />
+<Sandbox label="u-datalist dynamic example" />
 <pre hidden>
-&lt;label&gt;
+&lt;label for="my-dynamic-input"&gt;
   Choose your email
-  &lt;br /&gt;
-  &lt;input type="text" id="my-dynamic-input" list="my-dynamic-list" /&gt;
 &lt;/label&gt;
+&lt;input type="text" id="my-dynamic-input" list="my-dynamic-list" /&gt;
 &lt;u-datalist id="my-dynamic-list"&gt;
   Type to choose email...
 &lt;/u-datalist&gt;
@@ -320,13 +320,12 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
 
 ## Example: Link
 
-<Sandbox />
+<Sandbox label="u-datalist link example" />
 <pre hidden>
-&lt;label&gt;
+&lt;label for="my-link-input"&gt;
   Open u-element documentation
-  &lt;br /&gt;
-  &lt;input type="text" id="my-link-input" list="my-link-list" /&gt;
 &lt;/label&gt;
+&lt;input type="text" id="my-link-input" list="my-link-list" /&gt;
 &lt;u-datalist id="my-link-list"&gt;
   &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-datalist"&gt;u-datalist&lt;/u-option&gt;
   &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-details"&gt;u-details&lt;/u-option&gt;

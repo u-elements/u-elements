@@ -18,7 +18,7 @@ import { data } from '../filesize.data.ts'
 
 ## Example
 
-<Sandbox />
+<Sandbox label="u-tabs code example" />
 <pre hidden>
 &lt;u-tabs&gt;
   &lt;u-tablist&gt;
@@ -129,7 +129,7 @@ document.addEventListener('click', ({ target }) => {
 
 ### Styling example: Scrolling tablist
 
-<Sandbox />
+<Sandbox label="u-tabs scrolling example" />
 <pre hidden>
 &lt;style&gt;
   .my-tablist-scrolls {
@@ -150,7 +150,7 @@ document.addEventListener('click', ({ target }) => {
 
 ### Styling example: Wrapping tablist
 
-<Sandbox />
+<Sandbox label="u-tabs wrapping example" />
 <pre hidden>
 &lt;style&gt;
   .my-tablist-wrapps {

@@ -17,7 +17,7 @@ You can use it to make things like accordions, expandables, FAQs, dropdowns, etc
 [&lt;summary&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/summary) ([HTMLElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement))
 
 ## Example
-<Sandbox />
+<Sandbox label="u-details code example" />
 <pre hidden>
 &lt;u-details&gt;
   &lt;u-summary&gt;Details&lt;/u-summary&gt;
@@ -86,7 +86,7 @@ details.addEventListener('toggle', (event) => {
 possible to replicate in custom elements, `u-details` instead provide `::part(details-content)`.
 If your [browser supports `interpolate-size`](https://caniuse.com/mdn-css_properties_interpolate-size), you can animate open/close with pure css:
 
-<Sandbox />
+<Sandbox label="u-details styling example" />
 <pre hidden>
 &lt;u-details class="animate"&gt;
   &lt;u-summary&gt;Details animating if supported&lt;/u-summary&gt;

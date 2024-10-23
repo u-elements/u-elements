@@ -62,8 +62,7 @@ export class UHTMLDataListElement extends UHTMLElement {
 		on(this._root, "focus", this, true); // Need to also listen on focus with capturing to render before Firefox NVDA reads state
 		setTimeout(() => {
 			const inputs = this._root?.querySelectorAll(`input[list="${this.id}"]`);
-			for (const input of inputs || [])
-				attr(input, "aria-expanded", `${IS_SAFARI_MAC}`);
+			for (const input of inputs || []) setupInput(this, input); // Setup aria-expanded, role etc
 		}); // Allow rendering full DOM tree before running querySelectorAll
 	}
 	disconnectedCallback() {
@@ -100,13 +99,9 @@ const onFocusIn = (self: UHTMLDataListElement, { target }: Event) => {
 	) {
 		if (self._input) disconnectInput(self); // If previously used by other input
 		self._input = target;
-		self._input.autocomplete = "off";
 
 		// ariaLive(true);
 		attr(self, SAFE_LABELLEDBY, useId(self._input.labels?.[0]));
-		attr(self._input, "aria-autocomplete", "list");
-		attr(self._input, "aria-controls", useId(self));
-		attr(self._input, "role", "combobox");
 		on(self._root || self, EVENTS, self);
 		mutationObserver(self, {
 			attributeFilter: ["value"], // Listen for value changes to show u-options
@@ -187,8 +182,7 @@ const onKeyDown = (self: UHTMLDataListElement, event: KeyboardEvent) => {
 const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
 	self.hidden = !open;
 
-	if (self._input)
-		attr(self._input, "aria-expanded", `${IS_SAFARI_MAC || open}`);
+	if (self._input) setupInput(self, self._input, open);
 	if (open) setupOptions(self); // Ensure correct state when opening if input.value has changed
 };
 
@@ -204,6 +198,17 @@ const getVisibleOptions = (self: UHTMLDataListElement) => {
 	return [...self.options].filter(
 		(opt) => !opt.disabled && opt.offsetWidth && opt.offsetHeight, // Checks disabled or visibility (since hidden attribute can be overwritten by display: block)
 	);
+};
+const setupInput = (
+	self: UHTMLDataListElement,
+	input: Element,
+	open = false,
+) => {
+	attr(input, "aria-autocomplete", "list");
+	attr(input, "aria-controls", useId(self));
+	attr(input, "aria-expanded", `${IS_SAFARI_MAC || open}`); // Used to prevent "expanded" announcement interrupting label in Safari Mac
+	attr(input, "autocomplete", "off");
+	attr(input, "role", "combobox");
 };
 
 const setupOptions = (self: UHTMLDataListElement, event?: Event) => {

@@ -3,9 +3,10 @@ import { type Locator, expect, test } from "@playwright/test";
 const expectExpanded = async (locator: Locator, value: unknown) => {
 	const IS_SAFARI_MAC = test.info().project.name === "Webkit";
 
-	if (IS_SAFARI_MAC)
-		return await expect(locator).not.toHaveAttribute("aria-expanded");
-	return await expect(locator).toHaveAttribute("aria-expanded", `${value}`);
+	await expect(locator).toHaveAttribute(
+		"aria-expanded",
+		`${IS_SAFARI_MAC || value}`,
+	);
 };
 
 const attrLabelledby = () => {

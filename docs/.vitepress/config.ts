@@ -23,6 +23,12 @@ export default defineConfig({
 			{ async: "", defer: "", src: "https://scripts.withcabin.com/hello.js" },
 		], // Analytics
 	],
+	markdown: {
+		theme: {
+			light: 'github-light-high-contrast',
+			dark: 'github-dark-high-contrast'
+		}
+	},
 	themeConfig: {
 		logo: "/logo.svg",
 		editLink: {

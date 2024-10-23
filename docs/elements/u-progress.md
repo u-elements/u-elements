@@ -15,10 +15,10 @@ import { data } from '../filesize.data.ts'
 - **MDN Web Docs:** [&lt;progress&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/progress) ([HTMLProgressElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLProgressElement))
 
 ## Example
-<Sandbox />
+<Sandbox label="u-progress code example" />
 <pre hidden>
-&lt;u-progress value="7.5" max="10"&gt;&lt;/u-progress&gt;
-&lt;u-progress&gt;&lt;/u-progress&gt;
+&lt;u-progress aria-label="Loading" value="7.5" max="10"&gt;&lt;/u-progress&gt;
+&lt;u-progress aria-label="Loading"&gt;&lt;/u-progress&gt;
 </pre>
 
 ## Install <mark :data-badge="data['u-progress']"></mark>
@@ -64,9 +64,9 @@ bun add -S @u-elements/u-progress
 ### Styling the value bar
 Currently, there are no standardized pseudo-element selectors specifically designated for `<progress>` elements (all existing selectors include a `::-vendor-` prefix). Consequently, `<u-progress>` simply renders its value bar using a `::before` pseudo-element:
 
-<Sandbox />
+<Sandbox label="u-progress styled example" />
 <pre hidden>
-&lt;u-progress class="my-progress" value="6" max="10"&gt;&lt;/u-progress&gt;
+&lt;u-progress aria-label="Loading" class="my-progress" value="6" max="10"&gt;&lt;/u-progress&gt;
 &lt;style&gt;
   /* Styling just for example: */
   .my-progress {

@@ -1,6 +1,5 @@
 export type { UHTMLOptionElement } from "./u-option";
 import {
-	// ariaLive,
 	DISPLAY_BLOCK,
 	IS_BROWSER,
 	IS_IOS,
@@ -100,7 +99,6 @@ const onFocusIn = (self: UHTMLDataListElement, { target }: Event) => {
 		if (self._input) disconnectInput(self); // If previously used by other input
 		self._input = target;
 
-		// ariaLive(true);
 		attr(self, SAFE_LABELLEDBY, useId(self._input.labels?.[0]));
 		on(self._root || self, EVENTS, self);
 		mutationObserver(self, {
@@ -187,7 +185,6 @@ const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
 };
 
 const disconnectInput = (self: UHTMLDataListElement) => {
-	// ariaLive(false);
 	off(self._root || self, EVENTS, self);
 	mutationObserver(self, false);
 	setExpanded(self, false);
@@ -229,21 +226,11 @@ const setupOptions = (self: UHTMLDataListElement, event?: Event) => {
 		if (isSingle && isTyping) opt.selected = false; // Turn off selected when typing in single select
 	}
 	self.hidden = hidden; // Restore original hidden state
-	const visible = getVisibleOptions(self);
-
-	// ariaLive("");
-	// clearTimeout(self._announceTimer);
-
-	// // Force screen reader to announce same text again by adding a non-breaking space on every even render
-	// self._announceTimer = setTimeout(() => {
-	// 	const announceFix = ++self._announceCount % 2 ? "\u{A0}" : "";
-	// 	ariaLive(`${visible.length} hits${announceFix}`);
-	// }, 1000);
 
 	// Needed to announce count in iOS
 	/* c8 ignore next 4 */ // Because @web/test-runner code coverage iOS emulator only runs in chromium
 	if (IS_IOS)
-		visible.map((opt, i, { length }) => {
+		getVisibleOptions(self).map((opt, i, { length }) => {
 			opt.title = `${i + 1}/${length}`;
 		});
 };
@@ -260,3 +247,34 @@ if (IS_BROWSER)
 	});
 
 customElements.define("u-datalist", UHTMLDataListElement);
+
+// Custom filtering
+const isMatch = (query, string) =>
+	string.toLowerCase().includes(query.toLowerCase().trim());
+
+document.addEventListener("input", (event) => {
+	const isTyping = event instanceof InputEvent && event.inputType;
+	const input = event.target instanceof HTMLInputElement ? event.target : null;
+	const options = input?.list?.options;
+
+	if (options && isTyping) {
+		Array.from(options, (option) => {
+			let label = option.getAttribute("data-label");
+			let value = option.getAttribute("data-value");
+
+			if (!label) label = option.dataset.label = option.label;
+			if (!value) value = option.dataset.value = option.value;
+
+			if (isMatch(input.value, label) || isMatch(input.value, value)) {
+				option.label = label;
+				option.value = value;
+			} else option.label = option.value = "";
+		});
+	}
+});
+
+// const value = sanitize(event.target.value);
+// const hits = Array.from(options).filter((el) =>
+// 	sanitize(el.text).includes(value),
+// );
+// announce(`${hits.length} hits`);

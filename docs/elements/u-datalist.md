@@ -318,6 +318,117 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
 &lt;/script&gt;
 </pre>
 
+## Example: Custom filter
+
+<Sandbox label="u-datalist filter example" />
+<pre hidden>
+&lt;label for="my-filter-input"&gt;
+  Custom filter
+&lt;/label&gt;
+&lt;input type="text" id="my-filter-input" list="my-filter-list" /&gt;
+&lt;u-datalist id="my-filter-list"&gt;
+  &lt;u-option&gt;u-datalist&lt;/u-option&gt;
+  &lt;u-option&gt;u-details&lt;/u-option&gt;
+  &lt;u-option&gt;u-dialog&lt;/u-option&gt;
+  &lt;u-option&gt;u-progress&lt;/u-option&gt;
+  &lt;u-option&gt;u-select&lt;/u-option&gt;
+  &lt;u-option&gt;u-tabs&lt;/u-option&gt;
+  &lt;u-option&gt;u-tags&lt;/u-option&gt;
+&lt;/u-datalist&gt;
+&lt;script&gt;
+  const input = document.getElementById('my-filter-input');
+
+  // Any custom filtering logic here:
+  const isMatch = (needle, haystack) =>
+    haystack.toLowerCase().includes(
+      needle.toLowerCase().trim()
+    );
+
+  // Achieve custom filter on native datalist
+  input.addEventListener("input", (event) => {
+    if (!event.inputType) return; // User clicked u-option
+
+    Array.from(input.list.options, (option) => {
+      let text = option.getAttribute("data-text");
+      let value = option.getAttribute("data-value");
+
+      if (!text) text = option.dataset.text = option.text;
+      if (!value) value = option.dataset.value = option.value;
+      option.text = option.value = "";
+
+      if (isMatch(input.value, text)) {
+        option.text = text;
+        option.value = value;
+      }
+    });
+  });
+&lt;/script&gt;
+</pre>
+
+<!--
+## Example: Screen reader count
+
+<Sandbox label="u-datalist announce example" />
+<pre hidden>
+&lt;label for="my-count-input"&gt;
+  Screen reader announce hit count
+&lt;/label&gt;
+&lt;input type="text" id="my-count-input" list="my-count-list" /&gt;
+&lt;u-datalist id="my-count-list"&gt;
+  &lt;u-option&gt;u-datalist&lt;/u-option&gt;
+  &lt;u-option&gt;u-details&lt;/u-option&gt;
+  &lt;u-option&gt;u-dialog&lt;/u-option&gt;
+  &lt;u-option&gt;u-progress&lt;/u-option&gt;
+  &lt;u-option&gt;u-select&lt;/u-option&gt;
+  &lt;u-option&gt;u-tabs&lt;/u-option&gt;
+  &lt;u-option&gt;u-tags&lt;/u-option&gt;
+&lt;/u-datalist&gt;
+&lt;script&gt;
+  const input = document.getElementById('my-count-input');
+
+  let announceForce = 0;
+  let announceTimer = 0;
+  const announce = document.body.appendChild(Object.assign(document.createElement('div'), {
+    ariaLive: 'polite',
+    style: 'position:fixed;overflow:hidden;width:1px;white-space:nowrap'
+  }));
+
+  // Any custom filtering logic here:
+  const isMatch = (needle, haystack) =>
+    haystack.toLowerCase().includes(
+      needle.toLowerCase().trim()
+    );
+
+  // Achieve custom filter on native datalist
+  input.addEventListener("input", (event) => {
+    if (!event.inputType) return; // User clicked u-option
+    let hits = 0;
+
+    Array.from(input.list.options, (option) => {
+      let text = option.getAttribute("data-text");
+      let value = option.getAttribute("data-value");
+
+      if (!text) text = option.dataset.text = option.text;
+      if (!value) value = option.dataset.value = option.value;
+      option.text = option.value = "";
+
+      if (isMatch(input.value, text)) {
+        hits++;
+        option.text = text;
+        option.value = value;
+      }
+    });
+
+    clearTimeout(announceTimer);
+    announceTimer = setTimeout(() => {
+      // Ensure screen reader announce by alternating non-breaking-space suffix
+      announce.textContent = `${hits} hits${++announceForce % 2 ? "\u{A0}" : ""}`;
+    }, 1000);
+  });
+&lt;/script&gt;
+</pre>
+-->
+
 ## Example: Link
 
 <Sandbox label="u-datalist link example" />

@@ -247,34 +247,3 @@ if (IS_BROWSER)
 	});
 
 customElements.define("u-datalist", UHTMLDataListElement);
-
-// Custom filtering
-const isMatch = (query, string) =>
-	string.toLowerCase().includes(query.toLowerCase().trim());
-
-document.addEventListener("input", (event) => {
-	const isTyping = event instanceof InputEvent && event.inputType;
-	const input = event.target instanceof HTMLInputElement ? event.target : null;
-	const options = input?.list?.options;
-
-	if (options && isTyping) {
-		Array.from(options, (option) => {
-			let label = option.getAttribute("data-label");
-			let value = option.getAttribute("data-value");
-
-			if (!label) label = option.dataset.label = option.label;
-			if (!value) value = option.dataset.value = option.value;
-
-			if (isMatch(input.value, label) || isMatch(input.value, value)) {
-				option.label = label;
-				option.value = value;
-			} else option.label = option.value = "";
-		});
-	}
-});
-
-// const value = sanitize(event.target.value);
-// const hits = Array.from(options).filter((el) =>
-// 	sanitize(el.text).includes(value),
-// );
-// announce(`${hits.length} hits`);

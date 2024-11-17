@@ -15,7 +15,6 @@ import {
 	mutationObserver,
 	off,
 	on,
-	useId,
 } from "../utils";
 
 declare global {
@@ -41,6 +40,8 @@ const TEXTS = {
 	found: "Navigate left to find %d selected",
 	of: "of",
 };
+
+// Note: Label pointing to the input overwrites input's aria-label in Firefox
 
 /**
  * The `<u-tags>` HTML element contains a set of `<data>` elements.
@@ -92,13 +93,6 @@ export class UHTMLTagsElement extends UHTMLElement {
 	get items(): NodeListOf<HTMLDataElement> {
 		return this.querySelectorAll("data");
 	}
-	// Note: <label for=""> should point to <u-tags> instead of <input>,
-	// since label pointing to the input overwrites input's aria-label in Firefox
-	get labels(): NodeListOf<HTMLLabelElement> {
-		return getRoot(this).querySelectorAll<HTMLLabelElement>(
-			`label[for="${useId(this)}"]`,
-		);
-	}
 	get control() {
 		return this.querySelector("input");
 	}
@@ -122,7 +116,7 @@ const render = (
 	const change = Number.isNaN(self._focusIndex) ? null : event?.detail[0]; // Skip announcing changes when no focus
 	const changeItem = change?.addedNodes[0] || change?.removedNodes[0];
 	const changeText = `${changeItem ? `${changeItem.isConnected ? texts.added : texts.removed} ${changeItem.textContent}, ` : ""}`;
-	const label = self.labels[0]?.textContent || "";
+	const label = self.control?.labels?.[0]?.textContent || "";
 	const values: string[] = [];
 
 	// Setup self
@@ -189,7 +183,6 @@ const onClick = (
 	self: UHTMLTagsElement,
 	{ target, clientX: x, clientY: y }: MouseEvent,
 ) => {
-	const label = (target as Element)?.closest?.("label")?.htmlFor;
 	const items = self.contains(target as Node) ? [...self.items] : null; // Only care about items if click is inside
 	const itemRemove = items?.find((item) => item.contains(target as Node)); // Only keyboard and screen reader can set event.target to element pointer-events: none
 	const itemClicked = items?.find((item) => {
@@ -197,9 +190,9 @@ const onClick = (
 		return y >= top && y <= bottom && x >= left && x <= right;
 	});
 
-	if (itemRemove && dispatchChange(self, itemRemove)) itemRemove.remove();
+	if (itemRemove) dispatchChange(self, itemRemove) && itemRemove.remove();
 	else if (itemClicked) itemClicked.focus();
-	else if (target === this || label === self.id) self.control?.focus(); // Focus if clicking <u-tags> or <label>
+	else if (target === self) self.control?.focus(); // Focus if clicking <u-tags>
 };
 
 const onInputOptionClick = (self: UHTMLTagsElement, event: InputEvent) => {

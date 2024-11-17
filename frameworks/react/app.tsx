@@ -29,8 +29,8 @@ export default function App() {
       <u-progress value="5" max="15"></u-progress>
       <br />
       <br />
-      <label htmlFor="my-tags">Choose ice cream</label>
-      <u-tags id="my-tags" ref={ref}>
+      <label htmlFor="my-input">Choose ice cream</label>
+      <u-tags ref={ref}>
         <data>Coconut</data>
         <data>Banana</data>
         <data>Strawberry</data>

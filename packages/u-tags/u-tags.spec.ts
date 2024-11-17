@@ -13,11 +13,11 @@ test.beforeEach(async ({ page }) => {
 	await page.evaluate(() => {
 		document.body.innerHTML = `
 			<label for="my-tags">My label</label>
-			<u-tags id="my-tags">
+			<u-tags>
 				<data>Tag 1</data>
 				<data>Tag 2</data>
 				<data value="tag-3">Tag 3</data>
-				<input list="my-list" />
+				<input id="my-tags" list="my-list" />
 				<u-datalist id="my-list">
 					<u-option>Tag 1</u-option>
 					<u-option>Tag 2</u-option>
@@ -57,7 +57,6 @@ test.describe("u-tags", () => {
 				const items = document.querySelectorAll("u-tags data");
 
 				return (
-					uTags?.labels[0] === label &&
 					uTags?.control === input &&
 					[...uTags.items].every((item, index) => item === items[index])
 				);

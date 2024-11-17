@@ -12,7 +12,7 @@ import { data } from '../filesize.data.ts'
 - Use `<data>` as direct child elements - these are the removable tags
 - Use `<input>` and optionally `<u-datalist>` to allow adding and suggesting tags
 - Use `data-*` attributes to translate screen reader announcements
-- Use matching `id` on `<u-tags>` and `for` attribute on `<label>` to connect
+- Use matching `id` on `<input>` and `for` attribute on `<label>` to connect
 - **MDN Web Docs:** [&lt;data&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/data) ([HTMLDataElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDataElement)) / [&lt;input&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input) ([HTMLInputElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement)) / [&lt;datalist&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist) ([HTMLDatalistElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDatalistElement)) / [&lt;option&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option) ([HTMLOptionElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLOptionElement))
 
 
@@ -20,15 +20,15 @@ import { data } from '../filesize.data.ts'
 
 <Sandbox label="u-tags code example" />
 <pre hidden>
-&lt;label for="my-tags"&gt;
+&lt;label for="my-input"&gt;
   Choose flavor of ice cream
 &lt;/label&gt;
-&lt;u-tags id="my-tags"&gt;
+&lt;u-tags&gt;
   &lt;data&gt;Coconut&lt;/data&gt;
   &lt;data&gt;Banana&lt;/data&gt;
   &lt;data&gt;Pineapple&lt;/data&gt;
   &lt;data&gt;Orange&lt;/data&gt;
-  &lt;input list="my-list" /&gt;
+  &lt;input id="my-input" list="my-list" /&gt;
   &lt;u-datalist id="my-list"&gt;
     &lt;u-option&gt;Coconut&lt;/u-option&gt;
     &lt;u-option&gt;Strawberries&lt;/u-option&gt;
@@ -78,7 +78,6 @@ bun add -S @u-elements/u-tags
 ### `<u-tags>`
 
 - **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
-  - `id` must be identical to value of `for` attribute on associated `<label>`
   - `data-added` prefixes announcements about additions. Defaults to `"Added"`
   - `data-removed` prefixes announcements about removals. Defaults to `"Removed"`
   - `data-empty` announces no selected items. Defaults to `"No selected"`
@@ -86,7 +85,6 @@ bun add -S @u-elements/u-tags
   - `data-of` separates "number _of_ total" in announcements. Defaults to `"of"`
 - **DOM interface:** `UHTMLTagsElement` extends [`HTMLElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement)
   - `UHTMLTagsElement.control` returns `HTMLInputElement` contained in `<u-tags>`
-  - `UHTMLTagsElement.labels` returns `NodeListOf<HTMLLabelElement>`
   - `UHTMLTagsElement.items` returns `NodeListOf<HTMLDataElement>`
 
 ### `<data>`

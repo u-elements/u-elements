@@ -167,6 +167,8 @@ const skip = [
 	"document.title",
 	"element.part",
 	"function.name",
+	"htmlelement.popover", // Ignored because support is optional
+	"htmlelement.togglepopover", // Ignored because support is optional
 	"htmlelement.action",
 	"htmlelement.autocomplete",
 	"htmlelement.disabled",

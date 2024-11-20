@@ -27,10 +27,7 @@ declare global {
 let IS_PRESS = false; // Prevent loosing focus on mousedown on <u-option> despite tabIndex -1
 const IS_SAFARI_MAC = IS_SAFARI && !IS_IOS; // Used to prevent "expanded" announcement interrupting label in Safari Mac
 const EVENTS = "click,focusout,input,keydown,mousedown,mouseup";
-// const TEXTS = {
-// 	hit: "hit",
-// 	hits: "hits",
-// };
+// TODO auto select on 1:1 match?
 
 /**
  * The `<u-datalist>` HTML element contains a set of `<u-option>` elements that represent the permissible or recommended options available to choose from within other controls.
@@ -45,6 +42,11 @@ export class UHTMLDataListElement extends UHTMLElement {
 	_root: null | Document | ShadowRoot = null;
 	_value = ""; // Store sanitized value to speed up option filtering
 
+	// Using ES2015 syntax for backwards compatibility
+	static get observedAttributes() {
+		return ["id"];
+	}
+
 	constructor() {
 		super();
 		attachStyle(
@@ -57,18 +59,20 @@ export class UHTMLDataListElement extends UHTMLElement {
 		this._root = getRoot(this);
 
 		attr(this, "role", "listbox");
+		// attr(this, "popover", "manual");
 		on(this._root, "focusin", this); // Only bind focus globally as this is needed to activate
 		on(this._root, "focus", this, true); // Need to also listen on focus with capturing to render before Firefox NVDA reads state
-		setTimeout(() => {
-			const inputs = this._root?.querySelectorAll(`input[list="${this.id}"]`);
-			for (const input of inputs || []) setupInput(this, input); // Setup aria-expanded, role etc
-		}); // Allow rendering full DOM tree before running querySelectorAll
+		setTimeout(() => this.attributeChangedCallback()); // Allow rendering full DOM tree before setting up inputs
 	}
 	disconnectedCallback() {
 		off(this._root || this, "focus", this, true);
 		off(this._root || this, "focusin", this);
 		disconnectInput(this);
 		this._root = null;
+	}
+	attributeChangedCallback() {
+		const inputs = this._root?.querySelectorAll(`input[list="${this.id}"]`);
+		for (const input of inputs || []) setupInput(this, input); // Setup aria-expanded, role etc
 	}
 	handleEvent(event: Event) {
 		const { type } = event;
@@ -180,6 +184,7 @@ const onKeyDown = (self: UHTMLDataListElement, event: KeyboardEvent) => {
 const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
 	self.hidden = !open;
 
+	if (self.popover) self.togglePopover(open); // Popover API is not supported by all browsers
 	if (self._input) setupInput(self, self._input, open);
 	if (open) setupOptions(self); // Ensure correct state when opening if input.value has changed
 };
@@ -191,16 +196,17 @@ const disconnectInput = (self: UHTMLDataListElement) => {
 	self._input = null;
 };
 
-const getVisibleOptions = (self: UHTMLDataListElement) => {
-	return [...self.options].filter(
+const getVisibleOptions = (self: UHTMLDataListElement) =>
+	[...self.options].filter(
 		(opt) => !opt.disabled && opt.offsetWidth && opt.offsetHeight, // Checks disabled or visibility (since hidden attribute can be overwritten by display: block)
 	);
-};
+
 const setupInput = (
 	self: UHTMLDataListElement,
 	input: Element,
 	open = false,
 ) => {
+	attr(input, "popovertarget", useId(self));
 	attr(input, "aria-autocomplete", "list");
 	attr(input, "aria-controls", useId(self));
 	attr(input, "aria-expanded", `${IS_SAFARI_MAC || open}`); // Used to prevent "expanded" announcement interrupting label in Safari Mac

@@ -1,39 +1,27 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import '../../packages/u-progress'
-  import '../../packages/u-datalist'
-  import '../../packages/u-tags'
+  import './../../packages/u-progress'
+  import './../../packages/u-datalist'
+  import './../../packages/u-tags'
+  import './../../packages/u-tabs'
+  import Tabs from './components/Tabs.svelte'
 
-  let count: number = 0
   let value: string = ''
-  const increment = () => (count += 1)
-  const setValue = (content: string) => (value = content)
-
 </script>
+
 <main>
   <h1>Svelte + u-elements</h1>
-  <button on:click={increment}>
-    count is {count}
-  </button>
   <u-progress value="5" max="10">33%</u-progress>
   <br />
-  <input
-        list="my-list"
-        value={value}
-        on:input={() => {
-          setValue('-') // Need to set to something else first to force re-render overwrite
-          setValue('')
-        }}
-      />
-      <u-datalist id="my-list">
-        <u-option value="test-1">Test 1</u-option>
-        <u-option value="test-2">Test 2</u-option>
-        <u-option value="test-3">Test 3</u-option>
-      </u-datalist>
-      <u-tags on:tags={(event) => console.log(event.detail)}>
-        <data>Kokkos</data>
-        <data>Banan</data>
-        <data>Jordbær</data>
-        <input type="text" />
-      </u-tags>
+  <u-datalist id="my-list">
+    <u-option value="test-1">Test 1</u-option>
+    <u-option value="test-2">Test 2</u-option>
+    <u-option value="test-3">Test 3</u-option>
+  </u-datalist>
+  <u-tags on:tags={(event) => console.log(event.detail)}>
+    <data>Kokkos</data>
+    <data>Banan</data>
+    <data>Jordbær</data>
+    <input type="text" />
+  </u-tags>
+  <Tabs />
 </main>

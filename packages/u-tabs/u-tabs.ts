@@ -41,7 +41,7 @@ export class UHTMLTabsElement extends UHTMLElement {
 		return getSelectedIndex(this.tabs);
 	}
 	set selectedIndex(index: number) {
-		setSelectedIndex(this.tabs, index);
+		setSelected(this.tabs[index]);
 	}
 	get tabs(): NodeListOf<UHTMLTabElement> {
 		return queryWithoutNested("u-tab", this);
@@ -82,7 +82,7 @@ export class UHTMLTabListElement extends UHTMLElement {
 		let next = prev;
 
 		if (event.defaultPrevented || prev === -1) return; // Event prevented or not a tab
-		if (event.type === "click") setSelectedIndex(tabs, prev);
+		if (event.type === "click") setSelected(tabs[prev]);
 		if (event.type === "keydown" && !asButton(event)) {
 			if (key === "ArrowDown" || key === "ArrowRight")
 				next = (prev + 1) % tabs.length;
@@ -115,7 +115,7 @@ export class UHTMLTabListElement extends UHTMLElement {
 		return getSelectedIndex(this.tabs);
 	}
 	set selectedIndex(index: number) {
-		setSelectedIndex(this.tabs, index);
+		setSelected(this.tabs[index]);
 	}
 }
 
@@ -235,8 +235,8 @@ const getPanel = (tab: UHTMLTabElement, panel?: UHTMLTabPanelElement) => {
 const getSelectedIndex = (tabs: Iterable<UHTMLTabElement>) =>
 	[...tabs].findIndex((tab) => attr(tab, ARIA_SELECTED) === "true");
 
-const setSelectedIndex = (tabs: Iterable<UHTMLTabElement>, index: number) =>
-	tabs[index] && attr(tabs[index], "aria-selected", "true");
+const setSelected = (tab: UHTMLTabElement) =>
+	tab && attr(tab, "aria-selected", "true");
 
 const isFocusable = (el?: Node | null) =>
 	el instanceof Element &&

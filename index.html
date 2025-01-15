@@ -76,18 +76,70 @@
 
       <label>
         Velg type iskrem<br>
-        <input type="text" list="u-list-1">
+        <input type="text" id="my-a11y-input" list="u-list-1" autocomplete="off">
       </label>
-      <u-datalist id="u-list-1">
-        <u-option>Kokkos</u-option>
-        <u-option>Jordbær</u-option>
-        <u-option>Sjokolade</u-option>
-        <u-option>Vanilje</u-option>
-        <u-option>Lakris</u-option>
-        <u-option>Pistasj</u-option>
-        <u-option>Mango</u-option>
-        <u-option>Hasselnøtt</u-option>
-      </u-datalist>
+      <datalist id="u-list-1" data-singular="%d smak" data-plural="%d smaker">
+        <option>Kokkos</option>
+        <option>Jordbær</option>
+        <option>Sjokolade</option>
+        <option>Vanilje</option>
+        <option>Lakris</option>
+        <option>Pistasj</option>
+        <option>Mango</option>
+        <option>Hasselnøtt</option>
+      </datalist>
+      <script type="module">
+        import { filter } from './packages/u-datalist/u-datalist';
+        
+        const input = document.getElementById('my-a11y-input');
+
+        // Achieve custom filter on native datalist (needed when using native <datalist>)
+        input.addEventListener("input", (event) => {
+          filter(event); // User is typing
+        });
+
+        // let debounceTimer; // Debounce so we do not spam API
+        // const input = document.getElementById('my-a11y-input');
+        // const list = input.list;
+        // const xhr = new XMLHttpRequest(); // Easy to abort
+
+        // // Same handler every time
+        // xhr.onload = () => {
+        //   try {
+        //     const data = JSON.parse(xhr.responseText);
+        //     const options = data.map(({ name }, index) => {
+        //       const option = document.createElement('u-option');
+        //       option.text = name;
+        //       option.value = `${index}: ${input.value}`; // Prevent filtering by matching value and input
+        //       return option;
+        //     });
+        //     list.replaceChildren(...options);
+        //   } catch (err) {
+        //     list.replaceChildren('No results');
+        //   }
+        // };
+
+        // input.addEventListener('input', (event) => {
+        //   if (!event.inputType) {
+        //     // User clicked u-option, lets get option.text
+        //     const index = Number(input.value.split(':')[0]);
+        //     const option = list.children[index];
+        //     input.value = option.text;
+        //   } else if (!input.value) list.replaceChildren('');
+        //   else {
+        //     // User is typing
+        //     const value = encodeURIComponent(event.target.value.trim());
+        //     list.replaceChildren('Loading...');
+
+        //     xhr.abort();
+        //     clearTimeout(debounceTimer);
+        //     debounceTimer = setTimeout(() => {
+        //       xhr.open('GET', `https://restcountries.com/v2/name/${value}?fields=name`, true);
+        //       xhr.send();
+        //     }, 300);
+        //   }
+        // });
+      </script>
       <!-- <br>
       <br>
       <label>
@@ -99,25 +151,23 @@
       <br /><span id="label-for-progress">Labelledby of apple</span>
       <br><u-progress aria-labelledby="label-for-progress" value="5" max="10">70%</u-progress>
       <br> -->
-
-      <!--  -->
       <br>
-      <form>
+      <!-- <form>
         <label for="my-tags-input">Velg iskrem</label>
         <u-tags
-          data-added="La til"
-          data-remove="Trykk for å fjerne"
-          data-removed="Fjernet"
-          data-empty="Ingen valgte"
-          data-found="Naviger til venstre for å finne %d valgte"
-          data-of="av"
+          data-sr-added="La til"
+          data-sr-remove="Trykk for å fjerne"
+          data-sr-removed="Fjernet"
+          data-sr-empty="Ingen valgte"
+          data-sr-found="Naviger til venstre for å finne %d valgte"
+          data-sr-of="av"
         >
           <data>Kokkos</data>
           <data>Banana</data>
           <data>Pineapple</data>
           <data>Orange</data>
           <input id="my-tags-input" list="u-tags-list">
-          <u-datalist id="u-tags-list">
+          <u-datalist id="u-tags-list" data-singular="%d smak" data-plural="%d smaker">
             <u-option>Kokkos</u-option>
             <u-option>Jordbær</u-option>
             <u-option>Sjokolade</u-option>
@@ -129,9 +179,8 @@
           </u-datalist>
         </u-tags>
         <br>
-        <!-- <button type="submit">Send</button> -->
       </form>
-      <br>
+      <br> -->
       <br>
       <br>
       <!-- <u-tablist>
@@ -272,7 +321,7 @@
       <table></table> -->
       <button>Etter</button>
       <!-- <template></template> -->
-      <u-test></u-test>
+      <!-- <u-test></u-test> -->
       <!-- <br>
       <br>
       <br><label for="my-for-progress">For label of apple</label>

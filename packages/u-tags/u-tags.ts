@@ -6,9 +6,9 @@ import {
 	IS_MAC,
 	SAFE_MULTISELECTABLE,
 	UHTMLElement,
-	ariaLive,
 	asButton,
 	attr,
+	createAriaLive,
 	createElement,
 	customElements,
 	getRoot,
@@ -33,12 +33,12 @@ const IS_MOBILE = IS_ANDROID || IS_IOS;
 const IS_FIREFOX_MAC = IS_FIREFOX || IS_MAC;
 const EVENTS = "input,focusin,focusout,keydown";
 const TEXTS = {
-	added: "Added",
-	remove: "Press to remove",
-	removed: "Removed",
-	empty: "No selected",
-	found: "Navigate left to find %d selected",
-	of: "of",
+	srAdded: "Added",
+	srRemove: "Press to remove",
+	srRemoved: "Removed",
+	srEmpty: "No selected",
+	srFound: "Navigate left to find %d selected",
+	srOf: "of",
 };
 
 // Note: Label pointing to the input overwrites input's aria-label in Firefox
@@ -108,6 +108,7 @@ const dispatchChange = (self: UHTMLTagsElement, item: HTMLDataElement) => {
 	);
 };
 
+const LIVE = createAriaLive("polite");
 const render = (
 	self: UHTMLTagsElement,
 	event?: CustomEvent<MutationRecord[]>,
@@ -115,7 +116,7 @@ const render = (
 	const texts = { ...TEXTS, ...self.dataset };
 	const change = Number.isNaN(self._focusIndex) ? null : event?.detail[0]; // Skip announcing changes when no focus
 	const changeItem = change?.addedNodes[0] || change?.removedNodes[0];
-	const changeText = `${changeItem ? `${changeItem.isConnected ? texts.added : texts.removed} ${changeItem.textContent}, ` : ""}`;
+	const changeText = `${changeItem ? `${changeItem.isConnected ? texts.srAdded : texts.srRemoved} ${changeItem.textContent}, ` : ""}`;
 	const label = self.control?.labels?.[0]?.textContent || "";
 	const values: string[] = [];
 
@@ -123,7 +124,7 @@ const render = (
 	attr(self, "role", "group");
 	attr(self, "aria-label", label);
 	self.items.forEach((item, index, { length }) => {
-		const label = `${changeText}${item.textContent}, ${texts.remove}, ${index + 1} ${texts.of} ${length}`;
+		const label = `${changeText}${item.textContent}, ${texts.srRemove}, ${index + 1} ${texts.srOf} ${length}`;
 		attr(item, "aria-label", label);
 		attr(item, "role", "button");
 		item.tabIndex = -1;
@@ -133,7 +134,7 @@ const render = (
 
 	// Setup control
 	const control = self.control;
-	const controlLabel = `${changeText}${label}, ${values.length ? texts.found.replace("%d", `${values.length}`) : texts.empty}`;
+	const controlLabel = `${changeText}${label}, ${values.length ? texts.srFound.replace("%d", `${values.length}`) : texts.srEmpty}`;
 	const list = control && document.getElementById(attr(control, "list") || ""); // UHTMLDatalist might not be initialized yet
 	const options = list?.children as
 		| HTMLCollectionOf<HTMLOptionElement>
@@ -154,7 +155,11 @@ const render = (
 		self._blurAnnounceReset = false; // Do not reset announce on next focus/blur
 
 		if (nextFocus === control) {
-			if (sameFocus) IS_MOBILE ? ariaLive(changeText) : tmpFocus[0]?.focus(); // Mobile does not properly run .focus()
+			if (sameFocus) {
+				// Mobile does not properly run .focus() so announce with aria-live instead
+				if (IS_MOBILE && LIVE) LIVE.textContent = changeText;
+				else tmpFocus[0]?.focus();
+			}
 			setTimeout(() => nextFocus?.focus(), 100); // 100ms delay so VoiceOver + Chrome announces new ariaLabel
 		} else nextFocus?.focus(); // Set focus to button right away to make NVDA happy
 
@@ -166,7 +171,6 @@ const render = (
 };
 
 const onFocusIn = (self: UHTMLTagsElement, { target }: Event) => {
-	ariaLive(true);
 	clearTimeout(self._blurTimer);
 	self._focusIndex = [...self.items].indexOf(target as HTMLDataElement);
 };
@@ -175,7 +179,6 @@ const onFocusOut = (self: UHTMLTagsElement) => {
 	if (self._blurAnnounceReset) render(self);
 	self._blurTimer = setTimeout(() => {
 		self._focusIndex = null;
-		ariaLive(false);
 	});
 };
 
@@ -199,7 +202,7 @@ const onInputOptionClick = (self: UHTMLTagsElement, event: InputEvent) => {
 	const input = event.target as HTMLInputElement | null;
 	if (event.inputType || !input?.value.trim()) return; // Skip typing or empty (clicking item in <datalist> or pressing "Enter" triggers onInput, but without inputType)
 	const items = [...self.items];
-	const options = Array.from(input?.list?.options || []);
+	const options = [...(input?.list?.children || [])] as HTMLOptionElement[];
 	const optionClicked = options.find(({ value }) => value === input?.value);
 	const itemRemove = items.find((item) => item.value === input?.value);
 	const itemAdd = createElement("data", optionClicked?.text || input?.value, {

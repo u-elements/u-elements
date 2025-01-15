@@ -202,20 +202,16 @@ export const getLabel = (el: Element) => {
 };
 
 /**
- * ariaLive
- * @description Adds a visibly hidden aria-live area to the document to later announce provided text
- * @param announce A boolean indicating whether to get ready for announcements or text to announce
- * @return string
+ * createAriaLive
+ * @description Creates a aria-live element for announcements
+ * @param mode Value of aria-live attribute
+ * @return HTMLDivElement or null if on server
  */
-let LIVE: HTMLElement;
-export const ariaLive = (announce: string | boolean) => {
-	if (announce === false) return LIVE?.remove();
-	if (!LIVE) {
-		LIVE = createElement("div");
-		LIVE.style.cssText =
-			"position:fixed;overflow:hidden;width:1px;white-space:nowrap";
-		attr(LIVE, "aria-live", "polite");
-	}
-	if (announce !== true) LIVE.textContent = announce;
-	if (!LIVE.isConnected) document.body.appendChild(LIVE);
+export const createAriaLive = (mode: "polite" | "assertive") => {
+	if (!IS_BROWSER) return null;
+	const live = createElement("div");
+	live.style.cssText =
+		"position:fixed;overflow:hidden;width:1px;white-space:nowrap";
+	attr(live, "aria-live", mode);
+	return document.body.appendChild(live);
 };

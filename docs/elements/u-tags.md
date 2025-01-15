@@ -29,7 +29,7 @@ import { data } from '../filesize.data.ts'
   &lt;data&gt;Pineapple&lt;/data&gt;
   &lt;data&gt;Orange&lt;/data&gt;
   &lt;input id="my-input" list="my-list" /&gt;
-  &lt;u-datalist id="my-list"&gt;
+  &lt;u-datalist id="my-list" data-singular="%d flavor" data-plural="%d flavours"&gt;
     &lt;u-option&gt;Coconut&lt;/u-option&gt;
     &lt;u-option&gt;Strawberries&lt;/u-option&gt;
     &lt;u-option&gt;Chocolate&lt;/u-option&gt;
@@ -61,7 +61,7 @@ pnpm add -S @u-elements/u-tags
 ```
 
 ```bash [Yarn]
-yarn add -S @u-elements/u-tags
+yarn add @u-elements/u-tags
 ```
 
 ```bash [Bun]
@@ -78,11 +78,11 @@ bun add -S @u-elements/u-tags
 ### `<u-tags>`
 
 - **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
-  - `data-added` prefixes announcements about additions. Defaults to `"Added"`
-  - `data-removed` prefixes announcements about removals. Defaults to `"Removed"`
-  - `data-empty` announces no selected items. Defaults to `"No selected"`
-  - `data-found` announces where to find amount of selected items. Defaults to `"Navigate left to find %d selected"`
-  - `data-of` separates "number _of_ total" in announcements. Defaults to `"of"`
+  - `data-sr-added` prefixes announcements about additions. Defaults to `"Added"`
+  - `data-sr-removed` prefixes announcements about removals. Defaults to `"Removed"`
+  - `data-sr-empty` announces no selected items. Defaults to `"No selected"`
+  - `data-sr-found` announces where to find amount of selected items. Defaults to `"Navigate left to find %d selected"`
+  - `data-sr-of` separates "number _of_ total" in announcements. Defaults to `"of"`
 - **DOM interface:** `UHTMLTagsElement` extends [`HTMLElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement)
   - `UHTMLTagsElement.control` returns `HTMLInputElement` contained in `<u-tags>`
   - `UHTMLTagsElement.items` returns `NodeListOf<HTMLDataElement>`
@@ -131,7 +131,7 @@ myUTags.addEventListener('tags', (event) => {
   &lt;data&gt;Ananas&lt;/data&gt;
   &lt;data&gt;Appelsin&lt;/data&gt;
   &lt;input list="my-norwegian-list" /&gt;
-  &lt;u-datalist id="my-norwegian-list"&gt;
+  &lt;u-datalist id="my-norwegian-list" data-singular="%d smak" data-plural="%d smaker"&gt;
     &lt;u-option&gt;Kokkos&lt;/u-option&gt;
     &lt;u-option&gt;Jordbær&lt;/u-option&gt;
     &lt;u-option&gt;Sjokolade&lt;/u-option&gt;

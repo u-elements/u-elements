@@ -9,6 +9,7 @@ import {
 	UHTMLElement,
 	attachStyle,
 	attr,
+	createAriaLive,
 	customElements,
 	getRoot,
 	mutationObserver,
@@ -25,9 +26,12 @@ declare global {
 }
 
 let IS_PRESS = false; // Prevent loosing focus on mousedown on <u-option> despite tabIndex -1
+let LIVE_TIMER: ReturnType<typeof setTimeout>;
+let LIVE_SR_FIX = 0; // Ensure screen reader announcing by alternating non-breaking-space suffix
+const LIVE = createAriaLive("assertive");
 const IS_SAFARI_MAC = IS_SAFARI && !IS_IOS; // Used to prevent "expanded" announcement interrupting label in Safari Mac
 const EVENTS = "click,focusout,input,keydown,mousedown,mouseup";
-// TODO auto select on 1:1 match?
+const WCAG = " (required to meet WCA §4.1.3)";
 
 /**
  * The `<u-datalist>` HTML element contains a set of `<u-option>` elements that represent the permissible or recommended options available to choose from within other controls.
@@ -233,11 +237,26 @@ const setupOptions = (self: UHTMLDataListElement, event?: Event) => {
 	}
 	self.hidden = hidden; // Restore original hidden state
 
+	// Announce amount of visible hits
+	const visible = getVisibleOptions(self);
+	const singular = attr(self, "data-singular");
+	const plural = attr(self, "data-plural");
+	const count = visible.length;
+
+	if (!singular) console.warn(self, `is missing data-singular="%d hit"${WCAG}`);
+	if (!plural) console.warn(self, `is missing data-plural="%d hits"${WCAG}`);
+	if (singular && plural && LIVE) {
+		clearTimeout(LIVE_TIMER);
+		LIVE_TIMER = setTimeout(() => {
+			LIVE.textContent = `${count ? `${count === 1 ? singular : plural}`.replace("%d", `${count}`) : self.innerText}${++LIVE_SR_FIX % 2 ? "\u{A0}" : ""}`;
+		}, 1000); // 1 second makes room for screen reader to announce the typed character, before announcing the hits count
+	}
+
 	// Needed to announce count in iOS
-	/* c8 ignore next 4 */ // Because @web/test-runner code coverage iOS emulator only runs in chromium
+	/* c8 ignore next 4 */ // Because @web/test-runner code coverage iOS emulator only runs in Chromium
 	if (IS_IOS)
-		getVisibleOptions(self).map((opt, i, { length }) => {
-			opt.title = `${i + 1}/${length}`;
+		visible.map((opt, index) => {
+			opt.title = `${index + 1}/${count}`;
 		});
 };
 
@@ -253,3 +272,30 @@ if (IS_BROWSER)
 	});
 
 customElements.define("u-datalist", UHTMLDataListElement);
+
+// Firefox looks at text only, the rest looks at value and text
+const SPLIT_CHAR = ":\u{2009}"; // Unicode U+001E record separator
+export function filter(event: Event & { inputType?: string }) {
+	const { target: input, inputType } = event;
+
+	if (!(input instanceof HTMLInputElement)) return;
+	if (!inputType) input.value = input.value.split(SPLIT_CHAR)[0] || "";
+	else {
+		const needle = input.value.trim();
+		let count = 0;
+
+		for (const option of input.list?.options || []) {
+			let value = option.getAttribute("data-value");
+			if (!value) value = option.dataset.value = option.value;
+			// if (!option.getAttribute('data-value'))
+			// const value = option.value.split(SPLIT_CHAR)[0];
+			const match = option.text.toLowerCase().includes(needle.toLowerCase()); // Any custom filtering logic here
+
+			if (match) count++;
+
+			// option.disabled = !match;
+			// option.label = `${value}`; // Force show items by adding needle after a record separator
+			option.value = `${value}${SPLIT_CHAR}${needle}`; // Force show items by adding needle after a record separator
+		}
+	}
+}

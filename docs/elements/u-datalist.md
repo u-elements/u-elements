@@ -25,7 +25,7 @@ import { data } from '../filesize.data.ts'
   Choose flavor of ice cream
 &lt;/label&gt;
 &lt;input id="my-input" list="my-list" /&gt;
-&lt;u-datalist id="my-list"&gt;
+&lt;u-datalist id="my-list" data-singular="%d flavor" data-plural="%d flavours"&gt;
   &lt;u-option&gt;Coconut&lt;/u-option&gt;
   &lt;u-option&gt;Strawberries&lt;/u-option&gt;
   &lt;u-option&gt;Chocolate&lt;/u-option&gt;
@@ -54,7 +54,7 @@ pnpm add -S @u-elements/u-datalist
 ```
 
 ```bash [Yarn]
-yarn add -S @u-elements/u-datalist
+yarn add @u-elements/u-datalist
 ```
 
 ```bash [Bun]
@@ -72,8 +72,12 @@ bun add -S @u-elements/u-datalist
 
 - **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
   - `id` must be identical to value of `list` attribute on associated `<input>`
+  - Screen reader attributes required to meet [WCAG §4.1.3](https://www.w3.org/TR/WCAG21/#status-messages): 
+    - `data-sr-singular="%d hit"` announces single hit
+    - `data-sr-plural="%d hits"` announces multiple hits
+    - ***Note:** If `<u-datalist>` has no options, visible text will be announced instead (i.e. No results)*
 - **DOM interface:** [`HTMLDataListElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDataListElement)
-  - `HTMLDataListElement.options` returns `HTMLCollectionOf<HTMLOptionElement>`
+  - `HTMLDataListElement.options` returns `HTMLCollectionOf<HTMLOptionElement>`. However, note that there is inconsistency between Firefox and other browsers, regarding whether `disabled` options are included or not. To ensure access to all `<option>` elements, consider using `.children` instead.
 
 ### `<u-option>`
 
@@ -118,7 +122,6 @@ binding an `input` listener to the `<input>` element and check for a falsy `even
 ```
 
 ## Styling
-
 
 While `<u-datalist>` and `<u-option>` are styleable, *native* datalist and option elements are currently not. However, there is a possibility that the [native elements may support styling in the future](https://open-ui.org/components/customizableselect/#rich-content-in-options).
 
@@ -216,7 +219,7 @@ u-option:not([selected]) {
   Choose flavor of ice cream
   &lt;input type="text" id="my-styling-input" class="my-input" list="my-styling" /&gt;
 &lt;/label&gt;
-&lt;u-datalist class="my-list" id="my-styling"&gt;
+&lt;u-datalist class="my-list" id="my-styling" data-singular="%d flavor" data-plural="%d flavours"&gt;
   &lt;u-option&gt;Coconut&lt;/u-option&gt;
   &lt;u-option&gt;Strawberries&lt;/u-option&gt;
   &lt;u-option&gt;Chocolate&lt;/u-option&gt;
@@ -227,17 +230,76 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
 &lt;/p&gt;
 </pre>
 
+
+## Example: Dynamic
+
+<Sandbox label="u-datalist dynamic example" />
+<pre hidden>
+&lt;label for="my-dynamic-input"&gt;Choose your email&lt;/label&gt;
+&lt;input type="text" id="my-dynamic-input" list="my-dynamic-list" placeholder="Type email..." /&gt;
+&lt;u-datalist id="my-dynamic-list" data-singular="%d suggestion" data-plural="%d suggestions"&gt;
+&lt;/u-datalist&gt;
+&lt;script&gt;
+  const input = document.getElementById('my-dynamic-input');
+
+  input.addEventListener('input', (event) => {
+    if (!event.inputType) return; // User clicked u-option
+    const value = input.value.split("@")[0];
+    const values = [
+      `${value}@live.com`,
+      `${value}@icloud.com`,
+      `${value}@hotmail.com`,
+      `${value}@gmail.com`,
+    ];
+
+    if (!value) input.list?.replaceChildren('');
+    else input.list?.replaceChildren(...values.map((text) => {
+      return Object.assign(document.createElement("u-option"), { text });
+    }));
+  });
+&lt;/script&gt;
+</pre>
+
+## Example: Link
+
+<Sandbox label="u-datalist link example" />
+<pre hidden>
+&lt;label for="my-link-input"&gt;
+  Open u-element documentation
+&lt;/label&gt;
+&lt;input type="text" id="my-link-input" list="my-link-list" /&gt;
+&lt;u-datalist id="my-link-list" data-singular="%d result" data-plural="%d results"&gt;
+  &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-datalist"&gt;u-datalist&lt;/u-option&gt;
+  &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-details"&gt;u-details&lt;/u-option&gt;
+  &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-dialog"&gt;u-dialog&lt;/u-option&gt;
+  &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-progress"&gt;u-progress&lt;/u-option&gt;
+  &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-select"&gt;u-select&lt;/u-option&gt;
+  &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-tabs"&gt;u-tabs&lt;/u-option&gt;
+  &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-tags"&gt;u-tags&lt;/u-option&gt;
+&lt;/u-datalist&gt;
+&lt;script&gt;
+  const input = document.getElementById('my-link-input');
+
+  input.addEventListener('input', (event) => {
+    if (!event.inputType) { // User clicked u-option
+      window.location.href = input.value;
+      input.value = ''; // Clear input
+    }
+  });
+&lt;/script&gt;
+</pre>
+
 ## Example: API
+
+- **Note:** This is an experimental example implementation. We are currently testing and documenting native compability.
 
 <Sandbox label="u-datalist api example" />
 <pre hidden>
 &lt;label for="my-api-input"&gt;
-  Choose country
+  Search for country
 &lt;/label&gt;
 &lt;input type="text" id="my-api-input" list="my-api-list" /&gt;
-&lt;u-datalist id="my-api-list"&gt;
-  Type to search for countries...
-&lt;/u-datalist&gt;
+&lt;u-datalist id="my-api-list" data-singular="%d country" data-plural="%d countries"&gt;&lt;/u-datalist&gt;
 &lt;script&gt;
   let debounceTimer; // Debounce so we do not spam API
   const input = document.getElementById('my-api-input');
@@ -256,22 +318,22 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
       });
       list.replaceChildren(...options);
     } catch (err) {
-      list.textContent = 'No results';
+      list.replaceChildren('No results...');
     }
   };
 
   input.addEventListener('input', (event) => {
     if (!event.inputType) {
       // User clicked u-option, lets get option.text
-      const index = Number(input.value.split(':')[0])
-      const option = list.options[index];
+      const index = Number(input.value.split(':')[0]);
+      const option = list.children[index];
       input.value = option.text;
-    } else if (!input.value) {
-      list.textContent = 'Type to search for countries...';
-    } else {
+    }
+    else if (!input.value) list.replaceChildren('');
+    else {
       // User is typing
       const value = encodeURIComponent(event.target.value.trim());
-      list.textContent = 'Loading...';
+      list.replaceChildren('Loading...');
 
       xhr.abort();
       clearTimeout(debounceTimer);
@@ -284,41 +346,12 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
 &lt;/script&gt;
 </pre>
 
-## Example: Dynamic
-
-<Sandbox label="u-datalist dynamic example" />
-<pre hidden>
-&lt;label for="my-dynamic-input"&gt;
-  Choose your email
-&lt;/label&gt;
-&lt;input type="text" id="my-dynamic-input" list="my-dynamic-list" /&gt;
-&lt;u-datalist id="my-dynamic-list"&gt;
-  Type to choose email...
-&lt;/u-datalist&gt;
-&lt;script&gt;
-  const input = document.getElementById('my-dynamic-input');
-
-  input.addEventListener('input', (event) => {
-    if (!event.inputType) return; // User clicked u-option
-    const value = input.value.split('@')[0]
-    const values = [
-        `${value}@live.com`,
-        `${value}@icloud.com`,
-        `${value}@hotmail.com`,
-        `${value}@gmail.com`
-    ];
-
-    if (!value) input.list.textContent = 'Type to choose email...';
-    else input.list.replaceChildren(...values.map((text) => {
-      const option = document.createElement('u-option');
-      option.text = text;
-      return option;
-    }));
-  });
-&lt;/script&gt;
-</pre>
-
 ## Example: Custom filter
+
+- **Note:** This is an experimental example implementation. We are currently testing and documenting native compability.
+
+<!-- - Use the filter-helper  `import { filter } from '@u-elements/u-datalist';`
+- The helper is compatible with both native `<datalist>` and `<u-datalist>` -->
 
 <Sandbox label="u-datalist filter example" />
 <pre hidden>
@@ -326,7 +359,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
   Custom filter
 &lt;/label&gt;
 &lt;input type="text" id="my-filter-input" list="my-filter-list" /&gt;
-&lt;u-datalist id="my-filter-list"&gt;
+&lt;u-datalist id="my-filter-list" data-sr-singular="%d result" data-sr-plural="%d results"&gt;
   &lt;u-option&gt;u-datalist&lt;/u-option&gt;
   &lt;u-option&gt;u-details&lt;/u-option&gt;
   &lt;u-option&gt;u-dialog&lt;/u-option&gt;
@@ -348,7 +381,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
   input.addEventListener("input", (event) => {
     if (!event.inputType) return; // User clicked u-option
 
-    Array.from(input.list.options, (option) => {
+    Array.from(input.list.children, (option) => {
       let text = option.getAttribute("data-text");
       let value = option.getAttribute("data-value");
 
@@ -365,98 +398,6 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
 &lt;/script&gt;
 </pre>
 
-<!--
-## Example: Screen reader count
-
-<Sandbox label="u-datalist announce example" />
-<pre hidden>
-&lt;label for="my-count-input"&gt;
-  Screen reader announce hit count
-&lt;/label&gt;
-&lt;input type="text" id="my-count-input" list="my-count-list" /&gt;
-&lt;u-datalist id="my-count-list"&gt;
-  &lt;u-option&gt;u-datalist&lt;/u-option&gt;
-  &lt;u-option&gt;u-details&lt;/u-option&gt;
-  &lt;u-option&gt;u-dialog&lt;/u-option&gt;
-  &lt;u-option&gt;u-progress&lt;/u-option&gt;
-  &lt;u-option&gt;u-select&lt;/u-option&gt;
-  &lt;u-option&gt;u-tabs&lt;/u-option&gt;
-  &lt;u-option&gt;u-tags&lt;/u-option&gt;
-&lt;/u-datalist&gt;
-&lt;script&gt;
-  const input = document.getElementById('my-count-input');
-
-  let announceForce = 0;
-  let announceTimer = 0;
-  const announce = document.body.appendChild(Object.assign(document.createElement('div'), {
-    ariaLive: 'polite',
-    style: 'position:fixed;overflow:hidden;width:1px;white-space:nowrap'
-  }));
-
-  // Any custom filtering logic here:
-  const isMatch = (needle, haystack) =>
-    haystack.toLowerCase().includes(
-      needle.toLowerCase().trim()
-    );
-
-  // Achieve custom filter on native datalist
-  input.addEventListener("input", (event) => {
-    if (!event.inputType) return; // User clicked u-option
-    let hits = 0;
-
-    Array.from(input.list.options, (option) => {
-      let text = option.getAttribute("data-text");
-      let value = option.getAttribute("data-value");
-
-      if (!text) text = option.dataset.text = option.text;
-      if (!value) value = option.dataset.value = option.value;
-      option.text = option.value = "";
-
-      if (isMatch(input.value, text)) {
-        hits++;
-        option.text = text;
-        option.value = value;
-      }
-    });
-
-    clearTimeout(announceTimer);
-    announceTimer = setTimeout(() => {
-      // Ensure screen reader announce by alternating non-breaking-space suffix
-      announce.textContent = `${hits} hits${++announceForce % 2 ? "\u{A0}" : ""}`;
-    }, 1000);
-  });
-&lt;/script&gt;
-</pre>
--->
-
-## Example: Link
-
-<Sandbox label="u-datalist link example" />
-<pre hidden>
-&lt;label for="my-link-input"&gt;
-  Open u-element documentation
-&lt;/label&gt;
-&lt;input type="text" id="my-link-input" list="my-link-list" /&gt;
-&lt;u-datalist id="my-link-list"&gt;
-  &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-datalist"&gt;u-datalist&lt;/u-option&gt;
-  &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-details"&gt;u-details&lt;/u-option&gt;
-  &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-dialog"&gt;u-dialog&lt;/u-option&gt;
-  &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-progress"&gt;u-progress&lt;/u-option&gt;
-  &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-select"&gt;u-select&lt;/u-option&gt;
-  &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-tabs"&gt;u-tabs&lt;/u-option&gt;
-  &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-tags"&gt;u-tags&lt;/u-option&gt;
-&lt;/u-datalist&gt;
-&lt;script&gt;
-  const input = document.getElementById('my-link-input');
-
-  input.addEventListener('input', (event) => {
-    if (!event.inputType) { // User clicked u-option
-      window.location.href = input.value;
-      input.value = ''; // Clear input
-    }
-  });
-&lt;/script&gt;
-</pre>
 
 ## Accessibility
 

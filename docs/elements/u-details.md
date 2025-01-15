@@ -38,7 +38,7 @@ pnpm add -S @u-elements/u-details
 ```
 
 ```bash [Yarn]
-yarn add -S @u-elements/u-details
+yarn add @u-elements/u-details
 ```
 
 ```bash [Bun]
@@ -80,7 +80,7 @@ details.addEventListener('toggle', (event) => {
 
 ## Styling and animating
 
-`<summary>`/`<u-summary>` is rendered with `display: list-item` to display the open/close triangle, which is also announced by screen readers. If you wish to remove the triangle and its announcement, you can use `list-style: none`.
+The `<summary>` element is normally styled with `display: list-item`, but `<u-summary>` uses `display: block`. This change prevents screen readers from announcing the open/close triangle and resolves the double-announcement bug in iOS Safari VoiceOver. To hide the triangle and its announcement, you can apply the following CSS `u-summary::before { display: none }`.
 
 `<details>`/`<u-details>` hides its *content* - the `::details-content` pseudo element. Since custom pseudo selector are not
 possible to replicate in custom elements, `u-details` instead provide `::part(details-content)`.

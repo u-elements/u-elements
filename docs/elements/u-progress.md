@@ -34,7 +34,7 @@ pnpm add -S @u-elements/u-progress
 ```
 
 ```bash [Yarn]
-yarn add -S @u-elements/u-progress
+yarn add @u-elements/u-progress
 ```
 
 ```bash [Bun]

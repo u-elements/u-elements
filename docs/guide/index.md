@@ -22,7 +22,7 @@ pnpm add -S @u-elements/[u-element-name-here]
 ```
 
 ```bash [Yarn]
-yarn add -S @u-elements/[u-element-name-here]
+yarn add @u-elements/[u-element-name-here]
 ```
 
 ```bash [Bun]

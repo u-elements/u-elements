@@ -51,7 +51,7 @@ pnpm add -S @u-elements/u-tabs
 ```
 
 ```bash [Yarn]
-yarn add -S @u-elements/u-tabs
+yarn add @u-elements/u-tabs
 ```
 
 ```bash [Bun]

@@ -9,9 +9,7 @@
 	"module": "dist/u-tags.js",
 	"types": "dist/u-tags.d.ts",
 	"customElements": "dist/u-tags.manifest.json",
-	"files": [
-		"dist"
-	],
+	"files": ["dist"],
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/u-elements/u-elements.git"
@@ -20,6 +18,9 @@
 		"url": "https://github.com/u-elements/u-elements/issues"
 	},
 	"scripts": {
-		"build": "tsup --config ../../tsup.config.ts"
+		"build": "tsup --config ../../tsup.config.ts",
+		"publish:patch": "npm version patch && git push --tags origin main && npm publish",
+		"publish:minor": "npm version minor && git push --tags origin main && npm publish",
+		"publish:major": "npm version major && git push --tags origin main && npm publish"
 	}
 }

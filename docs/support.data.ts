@@ -51,14 +51,16 @@ function getBrowserSupport(feature: CompatStatement, region = {}) {
 		{ date: string; percentage: number; version: number }
 	> = {};
 
+	const toFloat = (value: unknown) =>
+		Number.parseFloat(`${value}`.replace(/[^\d.]+/g, ""));
+
 	const toPercentage = (sup: { yes: number; no: number }) =>
 		(sup.yes / (sup.yes + sup.no)) * 100;
 
 	for (const [browser, versions] of Object.entries(stats)) {
 		const added =
 			"version_added" in versions &&
-			(Number.parseFloat(`${versions.version_added}`) ||
-				Number.POSITIVE_INFINITY);
+			(toFloat(versions.version_added) || Number.POSITIVE_INFINITY);
 
 		const agent = agents[browser];
 		const usage = region[agent?.caniuseKey] || agent?.usage;
@@ -195,8 +197,6 @@ const skip = [
 	"length",
 	"name",
 	"navigator.useragentdata",
-	"window.focus",
-	"window.name",
 ];
 
 export default {
@@ -268,7 +268,7 @@ export default {
 		return {
 			browsers,
 			features: features
-				.filter((a) => a.world.total !== 100)
+				.filter((feat) => feat.world.total < 99.9)
 				.sort((a, b) => a.world.total - b.world.total),
 		};
 	},

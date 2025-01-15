@@ -37,8 +37,9 @@ export class UHTMLDetailsElement extends UHTMLElement {
 			createElement(
 				"style",
 				`${DISPLAY_BLOCK}
-        ::slotted(u-summary) { cursor: pointer; display: list-item; counter-increment: list-item 0; list-style: disclosure-closed inside }
-        ::slotted(u-summary[aria-expanded="true"]) { list-style-type: disclosure-open }
+        ::slotted(u-summary) { cursor: pointer; display: block }
+				::slotted(u-summary)::before { content: ''; display: inline-block; vertical-align: middle; margin-inline: .05em .3125em; border-block: .3125em solid transparent; border-inline-start: .5em solid }
+				::slotted(u-summary[aria-expanded="true"])::before { rotate: 90deg }
 				:host > [part="details-content"]:not([hidden=""]) { display: block }`,
 			),
 		);

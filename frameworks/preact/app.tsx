@@ -21,7 +21,7 @@ export default function App() {
       <br />
       <label htmlFor="my-input"></label>
       <input id="my-input" list="my-list" value={value} onChange={() => setValue('')} />
-      <u-datalist id="my-list" class="my-class-name">
+      <u-datalist id="my-list" class="my-class-name" data-singular="%d hit" data-plural="%d hits">
         <u-option value="test-1">Test 1</u-option>
         <u-option value="test-2">Test 2</u-option>
         <u-option value="test-3">Test 3</u-option>

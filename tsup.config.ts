@@ -13,7 +13,6 @@ const pkgFile = path.resolve(pkgPath, `${pkgName}.ts`);
 const modules = fs
 	.readdirSync(pkgPath)
 	.filter((file) => file.match(/u-[^.]+\.ts/)) // Skip .spec.ts
-	.map((file) => path.resolve(pkgPath, file))
 	.map((file) => [file, fs.readFileSync(file).toString()]);
 
 const tsToSource = ([file, code]: string[]) =>
@@ -37,7 +36,7 @@ export default defineConfig({
 	target: "es6", // For backwards compatibility
 	treeshake: true,
 	dts: {
-		footer: getFrameworkTypes(modules.flat().join("")),
+		footer: modules.map(getFrameworkTypes).join(""),
 	},
 	async onSuccess() {
 		const manifestFile = path.resolve(pkgPath, `dist/${pkgName}.manifest.json`);
@@ -50,7 +49,7 @@ export default defineConfig({
 	},
 });
 
-function getFrameworkTypes(code: string) {
+function getFrameworkTypes([_file, code]: string[]) {
 	const tagRexes = /['"](u-\S*?)['"]: (U?HTML[a-z]*Element)/gi;
 	const tagDefinitions = Array.from(code.matchAll(tagRexes));
 

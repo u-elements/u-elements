@@ -319,8 +319,10 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
 </pre>
 
 ## Example: Custom filter
-
-- **Note:** If you're using React, you can call `syncDatalistState` in a `useEffect(() => syncDatalistState(datalistRef.current))`;
+- Native `<datalist>` does not support custom filtering/content. Therefore, u-elements provide a  utility `import { syncDatalistState } from '@u-elements/u-datalist'`.
+- Call `syncDatalistState(input)` after you manually disable/enable options of your choise, to show all non-disabled options
+- `syncDatalistState` is both compatible with `<u-datalist>` and native `<datalist>`
+- **Note:** If you're using React, you can call `syncDatalistState` in a `useEffect(() => syncDatalistState(inputRef.current))`;
 
 <Sandbox label="u-datalist filter example" />
 <pre hidden>
@@ -361,7 +363,10 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
 
 ## Example: API
 
-- **Note:** If you're using React, you can call `syncDatalistState` in a `useEffect(() => syncDatalistState(datalistRef.current))`;
+- Native `<datalist>` does not support custom filtering/content. Therefore, u-elements provide a  utility `import { syncDatalistState } from '@u-elements/u-datalist'`.
+- Call `syncDatalistState(input)` after you set HTML, to show all non-disabled options
+- `syncDatalistState` is both compatible with `<u-datalist>` and native `<datalist>`
+- **Note:** If you're using React, you can call `syncDatalistState` in a `useEffect(() => syncDatalistState(inputRef.current))`;
 
 <Sandbox label="u-datalist api example" />
 <pre hidden>

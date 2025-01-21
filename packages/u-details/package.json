@@ -12,7 +12,7 @@
 	"files": ["dist"],
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/u-elements/u-elements.git"
+		"url": "git+https://github.com/u-elements/u-elements.git"
 	},
 	"bugs": {
 		"url": "https://github.com/u-elements/u-elements/issues"

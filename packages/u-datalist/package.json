@@ -1,6 +1,6 @@
 {
 	"name": "@u-elements/u-datalist",
-	"version": "0.0.9",
+	"version": "0.1.0",
 	"license": "MIT",
 	"description": "HTML tags, just truly accessible",
 	"homepage": "https://u-elements.github.io/u-elements/",
@@ -12,7 +12,7 @@
 	"files": ["dist"],
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/u-elements/u-elements.git"
+		"url": "git+https://github.com/u-elements/u-elements.git"
 	},
 	"bugs": {
 		"url": "https://github.com/u-elements/u-elements/issues"

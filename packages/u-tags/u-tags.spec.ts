@@ -92,23 +92,24 @@ test.describe("u-tags", () => {
 		}
 	});
 
-	test("responds on focus and blur", async ({ page }) => {
-		const input = page.locator("input");
-		const live = page.locator("[aria-live]");
-		const items0 = page.locator("data").nth(0);
-		const uOption0 = page.locator("u-option").nth(0);
+	// Need another test, as live is no longer added and removed
+	// test("responds on focus and blur", async ({ page }) => {
+	// 	const input = page.locator("input");
+	// 	const live = page.locator("[aria-live]");
+	// 	const items0 = page.locator("data").nth(0);
+	// 	const uOption0 = page.locator("u-option").nth(0);
 
-		await expect(live).not.toBeAttached();
-		await input.focus();
-		await expect(live).toBeAttached();
-		await items0.focus();
-		await expect(live).toBeAttached();
-		await uOption0.focus();
-		await expect(live).toBeAttached();
-		await input.focus();
-		await input.blur();
-		await expect(live).not.toBeAttached();
-	});
+	// 	await expect(live).not.toBeAttached();
+	// 	await input.focus();
+	// 	await expect(live).toBeAttached();
+	// 	await items0.focus();
+	// 	await expect(live).toBeAttached();
+	// 	await uOption0.focus();
+	// 	await expect(live).toBeAttached();
+	// 	await input.focus();
+	// 	await input.blur();
+	// 	await expect(live).not.toBeAttached();
+	// });
 
 	test("handles keyboard arrow navigation", async ({ page }) => {
 		const input = page.locator("input");
@@ -183,10 +184,13 @@ test.describe("u-tags", () => {
 
 	test("handles keyboard creation and removal", async ({ page }) => {
 		const input = page.locator("input");
-		const live = page.locator("[aria-live]");
+		const live = page.locator("[aria-live]").nth(1);
 		const item3 = page.locator("data").nth(3);
 		const added = /^Added Banana/;
 		const removed = /^Removed Banana/;
+
+		console.log(await page.content());
+		await expect(live).toBeAttached();
 
 		await input.focus();
 		await input.fill("Banana");

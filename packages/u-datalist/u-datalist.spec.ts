@@ -22,7 +22,7 @@ test.beforeEach(async ({ page }) => {
         Search here
         <input type="text" list="datalist-1" />
       </label>
-      <u-datalist id="datalist-1" data-singular="%d hit" data-plural="%d hits">
+      <u-datalist id="datalist-1" data-sr-singular="%d hit" data-sr-plural="%d hits">
         <u-option>Option 1</u-option>
         <u-option>Option 2</u-option>
         <u-option>Option 3</u-option>
@@ -75,7 +75,7 @@ test.describe("u-datalist", () => {
 		await page.evaluate(() => {
 			document.body.innerHTML = `
         <label>Search here <input type="text" list="datalist-1" /></label>
-        <u-datalist id="datalist-1" data-singular="%d hit" data-plural="%d hits">
+        <u-datalist id="datalist-1" data-sr-singular="%d hit" data-sr-plural="%d hits">
           <u-option>Option 1</u-option>
           <u-option>Option 2</u-option>
           <u-option>Option 3</u-option>
@@ -224,13 +224,13 @@ test.describe("u-datalist", () => {
 		await page.evaluate(() => {
 			document.body.innerHTML = `<form>
         <label>Search here<input type="text" list="datalist-1" /></label>
-        <u-datalist id="datalist-1" data-singular="%d hit" data-plural="%d hits">
+        <u-datalist id="datalist-1" data-sr-singular="%d hit" data-sr-plural="%d hits">
           <u-option>Option 1</u-option>
           <u-option>Option 2</u-option>
           <u-option>Option 3</u-option>
         </u-datalist>
         <label>Search here<input type="text" list="datalist-2" /></label>
-        <u-datalist id="datalist-2" data-singular="%d hit" data-plural="%d hits">
+        <u-datalist id="datalist-2" data-sr-singular="%d hit" data-sr-plural="%d hits">
           <u-option>Option 1</u-option>
           <u-option>Option 2</u-option>
           <u-option>Option 3</u-option>
@@ -257,7 +257,7 @@ test.describe("u-datalist", () => {
 			document.body.innerHTML = `<form>
         <label>Search here 1<input type="text" list="datalist-1" /></label>
         <label>Search here 2<input type="text" list="datalist-1" /></label>
-        <u-datalist id="datalist-1" data-singular="%d hit" data-plural="%d hits">
+        <u-datalist id="datalist-1" data-sr-singular="%d hit" data-sr-plural="%d hits">
           <u-option>Option 1</u-option>
           <u-option>Option 2</u-option>
           <u-option>Option 3</u-option>

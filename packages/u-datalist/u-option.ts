@@ -36,7 +36,7 @@ export class UHTMLOptionElement extends UHTMLElement {
 	}
 	connectedCallback() {
 		if (!IS_IOS) this.tabIndex = -1; // Do not set tabIndex on iOS as this causes keyboard to toggle on and off
-		attr(this, "role", "option");
+		if (!attr(this, "role")) attr(this, "role", "option"); // Only set role if not allready specified
 		this.attributeChangedCallback(); // Setup aria attributes
 	}
 	attributeChangedCallback() {

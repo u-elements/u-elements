@@ -55,7 +55,7 @@
   </head>
   <body>
     <main>
-      <u-details name="group-1">
+      <!-- <u-details name="group-1">
         <u-summary>Test 1</u-summary>
         <div>Innhold 1</div>
         <div>Innhold 2</div>
@@ -68,76 +68,79 @@
         <div>Innhold 2</div>
         <div>Innhold 3</div>
         Innhold 4
-      </u-details>
+      </u-details> -->
 
       <br />
-      <button>Før</button>
+      <button type="button" name="before">Før</button>
       <br />
 
       <label>
         Velg type iskrem<br>
         <input type="text" id="my-a11y-input" list="u-list-1" autocomplete="off">
       </label>
-      <datalist id="u-list-1" data-singular="%d smak" data-plural="%d smaker">
-        <option>Kokkos</option>
-        <option>Jordbær</option>
-        <option>Sjokolade</option>
-        <option>Vanilje</option>
-        <option>Lakris</option>
-        <option>Pistasj</option>
-        <option>Mango</option>
-        <option>Hasselnøtt</option>
-      </datalist>
+      <u-datalist id="u-list-1" data-sr-singular="%d land" data-sr-plural="%d land">
+        <u-option>Kokkos</u-option>
+        <u-option>Jordbær</u-option>
+        <u-option>Sjokolade</u-option>
+        <u-option>Vanilje</u-option>
+        <u-option>Lakris</u-option>
+        <u-option>Pistasj</u-option>
+        <u-option>Mango</u-option>
+        <u-option>Hasselnøtt</u-option>
+      </u-datalist>
       <script type="module">
-        import { filter } from './packages/u-datalist/u-datalist';
-        
+        import { isDatalistClick, syncDatalistState } from './packages/u-datalist/u-datalist';
+
         const input = document.getElementById('my-a11y-input');
 
         // Achieve custom filter on native datalist (needed when using native <datalist>)
         input.addEventListener("input", (event) => {
-          filter(event); // User is typing
+          if (isDatalistClick(event)) return;
+
+          const needle = event.target.value.trim().toLowerCase();
+          const options = event.target.list.children;
+
+          for (const option of options) {
+            option.disabled = !option.text.toLowerCase().startsWith(needle);
+          }
+
+          syncDatalistState(input);
         });
 
+        // // const input = document.getElementById('my-a11y-input');
         // let debounceTimer; // Debounce so we do not spam API
-        // const input = document.getElementById('my-a11y-input');
         // const list = input.list;
         // const xhr = new XMLHttpRequest(); // Easy to abort
 
         // // Same handler every time
-        // xhr.onload = () => {
+        // xhr.addEventListener('load', () => {
         //   try {
-        //     const data = JSON.parse(xhr.responseText);
-        //     const options = data.map(({ name }, index) => {
+        //     list.replaceChildren(...JSON.parse(xhr.responseText).map((country) => {
         //       const option = document.createElement('u-option');
-        //       option.text = name;
-        //       option.value = `${index}: ${input.value}`; // Prevent filtering by matching value and input
+        //       option.text = country.name;
         //       return option;
-        //     });
-        //     list.replaceChildren(...options);
+        //     }));
         //   } catch (err) {
-        //     list.replaceChildren('No results');
+        //     list.innerHTML = '<u-option role="none">No results</u-option>';
         //   }
-        // };
+        //   syncDatalistState(input);
+        // });
 
         // input.addEventListener('input', (event) => {
-        //   if (!event.inputType) {
-        //     // User clicked u-option, lets get option.text
-        //     const index = Number(input.value.split(':')[0]);
-        //     const option = list.children[index];
-        //     input.value = option.text;
-        //   } else if (!input.value) list.replaceChildren('');
-        //   else {
-        //     // User is typing
-        //     const value = encodeURIComponent(event.target.value.trim());
-        //     list.replaceChildren('Loading...');
+        //   if (isDatalistClick(event)) return;
 
-        //     xhr.abort();
-        //     clearTimeout(debounceTimer);
-        //     debounceTimer = setTimeout(() => {
-        //       xhr.open('GET', `https://restcountries.com/v2/name/${value}?fields=name`, true);
-        //       xhr.send();
-        //     }, 300);
-        //   }
+        //   const value = encodeURIComponent(input.value.trim());
+        //   list.innerHTML = '<u-option role="none">Loading</u-option>';
+
+        //   xhr.abort();
+        //   clearTimeout(debounceTimer);
+        //   debounceTimer = setTimeout(() => {
+        //     if (!value) return;
+        //     xhr.open('GET', `https://restcountries.com/v2/name/${value}?fields=name`, true);
+        //     xhr.send();
+        //   }, 300);
+
+        //   syncDatalistState(input);
         // });
       </script>
       <!-- <br>
@@ -152,7 +155,7 @@
       <br><u-progress aria-labelledby="label-for-progress" value="5" max="10">70%</u-progress>
       <br> -->
       <br>
-      <!-- <form>
+      <form>
         <label for="my-tags-input">Velg iskrem</label>
         <u-tags
           data-sr-added="La til"
@@ -167,7 +170,7 @@
           <data>Pineapple</data>
           <data>Orange</data>
           <input id="my-tags-input" list="u-tags-list">
-          <u-datalist id="u-tags-list" data-singular="%d smak" data-plural="%d smaker">
+          <u-datalist id="u-tags-list" data-sr-singular="%d smak" data-sr-plural="%d smaker">
             <u-option>Kokkos</u-option>
             <u-option>Jordbær</u-option>
             <u-option>Sjokolade</u-option>
@@ -180,7 +183,7 @@
         </u-tags>
         <br>
       </form>
-      <br> -->
+      <br>
       <br>
       <br>
       <!-- <u-tablist>

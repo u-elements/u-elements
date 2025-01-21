@@ -1,3 +1,4 @@
+import { isDatalistClick } from "../u-datalist/u-datalist";
 import {
 	FOCUS_OUTLINE,
 	IS_ANDROID,
@@ -11,6 +12,7 @@ import {
 	createAriaLive,
 	createElement,
 	customElements,
+	attributeTexts,
 	getRoot,
 	mutationObserver,
 	off,
@@ -31,14 +33,15 @@ declare global {
 
 const IS_MOBILE = IS_ANDROID || IS_IOS;
 const IS_FIREFOX_MAC = IS_FIREFOX || IS_MAC;
+const LIVE = createAriaLive("polite");
 const EVENTS = "input,focusin,focusout,keydown";
 const TEXTS = {
-	srAdded: "Added",
-	srRemove: "Press to remove",
-	srRemoved: "Removed",
-	srEmpty: "No selected",
-	srFound: "Navigate left to find %d selected",
-	srOf: "of",
+	added: "Added",
+	remove: "Press to remove",
+	removed: "Removed",
+	empty: "No selected",
+	found: "Navigate left to find %d selected",
+	of: "of",
 };
 
 // Note: Label pointing to the input overwrites input's aria-label in Firefox
@@ -53,6 +56,12 @@ export class UHTMLTagsElement extends UHTMLElement {
 	_blurTimer: ReturnType<typeof setTimeout> | number = 0;
 	_focusIndex: number | null = null;
 	_root: null | Document | ShadowRoot = null;
+	_texts = { ...TEXTS };
+
+	// Using ES2015 syntax for backwards compatibility
+	static get observedAttributes() {
+		return attributeTexts(TEXTS);
+	}
 
 	constructor() {
 		super();
@@ -70,10 +79,14 @@ export class UHTMLTagsElement extends UHTMLElement {
 	connectedCallback() {
 		this._root = getRoot(this);
 
+		if (LIVE && !LIVE.isConnected) document.body.append(LIVE);
 		mutationObserver(this, { childList: true }); // Observe u-datalist to add aria-multiselect="true"
 		on(this._root, "click", this); // Bind click-to-focus-input on root
 		on(this, EVENTS, this);
 		setTimeout(() => render(this)); // Set initial aria-labels and selected items in datalist after initial render
+	}
+	attributeChangedCallback(prop: string, _prev: string, next: string) {
+		attributeTexts(this._texts, prop, next);
 	}
 	disconnectedCallback() {
 		mutationObserver(this, false);
@@ -108,15 +121,14 @@ const dispatchChange = (self: UHTMLTagsElement, item: HTMLDataElement) => {
 	);
 };
 
-const LIVE = createAriaLive("polite");
 const render = (
 	self: UHTMLTagsElement,
 	event?: CustomEvent<MutationRecord[]>,
 ) => {
-	const texts = { ...TEXTS, ...self.dataset };
+	const texts = self._texts;
 	const change = Number.isNaN(self._focusIndex) ? null : event?.detail[0]; // Skip announcing changes when no focus
 	const changeItem = change?.addedNodes[0] || change?.removedNodes[0];
-	const changeText = `${changeItem ? `${changeItem.isConnected ? texts.srAdded : texts.srRemoved} ${changeItem.textContent}, ` : ""}`;
+	const changeText = `${changeItem ? `${changeItem.isConnected ? texts.added : texts.removed} ${changeItem.textContent}, ` : ""}`;
 	const label = self.control?.labels?.[0]?.textContent || "";
 	const values: string[] = [];
 
@@ -124,7 +136,7 @@ const render = (
 	attr(self, "role", "group");
 	attr(self, "aria-label", label);
 	self.items.forEach((item, index, { length }) => {
-		const label = `${changeText}${item.textContent}, ${texts.srRemove}, ${index + 1} ${texts.srOf} ${length}`;
+		const label = `${changeText}${item.textContent}, ${texts.remove}, ${index + 1} ${texts.of} ${length}`;
 		attr(item, "aria-label", label);
 		attr(item, "role", "button");
 		item.tabIndex = -1;
@@ -134,7 +146,7 @@ const render = (
 
 	// Setup control
 	const control = self.control;
-	const controlLabel = `${changeText}${label}, ${values.length ? texts.srFound.replace("%d", `${values.length}`) : texts.srEmpty}`;
+	const controlLabel = `${changeText}${label}, ${values.length ? texts.found.replace("%d", `${values.length}`) : texts.empty}`;
 	const list = control && document.getElementById(attr(control, "list") || ""); // UHTMLDatalist might not be initialized yet
 	const options = list?.children as
 		| HTMLCollectionOf<HTMLOptionElement>
@@ -200,7 +212,8 @@ const onClick = (
 
 const onInputOptionClick = (self: UHTMLTagsElement, event: InputEvent) => {
 	const input = event.target as HTMLInputElement | null;
-	if (event.inputType || !input?.value.trim()) return; // Skip typing or empty (clicking item in <datalist> or pressing "Enter" triggers onInput, but without inputType)
+	if (!isDatalistClick(event) || !input?.value.trim()) return; // Skip typing or empty
+
 	const items = [...self.items];
 	const options = [...(input?.list?.children || [])] as HTMLOptionElement[];
 	const optionClicked = options.find(({ value }) => value === input?.value);

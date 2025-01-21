@@ -1,7 +1,9 @@
 export type { UHTMLOptionElement } from "./u-option";
+import { UHTMLOptionElement } from "./u-option";
 import {
 	DISPLAY_BLOCK,
 	IS_BROWSER,
+	IS_FIREFOX,
 	IS_IOS,
 	IS_SAFARI,
 	SAFE_LABELLEDBY,
@@ -9,6 +11,7 @@ import {
 	UHTMLElement,
 	attachStyle,
 	attr,
+	attributeTexts,
 	createAriaLive,
 	customElements,
 	getRoot,
@@ -31,7 +34,10 @@ let LIVE_SR_FIX = 0; // Ensure screen reader announcing by alternating non-break
 const LIVE = createAriaLive("assertive");
 const IS_SAFARI_MAC = IS_SAFARI && !IS_IOS; // Used to prevent "expanded" announcement interrupting label in Safari Mac
 const EVENTS = "click,focusout,input,keydown,mousedown,mouseup";
-const WCAG = " (required to meet WCA §4.1.3)";
+const TEXTS = {
+	singular: "% hit",
+	plural: "% hits",
+};
 
 /**
  * The `<u-datalist>` HTML element contains a set of `<u-option>` elements that represent the permissible or recommended options available to choose from within other controls.
@@ -45,10 +51,11 @@ export class UHTMLDataListElement extends UHTMLElement {
 	_input: HTMLInputElement | null = null;
 	_root: null | Document | ShadowRoot = null;
 	_value = ""; // Store sanitized value to speed up option filtering
+	_texts = { ...TEXTS }; // Speed up translated texts
 
 	// Using ES2015 syntax for backwards compatibility
 	static get observedAttributes() {
-		return ["id"];
+		return ["id", ...attributeTexts(TEXTS)];
 	}
 
 	constructor() {
@@ -62,8 +69,8 @@ export class UHTMLDataListElement extends UHTMLElement {
 		this.hidden = true;
 		this._root = getRoot(this);
 
+		if (LIVE && !LIVE.isConnected) document.body.append(LIVE);
 		attr(this, "role", "listbox");
-		// attr(this, "popover", "manual");
 		on(this._root, "focusin", this); // Only bind focus globally as this is needed to activate
 		on(this._root, "focus", this, true); // Need to also listen on focus with capturing to render before Firefox NVDA reads state
 		setTimeout(() => this.attributeChangedCallback()); // Allow rendering full DOM tree before setting up inputs
@@ -74,7 +81,8 @@ export class UHTMLDataListElement extends UHTMLElement {
 		disconnectInput(this);
 		this._root = null;
 	}
-	attributeChangedCallback() {
+	attributeChangedCallback(prop?: string) {
+		attributeTexts(this._texts, prop);
 		const inputs = this._root?.querySelectorAll(`input[list="${this.id}"]`);
 		for (const input of inputs || []) setupInput(this, input); // Setup aria-expanded, role etc
 	}
@@ -225,7 +233,7 @@ const setupOptions = (self: UHTMLDataListElement, event?: Event) => {
 
 	const hidden = self.hidden;
 	const isSingle = attr(self, SAFE_MULTISELECTABLE) !== "true";
-	const isTyping = event instanceof InputEvent && event.inputType;
+	const isTyping = event instanceof InputEvent && !isDatalistClick(event);
 
 	self.hidden = true; // Speed up large lists by hiding during filtering
 	self._value = value; // Cache value from self filtering
@@ -239,24 +247,21 @@ const setupOptions = (self: UHTMLDataListElement, event?: Event) => {
 
 	// Announce amount of visible hits
 	const visible = getVisibleOptions(self);
-	const singular = attr(self, "data-singular");
-	const plural = attr(self, "data-plural");
-	const count = visible.length;
+	clearTimeout(LIVE_TIMER);
+	LIVE_TIMER = setTimeout(() => {
+		const { length } = visible.filter((o) => attr(o, "role") === "option"); // Skip role="none" and role="presentation"
+		const liveSrFix = ++LIVE_SR_FIX % 2 ? "\u{A0}" : ""; // Force screen reader anouncement
+		const countText = `${`${self._texts[length === 1 ? "singular" : "plural"]}`.replace("%d", `${length}`)}`;
 
-	if (!singular) console.warn(self, `is missing data-singular="%d hit"${WCAG}`);
-	if (!plural) console.warn(self, `is missing data-plural="%d hits"${WCAG}`);
-	if (singular && plural && LIVE) {
-		clearTimeout(LIVE_TIMER);
-		LIVE_TIMER = setTimeout(() => {
-			LIVE.textContent = `${count ? `${count === 1 ? singular : plural}`.replace("%d", `${count}`) : self.innerText}${++LIVE_SR_FIX % 2 ? "\u{A0}" : ""}`;
-		}, 1000); // 1 second makes room for screen reader to announce the typed character, before announcing the hits count
-	}
+		if (LIVE)
+			LIVE.textContent = `${(!length && self.innerText.trim()) || countText}${liveSrFix}`;
+	}, 1000); // 1 second makes room for screen reader to announce the typed character, before announcing the hits count
 
 	// Needed to announce count in iOS
 	/* c8 ignore next 4 */ // Because @web/test-runner code coverage iOS emulator only runs in Chromium
 	if (IS_IOS)
-		visible.map((opt, index) => {
-			opt.title = `${index + 1}/${count}`;
+		visible.map((opt, index, length) => {
+			opt.title = `${index + 1}/${length}`;
 		});
 };
 
@@ -273,29 +278,28 @@ if (IS_BROWSER)
 
 customElements.define("u-datalist", UHTMLDataListElement);
 
-// Firefox looks at text only, the rest looks at value and text
-const SPLIT_CHAR = ":\u{2009}"; // Unicode U+001E record separator
-export function filter(event: Event & { inputType?: string }) {
-	const { target: input, inputType } = event;
+const SPLIT_CHAR = "\u{2001}".repeat(100); // Unicode U+001E record separator
+const SPLIT_ATTR = IS_FIREFOX ? "label" : "value"; // Firefox looks at label+text, the rest looks at value+text
+const FIREFOX_OPTION_CLICK = "insertReplacementText"; // Support both Firefox (insertReplacementText) and others (undefined)
 
-	if (!(input instanceof HTMLInputElement)) return;
-	if (!inputType) input.value = input.value.split(SPLIT_CHAR)[0] || "";
-	else {
-		const needle = input.value.trim();
-		let count = 0;
+export function isDatalistClick(event: unknown & { inputType?: string }) {
+	const isClick =
+		event instanceof Event &&
+		event.type === "input" &&
+		event.target instanceof HTMLInputElement &&
+		(!event.inputType || event.inputType === FIREFOX_OPTION_CLICK);
 
-		for (const option of input.list?.options || []) {
-			let value = option.getAttribute("data-value");
-			if (!value) value = option.dataset.value = option.value;
-			// if (!option.getAttribute('data-value'))
-			// const value = option.value.split(SPLIT_CHAR)[0];
-			const match = option.text.toLowerCase().includes(needle.toLowerCase()); // Any custom filtering logic here
+	if (isClick) event.target.value = event.target.value.split(SPLIT_CHAR)[0];
+	return isClick;
+}
 
-			if (match) count++;
-
-			// option.disabled = !match;
-			// option.label = `${value}`; // Force show items by adding needle after a record separator
-			option.value = `${value}${SPLIT_CHAR}${needle}`; // Force show items by adding needle after a record separator
+export function syncDatalistState(input: HTMLInputElement) {
+	for (const option of input.list?.children || [])
+		if (
+			option instanceof HTMLOptionElement ||
+			option instanceof UHTMLOptionElement
+		) {
+			option[SPLIT_ATTR] =
+				`${option[SPLIT_ATTR].split(SPLIT_CHAR)[0]}${SPLIT_CHAR}${input.value}`; // Force show items by adding needle after a record separator
 		}
-	}
 }

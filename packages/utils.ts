@@ -215,3 +215,20 @@ export const createAriaLive = (mode: "polite" | "assertive") => {
 	attr(live, "aria-live", mode);
 	return document.body.appendChild(live);
 };
+
+/**
+ * attributeTexts
+ * @description Creates a aria-live element for announcements
+ * @param mode Value of aria-live attribute
+ * @return HTMLDivElement or null if on server
+ */
+export function attributeTexts(
+	texts: Record<string, string>,
+	prop?: string,
+	value?: string,
+) {
+	if (!prop) return Object.keys(texts).map((key) => `data-sr-${key}`); // List attributes if not updating
+	const key = prop?.startsWith("data-sr-") && prop.slice(9); // Update if getting an attribute
+	if (key && value && texts[key]) texts[key] = value;
+	return [];
+}

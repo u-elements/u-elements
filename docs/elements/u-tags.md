@@ -29,7 +29,7 @@ import { data } from '../filesize.data.ts'
   &lt;data&gt;Pineapple&lt;/data&gt;
   &lt;data&gt;Orange&lt;/data&gt;
   &lt;input id="my-input" list="my-list" /&gt;
-  &lt;u-datalist id="my-list" data-singular="%d flavor" data-plural="%d flavours"&gt;
+  &lt;u-datalist id="my-list" data-sr-singular="%d flavor" data-sr-plural="%d flavours"&gt;
     &lt;u-option&gt;Coconut&lt;/u-option&gt;
     &lt;u-option&gt;Strawberries&lt;/u-option&gt;
     &lt;u-option&gt;Chocolate&lt;/u-option&gt;
@@ -118,12 +118,12 @@ myUTags.addEventListener('tags', (event) => {
   Velg type iskrem
 &lt;/label&gt;
 &lt;u-tags
-  data-added="La til"
-  data-remove="Trykk for å fjerne"
-  data-removed="Fjernet"
-  data-empty="Ingen valgte"
-  data-found="Naviger til venstre for å finne %d valgte"
-  data-of="av"
+  data-sr-added="La til"
+  data-sr-remove="Trykk for å fjerne"
+  data-sr-removed="Fjernet"
+  data-sr-empty="Ingen valgte"
+  data-sr-found="Naviger til venstre for å finne %d valgte"
+  data-sr-of="av"
   id="my-norwegian-tags"
 &gt;
   &lt;data&gt;Kokkos&lt;/data&gt;
@@ -131,7 +131,7 @@ myUTags.addEventListener('tags', (event) => {
   &lt;data&gt;Ananas&lt;/data&gt;
   &lt;data&gt;Appelsin&lt;/data&gt;
   &lt;input list="my-norwegian-list" /&gt;
-  &lt;u-datalist id="my-norwegian-list" data-singular="%d smak" data-plural="%d smaker"&gt;
+  &lt;u-datalist id="my-norwegian-list" data-sr-singular="%d smak" data-sr-plural="%d smaker"&gt;
     &lt;u-option&gt;Kokkos&lt;/u-option&gt;
     &lt;u-option&gt;Jordbær&lt;/u-option&gt;
     &lt;u-option&gt;Sjokolade&lt;/u-option&gt;

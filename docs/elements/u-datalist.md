@@ -322,6 +322,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
 - Native `<datalist>` does not support custom filtering/content. Therefore, u-elements provide a  utility `import { syncDatalistState } from '@u-elements/u-datalist'`.
 - Call `syncDatalistState(input)` after you manually disable/enable options of your choise, to show all non-disabled options
 - `syncDatalistState` is both compatible with `<u-datalist>` and native `<datalist>`
+- **Note:** `value` might be re-written to acheive custom rendering. Use `getDatalistValue(input)` or `getDatalistValue(option)` to access the original value
 - **Note:** If you're using React, you can call `syncDatalistState` in a `useEffect(() => syncDatalistState(inputRef.current))`;
 
 <Sandbox label="u-datalist filter example" />
@@ -366,6 +367,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
 - Native `<datalist>` does not support custom filtering/content. Therefore, u-elements provide a  utility `import { syncDatalistState } from '@u-elements/u-datalist'`.
 - Call `syncDatalistState(input)` after you set HTML, to show all non-disabled options
 - `syncDatalistState` is both compatible with `<u-datalist>` and native `<datalist>`
+- **Note:** `value` might be re-written to acheive custom rendering. Use `getDatalistValue(input)` or `getDatalistValue(option)` to access the original value
 - **Note:** If you're using React, you can call `syncDatalistState` in a `useEffect(() => syncDatalistState(inputRef.current))`;
 
 <Sandbox label="u-datalist api example" />
@@ -392,6 +394,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
         return option;
       }));
     } catch (err) {
+      // Using role="none" to avoid getting counted as a hit
       list.innerHTML = '<u-option role="none">No results</u-option>';
     }
     syncDatalistState(input);
@@ -400,6 +403,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
   input.addEventListener('input', (event) => {
     if (isDatalistClick(event)) return; // User clicked option element
 
+    // Using role="none" to avoid getting counted as a hit
     const value = encodeURIComponent(input.value.trim());
     list.innerHTML = '<u-option role="none">Loading</u-option>';
 

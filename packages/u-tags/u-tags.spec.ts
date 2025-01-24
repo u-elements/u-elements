@@ -184,12 +184,11 @@ test.describe("u-tags", () => {
 
 	test("handles keyboard creation and removal", async ({ page }) => {
 		const input = page.locator("input");
-		const live = page.locator("[aria-live]").nth(1);
+		const live = page.locator("[aria-live='polite']");
 		const item3 = page.locator("data").nth(3);
 		const added = /^Added Banana/;
 		const removed = /^Removed Banana/;
 
-		console.log(await page.content());
 		await expect(live).toBeAttached();
 
 		await input.focus();

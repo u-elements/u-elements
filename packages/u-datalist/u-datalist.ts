@@ -139,7 +139,7 @@ const onClick = (self: UHTMLDataListElement, { target }: Event) => {
 
 	if (self._input === target) {
 		setExpanded(self, true); // Click on input should always open datalist
-	} else if (option) {
+	} else if (option && isInteractiveOption(option)) {
 		for (const opt of self.options) {
 			if (opt === option) opt.selected = true;
 			else if (isSingle) opt.selected = false; // Ensure single selected
@@ -213,6 +213,14 @@ const getVisibleOptions = (self: UHTMLDataListElement) =>
 		(opt) => !opt.disabled && opt.offsetWidth && opt.offsetHeight, // Checks disabled or visibility (since hidden attribute can be overwritten by display: block)
 	);
 
+// Skip role="none" and role="presentation"
+const isInteractiveOption = (
+	option: HTMLOptionElement | UHTMLOptionElement,
+) => {
+	const role = option.getAttribute("role");
+	return role !== "none" && role !== "presentation";
+};
+
 const setupInput = (
 	self: UHTMLDataListElement,
 	input: Element,
@@ -249,7 +257,7 @@ const setupOptions = (self: UHTMLDataListElement, event?: Event) => {
 	const visible = getVisibleOptions(self);
 	clearTimeout(LIVE_TIMER);
 	LIVE_TIMER = setTimeout(() => {
-		const { length } = visible.filter((o) => attr(o, "role") === "option"); // Skip role="none" and role="presentation"
+		const { length } = visible.filter(isInteractiveOption);
 		const liveSrFix = ++LIVE_SR_FIX % 2 ? "\u{A0}" : ""; // Force screen reader anouncement
 		const countText = `${`${self._texts[length === 1 ? "singular" : "plural"]}`.replace("%d", `${length}`)}`;
 
@@ -282,14 +290,27 @@ const SPLIT_CHAR = "\u{2001}".repeat(100); // Unicode U+001E record separator
 const SPLIT_ATTR = IS_FIREFOX ? "label" : "value"; // Firefox looks at label+text, the rest looks at value+text
 const FIREFOX_OPTION_CLICK = "insertReplacementText"; // Support both Firefox (insertReplacementText) and others (undefined)
 
-export function isDatalistClick(event: unknown & { inputType?: string }) {
+export const getDatalistValue = ({
+	value,
+}: HTMLInputElement | HTMLOptionElement | UHTMLOptionElement) =>
+	value.split(SPLIT_CHAR)[0];
+
+export function isDatalistClick(event: unknown) {
 	const isClick =
 		event instanceof Event &&
 		event.type === "input" &&
 		event.target instanceof HTMLInputElement &&
-		(!event.inputType || event.inputType === FIREFOX_OPTION_CLICK);
+		(!(event as InputEvent).inputType ||
+			(event as InputEvent).inputType === FIREFOX_OPTION_CLICK);
 
-	if (isClick) event.target.value = event.target.value.split(SPLIT_CHAR)[0];
+	if (isClick) {
+		let ignored = false;
+		for (const option of event.target.list?.options || []) {
+			if (option.value === event.target.value)
+				ignored = !isInteractiveOption(option);
+		}
+		event.target.value = event.target.value.split(SPLIT_CHAR)[ignored ? 1 : 0]; // Keep input text if ignored option
+	}
 	return isClick;
 }
 
@@ -300,6 +321,6 @@ export function syncDatalistState(input: HTMLInputElement) {
 			option instanceof UHTMLOptionElement
 		) {
 			option[SPLIT_ATTR] =
-				`${option[SPLIT_ATTR].split(SPLIT_CHAR)[0]}${SPLIT_CHAR}${input.value}`; // Force show items by adding needle after a record separator
+				`${getDatalistValue(option)}${SPLIT_CHAR}${input.value}`; // Force show items by adding needle after a record separator
 		}
 }

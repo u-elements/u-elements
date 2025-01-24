@@ -94,54 +94,54 @@
         const input = document.getElementById('my-a11y-input');
 
         // Achieve custom filter on native datalist (needed when using native <datalist>)
-        input.addEventListener("input", (event) => {
-          if (isDatalistClick(event)) return;
+        // input.addEventListener("input", (event) => {
+        //   if (isDatalistClick(event)) return;
 
-          const needle = event.target.value.trim().toLowerCase();
-          const options = event.target.list.children;
+        //   const needle = event.target.value.trim().toLowerCase();
+        //   const options = event.target.list.children;
 
-          for (const option of options) {
-            option.disabled = !option.text.toLowerCase().startsWith(needle);
+        //   for (const option of options) {
+        //     option.disabled = !option.text.toLowerCase().startsWith(needle);
+        //   }
+
+        //   syncDatalistState(input);
+        // });
+
+        // const input = document.getElementById('my-a11y-input');
+        let debounceTimer; // Debounce so we do not spam API
+        const list = input.list;
+        const xhr = new XMLHttpRequest(); // Easy to abort
+
+        // Same handler every time
+        xhr.addEventListener('load', () => {
+          try {
+            list.replaceChildren(...JSON.parse(xhr.responseText).map((country) => {
+              const option = document.createElement('u-option');
+              option.text = country.name;
+              return option;
+            }));
+          } catch (err) {
+            list.innerHTML = '<u-option role="none">No results</u-option>';
           }
-
           syncDatalistState(input);
         });
 
-        // // const input = document.getElementById('my-a11y-input');
-        // let debounceTimer; // Debounce so we do not spam API
-        // const list = input.list;
-        // const xhr = new XMLHttpRequest(); // Easy to abort
+        input.addEventListener('input', (event) => {
+          if (isDatalistClick(event)) return;
 
-        // // Same handler every time
-        // xhr.addEventListener('load', () => {
-        //   try {
-        //     list.replaceChildren(...JSON.parse(xhr.responseText).map((country) => {
-        //       const option = document.createElement('u-option');
-        //       option.text = country.name;
-        //       return option;
-        //     }));
-        //   } catch (err) {
-        //     list.innerHTML = '<u-option role="none">No results</u-option>';
-        //   }
-        //   syncDatalistState(input);
-        // });
+          const value = encodeURIComponent(input.value.trim());
+          list.innerHTML = '<u-option role="none">Loading</u-option>';
 
-        // input.addEventListener('input', (event) => {
-        //   if (isDatalistClick(event)) return;
+          xhr.abort();
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            if (!value) return;
+            xhr.open('GET', `https://restcountries.com/v2/name/${value}?fields=name`, true);
+            xhr.send();
+          }, 300);
 
-        //   const value = encodeURIComponent(input.value.trim());
-        //   list.innerHTML = '<u-option role="none">Loading</u-option>';
-
-        //   xhr.abort();
-        //   clearTimeout(debounceTimer);
-        //   debounceTimer = setTimeout(() => {
-        //     if (!value) return;
-        //     xhr.open('GET', `https://restcountries.com/v2/name/${value}?fields=name`, true);
-        //     xhr.send();
-        //   }, 300);
-
-        //   syncDatalistState(input);
-        // });
+          syncDatalistState(input);
+        });
       </script>
       <!-- <br>
       <br>

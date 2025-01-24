@@ -228,7 +228,7 @@ export function attributeTexts(
 	value?: string,
 ) {
 	if (!prop) return Object.keys(texts).map((key) => `data-sr-${key}`); // List attributes if not updating
-	const key = prop?.startsWith("data-sr-") && prop.slice(9); // Update if getting an attribute
+	const key = prop?.startsWith("data-sr-") && prop.slice(8); // Update if getting an attribute
 	if (key && value && texts[key]) texts[key] = value;
 	return [];
 }

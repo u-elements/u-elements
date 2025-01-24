@@ -35,8 +35,8 @@ const LIVE = createAriaLive("assertive");
 const IS_SAFARI_MAC = IS_SAFARI && !IS_IOS; // Used to prevent "expanded" announcement interrupting label in Safari Mac
 const EVENTS = "click,focusout,input,keydown,mousedown,mouseup";
 const TEXTS = {
-	singular: "% hit",
-	plural: "% hits",
+	singular: "%d hit",
+	plural: "%d hits",
 };
 
 /**
@@ -81,8 +81,8 @@ export class UHTMLDataListElement extends UHTMLElement {
 		disconnectInput(this);
 		this._root = null;
 	}
-	attributeChangedCallback(prop?: string) {
-		attributeTexts(this._texts, prop);
+	attributeChangedCallback(prop?: string, _prev?: string, next?: string) {
+		attributeTexts(this._texts, prop, next);
 		const inputs = this._root?.querySelectorAll(`input[list="${this.id}"]`);
 		for (const input of inputs || []) setupInput(this, input); // Setup aria-expanded, role etc
 	}

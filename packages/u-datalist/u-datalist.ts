@@ -214,12 +214,9 @@ const getVisibleOptions = (self: UHTMLDataListElement) =>
 	);
 
 // Skip role="none" and role="presentation"
-const isInteractiveOption = (
-	option: HTMLOptionElement | UHTMLOptionElement,
-) => {
-	const role = option.getAttribute("role");
-	return role !== "none" && role !== "presentation";
-};
+const isInteractiveOption = (option: HTMLOptionElement | UHTMLOptionElement) =>
+	option instanceof HTMLOptionElement ||
+	option.getAttribute("role") === "option";
 
 const setupInput = (
 	self: UHTMLDataListElement,
@@ -234,8 +231,9 @@ const setupInput = (
 	attr(input, "role", "combobox");
 };
 
+const sanitize = (str?: string) => str?.toLowerCase().trim() || "";
 const setupOptions = (self: UHTMLDataListElement, event?: Event) => {
-	const value = self._input?.value.toLowerCase().trim() || "";
+	const value = sanitize(self._input?.value);
 	const hasChange = event?.type === "mutation" || self._value !== value;
 	if (!hasChange) return; // Skip if identical value or options
 
@@ -247,9 +245,10 @@ const setupOptions = (self: UHTMLDataListElement, event?: Event) => {
 	self._value = value; // Cache value from self filtering
 
 	for (const opt of self.options) {
-		const content = `${opt.value}${opt.label}${opt.text}`.toLowerCase();
-		opt.hidden = !content.includes(value);
-		if (isSingle && isTyping) opt.selected = false; // Turn off selected when typing in single select
+		const content = [opt.value, opt.label, opt.text].map(sanitize); // Use opt.value (not getDatalistValue) to make syncDatalistState work
+		opt.hidden = !content.some((str: string) => str.includes(value));
+		if (isSingle && isTyping && isInteractiveOption(opt))
+			opt.selected = content.includes(value); // Auto select if 1:1 hit
 	}
 	self.hidden = hidden; // Restore original hidden state
 
@@ -257,7 +256,7 @@ const setupOptions = (self: UHTMLDataListElement, event?: Event) => {
 	const visible = getVisibleOptions(self);
 	clearTimeout(LIVE_TIMER);
 	LIVE_TIMER = setTimeout(() => {
-		const { length } = visible.filter(isInteractiveOption);
+		const { length } = visible.filter(isInteractiveOption); // Only count interactive option elements
 		const liveSrFix = ++LIVE_SR_FIX % 2 ? "\u{A0}" : ""; // Force screen reader anouncement
 		const countText = `${`${self._texts[length === 1 ? "singular" : "plural"]}`.replace("%d", `${length}`)}`;
 
@@ -304,16 +303,17 @@ export function isDatalistClick(event: unknown) {
 			(event as InputEvent).inputType === FIREFOX_OPTION_CLICK);
 
 	if (isClick) {
-		let ignored = false;
-		for (const option of event.target.list?.options || []) {
-			if (option.value === event.target.value)
-				ignored = !isInteractiveOption(option);
-		}
-		event.target.value = event.target.value.split(SPLIT_CHAR)[ignored ? 1 : 0]; // Keep input text if ignored option
+		const value = event.target.value;
+		const ignored = Array.from(event.target.list?.options || []).some(
+			(opt) => opt.value === value && !isInteractiveOption(opt),
+		);
+
+		event.target.value = value.split(SPLIT_CHAR)[ignored ? 1 : 0]; // Keep input text if ignored option
 	}
 	return isClick;
 }
 
+// Force show items by adding needle after a record separator
 export function syncDatalistState(input: HTMLInputElement) {
 	for (const option of input.list?.children || [])
 		if (
@@ -321,6 +321,6 @@ export function syncDatalistState(input: HTMLInputElement) {
 			option instanceof UHTMLOptionElement
 		) {
 			option[SPLIT_ATTR] =
-				`${getDatalistValue(option)}${SPLIT_CHAR}${input.value}`; // Force show items by adding needle after a record separator
+				`${getDatalistValue(option)}${SPLIT_CHAR}${input.value}`;
 		}
 }

@@ -318,7 +318,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
 &lt;/script&gt;
 </pre>
 
-## Example: Custom filter
+## Example: Custom filter <mark data-badge="⚠️ EXPERIMENTAL"></mark>
 - Native `<datalist>` does not support custom filtering/content. Therefore, u-elements provide a  utility `import { syncDatalistState } from '@u-elements/u-datalist'`.
 - Call `syncDatalistState(input)` after you manually disable/enable options of your choise, to show all non-disabled options
 - `syncDatalistState` is both compatible with `<u-datalist>` and native `<datalist>`
@@ -362,7 +362,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
 </pre>
 
 
-## Example: API
+## Example: API <mark data-badge="⚠️ EXPERIMENTAL"></mark>
 
 - Native `<datalist>` does not support custom filtering/content. Therefore, u-elements provide a  utility `import { syncDatalistState } from '@u-elements/u-datalist'`.
 - Call `syncDatalistState(input)` after you set HTML, to show all non-disabled options
@@ -405,7 +405,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
 
     // Using role="none" to avoid getting counted as a hit
     const value = encodeURIComponent(input.value.trim());
-    list.innerHTML = '<u-option role="none">Loading</u-option>';
+    list.innerHTML = value ? '<u-option role="none">Loading</u-option>' : '';
 
     xhr.abort();
     clearTimeout(debounceTimer);

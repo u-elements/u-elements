@@ -1,4 +1,4 @@
-import { isDatalistClick } from "../u-datalist/u-datalist";
+import { isDatalistClick, getDatalistValue } from "../u-datalist/u-datalist";
 import {
 	FOCUS_OUTLINE,
 	IS_ANDROID,
@@ -154,10 +154,8 @@ const render = (
 
 	if (control) attr(control, "aria-label", controlLabel);
 	if (list) attr(list, SAFE_MULTISELECTABLE, "true"); // Make <u-datalist> multiselect
-	for (const option of options || []) {
-		const value = attr(option, "value") || option.textContent || "";
-		attr(option, "selected", values.includes(value) ? "" : null); // Set selected options in datalist
-	}
+	for (const option of options || [])
+		option.selected = values.includes(getDatalistValue(option)); // Set selected options in datalist
 
 	// Announce item change
 	if (changeText) {
@@ -212,17 +210,18 @@ const onClick = (
 
 const onInputOptionClick = (self: UHTMLTagsElement, event: InputEvent) => {
 	const input = event.target as HTMLInputElement | null;
-	if (!isDatalistClick(event) || !input?.value.trim()) return; // Skip typing or empty
+	if (!isDatalistClick(event) || !input?.value.trim()) return; // Skip if typing or empty
 
+	const value = getDatalistValue(input);
 	const items = [...self.items];
 	const options = [...(input?.list?.children || [])] as HTMLOptionElement[];
-	const optionClicked = options.find(({ value }) => value === input?.value);
-	const itemRemove = items.find((item) => item.value === input?.value);
-	const itemAdd = createElement("data", optionClicked?.text || input?.value, {
-		value: input.value,
+	const optionClicked = options.find((opt) => getDatalistValue(opt) === value);
+	const itemRemove = items.find((item) => item.value === value);
+	const itemAdd = createElement("data", optionClicked?.text || value, {
+		value,
 	});
 
-	if (input) input.value = "";
+	input.value = "";
 	if (!dispatchChange(self, itemRemove || itemAdd)) return;
 	if (itemRemove) return itemRemove.remove();
 	if (!items[0]) return self.prepend(itemAdd); // If no items, add first

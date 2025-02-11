@@ -91,7 +91,7 @@
       <script type="module">
         import { isDatalistClick, syncDatalistState } from './packages/u-datalist/u-datalist';
 
-        const input = document.getElementById('my-a11y-input');
+        const input = document.getElementById('my-tags-input');
 
         // Achieve custom filter on native datalist (needed when using native <datalist>)
         // input.addEventListener("input", (event) => {
@@ -130,14 +130,14 @@
           if (isDatalistClick(event)) return;
 
           const value = encodeURIComponent(input.value.trim());
-          list.innerHTML = '<u-option role="none">Loading</u-option>';
+          list.innerHTML = value ? '<u-option role="none">Loading</u-option>' : '';
 
           xhr.abort();
           clearTimeout(debounceTimer);
           debounceTimer = setTimeout(() => {
             if (!value) return;
             xhr.open('GET', `https://restcountries.com/v2/name/${value}?fields=name`, true);
-            xhr.send();
+            // xhr.send();
           }, 300);
 
           syncDatalistState(input);

@@ -76,7 +76,7 @@ export type Preact${type} = ${
 			isNative
 				? `PreactTypes.JSX.IntrinsicElements['${tagNative}']`
 				: `PreactTypes.JSX.HTMLAttributes<UHTMLTagsElement> & { ${events
-						.map(([, type, event]) => `on${type}: (event: ${event}) => void`)
+						.map(([, type, event]) => `on${type}?: (event: ${event}) => void`)
 						.join("; ")} }`
 		}
 export type React${type} = ${
@@ -90,7 +90,7 @@ export type Svelte${type} = ${
 			isNative
 				? `SvelteTypes.SvelteHTMLElements['${tagNative}']`
 				: `SvelteTypes.HTMLAttributes<${domInterface}> & { ${events
-						.map(([, type, event]) => `'on:${type}': (event: ${event}) => void`)
+						.map(([, type, event]) => `'on:${type}'?: (event: ${event}) => void, on${type}?: (event: ${event}) => void`)
 						.join("; ")} }`
 		}
 export type Solid${type} = ${

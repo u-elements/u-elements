@@ -114,7 +114,7 @@ myUTags.addEventListener('tags', (event) => {
 
 <Sandbox label="u-details language example" lang="no" />
 <pre hidden>
-&lt;label for="my-norwegian-tags"&gt;
+&lt;label for="my-input-norwegian"&gt;
   Velg type iskrem
 &lt;/label&gt;
 &lt;u-tags
@@ -124,14 +124,13 @@ myUTags.addEventListener('tags', (event) => {
   data-sr-empty="Ingen valgte"
   data-sr-found="Naviger til venstre for å finne %d valgte"
   data-sr-of="av"
-  id="my-norwegian-tags"
 &gt;
   &lt;data&gt;Kokkos&lt;/data&gt;
   &lt;data&gt;Banan&lt;/data&gt;
   &lt;data&gt;Ananas&lt;/data&gt;
   &lt;data&gt;Appelsin&lt;/data&gt;
-  &lt;input list="my-norwegian-list" /&gt;
-  &lt;u-datalist id="my-norwegian-list" data-sr-singular="%d smak" data-sr-plural="%d smaker"&gt;
+  &lt;input id="my-input-norwegian" list="my-list-norwegian" /&gt;
+  &lt;u-datalist id="my-list-norwegian" data-sr-singular="%d smak" data-sr-plural="%d smaker"&gt;
     &lt;u-option&gt;Kokkos&lt;/u-option&gt;
     &lt;u-option&gt;Jordbær&lt;/u-option&gt;
     &lt;u-option&gt;Sjokolade&lt;/u-option&gt;

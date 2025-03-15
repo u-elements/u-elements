@@ -1,4 +1,5 @@
 import { isDatalistClick, getDatalistValue } from "../u-datalist/u-datalist";
+import { UHTMLOptionElement } from "../u-datalist/u-option";
 import {
 	FOCUS_OUTLINE,
 	IS_ANDROID,
@@ -148,9 +149,8 @@ const render = (
 	const control = self.control;
 	const controlLabel = `${changeText}${label}, ${values.length ? texts.found.replace("%d", `${values.length}`) : texts.empty}`;
 	const list = control && document.getElementById(attr(control, "list") || ""); // UHTMLDatalist might not be initialized yet
-	const options = list?.children as
-		| HTMLCollectionOf<HTMLOptionElement>
-		| undefined;
+	const options = Array.from(list?.children || [])
+		.filter((option: Element) => option instanceof HTMLOptionElement || option instanceof UHTMLOptionElement);
 
 	if (control) attr(control, "aria-label", controlLabel);
 	if (list) attr(list, SAFE_MULTISELECTABLE, "true"); // Make <u-datalist> multiselect

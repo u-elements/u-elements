@@ -31,9 +31,9 @@ declare global {
 	}
 }
 
+let LIVE: Element;
 const IS_MOBILE = IS_ANDROID || IS_IOS;
 const IS_FIREFOX_MAC = IS_FIREFOX || IS_MAC;
-const LIVE = createAriaLive("polite");
 const EVENTS = "input,focusin,focusout,keydown";
 const TEXTS = {
 	added: "Added",
@@ -79,7 +79,7 @@ export class UHTMLTagsElement extends UHTMLElement {
 	connectedCallback() {
 		this._root = getRoot(this);
 
-		if (LIVE && !LIVE.isConnected) document.body.append(LIVE);
+		if (!LIVE) LIVE = createAriaLive("polite");
 		mutationObserver(this, { childList: true }); // Observe u-datalist to add aria-multiselect="true"
 		on(this._root, "click", this); // Bind click-to-focus-input on root
 		on(this, EVENTS, this);

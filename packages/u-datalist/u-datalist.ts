@@ -31,7 +31,7 @@ declare global {
 let IS_PRESS = false; // Prevent loosing focus on mousedown on <u-option> despite tabIndex -1
 let LIVE_TIMER: ReturnType<typeof setTimeout>;
 let LIVE_SR_FIX = 0; // Ensure screen reader announcing by alternating non-breaking-space suffix
-const LIVE = createAriaLive("assertive");
+let LIVE: Element;
 const IS_SAFARI_MAC = IS_SAFARI && !IS_IOS; // Used to prevent "expanded" announcement interrupting label in Safari Mac
 const EVENTS = "click,focusout,input,keydown,mousedown,mouseup";
 const TEXTS = {
@@ -69,7 +69,7 @@ export class UHTMLDataListElement extends UHTMLElement {
 		this.hidden = true;
 		this._root = getRoot(this);
 
-		if (LIVE && !LIVE.isConnected) document.body.append(LIVE);
+		if (!LIVE) LIVE = createAriaLive("assertive");
 		attr(this, "role", "listbox");
 		on(this._root, "focusin", this); // Only bind focus globally as this is needed to activate
 		on(this._root, "focus", this, true); // Need to also listen on focus with capturing to render before Firefox NVDA reads state

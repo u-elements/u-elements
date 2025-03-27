@@ -208,7 +208,6 @@ export const getLabel = (el: Element) => {
  * @return HTMLDivElement or null if on server
  */
 export const createAriaLive = (mode: "polite" | "assertive") => {
-	if (!IS_BROWSER) return null;
 	const live = createElement("div");
 	live.style.cssText =
 		"position:fixed;overflow:hidden;width:1px;white-space:nowrap";

@@ -80,6 +80,7 @@ bun add -S @u-elements/u-tags
 - **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
   - `data-sr-added` prefixes announcements about additions. Defaults to `"Added"`
   - `data-sr-removed` prefixes announcements about removals. Defaults to `"Removed"`
+  - `data-sr-remove` announces ability to remove. Defaults to `"Press to remove"`
   - `data-sr-empty` announces no selected items. Defaults to `"No selected"`
   - `data-sr-found` announces where to find amount of selected items. Defaults to `"Navigate left to find %d selected"`
   - `data-sr-of` separates "number _of_ total" in announcements. Defaults to `"of"`

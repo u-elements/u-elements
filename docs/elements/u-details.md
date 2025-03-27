@@ -56,8 +56,10 @@ bun add -S @u-elements/u-details
 
 - **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
   - `open` shows content if attribute is present. By default this attribute is absent which means the content is hidden. **Note:** Setting `open="false"` will not work as intended, as `open` is a boolean attribute you should provide or remove entirely.
+  - `name` enables multiple `<u-details>` elements to be connected, with only one open at a time.
 - **DOM interface:** [`HTMLDetailsElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDetailsElement)
   - `HTMLDetailsElement.open` returns `true` of `false` reflecting the state
+  - `HTMLDetailsElement.name` returns the corresponding `name` attribute
 
 ### `<u-summary>`
 

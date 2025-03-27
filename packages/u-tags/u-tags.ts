@@ -140,7 +140,7 @@ const render = (
 		attr(item, "aria-label", label);
 		attr(item, "role", "button");
 		item.tabIndex = -1;
-		item.value = item.value || item.textContent?.trim() || "";
+		item.value = (item.value || item.textContent || "").trim();
 		values.push(item.value);
 	});
 

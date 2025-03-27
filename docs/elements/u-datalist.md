@@ -395,7 +395,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
       }));
     } catch (err) {
       // Using role="none" to avoid getting counted as a hit
-      list.innerHTML = '<u-option role="none">No results</u-option>';
+      list.innerHTML = '&lt;u-option role="none"&gt;No results&lt;/u-option&gt;';
     }
     syncDatalistState(input);
   };
@@ -405,7 +405,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
 
     // Using role="none" to avoid getting counted as a hit
     const value = encodeURIComponent(input.value.trim());
-    list.innerHTML = value ? '<u-option role="none">Loading</u-option>' : '';
+    list.innerHTML = value ? '&lt;u-option&gt; role="none">Loading&lt;/u-option&gt;' : '';
 
     xhr.abort();
     clearTimeout(debounceTimer);

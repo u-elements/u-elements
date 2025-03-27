@@ -70,6 +70,8 @@ export class UHTMLDataListElement extends UHTMLElement {
 		this._root = getRoot(this);
 
 		if (!LIVE) LIVE = createAriaLive("assertive");
+		if (!LIVE.isConnected) document.body.appendChild(LIVE);
+
 		attr(this, "role", "listbox");
 		on(this._root, "focusin", this); // Only bind focus globally as this is needed to activate
 		on(this._root, "focus", this, true); // Need to also listen on focus with capturing to render before Firefox NVDA reads state

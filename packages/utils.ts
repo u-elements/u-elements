@@ -212,7 +212,7 @@ export const createAriaLive = (mode: "polite" | "assertive") => {
 	live.style.cssText =
 		"position:fixed;overflow:hidden;width:1px;white-space:nowrap";
 	attr(live, "aria-live", mode);
-	return document.body.appendChild(live);
+	return live;
 };
 
 /**

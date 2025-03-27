@@ -80,6 +80,8 @@ export class UHTMLTagsElement extends UHTMLElement {
 		this._root = getRoot(this);
 
 		if (!LIVE) LIVE = createAriaLive("polite");
+		if (!LIVE.isConnected) document.body.appendChild(LIVE);
+
 		mutationObserver(this, { childList: true }); // Observe u-datalist to add aria-multiselect="true"
 		on(this._root, "click", this); // Bind click-to-focus-input on root
 		on(this, EVENTS, this);

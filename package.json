@@ -33,9 +33,8 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
-		"@builder.io/qwik": "^1.12.1",
 		"@custom-elements-manifest/analyzer": "^0.10.4",
-		"@mdn/browser-compat-data": "^5.6.27",
+		"@mdn/browser-compat-data": "^6.0.0",
 		"@playwright/test": "^1.51.1",
 		"@preact/preset-vite": "^2.9.4",
 		"@sveltejs/vite-plugin-svelte": "^5.0.3",

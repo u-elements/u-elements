@@ -1,6 +1,6 @@
 {
 	"name": "@u-elements/u-progress",
-	"version": "0.0.4",
+	"version": "0.0.5",
 	"license": "MIT",
 	"description": "HTML tags, just truly accessible",
 	"homepage": "https://u-elements.github.io/u-elements/",
@@ -9,7 +9,9 @@
 	"module": "dist/u-progress.js",
 	"types": "dist/u-progress.d.ts",
 	"customElements": "dist/u-progress.manifest.json",
-	"files": ["dist"],
+	"files": [
+		"dist"
+	],
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/u-elements/u-elements.git"

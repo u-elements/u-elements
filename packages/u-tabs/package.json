@@ -1,6 +1,6 @@
 {
 	"name": "@u-elements/u-tabs",
-	"version": "0.0.8",
+	"version": "0.0.9",
 	"license": "MIT",
 	"description": "HTML tags, just truly accessible",
 	"homepage": "https://u-elements.github.io/u-elements/",
@@ -9,7 +9,9 @@
 	"module": "dist/u-tabs.js",
 	"types": "dist/u-tabs.d.ts",
 	"customElements": "dist/u-tabs.manifest.json",
-	"files": ["dist"],
+	"files": [
+		"dist"
+	],
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/u-elements/u-elements.git"

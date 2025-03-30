@@ -44,7 +44,7 @@ import { data } from '../filesize.data.ts'
   /* Styling just for example: */
   u-tags { border: 1px solid; display: flex; flex-wrap: wrap; gap: .5em; padding: .5em; position: relative }
   u-option[selected] { font-weight: bold }
-  u-datalist { position: absolute; inset: 100% -1px auto; border: 1px solid; background: white; padding: .5em }
+  u-datalist { position: absolute z-index: 9; inset: 100% -1px auto; border: 1px solid; background: white; padding: .5em }
 &lt;/style&gt;
 </pre>
 
@@ -147,7 +147,7 @@ myUTags.addEventListener('tags', (event) => {
   /* Styling just for example: */
   u-tags { border: 1px solid; display: flex; flex-wrap: wrap; gap: .5em; padding: .5em; position: relative }
   u-option[selected] { font-weight: bold }
-  u-datalist { position: absolute; inset: 100% -1px auto; border: 1px solid; background: white; padding: .5em }
+  u-datalist { position: absolute; z-index: 9; inset: 100% -1px auto; border: 1px solid; background: white; padding: .5em }
 &lt;/style&gt;
 </pre>
 

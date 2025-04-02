@@ -73,6 +73,7 @@ export class UHTMLDataListElement extends UHTMLElement {
 		if (!LIVE.isConnected) document.body.appendChild(LIVE);
 
 		attr(this, "role", "listbox");
+		attr(this, "tabindex", "-1"); // Prevent tabstop even if consumer sets overflow: auto (see https://issues.chromium.org/issues/40456188)
 		on(this._root, "focusin", this); // Only bind focus globally as this is needed to activate
 		on(this._root, "focus", this, true); // Need to also listen on focus with capturing to render before Firefox NVDA reads state
 		setTimeout(() => this.attributeChangedCallback()); // Allow rendering full DOM tree before setting up inputs

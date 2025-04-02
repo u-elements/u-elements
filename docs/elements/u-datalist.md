@@ -405,7 +405,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
 
     // Using role="none" to avoid getting counted as a hit
     const value = encodeURIComponent(input.value.trim());
-    list.innerHTML = value ? '&lt;u-option&gt; role="none">Loading&lt;/u-option&gt;' : '';
+    list.innerHTML = value ? '&lt;u-option&gt; role="none"&gt;Loading&lt;/u-option&gt;' : '';
 
     xhr.abort();
     clearTimeout(debounceTimer);

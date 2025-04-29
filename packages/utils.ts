@@ -17,7 +17,6 @@ export const IS_MAC =
 
 // Constants for better compression and control
 export const SAFE_LABELLEDBY = `${IS_ANDROID ? "data" : "aria"}-labelledby`; // Android <=13 incorrectly reads labelledby instead of content
-export const SAFE_MULTISELECTABLE = `${IS_SAFARI ? "aria" : "data"}-multiselectable`; // Use aria-multiselectable only in Safari as VoiceOver in Chrome and Firefox incorrectly announces selected when aria-selected="false"
 export const DISPLAY_BLOCK = ":host(:not([hidden])) { display: block }";
 export const FOCUS_OUTLINE =
 	"outline: 1px dotted; outline: 5px auto Highlight; outline: 5px auto -webkit-focus-ring-color"; // Outline styles in order: fallback, Mozilla, WebKit
@@ -109,9 +108,10 @@ export const mutationObserver = (
 		// Could not unmount since element is removed
 	}
 	if (options) {
-		const observer = new MutationObserver((detail) =>
-			element.handleEvent({ type: "mutation", detail } as CustomEvent),
-		);
+		const observer = new MutationObserver((detail) => {
+			element.handleEvent({ type: "mutation", detail } as CustomEvent);
+			observer.takeRecords(); // Prevent new mutation events caused by the current event
+		});
 		observer.observe(element, options);
 		observers.set(element, observer);
 	}
@@ -215,19 +215,4 @@ export const createAriaLive = (mode: "polite" | "assertive") => {
 	return live;
 };
 
-/**
- * attributeTexts
- * @description Creates a aria-live element for announcements
- * @param mode Value of aria-live attribute
- * @return HTMLDivElement or null if on server
- */
-export function attributeTexts(
-	texts: Record<string, string>,
-	prop?: string,
-	value?: string,
-) {
-	if (!prop) return Object.keys(texts).map((key) => `data-sr-${key}`); // List attributes if not updating
-	const key = prop?.startsWith("data-sr-") && prop.slice(8); // Update if getting an attribute
-	if (key && value && texts[key]) texts[key] = value;
-	return [];
-}
+export const isVisible = (el: Element) => el.clientWidth && el.clientHeight; // Check if element is visible

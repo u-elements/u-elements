@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import ReactDOM from 'react-dom/client'
 // import { render } from 'react-dom' // For React 16.8
-import type { UHTMLTagsElement } from '../../packages/u-tags'
+import type { UHTMLComboboxElement } from '../../packages/u-combobox'
 import '../../packages/u-progress'
 import '../../packages/u-datalist'
+import '../../packages/u-combobox'
 import '../../packages/u-tags'
 import '../../packages/u-tabs'
 
 export default function App() {
   const [count, setCount] = useState(0)
   const [value, setValue] = useState('')
-  const ref = useRef<UHTMLTagsElement>(null);
+  const ref = useRef<UHTMLComboboxElement>(null);
 
   useEffect(() => {
     const self = ref.current
@@ -30,17 +31,24 @@ export default function App() {
       <br />
       <br />
       <label htmlFor="my-input">Choose ice cream</label>
-      <u-tags ref={ref}>
+      <br />
+      <u-combobox ref={ref}>
         <data>Coconut</data>
         <data>Banana</data>
         <data>Strawberry</data>
-        <input id="my-input" list="my-list" value={value} onChange={() => setValue('')} />
-        <u-datalist id="my-list" class="my-class-name" data-sr-singular="%d hit" data-sr-plural="%d hits">
+        <input
+          id="my-input"
+          list="my-list"
+          onInput={(e) => console.log(e.nativeEvent, e.nativeEvent.currentTarget)} // Must be onInput, not onChange
+          // value={value}
+          // onChange={() => setValue('')}
+        />
+        <u-datalist id="my-list" class="my-class-name">
           <u-option value="test-1">Test 1</u-option>
           <u-option value="test-2">Test 2</u-option>
           <u-option value="test-3">Test 3</u-option>
         </u-datalist>
-      </u-tags>
+      </u-combobox>
       <br />
       <br />
       <style>{`

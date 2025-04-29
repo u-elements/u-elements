@@ -22,7 +22,7 @@
       u-tabpanel { padding: 10px; border: 1px solid }
 
       u-tags { border: 2px solid; border-radius: 4px; display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; padding: 5px; }
-      u-option[selected] { color: red; font-weight: bold; }
+      u-option[aria-selected="true"] { color: red; font-weight: bold; }
 
       u-datepicker::part(row-0) { border: 1px solid red }
       u-datepicker::part(saturday),
@@ -46,6 +46,7 @@
         }
       }
     </style>
+    <script type="module" src="/packages/u-combobox/u-combobox.ts"></script>
     <script type="module" src="/packages/u-datalist/u-datalist.ts"></script>
     <script type="module" src="/packages/u-datepicker/u-datepicker.ts"></script>
     <script type="module" src="/packages/u-details/u-details.ts"></script>
@@ -74,37 +75,58 @@
       <button type="button" name="before">Før</button>
       <br />
 
-      <label>
-        Velg type iskrem<br>
-        <input type="text" id="my-a11y-input" list="u-list-1" autocomplete="off">
-      </label>
-      <u-datalist id="u-list-1" data-sr-singular="%d land" data-sr-plural="%d land">
-        <u-option>Kokkos</u-option>
-        <u-option>Jordbær</u-option>
-        <u-option>Sjokolade</u-option>
-        <u-option>Vanilje</u-option>
-        <u-option>Lakris</u-option>
-        <u-option>Pistasj</u-option>
-        <u-option>Mango</u-option>
-        <u-option>Hasselnøtt</u-option>
-      </u-datalist>
+      <form>
+        <!-- <input type="text" name="input" id="my-a11y-input" list="list" aria-autocomplete="list" aria-controls="list" aria-expanded="true" autocomplete="off" popovertarget="list" role="combobox" aria-label="Velg type iskrem, Ingen valgte">
+        <input type="text" name="input" id="my-a11y-input" list="list" aria-autocomplete="list" aria-controls="list" aria-expanded="false" autocomplete="off" popovertarget="list" role="combobox"> -->
+        <label for="my-a11y-input">Velg type iskrem</label>
+        <br />
+      <u-combobox
+        data-multiple="true"
+        data-creatable="true"
+        data-filter="label"
+        data-sr-singular="%d land"
+        data-sr-plural="%d land"
+        data-sr-added="La til"
+        data-sr-remove="Trykk for å fjerne"
+        data-sr-removed="Fjernet"
+        data-sr-empty="Ingen valgte"
+        data-sr-found="Naviger til venstre for å finne %d valgte"
+        data-sr-of="av"
+      >
+        <input type="text" id="my-a11y-input" list="list">
+        <u-datalist id="list">
+          <u-option value="2">Kokkos</u-option>
+          <u-option>Jordbær</u-option>
+          <u-option value="4" label="Sjokolade">Sjokolade (utgått)</u-option>
+          <u-option>Vanilje</u-option>
+          <u-option>Oslo</u-option>
+          <u-option>Oslofjorden</u-option>
+          <u-option>Lakris</u-option>
+          <u-option>Pistasj</u-option>
+          <u-option>Mango</u-option>
+          <u-option>Hasselnøtt</u-option>
+        </u-datalist>
+        <select name="select"></select>
+      </u-combobox>
+    </form>
       <script type="module">
-        import { isDatalistClick, syncDatalistState } from './packages/u-datalist/u-datalist';
+        const input = document.getElementById('my-a11y-input');
+        const select = document.querySelector('select[name="select"]');
+        
+        // Auto-chips
 
-        const input = document.getElementById('my-tags-input');
-
+        // import { isDatalistClick, syncDatalistState } from './packages/u-datalist/u-datalist';
         // Achieve custom filter on native datalist (needed when using native <datalist>)
         // input.addEventListener("input", (event) => {
-        //   if (isDatalistClick(event)) return;
-
         //   const needle = event.target.value.trim().toLowerCase();
-        //   const options = event.target.list.children;
+        //   const options = event.target.list.options;
+
+        //   // console.log(needle);
 
         //   for (const option of options) {
-        //     option.disabled = !option.text.toLowerCase().startsWith(needle);
+        //     console.log(option.label, option.value);
+        //     option.disabled = !option.label.toLowerCase().startsWith(needle);
         //   }
-
-        //   syncDatalistState(input);
         // });
 
         // const input = document.getElementById('my-a11y-input');
@@ -123,25 +145,23 @@
           } catch (err) {
             list.innerHTML = '<u-option role="none">No results</u-option>';
           }
-          syncDatalistState(input);
         });
 
-        input.addEventListener('input', (event) => {
-          if (isDatalistClick(event)) return;
-
-          const value = encodeURIComponent(input.value.trim());
-          list.innerHTML = value ? '<u-option role="none">Loading</u-option>' : '';
-
-          xhr.abort();
-          clearTimeout(debounceTimer);
-          debounceTimer = setTimeout(() => {
-            if (!value) return;
-            xhr.open('GET', `https://restcountries.com/v2/name/${value}?fields=name`, true);
-            // xhr.send();
-          }, 300);
-
-          syncDatalistState(input);
+        select.addEventListener('change', (event) => {
+          console.log('change', event, new FormData(input.form).getAll('select'));
         });
+        // input.addEventListener('input', (event) => {
+        //   const value = encodeURIComponent(input.value.trim());
+        //   list.innerHTML = value ? '<u-option role="none">Loading</u-option>' : '';
+
+        //   xhr.abort();
+        //   clearTimeout(debounceTimer);
+        //   debounceTimer = setTimeout(() => {
+        //     if (!value) return;
+        //     xhr.open('GET', `https://restcountries.com/v2/name/${value}?fields=name`, true);
+        //     xhr.send();
+        //   }, 300);
+        // });
       </script>
       <!-- <br>
       <br>
@@ -155,7 +175,7 @@
       <br><u-progress aria-labelledby="label-for-progress" value="5" max="10">70%</u-progress>
       <br> -->
       <br>
-      <form>
+      <!-- <form hidden>
         <label for="my-tags-input">Velg iskrem</label>
         <u-tags
           data-sr-added="La til"
@@ -182,7 +202,7 @@
           </u-datalist>
         </u-tags>
         <br>
-      </form>
+      </form> -->
       <br>
       <br>
       <br>
@@ -399,7 +419,7 @@
                 u-tab { padding: 2px 5px }
                 u-tab[aria-selected="true"] { background: black; color: white }
                 u-tabpanel { padding: 10px; border: 1px solid }
-                u-option[aria-selected="true"] { color: red }
+                u-option[selected] { color: red }
                 input { font-size: inherit }
               </style>
               <u-tabpanel id="panel-outlier">Panel outlier</u-tabpanel>

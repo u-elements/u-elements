@@ -9,17 +9,20 @@ import '../../packages/u-tags'
 import '../../packages/u-tabs'
 
 export default function App() {
-  const [count, setCount] = useState(0)
-  const [value, setValue] = useState('')
+  const [count, setCount] = useState(0);
   const ref = useRef<UHTMLComboboxElement>(null);
 
   useEffect(() => {
     const self = ref.current
-    const onTags = (event: GlobalEventHandlersEventMap['tags']) => console.log(event.detail)
+    const onInput = (event: Event) =>
+      event.stopImmediatePropagation();
 
-    self?.addEventListener('tags', onTags)
-    return () => self?.removeEventListener('tags', onTags)
+    self?.addEventListener('change', onInput, true)
+    return () => self?.removeEventListener('change', onInput, true);
   }, []);
+
+  const [selected, setSelected] = useState(["B", "C"]);
+
 
   return (
     <div>
@@ -32,19 +35,21 @@ export default function App() {
       <br />
       <label htmlFor="my-input">Choose ice cream</label>
       <br />
+      <select multiple value={selected} onChange={({ target }) => setSelected(Array.from(target.selectedOptions, (opt) => opt.label))}>
+        {selected.map((opt) => <option key={opt}>{opt}</option>)}
+      </select>
       <u-combobox ref={ref}>
-        <data>Coconut</data>
-        <data>Banana</data>
-        <data>Strawberry</data>
+        {selected.map((opt) => <data key={opt}>{opt}</data>)}
         <input
           id="my-input"
           list="my-list"
-          onInput={(e) => console.log(e.nativeEvent, e.nativeEvent.currentTarget)} // Must be onInput, not onChange
+          onChange={(e) => console.log(e.nativeEvent, e.nativeEvent.currentTarget)} // Must be onInput, not onChange
+          pattern="list"
           // value={value}
           // onChange={() => setValue('')}
         />
         <u-datalist id="my-list" class="my-class-name">
-          <u-option value="test-1">Test 1</u-option>
+          <u-option value="test-1" selected>Test 1</u-option>
           <u-option value="test-2">Test 2</u-option>
           <u-option value="test-3">Test 3</u-option>
         </u-datalist>

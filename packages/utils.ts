@@ -39,7 +39,7 @@ export function attr(
 	name: string,
 	value?: string | null,
 ): string | null {
-	if (value === undefined) return el.getAttribute(name) ?? null; // Fallback to null only if el is undefined
+	if (value === undefined) return el.getAttribute(name);
 	if (value === null) el.removeAttribute(name);
 	else if (el.getAttribute(name) !== value) el.setAttribute(name, value);
 	return null;
@@ -108,10 +108,9 @@ export const mutationObserver = (
 		// Could not unmount since element is removed
 	}
 	if (options) {
-		const observer = new MutationObserver((detail) => {
-			element.handleEvent({ type: "mutation", detail } as CustomEvent);
-			observer.takeRecords(); // Prevent new mutation events caused by the current event
-		});
+		const observer = new MutationObserver((detail) =>
+			element.handleEvent({ type: "mutation", detail } as CustomEvent),
+		);
 		observer.observe(element, options);
 		observers.set(element, observer);
 	}
@@ -215,4 +214,15 @@ export const createAriaLive = (mode: "polite" | "assertive") => {
 	return live;
 };
 
-export const isVisible = (el: Element) => el.clientWidth && el.clientHeight; // Check if element is visible
+// Trigger value change in React compatible manor https://stackoverflow.com/a/46012210
+export const setValue = (input: HTMLInputElement, value: string, type = "") => {
+	Object.getOwnPropertyDescriptor(
+		HTMLInputElement.prototype,
+		"value",
+	)?.set?.call(input, value);
+
+	input.dispatchEvent(
+		new InputEvent("input", { bubbles: true, composed: true, inputType: type }),
+	);
+	input.dispatchEvent(new Event("change", { bubbles: true }));
+};

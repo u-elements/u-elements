@@ -79,22 +79,29 @@
         <!-- <input type="text" name="input" id="my-a11y-input" list="list" aria-autocomplete="list" aria-controls="list" aria-expanded="true" autocomplete="off" popovertarget="list" role="combobox" aria-label="Velg type iskrem, Ingen valgte">
         <input type="text" name="input" id="my-a11y-input" list="list" aria-autocomplete="list" aria-controls="list" aria-expanded="false" autocomplete="off" popovertarget="list" role="combobox"> -->
         <label for="my-a11y-input">Velg type iskrem</label>
-        <br />
+        <br aria-hidden="true" />
+        <!-- data-creatable -->
+        <style>
+          u-combobox:not([data-multiple]) {
+            &{ border: 1px solid; border-radius: 3px }
+            & :where(input) { all: unset }
+            & > * { padding: 5px }
+            & data { position: absolute }
+            &:not(:has(input:placeholder-shown)) data { display: none }
+          }
+        </style>
       <u-combobox
-        data-multiple="true"
-        data-creatable="true"
-        data-filter="label"
-        data-sr-singular="%d land"
-        data-sr-plural="%d land"
-        data-sr-added="La til"
-        data-sr-remove="Trykk for å fjerne"
-        data-sr-removed="Fjernet"
+        data-sr-added="Valgte"
         data-sr-empty="Ingen valgte"
         data-sr-found="Naviger til venstre for å finne %d valgte"
         data-sr-of="av"
+        data-sr-plural="%d land"
+        data-sr-remove="Trykk for å fjerne"
+        data-sr-removed="Fjernet"
+        data-sr-singular="%d land"
       >
         <input type="text" id="my-a11y-input" list="list">
-        <u-datalist id="list">
+        <u-datalist id="list" data-nofilter>
           <u-option value="2">Kokkos</u-option>
           <u-option>Jordbær</u-option>
           <u-option value="4" label="Sjokolade">Sjokolade (utgått)</u-option>
@@ -106,15 +113,28 @@
           <u-option>Mango</u-option>
           <u-option>Hasselnøtt</u-option>
         </u-datalist>
-        <select name="select"></select>
+        <select name="test" hidden></select>
       </u-combobox>
     </form>
       <script type="module">
+        const combobox = document.querySelector('u-combobox');
         const input = document.getElementById('my-a11y-input');
-        const select = document.querySelector('select[name="select"]');
-        
-        // Auto-chips
+        const select = document.querySelector('select[name="test"]');
 
+        combobox?.addEventListener('beforechange', (event) => {
+          // console.log(event.preventDefault(), event.target.control.value, event.detail);
+          // console.log(Array.from(new FormData(select.form).entries()))
+        });
+
+        const options = input.list.options;
+        // input.addEventListener('input', (event) => {
+        //   options[0].disabled = !input.value || [...options].some((opt) => opt.label.trim().toLowerCase() === input.value.trim().toLowerCase());
+        //   options[0].label = input.value;
+        //   options[0].value = input.value;
+        //   options[0].text = `+ Legg til "${input.value}"`;
+        // });
+
+        // Auto-chips
         // import { isDatalistClick, syncDatalistState } from './packages/u-datalist/u-datalist';
         // Achieve custom filter on native datalist (needed when using native <datalist>)
         // input.addEventListener("input", (event) => {
@@ -147,16 +167,14 @@
           }
         });
 
-        select.addEventListener('change', (event) => {
-          console.log('change', event, new FormData(input.form).getAll('select'));
-        });
         // input.addEventListener('input', (event) => {
         //   const value = encodeURIComponent(input.value.trim());
         //   list.innerHTML = value ? '<u-option role="none">Loading</u-option>' : '';
-
+          
         //   xhr.abort();
         //   clearTimeout(debounceTimer);
         //   debounceTimer = setTimeout(() => {
+        //     console.log("Loading", value);
         //     if (!value) return;
         //     xhr.open('GET', `https://restcountries.com/v2/name/${value}?fields=name`, true);
         //     xhr.send();
@@ -421,7 +439,7 @@
                 u-tabpanel { padding: 10px; border: 1px solid }
                 u-option[selected] { color: red }
                 input { font-size: inherit }
-              </style>
+              </>
               <u-tabpanel id="panel-outlier">Panel outlier</u-tabpanel>
             `
           }

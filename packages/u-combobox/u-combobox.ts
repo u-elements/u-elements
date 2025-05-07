@@ -127,7 +127,7 @@ const render = (
 	const list = control?.list;
 
 	// Announce change if focused and only one item changed
-	if (mutation && (!mutation.addedNodes[1] || !mutation.removedNodes[1])) {
+	if (mutation && !(mutation.addedNodes[1] || mutation.removedNodes[1])) {
 		const item = mutation.addedNodes[0] || mutation.removedNodes[0];
 
 		if (item.nodeName !== "DATA") return; // Ignore if not data

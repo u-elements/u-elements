@@ -111,9 +111,6 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	get control(): HTMLInputElement | null {
 		return this.querySelector("input");
 	}
-	get select(): HTMLSelectElement | null {
-		return this.querySelector("select");
-	}
 	get items(): NodeListOf<HTMLDataElement> {
 		return this.querySelectorAll("data");
 	}
@@ -124,7 +121,7 @@ const render = (
 	self: UHTMLComboboxElement,
 	e?: CustomEvent<MutationRecord[]>,
 ) => {
-	let { _speak, _focus, _texts, control, items, multiple, select } = self;
+	let { _speak, _focus, _texts, control, items, multiple } = self;
 	const mutation = _focus && e?.detail.length === 1 && e.detail[0]; // Only count if focused and single edit
 	const values: string[] = [];
 	const list = control?.list;
@@ -171,6 +168,7 @@ const render = (
 	if (control) attr(control, "aria-label", label);
 
 	// Setup select optionally
+	const select = self.querySelector("select");
 	if (select) select.multiple = multiple;
 	select?.replaceChildren(
 		...[...items].map((item) => new Option(text(item), item.value, true, true)),
@@ -223,10 +221,8 @@ const onBlurred = (self: UHTMLComboboxElement) => {
 	control.value = ""; // Empty value on blur
 };
 
-const onClick = (
-	self: UHTMLComboboxElement,
-	{ clientX: x, clientY: y, target }: MouseEvent,
-) => {
+const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
+	const { clientX: x, clientY: y, target } = event;
 	for (const item of self.items) {
 		if (item.contains(target as Node)) return dispatchChange(self, item); // Keyboard and screen reader can set target to element with pointer-events: none
 		const { top, right, bottom, left } = item.getBoundingClientRect(); // Use coordinates to inside since pointer-events: none will prevent correct event.target

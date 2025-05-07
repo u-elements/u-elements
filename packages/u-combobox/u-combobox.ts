@@ -119,10 +119,10 @@ export class UHTMLComboboxElement extends UHTMLElement {
 const text = (el?: Node) => el?.textContent?.trim() || "";
 const render = (
 	self: UHTMLComboboxElement,
-	e?: CustomEvent<MutationRecord[]>,
+	event?: CustomEvent<MutationRecord[]>,
 ) => {
 	let { _speak, _focus, _texts, control, items, multiple } = self;
-	const mutation = _focus && e?.detail.length === 1 && e.detail[0]; // Only count if focused and single edit
+	const mutation = _focus && event?.detail.length === 1 && event.detail[0]; // Only count if focused and single edit
 	const values: string[] = [];
 	const list = control?.list;
 

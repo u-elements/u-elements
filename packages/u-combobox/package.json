@@ -1,0 +1,26 @@
+{
+	"name": "@u-elements/u-combobox",
+	"version": "0.0.0",
+	"license": "MIT",
+	"description": "HTML tags, just truly accessible",
+	"homepage": "https://u-elements.github.io/u-elements/",
+	"type": "module",
+	"main": "dist/u-combobox.cjs",
+	"module": "dist/u-combobox.js",
+	"types": "dist/u-combobox.d.ts",
+	"customElements": "dist/u-combobox.manifest.json",
+	"files": ["dist"],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/u-elements/u-elements.git"
+	},
+	"bugs": {
+		"url": "https://github.com/u-elements/u-elements/issues"
+	},
+	"scripts": {
+		"build": "tsup --config ../../tsup.config.ts",
+		"publish:patch": "npm version patch && git push --tags origin main && npm publish",
+		"publish:minor": "npm version minor && git push --tags origin main && npm publish",
+		"publish:major": "npm version major && git push --tags origin main && npm publish"
+	}
+}

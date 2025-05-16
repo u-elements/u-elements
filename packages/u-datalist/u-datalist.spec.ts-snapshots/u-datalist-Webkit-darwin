@@ -1,11 +1,11 @@
 <form>
       <label>
         Search here
-        <input type="text" list="datalist-1" popovertarget="datalist-1" aria-autocomplete="list" aria-controls="datalist-1" aria-expanded="true" autocomplete="off" role="combobox">
+        <input type="text" list="datalist-1" aria-autocomplete="list" aria-controls="datalist-1" aria-expanded="true" autocomplete="off" role="combobox">
       </label>
       <u-datalist id="datalist-1" data-sr-singular="%d hit" data-sr-plural="%d hits" hidden="" role="listbox" tabindex="-1">
         <u-option tabindex="-1" role="option" aria-disabled="false" aria-selected="false">Option 1</u-option>
         <u-option tabindex="-1" role="option" aria-disabled="false" aria-selected="false">Option 2</u-option>
         <u-option tabindex="-1" role="option" aria-disabled="false" aria-selected="false">Option 3</u-option>
       </u-datalist>
-    </form><div aria-live="assertive" style="position: fixed; overflow: hidden; width: 1px; white-space: nowrap;"></div>
+    </form>

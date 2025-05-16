@@ -14,7 +14,10 @@ import { data } from '../filesize.data.ts'
 **Quick intro:**
 - Use `<u-option>` as direct child elements - these will show the suggestions while typing
 - Use matching `id` on `<u-datalist>` and `list` attribute on `<input>` to connect
-- **Want to show suggestions from a data source?** See [example: API &rarr;](#example-api)
+- Use `data-nofilter` to [prevent filtering](https://github.com/whatwg/html/issues/4882)
+- Use `data-*` attributes to translate screen reader announcements
+- Use `popover` attribute to activate [Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API)
+- **Want to show suggestions from a data source?** [See u-combobox &rarr;](/elements/u-combobox)
 - **MDN Web Docs:** [&lt;datalist&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist) ([HTMLDatalistElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDatalistElement)) / [&lt;option&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option) ([HTMLOptionElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLOptionElement))
 
 ## Example
@@ -187,7 +190,7 @@ u-option:not([selected]) {
 }
 ```
 
-### Styling example: Datalist position and animation
+## Example: Styling
 <Sandbox label="u-datalist position example" />
 <pre hidden>
 &lt;style&gt;
@@ -257,6 +260,28 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
 &lt;/p&gt;
 </pre>
 
+## Example: Popover
+Using [Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API) allows datalist to automatically render on [top layer](https://developer.mozilla.org/en-US/docs/Glossary/Top_layer) and cross boundries of scroll containers. Keep in mind that you're responsible for styling and positioning the datalist, just as you would with any other element using `popover`.
+<Sandbox label="u-datalist position example" />
+<pre hidden>
+&lt;style&gt;
+  #my-popover-wrapper { position: relative }
+  #my-popover { position: absolute; left: 0; top: 100%; margin: 0 }
+&lt;/style&gt;
+&lt;div id="my-popover-wrapper"&gt;
+&lt;label for="my-popover-input"&gt;
+  Choose flavor of ice cream
+  &lt;input type="text" id="my-popover-input" list="my-popover" /&gt;
+&lt;/label&gt;
+&lt;u-datalist popover id="my-popover" data-sr-singular="%d flavor" data-sr-plural="%d flavours"&gt;
+  &lt;u-option&gt;Coconut&lt;/u-option&gt;
+  &lt;u-option&gt;Strawberries&lt;/u-option&gt;
+  &lt;u-option&gt;Chocolate&lt;/u-option&gt;
+  &lt;u-option&gt;Vanilla&lt;/u-option&gt;
+&lt;/u-datalist&gt;
+&lt;/div&gt;
+</pre>
+
 
 ## Example: Dynamic
 
@@ -264,15 +289,13 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
 <pre hidden>
 &lt;label for="my-dynamic-input"&gt;Choose your email&lt;/label&gt;
 &lt;input type="text" id="my-dynamic-input" list="my-dynamic-list" placeholder="Type email..." /&gt;
-&lt;u-datalist id="my-dynamic-list" data-sr-singular="%d suggestion" data-sr-plural="%d suggestions"&gt;
+&lt;u-datalist id="my-dynamic-list" data-nofilter data-sr-singular="%d suggestion" data-sr-plural="%d suggestions"&gt;
 &lt;/u-datalist&gt;
 &lt;script type="module"&gt;
-  import { isDatalistClick } from '@u-elements/u-datalist';
   const input = document.getElementById('my-dynamic-input');
 
   input.addEventListener('input', (event) => {
-    if (isDatalistClick(event)) return; // User clicked option element
-    const value = input.value.split("@")[0];
+    const value = input.value.split("@")[0].trim();
     const values = [
       `${value}@live.com`,
       `${value}@icloud.com`,
@@ -280,15 +303,16 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
       `${value}@gmail.com`,
     ];
 
-    if (!value) input.list?.replaceChildren('');
-    else input.list?.replaceChildren(...values.map((text) => {
-      return Object.assign(document.createElement("u-option"), { text });
-    }));
+    input.list.textContent = '';
+    if (value)
+      input.list?.append(...values.map((text) =>
+        Object.assign(document.createElement("u-option"), { text }))
+      );
   });
 &lt;/script&gt;
 </pre>
 
-## Example: Link
+<!--## Example: Link
 
 <Sandbox label="u-datalist link example" />
 <pre hidden>
@@ -418,7 +442,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
     syncDatalistState(input);
   });
 &lt;/script&gt;
-</pre>
+</pre>-->
 
 ## Accessibility
 
@@ -449,3 +473,12 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
 - HTML Standard: [The &lt;datalist&gt; element](https://html.spec.whatwg.org/multipage/form-elements.html#the-datalist-element)
 - DOM interface: [HTMLOptionElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLOptionElement)
 - HTML Standard: [The &lt;option&gt; element](https://html.spec.whatwg.org/multipage/form-elements.html#the-option-element)
+
+## Changelog
+
+### 1.0.0
+- Removed support for `isDatalistClick`, `syncDatalistState` and `getDatalistValue`
+- Added support for [`data-nofilter`](https://github.com/whatwg/html/issues/4882)
+- Fixed bug where VoiceOver + Safari announced incorrect amount of list items
+- Improved support for changes in `disabled`, `hidden`, `label` and `value` attributes
+- Improved `popover` support

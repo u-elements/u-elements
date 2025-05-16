@@ -82,7 +82,7 @@ details.addEventListener('toggle', (event) => {
 
 ## Styling and animating
 
-The `<summary>` element is normally styled with `display: list-item`, but `<u-summary>` uses `display: block`. This change prevents screen readers from announcing the open/close triangle and resolves the double-announcement bug in iOS Safari VoiceOver. To hide the triangle and its announcement, you can apply the following CSS `u-summary::before { display: none }`.
+The `<summary>` element is normally styled with `display: list-item`, but `<u-summary>` uses `display: block`. This change prevents screen readers from announcing the open/close triangle and resolves the double-announcement bug in iOS Safari VoiceOver. To change the triangle and its announcement, you can apply the `u-summary::before { display: none }` to hide or `u-summary::before { all: unset; ...your-styling-here }` to restyle.
 
 `<details>`/`<u-details>` hides its *content* - the `::details-content` pseudo element. Since custom pseudo selector are not
 possible to replicate in custom elements, `u-details` instead provide `::part(details-content)`.

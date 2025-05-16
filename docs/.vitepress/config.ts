@@ -79,6 +79,10 @@ export default defineConfig({
 						link: "/elements/u-tags",
 					},
 					{
+						text: '&lt;u-combobox&gt; <mark data-badge="BETA"></mark>',
+						link: "/elements/u-combobox",
+					},
+					{
 						text: '<del>&lt;u-select&gt;</del> <mark data-badge="PENDING"></mark>',
 						link: "/elements/u-select",
 					},

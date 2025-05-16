@@ -1,18 +1,17 @@
-import { isDatalistClick, getDatalistValue } from "../u-datalist/u-datalist";
+import type { UHTMLOptionElement } from "../u-datalist/u-option";
 import {
 	FOCUS_OUTLINE,
 	IS_ANDROID,
 	IS_FIREFOX,
 	IS_IOS,
 	IS_MAC,
-	SAFE_MULTISELECTABLE,
+	IS_SAFARI,
 	UHTMLElement,
 	asButton,
 	attr,
 	createAriaLive,
 	createElement,
 	customElements,
-	attributeTexts,
 	getRoot,
 	mutationObserver,
 	off,
@@ -32,6 +31,7 @@ declare global {
 }
 
 let LIVE: Element;
+const SAFE_MULTISELECTABLE = `${IS_SAFARI ? "aria" : "aria"}-multiselectable`; // Use aria-multiselectable only in Safari as VoiceOver in Chrome and Firefox incorrectly announces selected when aria-selected="false"
 const IS_MOBILE = IS_ANDROID || IS_IOS;
 const IS_FIREFOX_MAC = IS_FIREFOX || IS_MAC;
 const EVENTS = "input,focusin,focusout,keydown";
@@ -254,3 +254,46 @@ const onKeyDown = (self: UHTMLTagsElement, event: KeyboardEvent) => {
 };
 
 customElements.define("u-tags", UHTMLTagsElement);
+
+const SPLIT_CHAR = "\u{2001}".repeat(100); // Unicode U+001E record separator
+// const SPLIT_ATTR = IS_FIREFOX ? "label" : "value"; // Firefox looks at label+text, the rest looks at value+text
+const FIREFOX_OPTION_CLICK = "insertReplacementText"; // Support both Firefox (insertReplacementText) and others (undefined)
+
+const getDatalistValue = ({
+	value,
+}: HTMLInputElement | HTMLOptionElement | UHTMLOptionElement) =>
+	value.split(SPLIT_CHAR)[0];
+
+function isDatalistClick(event?: Partial<InputEvent>) {
+	const isClick =
+		event?.type === "input" &&
+		event.target instanceof HTMLInputElement &&
+		(!event.inputType || event.inputType === FIREFOX_OPTION_CLICK);
+
+	if (isClick) {
+		const value = event.target.value;
+		const ignored = Array.from(event.target.list?.options || []).some(
+			(opt) => opt.value === value,
+		);
+
+		event.target.value = value.split(SPLIT_CHAR)[ignored ? 1 : 0]; // Keep input text if ignored option
+	}
+	return isClick;
+}
+
+/**
+ * attributeTexts
+ * @description Creates a aria-live element for announcements
+ * @param mode Value of aria-live attribute
+ * @return HTMLDivElement or null if on server
+ */
+function attributeTexts(
+	texts: Record<string, string>,
+	prop?: string,
+	value?: string,
+) {
+	if (!prop) return Object.keys(texts).map((key) => `data-sr-${key}`); // List attributes if not updating
+	const key = prop?.startsWith("data-sr-") && prop.slice(8); // Update if getting an attribute
+	if (key && value && texts[key]) texts[key] = value;
+	return [];
+}

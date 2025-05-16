@@ -1,12 +1,4 @@
-import {
-	DISPLAY_BLOCK,
-	FOCUS_OUTLINE,
-	IS_IOS,
-	UHTMLElement,
-	attachStyle,
-	attr,
-	customElements,
-} from "../utils";
+import { IS_IOS, UHTMLElement, attr, customElements } from "../utils";
 
 declare global {
 	interface HTMLElementTagNameMap {
@@ -27,17 +19,10 @@ export class UHTMLOptionElement extends UHTMLElement {
 	static get observedAttributes() {
 		return [DISABLED, SELECTED];
 	}
-	constructor() {
-		super();
-		attachStyle(
-			this,
-			`${DISPLAY_BLOCK}:host(:focus){${FOCUS_OUTLINE}}:host{ cursor: pointer }`,
-		);
-	}
 	connectedCallback() {
 		if (!IS_IOS) this.tabIndex = -1; // Do not set tabIndex on iOS as this causes keyboard to toggle on and off
-		if (!attr(this, "role")) attr(this, "role", "option"); // Only set role if not allready specified
-		this.attributeChangedCallback(); // Setup aria attributes
+		if (!this.hasAttribute("role")) attr(this, "role", "option"); // Only set role if not allready specified
+		this.attributeChangedCallback(); // Setup aria attributes (Firefox defaults to "selected" unless aria-selected="false" is set)
 	}
 	attributeChangedCallback() {
 		attr(this, "aria-disabled", `${this.disabled}`);
@@ -62,9 +47,9 @@ export class UHTMLOptionElement extends UHTMLElement {
 	}
 	/** Sets or retrieves the ordinal position of an option in a list box. */
 	get index(): number {
-		const options =
-			this.closest("u-datalist")?.getElementsByTagName("u-option");
-		return Array.from(options || [this]).indexOf(this); // Fallback to 0 complies with specification
+		return [
+			...((this.parentElement as HTMLDataListElement)?.options || [this]),
+		].indexOf(this); // Fallback to 0 complies with specification
 	}
 	/** Sets or retrieves a value that you can use to implement your own label functionality for the object. */
 	get label(): string {

@@ -1,24 +1,28 @@
 import { useEffect, useRef, useState } from 'react'
 import ReactDOM from 'react-dom/client'
 // import { render } from 'react-dom' // For React 16.8
-import type { UHTMLTagsElement } from '../../packages/u-tags'
+import type { UHTMLComboboxElement } from '../../packages/u-combobox'
 import '../../packages/u-progress'
 import '../../packages/u-datalist'
+import '../../packages/u-combobox'
 import '../../packages/u-tags'
 import '../../packages/u-tabs'
 
 export default function App() {
-  const [count, setCount] = useState(0)
-  const [value, setValue] = useState('')
-  const ref = useRef<UHTMLTagsElement>(null);
+  const [count, setCount] = useState(0);
+  const ref = useRef<UHTMLComboboxElement>(null);
 
   useEffect(() => {
     const self = ref.current
-    const onTags = (event: GlobalEventHandlersEventMap['tags']) => console.log(event.detail)
+    const onInput = (event: Event) =>
+      event.stopImmediatePropagation();
 
-    self?.addEventListener('tags', onTags)
-    return () => self?.removeEventListener('tags', onTags)
+    self?.addEventListener('change', onInput, true)
+    return () => self?.removeEventListener('change', onInput, true);
   }, []);
+
+  const [selected, setSelected] = useState(["B", "C"]);
+
 
   return (
     <div>
@@ -30,17 +34,26 @@ export default function App() {
       <br />
       <br />
       <label htmlFor="my-input">Choose ice cream</label>
-      <u-tags ref={ref}>
-        <data>Coconut</data>
-        <data>Banana</data>
-        <data>Strawberry</data>
-        <input id="my-input" list="my-list" value={value} onChange={() => setValue('')} />
-        <u-datalist id="my-list" class="my-class-name" data-sr-singular="%d hit" data-sr-plural="%d hits">
-          <u-option value="test-1">Test 1</u-option>
+      <br />
+      <select multiple value={selected} onChange={({ target }) => setSelected(Array.from(target.selectedOptions, (opt) => opt.label))}>
+        {selected.map((opt) => <option key={opt}>{opt}</option>)}
+      </select>
+      <u-combobox ref={ref}>
+        {selected.map((opt) => <data key={opt}>{opt}</data>)}
+        <input
+          id="my-input"
+          list="my-list"
+          onChange={(e) => console.log(e.nativeEvent, e.nativeEvent.currentTarget)} // Must be onInput, not onChange
+          pattern="list"
+          // value={value}
+          // onChange={() => setValue('')}
+        />
+        <u-datalist id="my-list" class="my-class-name">
+          <u-option value="test-1" selected>Test 1</u-option>
           <u-option value="test-2">Test 2</u-option>
           <u-option value="test-3">Test 3</u-option>
         </u-datalist>
-      </u-tags>
+      </u-combobox>
       <br />
       <br />
       <style>{`

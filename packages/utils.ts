@@ -17,7 +17,6 @@ export const IS_MAC =
 
 // Constants for better compression and control
 export const SAFE_LABELLEDBY = `${IS_ANDROID ? "data" : "aria"}-labelledby`; // Android <=13 incorrectly reads labelledby instead of content
-export const SAFE_MULTISELECTABLE = `${IS_SAFARI ? "aria" : "data"}-multiselectable`; // Use aria-multiselectable only in Safari as VoiceOver in Chrome and Firefox incorrectly announces selected when aria-selected="false"
 export const DISPLAY_BLOCK = ":host(:not([hidden])) { display: block }";
 export const FOCUS_OUTLINE =
 	"outline: 1px dotted; outline: 5px auto Highlight; outline: 5px auto -webkit-focus-ring-color"; // Outline styles in order: fallback, Mozilla, WebKit
@@ -40,7 +39,7 @@ export function attr(
 	name: string,
 	value?: string | null,
 ): string | null {
-	if (value === undefined) return el.getAttribute(name) ?? null; // Fallback to null only if el is undefined
+	if (value === undefined) return el.getAttribute(name);
 	if (value === null) el.removeAttribute(name);
 	else if (el.getAttribute(name) !== value) el.setAttribute(name, value);
 	return null;
@@ -215,19 +214,13 @@ export const createAriaLive = (mode: "polite" | "assertive") => {
 	return live;
 };
 
-/**
- * attributeTexts
- * @description Creates a aria-live element for announcements
- * @param mode Value of aria-live attribute
- * @return HTMLDivElement or null if on server
- */
-export function attributeTexts(
-	texts: Record<string, string>,
-	prop?: string,
-	value?: string,
-) {
-	if (!prop) return Object.keys(texts).map((key) => `data-sr-${key}`); // List attributes if not updating
-	const key = prop?.startsWith("data-sr-") && prop.slice(8); // Update if getting an attribute
-	if (key && value && texts[key]) texts[key] = value;
-	return [];
-}
+// Trigger value change in React compatible manor https://stackoverflow.com/a/46012210
+export const setValue = (input: HTMLInputElement, data: string, type = "") => {
+	const event = { bubbles: true, composed: true, data, inputType: type };
+	const proto = HTMLInputElement.prototype;
+
+	input.dispatchEvent(new InputEvent("beforeinput", event));
+	Object.getOwnPropertyDescriptor(proto, "value")?.set?.call(input, data);
+	input.dispatchEvent(new InputEvent("input", event));
+	input.dispatchEvent(new Event("change", { bubbles: true }));
+};

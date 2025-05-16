@@ -1,10 +1,10 @@
-import { JSHINT } from "jshint";
-import type { CompatStatement } from "@mdn/browser-compat-data";
-import path from "node:path";
-import no from "caniuse-lite/data/regions/NO";
 import fs from "node:fs";
-import caniuse from "caniuse-lite";
+import path from "node:path";
+import type { CompatStatement } from "@mdn/browser-compat-data";
 import bcd from "@mdn/browser-compat-data/forLegacyNode";
+import caniuse from "caniuse-lite";
+import no from "caniuse-lite/data/regions/NO";
+import { JSHINT } from "jshint";
 
 const usageNorway = caniuse.region(no);
 const intlDate = new Intl.DateTimeFormat("en", {

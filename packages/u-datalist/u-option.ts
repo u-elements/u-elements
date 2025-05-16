@@ -68,7 +68,7 @@ export class UHTMLOptionElement extends UHTMLElement {
 		return (attr(this, "aria-selected") ?? "false") !== "false";
 	}
 	set selected(value: boolean) {
-		attr(this, "aria-selected", `${value}`);
+		attr(this, "aria-selected", `${!!value}`);
 	}
 	/** Sets or retrieves the text string specified by the option tag. */
 	get text(): string {

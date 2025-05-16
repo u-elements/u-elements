@@ -29,10 +29,11 @@ declare global {
 let LIVE_TIMER: ReturnType<typeof setTimeout>;
 let LIVE_SR_FIX = 0; // Ensure screen reader announcing by alternating non-breaking-space suffix
 let LIVE: Element;
-let DEBOUNCE: ReturnType<typeof setTimeout> | number = 0;
+let INPUT_DEBOUNCE: ReturnType<typeof setTimeout> | number = 0;
 let IS_PRESS = false; // Prevent loosing focus on mousedown on <u-option> despite tabIndex -1
 const IS_MOBILE = IS_IOS || IS_ANDROID;
 const EVENTS = "click,focusout,input,keydown,mousedown,mouseup";
+const EVENTS_INPUT = "focus,focusin,blur,focusout";
 const TEXTS = {
 	singular: "%d hit",
 	plural: "%d hits",
@@ -44,9 +45,8 @@ const TEXTS = {
  */
 export class UHTMLDataListElement extends UHTMLElement {
 	// Using underscore instead of private fields for backwards compatibility
-	_blurTimer: ReturnType<typeof setTimeout> | number = 0;
-	_input: HTMLInputElement | null = null;
-	_root: null | Document | ShadowRoot = null;
+	_input?: HTMLInputElement;
+	_root?: Document | ShadowRoot;
 	_texts = { ...TEXTS };
 	_value = "";
 
@@ -71,9 +71,6 @@ export class UHTMLDataListElement extends UHTMLElement {
 		this.hidden = true;
 		this._root = getRoot(this);
 
-		if (!LIVE) LIVE = createAriaLive("assertive");
-		if (!LIVE.isConnected) document.body.appendChild(LIVE);
-
 		attr(this, "role", "listbox");
 		attr(this, "tabindex", "-1"); // Prevent tabstop even if consumer sets overflow: auto (see https://issues.chromium.org/issues/40456188)
 		on(this._root, "focusin", this); // Only bind focus globally as this is needed to activate
@@ -91,7 +88,7 @@ export class UHTMLDataListElement extends UHTMLElement {
 		off(this._root || this, "focusin", this);
 		mutationObserver(this, false);
 		disconnectInput(this);
-		this._root = null;
+		this._root = undefined;
 	}
 
 	attributeChangedCallback(prop?: string, _prev?: string, next?: string) {
@@ -104,17 +101,17 @@ export class UHTMLDataListElement extends UHTMLElement {
 				setupInput(this, input); // Setup inputs for correct announcment when moving screen reader focus on mobile
 	}
 	handleEvent(event: Event) {
-		const { type } = event;
+		const { target, type } = event;
 		if (event.defaultPrevented) return; // Allow all events to be canceled
 		if (type === "click") onClick(this, event);
 		if (type === "focus" || type === "focusin") onFocus(this, event);
-		if (type === "focusout") onBlur(this);
+		if (type === "blur" || type === "focusout") onBlur(this, event);
 		if (type === "keydown") onKeyDown(this, event as KeyboardEvent);
-		if (type === "mousedown") IS_PRESS = this.contains(event.target as Node);
+		if (type === "mousedown") IS_PRESS = this.contains(target as Node);
 		if (type === "mouseup") IS_PRESS = false;
 		if (type === "mutation" || type === "input") {
-			clearTimeout(DEBOUNCE);
-			DEBOUNCE = setTimeout(onInput, 0, this, event); // Squash mutations and input events, and wait more than 0ms to allow u-combobox to update
+			clearTimeout(INPUT_DEBOUNCE);
+			INPUT_DEBOUNCE = setTimeout(onInput, 0, this, event); // Squash mutations and input events
 		}
 	}
 	get options(): HTMLCollectionOf<HTMLOptionElement> {
@@ -125,16 +122,19 @@ export class UHTMLDataListElement extends UHTMLElement {
 const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
 	if (self.hidden !== open) return; // Prevent unnecessary updates
 	self.hidden = !open;
-
-	if (self.popover) self.togglePopover(open); // Popover API is not supported by all browsers
 	if (self._input) setupInput(self, self._input, open);
+	if (self.popover && self._input?.isConnected) {
+		attr(self._input, "popovertarget", useId(self)); // Prepare for Popover API
+		attr(self, "popover", "manual"); // Make popover always match open state
+	}
 	if (open) onInput(self); // Ensure correct state when opening if input.value has changed
 };
 
 const disconnectInput = (self: UHTMLDataListElement) => {
+	off(self._input || self, EVENTS_INPUT, self);
 	off(self._root || self, EVENTS, self);
 	setExpanded(self, false);
-	self._input = null;
+	self._input = undefined;
 };
 
 const setupInput = (
@@ -142,40 +142,58 @@ const setupInput = (
 	input: HTMLInputElement,
 	open = false,
 ) => {
+	on(input, EVENTS_INPUT, self, true); // Need to capture blur/focus directly on input to prevent other consumers
 	attr(input, "aria-autocomplete", "list");
 	attr(input, "aria-controls", useId(self));
-	attr(input, "aria-expanded", `${IS_MOBILE ? open : "true"}`); // Used to prevent "expanded" announcement interrupting label
+	attr(input, "aria-expanded", `${IS_MOBILE ? open : "true"}`); // Used to prevent "expanded" announcement interrupting label // TODO: Test this
 	attr(input, "autocomplete", "off");
-	attr(input, "popovertarget", useId(self)); // Prepare for popover API
 	attr(input, "role", "combobox");
 };
 
-const onFocus = (self: UHTMLDataListElement, { target: el }: Event) => {
-	const isInput = el instanceof HTMLInputElement;
-	const isInside = self._input === el || self.contains(el as Node); // Prevent blur if receiving new focus
+const onFocus = (self: UHTMLDataListElement, event: Event) => {
+	const isInput = event.target instanceof HTMLInputElement;
 
-	if (isInside) return clearTimeout(self._blurTimer);
-	if (self._input !== el && isInput && attr(el, "list") === self.id) {
+	if (isInput && event.isTrusted) event.stopImmediatePropagation(); // Native datalist does not move focus out when selecting, so prevent focus events when connected
+	if (!LIVE) LIVE = createAriaLive("assertive");
+	if (!LIVE.isConnected) document.body.appendChild(LIVE);
+	if (self._input !== event.target && isInput && event.target.list === self) {
 		if (self._input) disconnectInput(self); // If previously used by other input
-		self._input = el;
 
+		self._input = event.target;
+		self._input.dispatchEvent(new FocusEvent("focus", { view: window }));
+		self._input.dispatchEvent(
+			new FocusEvent("focusin", { bubbles: true, view: window }),
+		);
 		attr(self, SAFE_LABELLEDBY, useId(self._input.labels?.[0]));
 		on(self._root || self, EVENTS, self);
 		setExpanded(self, true);
 	}
 };
 
-// Only disconnect after event loop has run so we can cancel if receiving new focus
-const onBlur = (self: UHTMLDataListElement) => {
-	if (!IS_PRESS) self._blurTimer = setTimeout(disconnectInput, 0, self);
+const onBlur = (self: UHTMLDataListElement, event: Event) => {
+	if (!IS_PRESS) setTimeout(onBlurred, 0, self); // Delay to allow focus to be set on new element
+	if (event.target === self._input && event.isTrusted)
+		event.stopImmediatePropagation(); // Native datalist does not move focus out when selecting, so prevent blur events
 };
 
-const onClick = (self: UHTMLDataListElement, { target: el }: Event) => {
-	const option = [...self.options].find((opt) => opt.contains(el as Node));
+const onBlurred = (self: UHTMLDataListElement) => {
+	const relatedTarget = self._root?.activeElement || null;
+	const input = self._input;
+	const view = window;
 
-	if (self._input === el) setExpanded(self, true);
-	else if (option && self._input) {
-		setValue(self._input, option.value); // Set input value to option value
+	if (input && input !== relatedTarget && !self.contains(relatedTarget)) {
+		input.dispatchEvent(new FocusEvent("blur", { relatedTarget, view })); // Trigger blur event on input if leaving both input and datalist
+		input.dispatchEvent(
+			new FocusEvent("focusout", { bubbles: true, relatedTarget, view }),
+		);
+		disconnectInput(self);
+	}
+};
+
+const onClick = (self: UHTMLDataListElement, { target }: Event) => {
+	if (!self._input || self._input === target) return setExpanded(self, true);
+	if ([...self.options].includes(target as HTMLOptionElement)) {
+		setValue(self._input, (target as HTMLOptionElement).value);
 
 		if (attr(self, "aria-multiselectable") !== "true") {
 			self._input.focus(); // Change input.value before focus move to make screen reader read the correct value
@@ -184,15 +202,14 @@ const onClick = (self: UHTMLDataListElement, { target: el }: Event) => {
 	}
 };
 
-const isVisible = (el: Element) => attr(el, "aria-hidden") !== "true";
+const isVisible = (el: Element) => attr(el, "aria-hidden") !== "true"; // Cache function
 const onKeyDown = (self: UHTMLDataListElement, event: KeyboardEvent) => {
 	if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
 	setExpanded(self, event.key !== "Escape" && event.key !== "Tab"); // Close on ESC/Tab but show on other keys
 
-	const { key } = event;
-	const active = self._root?.activeElement as HTMLOptionElement;
+	const { key, target } = event;
 	const options = [...self.options].filter(isVisible); // Filter out hidden options
-	const prev = options.indexOf(active);
+	const prev = options.indexOf(target as HTMLOptionElement);
 	let next = -1; // If hidden - first arrow down should exit input
 
 	if (key === "ArrowDown") next = (prev + 1) % options.length;
@@ -206,11 +223,9 @@ const onKeyDown = (self: UHTMLDataListElement, event: KeyboardEvent) => {
 		}
 	}
 
-	const toInput = !options[next] && options[prev] && key === "ArrowUp";
 	if (options[next]) for (const option of options) option.tabIndex = -1; // Ensure u-options can have focus if iOS has a attached external keyboard
-	if (options[next] || toInput) event.preventDefault(); // Prevent scroll when on option
+	if (options[next]) event.preventDefault(); // Prevent scroll when on option
 	(options[next] || self._input)?.focus(); // Move focus to next option or input
-	if (toInput) self._input?.setSelectionRange(-1, -1); // Move caret to end of input
 };
 
 const onInput = (self: UHTMLDataListElement) => {
@@ -225,20 +240,20 @@ const onInput = (self: UHTMLDataListElement) => {
 	}
 
 	// Announce if content has changed
+	const { length: total } = visible;
 	clearTimeout(LIVE_TIMER);
 	LIVE_TIMER = setTimeout(() => {
-		const hitsText = `${`${self._texts[visible.length === 1 ? "singular" : "plural"]}`.replace("%d", `${visible.length}`)}`;
-		const liveText = `${(!visible.length && self.innerText.trim()) || hitsText}${++LIVE_SR_FIX % 2 ? "\u{A0}" : ""}`; // Force screen reader anouncement
+		if (self._root?.activeElement !== self._input) return; // Only announce if focus is on <input>
+		const hitsText = `${`${self._texts[total === 1 ? "singular" : "plural"]}`.replace("%d", `${total}`)}`;
+		const liveText = `${(!total && self.innerText.trim()) || hitsText}${++LIVE_SR_FIX % 2 ? "\u{A0}" : ""}`; // Force screen reader anouncement
 
-		if (value !== self._value) LIVE?.replaceChildren(liveText); // Only announce if value has changed
+		if (value !== self._value && LIVE) LIVE.textContent = liveText; // Only announce if value has changed
 		self._value = value;
 	}, 1000); // 1 second makes room for screen reader to announce the typed character, before announcing the hits count
 
 	// Needed to announce count in iOS
 	if (IS_IOS)
-		visible.forEach((opt, index, { length }) => {
-			opt.title = `${index + 1}/${length}`;
-		});
+		visible.forEach((opt, idx) => attr(opt, "title", `${idx + 1}/${total}`));
 };
 
 // Polyfill input.list so it also receives u-datalist

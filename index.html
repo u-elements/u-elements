@@ -56,51 +56,26 @@
   </head>
   <body>
     <main>
-      <!-- <u-details name="group-1">
-        <u-summary>Test 1</u-summary>
-        <div>Innhold 1</div>
-        <div>Innhold 2</div>
-        <div>Innhold 3</div>
-        Innhold 4
-      </u-details>
-      <u-details name="group-1">
-        <u-summary>Test 2</u-summary>
-        <div>Innhold 1</div>
-        <div>Innhold 2</div>
-        <div>Innhold 3</div>
-        Innhold 4
-      </u-details> -->
-
       <br />
       <button type="button" name="before">Før</button>
       <br />
 
       <form>
-        <!-- <input type="text" name="input" id="my-a11y-input" list="list" aria-autocomplete="list" aria-controls="list" aria-expanded="true" autocomplete="off" popovertarget="list" role="combobox" aria-label="Velg type iskrem, Ingen valgte">
-        <input type="text" name="input" id="my-a11y-input" list="list" aria-autocomplete="list" aria-controls="list" aria-expanded="false" autocomplete="off" popovertarget="list" role="combobox"> -->
         <label for="my-a11y-input">Velg type iskrem</label>
         <br aria-hidden="true" />
-        <!-- data-creatable -->
-        <style>
-          u-combobox:not([data-multiple]) {
-            &{ border: 1px solid; border-radius: 3px }
-            & :where(input) { all: unset }
-            & > * { padding: 5px }
-            & data { position: absolute }
-            &:not(:has(input:placeholder-shown)) data { display: none }
-          }
-        </style>
-      <u-combobox
-        data-sr-added="Valgte"
-        data-sr-empty="Ingen valgte"
-        data-sr-found="Naviger til venstre for å finne %d valgte"
-        data-sr-of="av"
-        data-sr-plural="%d land"
-        data-sr-remove="Trykk for å fjerne"
-        data-sr-removed="Fjernet"
-        data-sr-singular="%d land"
-      >
-        <input type="text" id="my-a11y-input" list="list">
+
+<!-- data-sr-added="Valgte"
+data-sr-empty="Ingen valgte"
+data-sr-found="Naviger til venstre for å finne %d valgte"
+data-sr-of="av"
+data-sr-plural="%d land"
+data-sr-remove="Trykk for å fjerne"
+data-sr-removed="Fjernet"
+data-sr-singular="%d land" -->
+      <u-combobox data-multipl data-creatable>
+        <data>Jordbær</data>
+        <data value="2">Kokkos</data>
+        <input type="search" id="my-a11y-input" list="list">
         <u-datalist id="list" data-nofilter>
           <u-option value="2">Kokkos</u-option>
           <u-option>Jordbær</u-option>
@@ -121,33 +96,16 @@
         const input = document.getElementById('my-a11y-input');
         const select = document.querySelector('select[name="test"]');
 
-        combobox?.addEventListener('beforechange', (event) => {
-          // console.log(event.preventDefault(), event.target.control.value, event.detail);
-          // console.log(Array.from(new FormData(select.form).entries()))
+        // input.addEventListener('beforeinput', console.log);
+        combobox.addEventListener('beforechange', console.log);
+        combobox.addEventListener('beforematch', (event) => {
+          event.preventDefault();
+          const query = input.value.toLowerCase().trim() || false;
+          for(const opt of input.list.options) {
+            opt.selected = query && opt.label.toLowerCase().trim().startsWith(query);
+            // opt.selected = opt.value === input.value;
+          }
         });
-
-        const options = input.list.options;
-        // input.addEventListener('input', (event) => {
-        //   options[0].disabled = !input.value || [...options].some((opt) => opt.label.trim().toLowerCase() === input.value.trim().toLowerCase());
-        //   options[0].label = input.value;
-        //   options[0].value = input.value;
-        //   options[0].text = `+ Legg til "${input.value}"`;
-        // });
-
-        // Auto-chips
-        // import { isDatalistClick, syncDatalistState } from './packages/u-datalist/u-datalist';
-        // Achieve custom filter on native datalist (needed when using native <datalist>)
-        // input.addEventListener("input", (event) => {
-        //   const needle = event.target.value.trim().toLowerCase();
-        //   const options = event.target.list.options;
-
-        //   // console.log(needle);
-
-        //   for (const option of options) {
-        //     console.log(option.label, option.value);
-        //     option.disabled = !option.label.toLowerCase().startsWith(needle);
-        //   }
-        // });
 
         // const input = document.getElementById('my-a11y-input');
         let debounceTimer; // Debounce so we do not spam API
@@ -173,12 +131,14 @@
           
         //   xhr.abort();
         //   clearTimeout(debounceTimer);
-        //   debounceTimer = setTimeout(() => {
-        //     console.log("Loading", value);
-        //     if (!value) return;
-        //     xhr.open('GET', `https://restcountries.com/v2/name/${value}?fields=name`, true);
-        //     xhr.send();
-        //   }, 300);
+
+        //   if (value) {
+        //     debounceTimer = setTimeout(() => {
+        //       console.log("Loading", value);
+        //       xhr.open('GET', `https://restcountries.com/v2/name/${value}?fields=name`, true);
+        //       xhr.send();
+        //     }, 600);
+        //   } 
         // });
       </script>
       <!-- <br>

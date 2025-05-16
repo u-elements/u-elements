@@ -1,1 +1,1 @@
-<u-option role="option" aria-selected="false">Option 1</u-option><u-option selected="" role="option" aria-selected="true">Option 2</u-option><u-option disabled="" aria-disabled="true" role="option" aria-selected="false">Option 2</u-option>
+<u-option role="option" aria-disabled="false" aria-selected="false">Option 1</u-option><u-option selected="" aria-disabled="false" aria-selected="true" role="option">Option 2</u-option><u-option disabled="" aria-disabled="true" aria-selected="false" role="option">Option 2</u-option>

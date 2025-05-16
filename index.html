@@ -22,7 +22,7 @@
       u-tabpanel { padding: 10px; border: 1px solid }
 
       u-tags { border: 2px solid; border-radius: 4px; display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; padding: 5px; }
-      u-option[aria-selected="true"] { color: red; font-weight: bold; }
+      u-option[selected] { color: red; font-weight: bold; }
 
       u-datepicker::part(row-0) { border: 1px solid red }
       u-datepicker::part(saturday),
@@ -72,7 +72,7 @@ data-sr-plural="%d land"
 data-sr-remove="Trykk for å fjerne"
 data-sr-removed="Fjernet"
 data-sr-singular="%d land" -->
-      <u-combobox data-multipl data-creatable>
+      <u-combobox data-multiple data-creatable>
         <data>Jordbær</data>
         <data value="2">Kokkos</data>
         <input type="search" id="my-a11y-input" list="list">

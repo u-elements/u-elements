@@ -479,4 +479,6 @@ Using [Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API
 ### 1.0.0
 - Removed support for `isDatalistClick`, `syncDatalistState` and `getDatalistValue`
 - Added support for [`data-nofilter`](https://github.com/whatwg/html/issues/4882)
+- Fixed bug where VoiceOver + Safari announced incorrect amount of list items
+- Improved support for changes in `disabled`, `hidden`, `label` and `value` attributes
 - Improved `popover` support

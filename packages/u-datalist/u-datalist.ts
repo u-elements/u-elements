@@ -243,7 +243,7 @@ const onInput = (self: UHTMLDataListElement) => {
 	const { length: total } = visible;
 	clearTimeout(LIVE_TIMER);
 	LIVE_TIMER = setTimeout(() => {
-		if (self._root?.activeElement !== self._input) return; // Only announce if focus is on <input>
+		if (self.hidden || self._root?.activeElement !== self._input) return; // Only announce if focus is on <input>
 		const hitsText = `${`${self._texts[total === 1 ? "singular" : "plural"]}`.replace("%d", `${total}`)}`;
 		const liveText = `${(!total && self.innerText.trim()) || hitsText}${++LIVE_SR_FIX % 2 ? "\u{A0}" : ""}`; // Force screen reader anouncement
 

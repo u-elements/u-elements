@@ -4,8 +4,8 @@
         <input type="text" list="datalist-1" aria-autocomplete="list" aria-controls="datalist-1" aria-expanded="false" autocomplete="off" role="combobox">
       </label>
       <u-datalist id="datalist-1" data-sr-singular="%d hit" data-sr-plural="%d hits" hidden="" role="listbox" tabindex="-1">
-        <u-option role="option" aria-selected="false">Option 1</u-option>
-        <u-option role="option" aria-selected="false">Option 2</u-option>
-        <u-option role="option" aria-selected="false">Option 3</u-option>
+        <u-option role="option" aria-disabled="false" aria-selected="false">Option 1</u-option>
+        <u-option role="option" aria-disabled="false" aria-selected="false">Option 2</u-option>
+        <u-option role="option" aria-disabled="false" aria-selected="false">Option 3</u-option>
       </u-datalist>
     </form>

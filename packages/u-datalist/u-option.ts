@@ -23,23 +23,23 @@ const SELECTED = "selected";
 export class UHTMLOptionElement extends UHTMLElement {
 	// Using ES2015 syntax for backwards compatibility
 	static get observedAttributes() {
-		return [DISABLED];
+		return [DISABLED, SELECTED];
 	}
 	connectedCallback() {
 		if (!IS_IOS) this.tabIndex = -1; // Do not set tabIndex on iOS as this causes keyboard to toggle on and off
-		if (IS_FIREFOX) attr(this, "aria-selected", "false"); // Firefox defaults to "selected" unless aria-selected="false" is set
 		if (!this.hasAttribute("role")) attr(this, "role", "option"); // Only set role if not allready specified
-		this.selected = this.defaultSelected; // Set selected state
+		this.attributeChangedCallback(); // Setup aria attributes (Firefox defaults to "selected" unless aria-selected="false" is set)
 	}
-	attributeChangedCallback(_prop: string, _prev: unknown, next: unknown) {
-		attr(this, "aria-disabled", next === null ? next : "true");
+	attributeChangedCallback() {
+		attr(this, "aria-disabled", `${this.disabled}`);
+		attr(this, "aria-selected", `${this.selected}`);
 	}
 	/** Sets or retrieves whether the option in the list box is the default item. */
 	get defaultSelected(): boolean {
-		return attr(this, SELECTED) !== null;
+		return this[SELECTED];
 	}
 	set defaultSelected(value: boolean) {
-		attr(this, SELECTED, value ? "" : null);
+		this[SELECTED] = value;
 	}
 	get disabled(): boolean {
 		return attr(this, DISABLED) !== null;
@@ -65,10 +65,10 @@ export class UHTMLOptionElement extends UHTMLElement {
 		attr(this, "label", value);
 	}
 	get selected(): boolean {
-		return (attr(this, "aria-selected") ?? "false") !== "false";
+		return attr(this, SELECTED) !== null;
 	}
 	set selected(value: boolean) {
-		attr(this, "aria-selected", `${!!value}`);
+		attr(this, SELECTED, value ? "" : null);
 	}
 	/** Sets or retrieves the text string specified by the option tag. */
 	get text(): string {

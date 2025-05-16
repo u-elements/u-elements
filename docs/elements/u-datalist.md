@@ -261,6 +261,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
 </pre>
 
 ## Example: Popover
+Using [Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API) allows datalist to automatically render on [top layer](https://developer.mozilla.org/en-US/docs/Glossary/Top_layer) and cross boundries of scroll containers. Keep in mind that you're responsible for styling and positioning the datalist, just as you would with any other element using `popover`.
 <Sandbox label="u-datalist position example" />
 <pre hidden>
 &lt;style&gt;
@@ -472,3 +473,10 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
 - HTML Standard: [The &lt;datalist&gt; element](https://html.spec.whatwg.org/multipage/form-elements.html#the-datalist-element)
 - DOM interface: [HTMLOptionElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLOptionElement)
 - HTML Standard: [The &lt;option&gt; element](https://html.spec.whatwg.org/multipage/form-elements.html#the-option-element)
+
+## Changelog
+
+### 1.0.0
+- Removed support for `isDatalistClick`, `syncDatalistState` and `getDatalistValue`
+- Added support for [`data-nofilter`](https://github.com/whatwg/html/issues/4882)
+- Improved `popover` support

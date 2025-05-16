@@ -6,7 +6,7 @@ import { data } from '../filesize.data.ts'
 </script>
 
 # &lt;u-combobox&gt; <mark data-badge="BETA"></mark>
-`<u-combobox>` extends `<input>` with support for multiselect and separate label and programmatic value. While these features are [not yet](https://open-ui.org/components/combobox.explainer/) part of any official ARIA pattern or HTML element, `<u-combobox>` adhere closely to HTML conventions while providing a thoroughly tested and accessible user experience.
+`<u-combobox>` extends `<input>` with support for multiselect and separate label and programmatic value. While these features are [not yet](https://open-ui.org/components/combobox.explainer/) part of any official ARIA pattern or HTML element, `<u-combobox>` adhere closely to HTML conventions.
 
 :::warning IMPORTANT
 `u-combobox` is work in progress. Changes might apply and documentation is not complete.

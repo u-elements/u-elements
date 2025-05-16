@@ -22,9 +22,9 @@ declare global {
 		"u-combobox": UHTMLComboboxElement;
 	}
 	interface GlobalEventHandlersEventMap {
-		beforematch: CustomEvent<HTMLOptionElement | undefined>;
-		beforechange: CustomEvent<HTMLDataElement>;
 		afterchange: CustomEvent<HTMLDataElement>;
+		beforechange: CustomEvent<HTMLDataElement>;
+		beforematch: CustomEvent<HTMLOptionElement | undefined>;
 	}
 }
 

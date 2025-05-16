@@ -1,10 +1,4 @@
-import {
-	IS_FIREFOX,
-	IS_IOS,
-	UHTMLElement,
-	attr,
-	customElements,
-} from "../utils";
+import { IS_IOS, UHTMLElement, attr, customElements } from "../utils";
 
 declare global {
 	interface HTMLElementTagNameMap {

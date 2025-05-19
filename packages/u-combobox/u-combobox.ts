@@ -302,10 +302,10 @@ const onInput = (self: UHTMLComboboxElement, event: Event) => {
 
 	if (!isClick) return multiple || dispatchMatch(self);
 	for (const opt of options)
-		if (opt.value === control?.value) {
+		if (opt.value && opt.value === control?.value) {
 			control.value = multiple ? self._value : opt.label; // Revert if multiple, use label if single
 			if (multiple) event.stopImmediatePropagation(); // Prevent input event when reverting value anyway
-			return opt.value && dispatchChange(self, opt, multiple); // Only add if value is not empty
+			return dispatchChange(self, opt, multiple);
 		}
 };
 

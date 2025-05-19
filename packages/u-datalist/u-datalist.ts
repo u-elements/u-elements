@@ -125,7 +125,8 @@ const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
 	if (self._input) setupInput(self, self._input, open);
 	if (self.popover && self._input?.isConnected) {
 		attr(self._input, "popovertarget", useId(self)); // Prepare for Popover API
-		attr(self, "popover", "manual"); // Make popover always match open state
+		attr(self, "popover", "manual");
+		self.togglePopover(open); // Make popover always match open state
 	}
 	if (open) onInput(self); // Ensure correct state when opening if input.value has changed
 };

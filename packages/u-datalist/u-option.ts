@@ -53,7 +53,7 @@ export class UHTMLOptionElement extends UHTMLElement {
 	}
 	/** Sets or retrieves a value that you can use to implement your own label functionality for the object. */
 	get label(): string {
-		return attr(this, "label") || this.text;
+		return attr(this, "label") ?? this.text; // Using ?? to also support empty string
 	}
 	set label(value: string) {
 		attr(this, "label", value);
@@ -73,7 +73,7 @@ export class UHTMLOptionElement extends UHTMLElement {
 	}
 	/** Sets or retrieves the value which is returned to the server when the form control is submitted. */
 	get value(): string {
-		return attr(this, "value") || this.text;
+		return attr(this, "value") ?? this.text; // Using ?? to also support empty string
 	}
 	set value(value: string) {
 		attr(this, "value", value);

@@ -264,11 +264,6 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus tristique tel
 Using [Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API) allows datalist to automatically render on [top layer](https://developer.mozilla.org/en-US/docs/Glossary/Top_layer) and cross boundries of scroll containers. Keep in mind that you're responsible for styling and positioning the datalist, just as you would with any other element using `popover`.
 <Sandbox label="u-datalist position example" />
 <pre hidden>
-&lt;style&gt;
-  #my-popover-wrapper { position: relative }
-  #my-popover { position: absolute; left: 0; top: 100%; margin: 0 }
-&lt;/style&gt;
-&lt;div id="my-popover-wrapper"&gt;
 &lt;label for="my-popover-input"&gt;
   Choose flavor of ice cream
   &lt;input type="text" id="my-popover-input" list="my-popover" /&gt;
@@ -279,7 +274,6 @@ Using [Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API
   &lt;u-option&gt;Chocolate&lt;/u-option&gt;
   &lt;u-option&gt;Vanilla&lt;/u-option&gt;
 &lt;/u-datalist&gt;
-&lt;/div&gt;
 </pre>
 
 
@@ -476,9 +470,10 @@ Using [Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API
 
 ## Changelog
 
-### 1.0.0
-- Removed support for `isDatalistClick`, `syncDatalistState` and `getDatalistValue`
-- Added support for [`data-nofilter`](https://github.com/whatwg/html/issues/4882)
-- Fixed bug where VoiceOver + Safari announced incorrect amount of list items
-- Improved support for changes in `disabled`, `hidden`, `label` and `value` attributes
-- Improved `popover` support
+- **1.0.1:** Restore call to `togglePopover`
+- **1.0.0:**
+  - Removed support for `isDatalistClick`, `syncDatalistState` and `getDatalistValue`
+  - Added support for [`data-nofilter`](https://github.com/whatwg/html/issues/4882)
+  - Fixed bug where VoiceOver + Safari announced incorrect amount of list items
+  - Improved support for changes in `disabled`, `hidden`, `label` and `value` attributes
+  - Improved `popover` support

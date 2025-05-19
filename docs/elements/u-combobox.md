@@ -209,3 +209,8 @@ myCombobox.addEventListener('beforematch', (event) => {
 - HTML Standard: [The &lt;div&gt; element](https://html.spec.whatwg.org/multipage/grouping-content.html#the-div-element)
 - DOM interface: [HTMLDataElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDataElement)
 - HTML Standard: [The &lt;data&gt; element](https://html.spec.whatwg.org/multipage/text-level-semantics.html#the-data-element)
+
+# Changelog
+
+- **0.0.1:** Support async `u-option` initialization
+- **0.0.0:** Beta release

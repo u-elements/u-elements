@@ -14,18 +14,22 @@ export default function App() {
 
   useEffect(() => {
     const self = ref.current
-    const onInput = (event: Event) =>
-      event.stopImmediatePropagation();
+    const beforeChange = (event: CustomEvent<HTMLDataElement>) => {
+      const target = event.target as UHTMLComboboxElement;
+      const item = event.detail;
+      event.preventDefault();
+      setSelected(target.values.concat(item.value).filter((v) => item.value !== v || !item.isConnected));
+    }
 
-    self?.addEventListener('change', onInput, true)
-    return () => self?.removeEventListener('change', onInput, true);
+    self?.addEventListener('beforechange', beforeChange, true)
+    return () => self?.removeEventListener('beforechange', beforeChange, true);
   }, []);
 
-  const [selected, setSelected] = useState(["B", "C"]);
-
+  const [selected, setSelected] = useState(["Test 1", "Test 2"]);
 
   return (
     <div>
+      <style>{`u-option[selected]{color:red;font-weight:bold}`}</style>
       <h1>React + u-elements</h1>
       <button onClick={() => setCount((count) => count + 1)}>
         count is {count}
@@ -35,24 +39,17 @@ export default function App() {
       <br />
       <label htmlFor="my-input">Choose ice cream</label>
       <br />
-      <select multiple value={selected} onChange={({ target }) => setSelected(Array.from(target.selectedOptions, (opt) => opt.label))}>
+      <select multiple value={selected} onChange={()=>{}}>
         {selected.map((opt) => <option key={opt}>{opt}</option>)}
       </select>
-      <u-combobox ref={ref}>
+      <u-combobox ref={ref} data-multiple>
         {selected.map((opt) => <data key={opt}>{opt}</data>)}
-        <input
-          id="my-input"
-          list="my-list"
-          onChange={(e) => console.log(e.nativeEvent, e.nativeEvent.currentTarget)} // Must be onInput, not onChange
-          pattern="list"
-          // value={value}
-          // onChange={() => setValue('')}
-        />
-        <u-datalist id="my-list" class="my-class-name">
-          <u-option value="test-1" selected>Test 1</u-option>
-          <u-option value="test-2">Test 2</u-option>
-          <u-option value="test-3">Test 3</u-option>
-        </u-datalist>
+        <input id="my-input" />
+        <datalist id="my-list" data-nofilter>
+          <option>Test 1</option>
+          <option>Test 2</option>
+          <option>Test 3</option>
+        </datalist>
       </u-combobox>
       <br />
       <br />

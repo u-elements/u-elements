@@ -75,7 +75,8 @@ export class UHTMLComboboxElement extends UHTMLElement {
 			createElement(
 				"style",
 				`:host(:not([hidden])) { display: block; cursor: pointer }  /* Must be display block in Safari to allow focus inside */
-				:host(:not([data-multiple])) ::slotted(data) { display: none } /* Hide data if not multiple */
+				:host(:not([data-multiple])) ::slotted(data),
+				:host([data-multiple="false"]) ::slotted(data) { display: none } /* Hide data if not multiple */
 				::slotted(data) { display: inline-block; pointer-events: none }
         ::slotted(data)::after { content: '\\00D7'; content: '\\00D7' / ''; padding-inline: .5ch; pointer-events: auto }
         ::slotted(data:focus) { ${FOCUS_OUTLINE} }`, // Show focus outline around ::after only
@@ -128,13 +129,14 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		return this._control || this.querySelector("input"); // Inspired by https://developer.mozilla.org/en-US/docs/Web/API/HTMLLabelElement/control
 	}
 	get list(): HTMLDataListElement | null {
-		return this._list || this.control?.list || null; // Inspired by https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/list
+		return this._list || this.querySelector("u-datalist,datalist") || null; // Inspired by https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/list
 	}
 	get items(): HTMLCollectionOf<HTMLDataElement> {
 		return this._items || this.getElementsByTagName("data");
 	}
 	get options(): HTMLCollectionOf<HTMLOptionElement> | undefined {
-		return this._options || this.list?.options;
+		const tag = `${this.list?.nodeName === "U-DATALIST" ? "u-" : ""}option`;
+		return this._options || this.list?.getElementsByTagName(tag as "option"); // u-datalist might not be initialized yet
 	}
 	get values(): string[] {
 		return [...this.items].map(({ value }) => value);
@@ -200,8 +202,9 @@ const render = (
 
 	// Set selected datalist options
 	for (const opt of self.options || []) {
-		attr(opt, "aria-label", `${_speak}${opt.label}`);
-		opt.selected = values.includes(opt.value);
+		const value = attr(opt, "value") || text(opt); // u-option might not be initialized yet
+		attr(opt, "aria-label", _speak ? `${_speak}${text(opt)}` : null);
+		attr(opt, "selected", values.includes(value) ? "" : null); // u-option might not be initialized yet
 	}
 
 	// Setup input and list (Note: Label pointing to the input overwrites input's aria-label in Firefox)
@@ -214,7 +217,7 @@ const render = (
 	const select = self.querySelector("select");
 	if (select) select.multiple = multiple;
 	for (const opt of select?.options || []) opt.remove(); // Remove all options
-	select?.append(...values.map((val) => new Option("", val, true, true))); // Store programatic values
+	select?.append(...values.map((value) => new Option("", value, true, true))); // Store programatic values
 
 	// Clear mutation records to prevent double processing
 	mutationObserver(self)?.takeRecords();
@@ -235,7 +238,7 @@ const dispatchMatch = (self: UHTMLComboboxElement) => {
 	const event = { bubbles: true, cancelable: true, detail: match };
 
 	if (self.dispatchEvent(new CustomEvent("beforematch", event)))
-		for (const opt of options) opt.selected = opt === match;
+		for (const opt of options) opt.selected = opt === match; // u-option is initialized at this point, so we can use .selected
 
 	match = [...options].find((o) => o.selected);
 	if (!match && creatable && value) return self.add(value);

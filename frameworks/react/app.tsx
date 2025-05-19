@@ -45,11 +45,12 @@ export default function App() {
       <u-combobox ref={ref} data-multiple>
         {selected.map((opt) => <data key={opt}>{opt}</data>)}
         <input id="my-input" />
-        <datalist id="my-list" data-nofilter>
-          <option>Test 1</option>
-          <option>Test 2</option>
-          <option>Test 3</option>
-        </datalist>
+        <u-datalist id="my-list">
+          <u-option>Test 1</u-option>
+          <u-option>Test 2</u-option>
+          <u-option>Test 3</u-option>
+          <u-option>Bergen</u-option>
+        </u-datalist>
       </u-combobox>
       <br />
       <br />

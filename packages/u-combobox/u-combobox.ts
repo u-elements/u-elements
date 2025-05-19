@@ -31,7 +31,7 @@ declare global {
 let LIVE: Element;
 let LIVE_SR_FIX = 0; // Ensure screen reader announcing by alternating non-breaking-space suffix
 let IS_PRESS = false; // Prevent loosing focus on mousedown on <data> despite tabIndex -1
-const EVENTS = "blur,focus,click,input,keydown,mousedown,mouseup";
+const EVENTS = "beforeinput,blur,focus,click,input,keydown,mousedown,mouseup";
 const EVENT_ONCE = { once: true, passive: true };
 const IS_FIREFOX_MAC = IS_FIREFOX && !IS_ANDROID;
 const IS_MOBILE = IS_ANDROID || IS_IOS;
@@ -303,6 +303,7 @@ const onInput = (self: UHTMLComboboxElement, event: Event) => {
 	if (!isClick) return multiple || dispatchMatch(self);
 	for (const opt of options)
 		if (opt.value === control?.value) {
+			console.log(self._value);
 			control.value = multiple ? self._value : opt.label; // Revert if multiple, use label if single
 			if (multiple) event.stopImmediatePropagation(); // Prevent input event when reverting value anyway
 			return dispatchChange(self, opt, multiple);

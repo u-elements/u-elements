@@ -212,6 +212,7 @@ myCombobox.addEventListener('beforematch', (event) => {
 
 # Changelog
 
+- **0.0.3:** Prevent add if `u-option` has empty value attribute
 - **0.0.2:** Reset value when clicking option in multiple mode
 - **0.0.1:** Support async `u-option` initialization
 - **0.0.0:** Beta release

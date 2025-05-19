@@ -202,7 +202,7 @@ const render = (
 
 	// Set selected datalist options
 	for (const opt of self.options || []) {
-		const value = attr(opt, "value") || text(opt); // u-option might not be initialized yet
+		const value = attr(opt, "value") ?? text(opt); // u-option might not be initialized yet
 		attr(opt, "aria-label", _speak ? `${_speak}${text(opt)}` : null);
 		attr(opt, "selected", values.includes(value) ? "" : null); // u-option might not be initialized yet
 	}
@@ -303,10 +303,9 @@ const onInput = (self: UHTMLComboboxElement, event: Event) => {
 	if (!isClick) return multiple || dispatchMatch(self);
 	for (const opt of options)
 		if (opt.value === control?.value) {
-			console.log(self._value);
 			control.value = multiple ? self._value : opt.label; // Revert if multiple, use label if single
 			if (multiple) event.stopImmediatePropagation(); // Prevent input event when reverting value anyway
-			return dispatchChange(self, opt, multiple);
+			return opt.value && dispatchChange(self, opt, multiple); // Only add if value is not empty
 		}
 };
 

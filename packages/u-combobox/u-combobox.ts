@@ -31,7 +31,7 @@ declare global {
 let LIVE: Element;
 let LIVE_SR_FIX = 0; // Ensure screen reader announcing by alternating non-breaking-space suffix
 let IS_PRESS = false; // Prevent loosing focus on mousedown on <data> despite tabIndex -1
-const EVENTS = "beforeinput,blur,focus,click,input,keydown,mousedown,mouseup";
+const EVENTS = "blur,focus,click,input,keydown,mousedown,mouseup";
 const EVENT_ONCE = { once: true, passive: true };
 const IS_FIREFOX_MAC = IS_FIREFOX && !IS_ANDROID;
 const IS_MOBILE = IS_ANDROID || IS_IOS;
@@ -103,7 +103,6 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	}
 	handleEvent(event: Event) {
 		const target = event.target as HTMLInputElement | null;
-		if (event.type === "beforeinput") this._value = target?.value || ""; // Store value before input to restore if mulitple click
 		if (event.type === "blur") onBlur(this);
 		if (event.type === "click") onClick(this, event as MouseEvent);
 		if (event.type === "focus") onFocus(this, event);
@@ -212,6 +211,7 @@ const render = (
 	if (list) attr(list, "aria-multiselectable", `${multiple}`); // Sync datalist multiselect
 	if (control) attr(control, "list", useId(list)); // Connect datalist and input
 	if (control) attr(control, "aria-label", label);
+	if (control) self._value = control.value; // Store value so we can revert onInput if click
 
 	// Setup select optionally
 	const select = self.querySelector("select");
@@ -226,7 +226,7 @@ const render = (
 const syncInputValue = (self: UHTMLComboboxElement, withEvent?: boolean) => {
 	const { multiple, control, items } = self;
 	if (multiple || !control || !items[0]) return;
-	if (withEvent) return setValue(control, text(self.items[0]));
+	if (withEvent) return setValue(control, text(self.items[0]), "insertText"); // Trigger as type and not as click
 	control.value = text(self.items[0]);
 };
 
@@ -241,7 +241,8 @@ const dispatchMatch = (self: UHTMLComboboxElement) => {
 		for (const opt of options) opt.selected = opt === match; // u-option is initialized at this point, so we can use .selected
 
 	match = [...options].find((o) => o.selected);
-	if (!match && creatable && value) return self.add(value);
+	if (!match && creatable && value)
+		return dispatchChange(self, createItem(value)); // Create new item if creatable
 	if (!match && !multiple && items[0]) return dispatchChange(self, items[0]);
 	if (!match || self.values.includes(match.value)) return render(self); // Re-render to make select options match items
 	dispatchChange(self, match, false); // Add match
@@ -257,7 +258,8 @@ const dispatchChange = (
 	const event = { bubbles: true, cancelable: true, detail: remove || add };
 
 	if (remove && !removeable) return; // Skip if not removeable
-	if (!self.dispatchEvent(new CustomEvent("beforechange", event))) return; // Skip if prevented
+	if (!self.dispatchEvent(new CustomEvent("beforechange", event)))
+		return render(self); // Re-sync state if beforechange is cancelled
 	remove ? remove.remove() : self.add(add);
 	self.dispatchEvent(new CustomEvent("afterchange", event));
 };
@@ -293,19 +295,24 @@ const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
 	if (target === self) self.control?.focus(); // Focus input if clicking <u-combobox>
 };
 
-const onInput = (self: UHTMLComboboxElement, event: Event) => {
+const onInput = (
+	self: UHTMLComboboxElement,
+	event: Event & Partial<InputEvent>,
+) => {
 	const { options = [], control, multiple } = self;
+	const value = control?.value?.trim() || "";
 	const isClick =
 		event instanceof InputEvent
 			? !event.inputType || event.inputType === CLICK // Firefox uses inputType "insertReplacementText" when clicking on <datalist>
-			: control?.value; // WebKit uses Event (not InputEvent) both on <datalist> click and clear when type="search" so we need to check value
+			: !!value; // WebKit uses Event (not InputEvent) both on <datalist> click and clear when type="search" so we need to check value
 
 	if (!isClick) return multiple || dispatchMatch(self);
+	event.stopImmediatePropagation(); // Prevent input event when reverting value anyway
+	if (control) control.value = self._value; // Revert value as it will be changed by dispatchChange if needed
 	for (const opt of options)
-		if (opt.value && opt.value === control?.value) {
-			control.value = multiple ? self._value : opt.label; // Revert if multiple, use label if single
-			if (multiple) event.stopImmediatePropagation(); // Prevent input event when reverting value anyway
-			return dispatchChange(self, opt, multiple);
+		if (opt.value && opt.value === value) {
+			dispatchChange(self, opt, multiple);
+			return setTimeout(syncInputValue, 0, self, true); // Sync input value after re-render
 		}
 };
 
@@ -327,6 +334,7 @@ const onKeyDown = (self: UHTMLComboboxElement, event: KeyboardEvent) => {
 		attr(control, "form", "#"); // Prevent submit without preventing native datalist
 		requestAnimationFrame(() => attr(control, "form", form)); // Restore form attribute after event has bubbled
 
+		// No need to sync single as it matches while typing
 		if (multiple) dispatchMatch(self);
 		else if (!self.items[0] && LIVE)
 			LIVE.textContent = `${_texts.invalid}${++LIVE_SR_FIX % 2 ? "\u{A0}" : ""}`; // Force screen reader anouncement

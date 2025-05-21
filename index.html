@@ -72,11 +72,11 @@ data-sr-plural="%d land"
 data-sr-remove="Trykk for å fjerne"
 data-sr-removed="Fjernet"
 data-sr-singular="%d land" -->
-      <u-combobox data-multiple>
+      <u-combobox data-multipl data-creatable>
         <data>Jordbær</data>
         <data value="2">Kokkos</data>
         <input type="search" id="my-a11y-input" list="list">
-        <u-datalist id="list">
+        <u-datalist id="list" data-nofilter>
           <u-option value="">Empty value</u-option>
           <u-option value="2">Kokkos</u-option>
           <u-option>Jordbær</u-option>
@@ -97,16 +97,19 @@ data-sr-singular="%d land" -->
         const input = document.getElementById('my-a11y-input');
         const select = document.querySelector('select[name="test"]');
 
-        // input.addEventListener('beforeinput', console.log);
-        combobox.addEventListener('beforechange', console.log);
-        combobox.addEventListener('beforematch', (event) => {
-          event.preventDefault();
-          const query = input.value.toLowerCase().trim() || false;
-          for(const opt of input.list.options) {
-            opt.selected = query && opt.label.toLowerCase().trim().startsWith(query);
-            // opt.selected = opt.value === input.value;
-          }
+        // input.addEventListener('input', console.log);
+        combobox.addEventListener('beforechange', (event) => {
+          // event.preventDefault();
+          // console.log(event);
         });
+        // combobox.addEventListener('beforematch', (event) => {
+        //   event.preventDefault();
+        //   const query = input.value.toLowerCase().trim() || false;
+        //   for(const opt of input.list.options) {
+        //     opt.selected = query && opt.label.toLowerCase().trim().startsWith(query);
+        //     // opt.selected = opt.value === input.value;
+        //   }
+        // });
 
         // const input = document.getElementById('my-a11y-input');
         let debounceTimer; // Debounce so we do not spam API

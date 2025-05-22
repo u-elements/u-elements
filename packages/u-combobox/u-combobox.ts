@@ -31,7 +31,7 @@ declare global {
 let LIVE: Element;
 let LIVE_SR_FIX = 0; // Ensure screen reader announcing by alternating non-breaking-space suffix
 let IS_PRESS = false; // Prevent loosing focus on mousedown on <data> despite tabIndex -1
-const EVENTS = "blur,focus,click,input,keydown,mousedown,mouseup";
+const EVENTS = "beforeinput,blur,focus,click,input,keydown,mousedown,mouseup";
 const EVENT_ONCE = { once: true, passive: true };
 const IS_FIREFOX_MAC = IS_FIREFOX && !IS_ANDROID;
 const IS_MOBILE = IS_ANDROID || IS_IOS;
@@ -103,6 +103,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	}
 	handleEvent(event: Event) {
 		const target = event.target as HTMLInputElement | null;
+		if (event.type === "beforeinput") this._value = target?.value || ""; // Store value before input to restore
 		if (event.type === "blur") onBlur(this);
 		if (event.type === "click") onClick(this, event as MouseEvent);
 		if (event.type === "focus") onFocus(this, event);

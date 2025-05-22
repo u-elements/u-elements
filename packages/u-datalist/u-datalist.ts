@@ -132,6 +132,7 @@ const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
 };
 
 const disconnectInput = (self: UHTMLDataListElement) => {
+	if (!self._input) return;
 	off(self._input || self, EVENTS_INPUT, self);
 	off(self._root || self, EVENTS, self);
 	setExpanded(self, false);
@@ -194,12 +195,12 @@ const onBlurred = (self: UHTMLDataListElement) => {
 const onClick = (self: UHTMLDataListElement, { target }: Event) => {
 	if (!self._input || self._input === target) return setExpanded(self, true);
 	if ([...self.options].includes(target as HTMLOptionElement)) {
-		setValue(self._input, (target as HTMLOptionElement).value);
-
 		if (attr(self, "aria-multiselectable") !== "true") {
-			self._input.focus(); // Change input.value before focus move to make screen reader read the correct value
+			self._input?.focus(); // Change input.value before focus move to make screen reader read the correct value
 			setExpanded(self, false); // Click on single select option should always close datalist
 		}
+
+		setValue(self._input, (target as HTMLOptionElement).value); // Set value after closing so onInput event can change DOM
 	}
 };
 

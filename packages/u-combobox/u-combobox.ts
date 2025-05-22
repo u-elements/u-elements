@@ -217,7 +217,7 @@ const render = (
 	// Setup select optionally
 	const select = self.querySelector("select");
 	if (select) select.multiple = multiple;
-	for (const opt of select?.options || []) opt.remove(); // Remove all options
+	if (select) select.textContent = ""; // Remove all options
 	select?.append(...values.map((value) => new Option("", value, true, true))); // Store programatic values
 
 	// Clear mutation records to prevent double processing

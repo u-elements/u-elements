@@ -212,7 +212,8 @@ myCombobox.addEventListener('beforematch', (event) => {
 
 # Changelog
 
-- **0.0.5:** Prevent `input` value change when `beforechange` is prevented 
+- **0.0.6:** Ensure correct value of hidden `<select>`
+- **0.0.5:** Prevent `input` value change when `beforechange` is prevented
 - **0.0.4:** Bugfix
 - **0.0.3:** Prevent add if `u-option` has empty value attribute
 - **0.0.2:** Reset value when clicking option in multiple mode

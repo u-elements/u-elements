@@ -162,10 +162,8 @@ const onFocus = (self: UHTMLDataListElement, event: Event) => {
 		if (self._input) disconnectInput(self); // If previously used by other input
 
 		self._input = event.target;
-		self._input.dispatchEvent(new FocusEvent("focus", { view: window }));
-		self._input.dispatchEvent(
-			new FocusEvent("focusin", { bubbles: true, view: window }),
-		);
+		self._input.dispatchEvent(new FocusEvent("focus"));
+		self._input.dispatchEvent(new FocusEvent("focusin", { bubbles: true })); // Do not assign view: window to prevent JSDOM errorshttps://github.com/vitest-dev/vitest/issues/4685#issuecomment-1843178287
 		attr(self, SAFE_LABELLEDBY, useId(self._input.labels?.[0]));
 		on(self._root || self, EVENTS, self);
 		setExpanded(self, true);

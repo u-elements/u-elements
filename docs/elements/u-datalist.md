@@ -470,6 +470,7 @@ Using [Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API
 
 ## Changelog
 
+- **1.0.3:** Enhance `JSDOM` compatibility by not assigning `view` in `FocusEvent`
 - **1.0.2:** Prevent error if removing `<input>` during `input` event
 - **1.0.1:** Restore call to `togglePopover`
 - **1.0.0:**

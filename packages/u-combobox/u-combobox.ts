@@ -171,6 +171,7 @@ const render = (
 	const edit = isMultiEdit ? null : addedNodes?.[0] || removedNodes?.[0];
 	const total = multiple ? items.length : 1;
 	const values: string[] = [];
+	let label = `${_speak}${text(control?.labels?.[0])}, ${multiple ? (total ? _texts.found.replace("%d", `${total}`) : _texts.empty) : ""}`;
 
 	// Announce if only one item has changed and multiple with focus OR single with item in focus
 	if (edit?.nodeName === "DATA" && (multiple ? _focus : edit === _focus)) {
@@ -180,13 +181,14 @@ const render = (
 
 		if (IS_MOBILE || _focus === control) LIVE.textContent = _speak; // Live announce when focus can not be moved
 		if (control && control !== nextFocus) {
-			attr(control, "aria-hidden", "true"); // Prevent announce when temporarily focused
+			attr(control, "aria-expanded", null); // Prevent announce state when temporarily focused
+			label = "\u{A0}"; // Prevent VoiceOver announcing aria-label change
 			control.inputMode = "none"; // Prevent virtual keyboard on iOS and Android
 			control.focus();
 		}
 
 		setTimeout(() => {
-			if (control) attr(control, "aria-hidden", null); // Revert aria-hidden
+			if (control) attr(control, "aria-expanded", "true"); // Revert aria-expanded
 			if (control) attr(control, "inputMode", inputMode); // Revert inputMode
 
 			nextFocus?.focus?.();
@@ -217,7 +219,6 @@ const render = (
 	}
 
 	// Setup input and list (Note: Label pointing to the input overwrites input's aria-label in Firefox)
-	const label = `${_speak}${text(control?.labels?.[0])}, ${multiple ? (total ? _texts.found.replace("%d", `${total}`) : _texts.empty) : ""}`;
 	if (list) attr(list, "aria-multiselectable", `${multiple}`); // Sync datalist multiselect
 	if (control) attr(control, "list", useId(list)); // Connect datalist and input
 	if (control) attr(control, "aria-label", label);
@@ -331,15 +332,18 @@ const onInput = (
 			? !event.inputType || event.inputType === CLICK // Firefox uses inputType "insertReplacementText" when clicking on <datalist>
 			: !!value; // WebKit uses Event (not InputEvent) both on <datalist> click and clear when type="search" so we need to check value
 
-	self.querySelector("del")?.toggleAttribute("hidden", !value); // Toggle clear button visibility
-	if (!isClick) return multiple || dispatchMatch(self);
-	event.stopImmediatePropagation(); // Prevent input event when reverting value anyway
-	if (control) control.value = self._value; // Revert value as it will be changed by dispatchChange if needed
-	for (const opt of options)
-		if (opt.value && opt.value === value) {
-			dispatchChange(self, opt, multiple);
-			return setTimeout(syncInputValue, 0, self, true); // Sync input value after re-render
-		}
+	if (isClick) {
+		event.stopImmediatePropagation(); // Prevent input event when reverting value anyway
+		if (control) control.value = self._value; // Revert value as it will be changed by dispatchChange if needed
+		for (const opt of options)
+			if (opt.value && opt.value === value) {
+				dispatchChange(self, opt, multiple);
+				return setTimeout(syncInputValue, 0, self, true); // Sync input value after re-render
+			}
+	} else {
+		self.querySelector("del")?.toggleAttribute("hidden", !value); // Toggle clear button visibility
+		return multiple || dispatchMatch(self);
+	}
 };
 
 const onKeyDown = (self: UHTMLComboboxElement, event: KeyboardEvent) => {

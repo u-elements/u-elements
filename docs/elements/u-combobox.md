@@ -6,7 +6,7 @@ import { data } from '../filesize.data.ts'
 </script>
 
 # &lt;u-combobox&gt; <mark data-badge="BETA"></mark>
-`<u-combobox>` extends `<input>` with support for multiselect and separate label and programmatic value. While these features are [not yet](https://open-ui.org/components/combobox.explainer/) part of any official ARIA pattern or HTML element, `<u-combobox>` adhere closely to HTML conventions.
+`<u-combobox>` extends `<datalist>` with support for multiselect, separate label and programmatic value and clear button. While these features are [not yet](https://open-ui.org/components/combobox.explainer/) part of any official ARIA pattern or HTML element, `<u-combobox>` adhere closely to HTML conventions.
 
 :::warning IMPORTANT
 `u-combobox` is work in progress. Changes might apply and documentation is not complete.
@@ -15,7 +15,8 @@ import { data } from '../filesize.data.ts'
 **Quick intro:**
 - Use `<data>` as direct child elements - these are the removable items
 - Use `<input>` and `<u-datalist>` to allow adding and suggesting items
-- Use `data-multiple` to allow selecting multiple items
+- Use `<del>` between `input` and `datalist` to create a clear button
+- Use `data-multiple` oto allow selecting multiple items
 - Use `data-creatable` to allow creating items not in the list
 - Use `data-*` attributes to translate screen reader announcements
 - Use `beforechange`, `afterchange` and `beforematch` events to manipulate state
@@ -31,7 +32,7 @@ import { data } from '../filesize.data.ts'
 &lt;label for="my-input"&gt;
   Choose flavor of ice cream
 &lt;/label&gt;
-&lt;u-combobox&gt;
+&lt;u-combobox data-multiple&gt;
   &lt;data&gt;Coconut&lt;/data&gt;
   &lt;data&gt;Banana&lt;/data&gt;
   &lt;data&gt;Pineapple&lt;/data&gt;
@@ -99,6 +100,7 @@ bun add -S @u-elements/u-combobox
   - `UHTMLComboboxElement.items` returns `HTMLCollectionOf<HTMLDataElement>`
   - `UHTMLComboboxElement.list` returns `HTMLDataListElement | null`
   - `UHTMLComboboxElement.options` returns `HTMLCollectionOf<HTMLOptionElement> | undefined`
+  - `UHTMLComboboxElement.values` returns `string[]` with `value` of each item
 
 ### `<data>`
 - **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
@@ -138,7 +140,6 @@ myCombobox.addEventListener('beforematch', (event) => {
 ## Styling
 
 `<u-combobox>` renders as `display: block`, while `<data>` renders as `display: inline-block` with a `::after` element to render the removal `×`.
-
 
 ## Example: Norwegian
 
@@ -210,8 +211,10 @@ myCombobox.addEventListener('beforematch', (event) => {
 - DOM interface: [HTMLDataElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDataElement)
 - HTML Standard: [The &lt;data&gt; element](https://html.spec.whatwg.org/multipage/text-level-semantics.html#the-data-element)
 
-# Changelog
+## Changelog
 
+- **0.0.8:** Avoid hiding `<del>` when clicking option without `value`
+- **0.0.7:** Add support for `<del>` element to clear the input
 - **0.0.6:** Ensure correct value of hidden `<select>`
 - **0.0.5:** Prevent `input` value change when `beforechange` is prevented
 - **0.0.4:** Bugfix

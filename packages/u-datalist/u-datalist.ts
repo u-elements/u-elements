@@ -171,7 +171,7 @@ const onFocus = (self: UHTMLDataListElement, event: Event) => {
 };
 
 const onBlur = (self: UHTMLDataListElement, event: Event) => {
-	if (!IS_PRESS) setTimeout(onBlurred, 0, self); // Delay to allow focus to be set on new element
+	if (!IS_ANDROID && !IS_PRESS && self._input) setTimeout(onBlurred, 0, self); // Delay to allow focus to be set on new element
 	if (event.target === self._input && event.isTrusted)
 		event.stopImmediatePropagation(); // Native datalist does not move focus out when selecting, so prevent blur events
 };
@@ -179,12 +179,11 @@ const onBlur = (self: UHTMLDataListElement, event: Event) => {
 const onBlurred = (self: UHTMLDataListElement) => {
 	const relatedTarget = self._root?.activeElement || null;
 	const input = self._input;
-	const view = window;
 
 	if (input && input !== relatedTarget && !self.contains(relatedTarget)) {
-		input.dispatchEvent(new FocusEvent("blur", { relatedTarget, view })); // Trigger blur event on input if leaving both input and datalist
+		input.dispatchEvent(new FocusEvent("blur", { relatedTarget })); // Trigger blur event on input if leaving both input and datalist
 		input.dispatchEvent(
-			new FocusEvent("focusout", { bubbles: true, relatedTarget, view }),
+			new FocusEvent("focusout", { bubbles: true, relatedTarget }),
 		);
 		disconnectInput(self);
 	}
@@ -197,17 +196,18 @@ const onClick = (self: UHTMLDataListElement, { target }: Event) => {
 			self._input?.focus(); // Change input.value before focus move to make screen reader read the correct value
 			setExpanded(self, false); // Click on single select option should always close datalist
 		}
-
-		setValue(self._input, (target as HTMLOptionElement).value); // Set value after closing so onInput event can change DOM
+		return setValue(self._input, (target as HTMLOptionElement).value); // Set value after closing so onInput event can change DOM
 	}
+	if (IS_ANDROID) onBlurred(self); // Android does not support actual focus moving, so we need to manually close the datalist on click outside
 };
 
 const isVisible = (el: Element) => attr(el, "aria-hidden") !== "true"; // Cache function
-const onKeyDown = (self: UHTMLDataListElement, event: KeyboardEvent) => {
-	if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
-	setExpanded(self, event.key !== "Escape" && event.key !== "Tab"); // Close on ESC/Tab but show on other keys
+const onKeyDown = (self: UHTMLDataListElement, e: KeyboardEvent) => {
+	if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || e.key === "Tab")
+		return;
+	setExpanded(self, e.key !== "Escape"); // Close on ESC but show on other keys
 
-	const { key, target } = event;
+	const { key, target } = e;
 	const options = [...self.options].filter(isVisible); // Filter out hidden options
 	const prev = options.indexOf(target as HTMLOptionElement);
 	let next = -1; // If hidden - first arrow down should exit input
@@ -219,21 +219,22 @@ const onKeyDown = (self: UHTMLDataListElement, event: KeyboardEvent) => {
 		if (key === "End" || key === "PageDown") next = options.length - 1;
 		if (key === "Enter") {
 			options[prev].click();
-			return event.preventDefault(); // Prevent submit
+			return e.preventDefault(); // Prevent submit
 		}
 	}
 
 	if (options[next]) for (const option of options) option.tabIndex = -1; // Ensure u-options can have focus if iOS has a attached external keyboard
-	if (options[next]) event.preventDefault(); // Prevent scroll when on option
+	if (options[next]) e.preventDefault(); // Prevent scroll when on option
 	(options[next] || self._input)?.focus(); // Move focus to next option or input
 };
 
-const onInput = (self: UHTMLDataListElement) => {
-	const value = self._input?.value.toLowerCase().trim() || "";
+const onInput = (self: UHTMLDataListElement, e?: Event) => {
+	const { _texts, _root, _input, options } = self;
+	const value = _input?.value.toLowerCase().trim() || "";
 	const filter = !self.hasAttribute("data-nofilter"); // Support proposed nofilter attribute https://github.com/whatwg/html/issues/4882
 	const visible: HTMLOptionElement[] = [];
 
-	for (const opt of self.options) {
+	for (const opt of options) {
 		const hidden = `${opt.disabled || opt.hidden || (filter && !opt.label.toLowerCase().includes(value))}`; // The spec does not specify how to filter, so we use "label" as it represents text content
 		attr(opt, "aria-hidden", hidden); // aria-hidden needed for correct counting in VoiceOver + Safari
 		if (hidden === "false" && attr(opt, "role") !== "none") visible.push(opt);
@@ -243,8 +244,9 @@ const onInput = (self: UHTMLDataListElement) => {
 	const { length: total } = visible;
 	clearTimeout(LIVE_TIMER);
 	LIVE_TIMER = setTimeout(() => {
-		if (self.hidden || self._root?.activeElement !== self._input) return; // Only announce if focus is on <input>
-		const hitsText = `${`${self._texts[total === 1 ? "singular" : "plural"]}`.replace("%d", `${total}`)}`;
+		if (self.hidden || e?.type !== "input" || _root?.activeElement !== _input)
+			return; // Only announce if typing in <input>
+		const hitsText = `${`${_texts[total === 1 ? "singular" : "plural"]}`.replace("%d", `${total}`)}`;
 		const liveText = `${(!total && self.innerText.trim()) || hitsText}${++LIVE_SR_FIX % 2 ? "\u{A0}" : ""}`; // Force screen reader anouncement
 
 		if (value !== self._value && LIVE) LIVE.textContent = liveText; // Only announce if value has changed

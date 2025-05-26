@@ -74,9 +74,10 @@ export class UHTMLComboboxElement extends UHTMLElement {
 			createElement("slot"), // Content slot
 			createElement(
 				"style",
-				`:host(:not([hidden])) { display: block; cursor: pointer }  /* Must be display block in Safari to allow focus inside */
+				`:host(:not([hidden])) { display: block; cursor: pointer; -webkit-tap-highlight-color: rgba(0, 0, 0, 0) } /* Must be display block in Safari to allow focus inside */
 				:host(:not([data-multiple])) ::slotted(data),
 				:host([data-multiple="false"]) ::slotted(data) { display: none } /* Hide data if not multiple */
+				::slotted(del) { text-decoration: none }
 				::slotted(data) { display: inline-block; pointer-events: none }
         ::slotted(data)::after { content: '\\00D7'; content: '\\00D7' / ''; padding-inline: .5ch; pointer-events: auto }
         ::slotted(data:focus) { ${FOCUS_OUTLINE} }`, // Show focus outline around ::after only
@@ -173,32 +174,40 @@ const render = (
 
 	// Announce if only one item has changed and multiple with focus OR single with item in focus
 	if (edit?.nodeName === "DATA" && (multiple ? _focus : edit === _focus)) {
+		const inputMode = control?.inputMode || null; // Use inputMode to prevent virtual keyboard on iOS and Android
+		const nextFocus = _focus?.nodeName === "DATA" ? control : _focus;
 		_speak = `${_texts[edit.isConnected ? "added" : "removed"]} ${text(edit)}, `; // Update aria-labels
-		if (IS_MOBILE || _focus === control) LIVE.textContent = _speak; // Live announce when focus can not be moved
 
-		control?.focus();
+		if (IS_MOBILE || _focus === control) LIVE.textContent = _speak; // Live announce when focus can not be moved
+		if (control && control !== nextFocus) {
+			attr(control, "aria-hidden", "true"); // Prevent announce when temporarily focused
+			control.inputMode = "none"; // Prevent virtual keyboard on iOS and Android
+			control.focus();
+		}
+
 		setTimeout(() => {
-			(_focus?.nodeName === "DATA" ? control : _focus)?.focus?.();
+			if (control) attr(control, "aria-hidden", null); // Revert aria-hidden
+			if (control) attr(control, "inputMode", inputMode); // Revert inputMode
+
+			nextFocus?.focus?.();
 			self._speak = ""; // Prevent Firefox announcing aria-label change, but also support non-focus environments such as JAWS forms mode
 			if (IS_FIREFOX_MAC) on(self, "blur", () => render(self), EVENT_ONCE);
 			else setTimeout(render, 100, self);
 		}, 100); // 100ms delay so VoiceOver + Chrome announces new ariaLabel
 	}
 
-	// Setup items
+	// Setup items (loop as static array to prevent live HTMLCollection)
 	const keep = edit?.isConnected ? edit : items[0]; // Keep added or first item when single
-	for (const item of items) {
-		if (!multiple && item !== keep) item.remove();
-		else {
-			const label = text(item);
-			const value = item.value || label;
-			const aria = `${_speak}${label}, ${_texts.remove}, ${values.push(value)} ${_texts.of} ${total}`;
-			attr(item, "role", "button");
-			attr(item, "value", value);
-			attr(item, "tabindex", "-1");
-			attr(item, "aria-label", aria);
-		}
-	}
+	Array.from(items, (item) => {
+		if (!multiple && item !== keep) return item.remove();
+		const label = text(item);
+		const value = item.value || label;
+		const aria = `${_speak}${label}, ${_texts.remove}, ${values.push(value)} ${_texts.of} ${total}`;
+		attr(item, "role", "button");
+		attr(item, "value", value);
+		attr(item, "tabindex", "-1");
+		attr(item, "aria-label", aria);
+	});
 
 	// Set selected datalist options
 	for (const opt of self.options || []) {
@@ -212,9 +221,14 @@ const render = (
 	if (list) attr(list, "aria-multiselectable", `${multiple}`); // Sync datalist multiselect
 	if (control) attr(control, "list", useId(list)); // Connect datalist and input
 	if (control) attr(control, "aria-label", label);
-	if (control) self._value = control.value; // Store value so we can revert onInput if click
+	self._value = control?.value || ""; // Store value so we can revert onInput if click
 
-	// Setup select optionally
+	// Setup optional clear button
+	const del = self.querySelector("del");
+	if (del) attr(del, "role", "button"); // Set aria-label on delete button
+	if (del) del.hidden = !control?.value; // Hide clear button if no value
+
+	// Setup optional select
 	const select = self.querySelector("select");
 	if (select) select.multiple = multiple;
 	if (select) select.textContent = ""; // Remove all options
@@ -243,7 +257,7 @@ const dispatchMatch = (self: UHTMLComboboxElement) => {
 
 	match = [...options].find((o) => o.selected);
 	if (!match && creatable && value)
-		return dispatchChange(self, createItem(value)); // Create new item if creatable
+		return dispatchChange(self, createItem(value), false); // Create new item if creatable, and prevent remove
 	if (!match && !multiple && items[0]) return dispatchChange(self, items[0]);
 	if (!match || self.values.includes(match.value)) return render(self); // Re-render to make select options match items
 	dispatchChange(self, match, false); // Add match
@@ -287,13 +301,23 @@ const onBlurred = (self: UHTMLComboboxElement) => {
 };
 
 const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
+	const clear = (event.target as Element)?.closest?.("del");
 	const { clientX: x, clientY: y, target } = event;
-	for (const item of self.items) {
+	const { control, items } = self;
+
+	// Support clear button
+	if (clear && control) {
+		event.preventDefault();
+		setValue(control, "", "deleteContentBackward"); // Clear input value
+		return control.focus();
+	}
+
+	for (const item of items) {
 		const { top, right, bottom, left } = item.getBoundingClientRect(); // Use coordinates to inside since pointer-events: none will prevent correct event.target
 		if (item.contains(target as Node)) return dispatchChange(self, item); // Keyboard and screen reader can set target to element with pointer-events: none
 		if (y >= top && y <= bottom && x >= left && x <= right) return item.focus(); // If clicking inside item, focus it
 	}
-	if (target === self) self.control?.focus(); // Focus input if clicking <u-combobox>
+	if (target === self) control?.focus(); // Focus input if clicking <u-combobox>
 };
 
 const onInput = (
@@ -307,6 +331,7 @@ const onInput = (
 			? !event.inputType || event.inputType === CLICK // Firefox uses inputType "insertReplacementText" when clicking on <datalist>
 			: !!value; // WebKit uses Event (not InputEvent) both on <datalist> click and clear when type="search" so we need to check value
 
+	self.querySelector("del")?.toggleAttribute("hidden", !value); // Toggle clear button visibility
 	if (!isClick) return multiple || dispatchMatch(self);
 	event.stopImmediatePropagation(); // Prevent input event when reverting value anyway
 	if (control) control.value = self._value; // Revert value as it will be changed by dispatchChange if needed
@@ -323,11 +348,20 @@ const onKeyDown = (self: UHTMLComboboxElement, event: KeyboardEvent) => {
 	const { key, repeat, target } = event;
 	const isControl = control && control === target;
 	const inText = isControl && control?.selectionEnd;
+	const clear = isControl && key === "Tab" && self.querySelector("del");
 	let index = isControl
 		? items.length
 		: [...items].indexOf(target as HTMLDataElement);
 
-	if (index === -1 || (!isControl && asButton(event))) return; // Skip if focus is neither on item or control or if item click
+	// Move focus clear element
+	if (clear && !clear.hidden) {
+		event.preventDefault(); // Prevent tabbing away from combobox
+		clear.tabIndex = -1; // Allow programatic focus
+		clear.focus(); // Focus first item on tab
+		on(clear, "blur", () => attr(clear, "tabindex", null), EVENT_ONCE); // Revert tabIndex
+	}
+
+	if ((!isControl && asButton(event)) || index === -1) return; // Skip if focus is neither on item or control or if item click
 	if (key === "ArrowRight" && !isControl) index += 1;
 	else if (key === "ArrowLeft" && !inText) index -= 1;
 	else if (key === "Enter" && isControl) {

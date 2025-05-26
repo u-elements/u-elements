@@ -59,25 +59,26 @@
       <br />
       <button type="button" name="before">Før</button>
       <br />
+      <!-- <form> -->
+      <label for="my-a11y-input">Velg type iskrem</label>
+      <br aria-hidden="true" />
 
-      <form>
-        <label for="my-a11y-input">Velg type iskrem</label>
-        <br aria-hidden="true" />
-
-<!-- data-sr-added="Valgte"
-data-sr-empty="Ingen valgte"
-data-sr-found="Naviger til venstre for å finne %d valgte"
-data-sr-of="av"
-data-sr-plural="%d land"
-data-sr-remove="Trykk for å fjerne"
-data-sr-removed="Fjernet"
-data-sr-singular="%d land" -->
-      <u-combobox data-multiple data-creatable>
+      <u-combobox
+        data-multiple
+        data-creatabl
+        data-sr-added="Valgte"
+        data-sr-empty="Ingen valgte"
+        data-sr-found="Naviger til venstre for å finne %d valgte"
+        data-sr-of="av"
+        data-sr-remove="Trykk for å fjerne"
+        data-sr-removed="Fjernet"
+      >
         <data>Jordbær</data>
         <data value="2">Kokkos</data>
-        <input type="search" id="my-a11y-input" list="list">
+        <input type="text" id="my-a11y-input" list="list">
+        <del aria-label="Fjern tekst">&times;</del>
         <u-datalist id="list" data-nofilter>
-          <u-option value="">Empty value</u-option>
+          <!-- <u-option value="">Empty value</u-option> -->
           <u-option value="2">Kokkos</u-option>
           <u-option>Jordbær</u-option>
           <u-option value="4" label="Sjokolade">Sjokolade (utgått)</u-option>
@@ -91,7 +92,7 @@ data-sr-singular="%d land" -->
         </u-datalist>
         <select name="test" hidden></select>
       </u-combobox>
-    </form>
+    <!-- </form> -->
       <script type="module">
         const combobox = document.querySelector('u-combobox');
         const input = document.getElementById('my-a11y-input');

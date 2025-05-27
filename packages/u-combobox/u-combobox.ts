@@ -173,23 +173,26 @@ const render = (
 	const values: string[] = [];
 	let label = `${_speak}${text(control?.labels?.[0])}, ${multiple ? (total ? _texts.found.replace("%d", `${total}`) : _texts.empty) : ""}`;
 
-	// Announce if only one item has changed and multiple with focus OR single with item in focus
-	if (edit?.nodeName === "DATA" && (multiple ? _focus : edit === _focus)) {
-		const inputMode = control?.inputMode || null; // Use inputMode to prevent virtual keyboard on iOS and Android
+	if (
+		control &&
+		edit?.nodeName === "DATA" && // Announce if only one item has changed...
+		(multiple ? _focus : edit === _focus) // ...and multiple with focus OR single with item in focus
+	) {
+		const inputMode = attr(control, "inputmode"); // Use inputMode to prevent virtual keyboard on iOS and Android
 		const nextFocus = _focus?.nodeName === "DATA" ? control : _focus;
 		_speak = `${_texts[edit.isConnected ? "added" : "removed"]} ${text(edit)}, `; // Update aria-labels
 
 		if (IS_MOBILE || _focus === control) LIVE.textContent = _speak; // Live announce when focus can not be moved
-		if (control && control !== nextFocus) {
+		if (control !== nextFocus) {
 			attr(control, "aria-expanded", null); // Prevent announce state when temporarily focused
+			attr(control, "inputmode", "none"); // Prevent virtual keyboard on iOS and Android
 			label = "\u{A0}"; // Prevent VoiceOver announcing aria-label change
-			control.inputMode = "none"; // Prevent virtual keyboard on iOS and Android
 			control.focus();
 		}
 
 		setTimeout(() => {
-			if (control) attr(control, "aria-expanded", "true"); // Revert aria-expanded
-			if (control) attr(control, "inputMode", inputMode); // Revert inputMode
+			attr(control, "aria-expanded", "true"); // Revert aria-expanded
+			attr(control, "inputmode", inputMode); // Revert inputMode
 
 			nextFocus?.focus?.();
 			self._speak = ""; // Prevent Firefox announcing aria-label change, but also support non-focus environments such as JAWS forms mode
@@ -341,7 +344,8 @@ const onInput = (
 				return setTimeout(syncInputValue, 0, self, true); // Sync input value after re-render
 			}
 	} else {
-		self.querySelector("del")?.toggleAttribute("hidden", !value); // Toggle clear button visibility
+		const del = self.querySelector("del");
+		if (del) del.hidden = !value; // Toggle clear button visibility
 		return multiple || dispatchMatch(self);
 	}
 };

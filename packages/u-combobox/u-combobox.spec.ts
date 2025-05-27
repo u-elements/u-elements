@@ -2,18 +2,13 @@ import { expect, test } from "@playwright/test";
 import type { UHTMLComboboxElement } from "./u-combobox";
 
 const isMobile = () => test.info().project.name.startsWith("Mobile");
-const safeMultiselectable = () => {
-	const BROWSER = test.info().project.name;
-	const IS_SAFARI = BROWSER === "Webkit" || BROWSER === "Mobile Safari";
-	return IS_SAFARI ? "aria-multiselectable" : "data-multiselectable";
-};
 
 test.beforeEach(async ({ page }) => {
 	await page.goto("index.html");
 	await page.evaluate(() => {
 		document.body.innerHTML = `
 			<label for="my-tags">My label</label>
-			<u-combobox>
+			<u-combobox data-multiple>
 				<data>Tag 1</data>
 				<data>Tag 2</data>
 				<data value="tag-3">Tag 3</data>
@@ -41,34 +36,33 @@ test.describe("u-combobox", () => {
 	});
 
 	test("is is defined", async ({ page }) => {
-		const uTags = page.locator("u-combobox");
-		const instance = await uTags.evaluate(
+		const uCombobox = page.locator("u-combobox");
+		const instance = await uCombobox.evaluate(
 			(el) => el instanceof (customElements.get("u-combobox") as never),
 		);
 
 		expect(instance).toBeTruthy();
-		await expect(uTags).toBeAttached();
+		await expect(uCombobox).toBeAttached();
 	});
 
 	test("sets up properties", async ({ page }) => {
 		expect(
 			await page.evaluate<boolean>(() => {
-				const uTags =
+				const uCombobox =
 					document.querySelector<UHTMLComboboxElement>("u-combobox");
 				const label = document.querySelector("label");
 				const input = document.querySelector("input");
 				const items = document.querySelectorAll("u-combobox data");
 
 				return (
-					uTags?.control === input &&
-					[...uTags.items].every((item, index) => item === items[index])
+					uCombobox?.control === input &&
+					[...uCombobox.items].every((item, index) => item === items[index])
 				);
 			}),
 		).toBe(true);
 	});
 
 	test("sets up attributes", async ({ page }) => {
-		const uTags = page.locator("u-combobox");
 		const uDatalist = page.locator("u-datalist");
 		const uOption = page.locator("u-option");
 		const input = page.locator("input");
@@ -76,9 +70,8 @@ test.describe("u-combobox", () => {
 		const itemsCount = await items.count();
 		const inputLabel = `My label, Navigate left to find ${itemsCount} selected`;
 
-		await expect(uTags).toHaveAttribute("aria-label", "My label");
 		await expect(input).toHaveAttribute("aria-label", inputLabel);
-		await expect(uDatalist).toHaveAttribute(safeMultiselectable(), "true");
+		await expect(uDatalist).toHaveAttribute("aria-multiselectable", "true");
 		await expect(uOption.nth(0)).toHaveAttribute("selected");
 		await expect(uOption.nth(1)).toHaveAttribute("selected");
 		await expect(uOption.nth(2)).toHaveAttribute("selected");

@@ -167,10 +167,12 @@ const skip = [
 	"document.hidden",
 	"document.prepend",
 	"document.title",
+	"element.checkvisibility", // Ignored because support is optional
 	"element.part",
 	"function.name",
 	"htmlelement.popover", // Ignored because support is optional
 	"htmlelement.togglepopover", // Ignored because support is optional
+	"htmlelement.inputmode", // Ignored because support is optional
 	"htmlelement.action",
 	"htmlelement.autocomplete",
 	"htmlelement.disabled",

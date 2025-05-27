@@ -119,6 +119,11 @@ export class UHTMLDataListElement extends UHTMLElement {
 	}
 }
 
+const isVisible = (el: HTMLElement) =>
+	el.checkVisibility
+		? el.checkVisibility()
+		: !!(el.offsetHeight && el.offsetHeight);
+
 const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
 	if (self.hidden !== open) return; // Prevent unnecessary updates
 	self.hidden = !open;
@@ -191,17 +196,17 @@ const onBlurred = (self: UHTMLDataListElement) => {
 
 const onClick = (self: UHTMLDataListElement, { target }: Event) => {
 	if (!self._input || self._input === target) return setExpanded(self, true);
-	if ([...self.options].includes(target as HTMLOptionElement)) {
-		if (attr(self, "aria-multiselectable") !== "true") {
-			self._input?.focus(); // Change input.value before focus move to make screen reader read the correct value
-			setExpanded(self, false); // Click on single select option should always close datalist
+	for (const opt of self.options)
+		if (opt.contains(target as Node)) {
+			if (attr(self, "aria-multiselectable") !== "true") {
+				self._input?.focus(); // Change input.value before focus move to make screen reader read the correct value
+				setExpanded(self, false); // Click on single select option should always close datalist
+			}
+			return setValue(self._input, opt.value); // Set value after closing so onInput event can change DOM
 		}
-		return setValue(self._input, (target as HTMLOptionElement).value); // Set value after closing so onInput event can change DOM
-	}
-	if (IS_ANDROID) onBlurred(self); // Android does not support actual focus moving, so we need to manually close the datalist on click outside
+	if (IS_ANDROID) onBlurred(self); // Android does not support actual focus moving, so we need to manually close the datalist when click outside
 };
 
-const isVisible = (el: Element) => attr(el, "aria-hidden") !== "true"; // Cache function
 const onKeyDown = (self: UHTMLDataListElement, e: KeyboardEvent) => {
 	if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || e.key === "Tab")
 		return;
@@ -237,7 +242,7 @@ const onInput = (self: UHTMLDataListElement, e?: Event) => {
 	for (const opt of options) {
 		const hidden = `${opt.disabled || opt.hidden || (filter && !opt.label.toLowerCase().includes(value))}`; // The spec does not specify how to filter, so we use "label" as it represents text content
 		attr(opt, "aria-hidden", hidden); // aria-hidden needed for correct counting in VoiceOver + Safari
-		if (hidden === "false" && attr(opt, "role") !== "none") visible.push(opt);
+		if (isVisible(opt)) visible.push(opt);
 	}
 
 	// Announce if content has changed

@@ -470,10 +470,11 @@ Using [Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API
 
 ## Changelog
 
-- **1.0.4:** Enhance Android compatibility
-- **1.0.3:** Enhance `JSDOM` compatibility by not assigning `view` in `FocusEvent`
-- **1.0.2:** Prevent error if removing `<input>` during `input` event
-- **1.0.1:** Restore call to `togglePopover`
+- **1.0.5:** Improved support for nested DOM and CSS-hiding `options`
+- **1.0.4:** Improved `Android` compatibility by not relying on focus events
+- **1.0.3:** Improved `JSDOM` compatibility by not assigning `view` in `FocusEvent`
+- **1.0.2:** Fix error when consumer removes `<input>` element during `input` event
+- **1.0.1:** Improved `popover` compatibility
 - **1.0.0:**
   - Removed support for `isDatalistClick`, `syncDatalistState` and `getDatalistValue`
   - Added support for [`data-nofilter`](https://github.com/whatwg/html/issues/4882)

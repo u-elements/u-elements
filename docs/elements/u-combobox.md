@@ -213,6 +213,7 @@ myCombobox.addEventListener('beforematch', (event) => {
 
 ## Changelog
 
+- **0.0.9:** Improve browser compatibility by avoiding `toggleAttribute`
 - **0.0.8:** Avoid hiding `<del>` when clicking option without `value`
 - **0.0.7:** Add support for `<del>` element to clear the input
 - **0.0.6:** Ensure correct value of hidden `<select>`

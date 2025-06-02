@@ -10,13 +10,13 @@ import {
 	UHTMLElement,
 	attachStyle,
 	attr,
-	createAriaLive,
 	customElements,
 	getRoot,
 	mutationObserver,
 	off,
 	on,
 	setValue,
+	speak,
 	useId,
 } from "../utils";
 
@@ -27,8 +27,6 @@ declare global {
 }
 
 let LIVE_TIMER: ReturnType<typeof setTimeout>;
-let LIVE_SR_FIX = 0; // Ensure screen reader announcing by alternating non-breaking-space suffix
-let LIVE: Element;
 let INPUT_DEBOUNCE: ReturnType<typeof setTimeout> | number = 0;
 let IS_PRESS = false; // Prevent loosing focus on mousedown on <u-option> despite tabIndex -1
 const IS_MOBILE = IS_IOS || IS_ANDROID;
@@ -48,7 +46,7 @@ export class UHTMLDataListElement extends UHTMLElement {
 	_input?: HTMLInputElement;
 	_root?: Document | ShadowRoot;
 	_texts = { ...TEXTS };
-	_value = "";
+	_value = ""; // Used to prevent unnecessary announcements
 
 	// Using ES2015 syntax for backwards compatibility
 	static get observedAttributes() {
@@ -161,8 +159,6 @@ const onFocus = (self: UHTMLDataListElement, event: Event) => {
 	const isInput = event.target instanceof HTMLInputElement;
 
 	if (isInput && event.isTrusted) event.stopImmediatePropagation(); // Native datalist does not move focus out when selecting, so prevent focus events when connected
-	if (!LIVE) LIVE = createAriaLive("assertive");
-	if (!LIVE.isConnected) document.body.appendChild(LIVE);
 	if (self._input !== event.target && isInput && event.target.list === self) {
 		if (self._input) disconnectInput(self); // If previously used by other input
 
@@ -172,6 +168,7 @@ const onFocus = (self: UHTMLDataListElement, event: Event) => {
 		attr(self, SAFE_LABELLEDBY, useId(self._input.labels?.[0]));
 		on(self._root || self, EVENTS, self);
 		setExpanded(self, true);
+		speak(); // Prepare screen reader announcements
 	}
 };
 
@@ -249,12 +246,9 @@ const onInput = (self: UHTMLDataListElement, e?: Event) => {
 	const { length: total } = visible;
 	clearTimeout(LIVE_TIMER);
 	LIVE_TIMER = setTimeout(() => {
-		if (self.hidden || e?.type !== "input" || _root?.activeElement !== _input)
-			return; // Only announce if typing in <input>
-		const hitsText = `${`${_texts[total === 1 ? "singular" : "plural"]}`.replace("%d", `${total}`)}`;
-		const liveText = `${(!total && self.innerText.trim()) || hitsText}${++LIVE_SR_FIX % 2 ? "\u{A0}" : ""}`; // Force screen reader anouncement
-
-		if (value !== self._value && LIVE) LIVE.textContent = liveText; // Only announce if value has changed
+		const text = `${(!total && self.innerText.trim()) || `${_texts[total === 1 ? "singular" : "plural"]}`.replace("%d", `${total}`)}`;
+		const isType = e?.type === "input" && value !== self._value;
+		if (isType && _root?.activeElement === _input) speak(text);
 		self._value = value;
 	}, 1000); // 1 second makes room for screen reader to announce the typed character, before announcing the hits count
 

@@ -9,7 +9,6 @@ import {
 	UHTMLElement,
 	asButton,
 	attr,
-	createAriaLive,
 	createElement,
 	customElements,
 	getRoot,
@@ -297,3 +296,11 @@ function attributeTexts(
 	if (key && value && texts[key]) texts[key] = value;
 	return [];
 }
+
+const createAriaLive = (mode: "polite" | "assertive") => {
+	const live = createElement("div");
+	live.style.cssText =
+		"position:fixed;overflow:hidden;width:1px;white-space:nowrap";
+	attr(live, "aria-live", mode);
+	return live;
+};

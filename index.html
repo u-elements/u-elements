@@ -64,16 +64,16 @@
       <br aria-hidden="true" />
 
       <u-combobox
-        data-multiple
+        data-multipl
         data-creatabl
-        data-sr-added="Valgte"
+        data-sr-added="La til"
         data-sr-empty="Ingen valgte"
         data-sr-found="Naviger til venstre for å finne %d valgte"
         data-sr-of="av"
         data-sr-remove="Trykk for å fjerne"
         data-sr-removed="Fjernet"
       >
-        <data>Jordbær</data>
+        <!-- <data>Jordbær</data> -->
         <data value="2">Kokkos</data>
         <input type="text" id="my-a11y-input">
         <del aria-label="Fjern tekst">&times;</del>
@@ -101,7 +101,7 @@
         // input.addEventListener('input', console.log);
         combobox.addEventListener('beforechange', (event) => {
           // event.preventDefault();
-          // console.log(event);
+          console.log(event);
         });
         // combobox.addEventListener('beforematch', (event) => {
         //   event.preventDefault();

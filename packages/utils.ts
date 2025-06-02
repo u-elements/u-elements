@@ -201,17 +201,21 @@ export const getLabel = (el: Element) => {
 };
 
 /**
- * createAriaLive
+ * speak
  * @description Creates a aria-live element for announcements
- * @param mode Value of aria-live attribute
- * @return HTMLDivElement or null if on server
+ * @param text Optional text to announce
  */
-export const createAriaLive = (mode: "polite" | "assertive") => {
-	const live = createElement("div");
-	live.style.cssText =
-		"position:fixed;overflow:hidden;width:1px;white-space:nowrap";
-	attr(live, "aria-live", mode);
-	return live;
+let LIVE: HTMLElement;
+let LIVE_SR_FIX = 0; // Ensure screen reader announcing by alternating non-breaking-space suffix
+export const speak = (text?: string) => {
+	if (!LIVE) {
+		LIVE = createElement("div");
+		LIVE.style.cssText =
+			"position:fixed;overflow:hidden;width:1px;white-space:nowrap";
+		attr(LIVE, "aria-live", "assertive");
+	}
+	if (!LIVE.isConnected) document.body.append(LIVE);
+	if (text) LIVE.textContent = `${text}${LIVE_SR_FIX++ % 2 ? "\u{A0}" : ""}`; // Non-breaking space to ensure screen reader announces
 };
 
 // Trigger value change in React compatible manor https://stackoverflow.com/a/46012210

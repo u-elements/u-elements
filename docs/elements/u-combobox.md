@@ -213,6 +213,7 @@ myCombobox.addEventListener('beforematch', (event) => {
 
 ## Changelog
 
+- **0.0.10:** Only remove `<data>` during change event for React compatiliby
 - **0.0.9:** Improve browser compatibility by avoiding `toggleAttribute`
 - **0.0.8:** Avoid hiding `<del>` when clicking option without `value`
 - **0.0.7:** Add support for `<del>` element to clear the input

@@ -1,31 +1,37 @@
 import { useEffect, useRef, useState } from 'react'
 import ReactDOM from 'react-dom/client'
 // import { render } from 'react-dom' // For React 16.8
-import type { UHTMLComboboxElement } from '../../packages/u-combobox'
+import type { UHTMLComboboxElement } from '../../packages/u-combobox/u-combobox'
 import '../../packages/u-progress'
 import '../../packages/u-datalist'
-import '../../packages/u-combobox'
+import '../../packages/u-combobox/u-combobox'
 import '../../packages/u-tags'
 import '../../packages/u-tabs'
 
 export default function App() {
   const [count, setCount] = useState(0);
+  const [selected, setSelected] = useState(["Test 1"]);
   const ref = useRef<UHTMLComboboxElement>(null);
 
-  useEffect(() => {
-    const self = ref.current
-    const beforeChange = (event: CustomEvent<HTMLDataElement>) => {
-      const target = event.target as UHTMLComboboxElement;
-      const item = event.detail;
-      event.preventDefault();
-      setSelected(target.values.concat(item.value).filter((v) => item.value !== v || !item.isConnected));
-    }
+  const handleBeforeChange = (event: CustomEvent<HTMLDataElement>) => {
+    const target = event.target as UHTMLComboboxElement;
+    const item = event.detail;
+    event.preventDefault();
+    setSelected(target.values.concat(item.value).filter((v) => item.value !== v || !item.isConnected));
+  }
 
-    self?.addEventListener('beforechange', beforeChange, true)
-    return () => self?.removeEventListener('beforechange', beforeChange, true);
-  }, []);
+  // useEffect(() => {
+  //   const self = ref.current
+  //   const beforeChange = (event: CustomEvent<HTMLDataElement>) => {
+  //     const target = event.target as UHTMLComboboxElement;
+  //     const item = event.detail;
+  //     event.preventDefault();
+  //     setSelected(target.values.concat(item.value).filter((v) => item.value !== v || !item.isConnected));
+  //   }
 
-  const [selected, setSelected] = useState(["Test 1", "Test 2"]);
+  //   self?.addEventListener('beforechange', beforeChange, true)
+  //   return () => self?.removeEventListener('beforechange', beforeChange, true);
+  // }, []);
 
   return (
     <div>
@@ -39,18 +45,19 @@ export default function App() {
       <br />
       <label htmlFor="my-input">Choose ice cream</label>
       <br />
-      <select multiple value={selected} onChange={()=>{}}>
-        {selected.map((opt) => <option key={opt}>{opt}</option>)}
-      </select>
-      <u-combobox ref={ref} data-multiple>
+      {/* @ts-expect-error */}
+      <u-combobox ref={ref} data-multiple onbeforechange={handleBeforeChange}>
+        <select></select>
         {selected.map((opt) => <data key={opt}>{opt}</data>)}
         <input id="my-input" />
+        <del aria-label="Fjern tekst">&times;</del>
         <u-datalist id="my-list">
           <u-option>Test 1</u-option>
           <u-option>Test 2</u-option>
           <u-option>Test 3</u-option>
           <u-option>Bergen</u-option>
         </u-datalist>
+      {/* @ts-expect-error */}
       </u-combobox>
       <br />
       <br />

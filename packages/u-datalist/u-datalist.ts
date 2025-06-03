@@ -248,7 +248,7 @@ const onInput = (self: UHTMLDataListElement, e?: Event) => {
 	LIVE_TIMER = setTimeout(() => {
 		const text = `${(!total && self.innerText.trim()) || `${_texts[total === 1 ? "singular" : "plural"]}`.replace("%d", `${total}`)}`;
 		const isType = e?.type === "input" && value !== self._value;
-		if (isType && _root?.activeElement === _input) speak(text);
+		if (isType && !self.hidden && _root?.activeElement === _input) speak(text);
 		self._value = value;
 	}, 1000); // 1 second makes room for screen reader to announce the typed character, before announcing the hits count
 

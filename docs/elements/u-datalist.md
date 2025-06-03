@@ -470,6 +470,7 @@ Using [Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API
 
 ## Changelog
 
+- **1.0.6:** Prevent announce hits count if closed
 - **1.0.5:** Improved support for nested DOM and CSS-hiding `options`
 - **1.0.4:** Improved `Android` compatibility by not relying on focus events
 - **1.0.3:** Improved `JSDOM` compatibility by not assigning `view` in `FocusEvent`

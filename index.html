@@ -64,8 +64,8 @@
       <br aria-hidden="true" />
 
       <u-combobox
-        data-multipl
         data-creatabl
+        data-nochips
         data-sr-added="La til"
         data-sr-empty="Ingen valgte"
         data-sr-found="Naviger til venstre for å finne %d valgte"
@@ -73,11 +73,13 @@
         data-sr-remove="Trykk for å fjerne"
         data-sr-removed="Fjernet"
       >
+        <select name="test" style="width:100px">
+          <option value="2" selected>Kokkos</option>
+        </select>
         <!-- <data>Jordbær</data> -->
-        <data value="2">Kokkos</data>
         <input type="text" id="my-a11y-input">
         <del aria-label="Fjern tekst">&times;</del>
-        <u-datalist data-nofilter>
+        <u-datalist>
           <u-option value="">Empty value</u-option>
           <u-option value="2" label="Kokkos">Kokkos<div>Hei</div></u-option>
           <u-option>Jordbær</u-option>
@@ -90,18 +92,17 @@
           <u-option>Mango</u-option>
           <u-option>Hasselnøtt</u-option>
         </u-datalist>
-        <select name="test" hidden></select>
       </u-combobox>
     <!-- </form> -->
       <script type="module">
         const combobox = document.querySelector('u-combobox');
         const input = document.getElementById('my-a11y-input');
-        const select = document.querySelector('select[name="test"]');
+        const select = document.querySelector('u-combobox select');
 
         // input.addEventListener('input', console.log);
-        combobox.addEventListener('beforechange', (event) => {
-          // event.preventDefault();
-          console.log(event);
+        select.addEventListener('change', (event) => {
+          event.preventDefault();
+          event.detail.isConnected ? event.detail.remove() : event.target.add(event.detail);
         });
         // combobox.addEventListener('beforematch', (event) => {
         //   event.preventDefault();

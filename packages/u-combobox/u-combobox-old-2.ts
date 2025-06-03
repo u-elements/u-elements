@@ -51,13 +51,14 @@ const TEXTS = {
  */
 export class UHTMLComboboxElement extends UHTMLElement {
 	// Using underscore instead of private fields for backwards compatibility
+	_chips?: HTMLCollectionOf<HTMLDataElement>;
 	_clear?: HTMLElement | null;
-	_control?: HTMLInputElement | null; // Speed up by caching
 	_focus?: HTMLElement;
-	_items?: HTMLCollectionOf<HTMLDataElement>;
+	_input?: HTMLInputElement | null; // Speed up by caching
 	_list?: HTMLDataListElement | null;
 	_options?: HTMLCollectionOf<HTMLOptionElement>;
 	_root?: Document | ShadowRoot;
+	_select?: HTMLSelectElement | null;
 	_speak = "";
 	_texts = { ...TEXTS };
 	_value = ""; // Locally store value to store value before input-click
@@ -74,8 +75,6 @@ export class UHTMLComboboxElement extends UHTMLElement {
 			createElement(
 				"style",
 				`:host(:not([hidden])) { display: block; cursor: pointer; -webkit-tap-highlight-color: rgba(0, 0, 0, 0) } /* Must be display block in Safari to allow focus inside */
-				:host(:not([data-multiple])) ::slotted(data),
-				:host([data-multiple="false"]) ::slotted(data) { display: none } /* Hide data if not multiple */
 				::slotted(input[inputmode="none"]) { outline: none } /* Hide temporary foucs outline flash */
 				::slotted(del) { text-decoration: none }
 				::slotted(data:not([hidden])) { display: inline-block; pointer-events: none }
@@ -88,9 +87,9 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		this._root = getRoot(this);
 
 		on(this, EVENTS, this, true); // Bind events using capture phase to run before framworks
-		mutationObserver(this, { childList: true });
+		mutationObserver(this, { childList: true, subtree: true });
 		setTimeout(render, 0, this); // Delay to allow DOM to be ready
-		setTimeout(syncInputValue, 0, this);
+		setTimeout(syncInputValue, 0, this); // Sync input value without triggering event
 	}
 	attributeChangedCallback(prop: string, _: string, val: string) {
 		const text = prop.split("data-sr-")[1] as keyof typeof TEXTS;
@@ -99,8 +98,8 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	disconnectedCallback() {
 		mutationObserver(this, false);
 		off(this, EVENTS, this, true);
-		this._items = this._clear = this._focus = this._control = undefined;
-		this._list = this._options = this._root = undefined;
+		this._chips = this._clear = this._focus = this._input = undefined;
+		this._list = this._options = this._root = this._select = undefined;
 	}
 	handleEvent(event: Event) {
 		const target = event.target as HTMLInputElement | null;
@@ -115,10 +114,10 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		if (event.type === "mutation") render(this, event as CustomEvent);
 	}
 	get multiple() {
-		return (attr(this, "data-multiple") ?? FALSE) !== FALSE; // Allow data-multiple="false" to be more React friendly
+		return this.select?.multiple || false;
 	}
 	set multiple(value: boolean) {
-		attr(this, "data-multiple", value ? "" : null);
+		if (this.select) this.select.multiple = value;
 	}
 	get creatable() {
 		return (attr(this, "data-creatable") ?? FALSE) !== FALSE; // Allow data-creatable="false" to be more React friendly
@@ -126,23 +125,36 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	set creatable(value: boolean) {
 		attr(this, "data-creatable", value ? "" : null);
 	}
-	get control(): HTMLInputElement | null {
-		if (!this._control?.isConnected)
-			this._control = this.querySelector("input");
-		return this._control; // Inspired by https://developer.mozilla.org/en-US/docs/Web/API/HTMLLabelElement/control
+	get nochips() {
+		return (attr(this, "data-nochips") ?? FALSE) !== FALSE; // Allow data-nochips="false" to be more React friendly
+	}
+	set nochips(value: boolean) {
+		attr(this, "data-nochips", value ? "" : null);
+	}
+	get input(): HTMLInputElement | null {
+		if (!this._input?.isConnected) this._input = this.querySelector("input");
+		return this._input; // Inspired by https://developer.mozilla.org/en-US/docs/Web/API/HTMLLabelElement/control
 	}
 	get list(): HTMLDataListElement | null {
 		if (!this._list?.isConnected)
 			this._list = this.querySelector("u-datalist,datalist");
 		return this._list; // Inspired by https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/list
 	}
+	get select(): HTMLSelectElement {
+		if (!this._select?.isConnected) this._select = this.querySelector("select");
+		if (!this._select)
+			throw new Error(
+				"u-combobox: No <select> found. Please add a <select> as child.",
+			);
+		return this._select;
+	}
 	get clear(): HTMLElement | null {
 		if (!this._clear?.isConnected) this._clear = this.querySelector("del");
 		return this._clear;
 	}
-	get items(): HTMLCollectionOf<HTMLDataElement> {
-		if (!this._items) this._items = this.getElementsByTagName("data");
-		return this._items;
+	get chips(): HTMLCollectionOf<HTMLDataElement> {
+		if (!this._chips) this._chips = this.getElementsByTagName("data");
+		return this._chips;
 	}
 	get options(): HTMLCollectionOf<HTMLOptionElement> | undefined {
 		if (!this._options) {
@@ -151,42 +163,48 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		}
 		return this._options;
 	}
-	get values(): string[] {
-		return [...this.items].map(({ value }) => value);
+	get values(): { label: string; value: string }[] {
+		return Array.from(this.select.selectedOptions, ({ label, value }) => ({
+			label,
+			value,
+		}));
+	}
+	get selected(): HTMLCollectionOf<HTMLOptionElement> {
+		return this.select.selectedOptions;
 	}
 }
 
-const text = (el?: Node | null) => el?.textContent?.trim() || "";
-const isData = (el: unknown) => el instanceof HTMLDataElement;
 const render = (
 	self: UHTMLComboboxElement,
 	event?: CustomEvent<MutationRecord[]>,
 ) => {
-	const { _focus, _texts, items, control, list, multiple } = self;
-	let label = `${text(control?.labels?.[0])}, ${multiple ? (items.length ? _texts.found.replace("%d", `${items.length}`) : _texts.empty) : ""}`;
-	const edits: HTMLDataElement[] = [];
-	for (const { addedNodes, removedNodes } of event?.detail || []) {
-		for (const el of addedNodes) if (isData(el)) edits.unshift(el); // Add added nodes to the front
-		for (const el of removedNodes) if (isData(el)) edits.push(el); // Add removed nodes to the front
-	}
+	const { _focus, _texts, chips, input, list, multiple, select, selected } =
+		self;
+	let label = `${input?.labels?.[0]?.textContent || ""}, ${multiple ? (selected.length ? _texts.found.replace("%d", `${selected.length}`) : _texts.empty) : ""}`;
+	const isChip = _focus instanceof HTMLDataElement;
+	const edits: HTMLOptionElement[] = [];
+	for (const mutation of event?.detail || [])
+		if (mutation.target === select) {
+			edits.unshift(...(mutation.addedNodes as NodeListOf<HTMLOptionElement>));
+			edits.push(...(mutation.removedNodes as NodeListOf<HTMLOptionElement>));
+		}
 
-	const shouldAnnounce = multiple ? edits.length === 1 : edits[0] === _focus;
-	if (_focus && control && shouldAnnounce) {
-		const inputMode = attr(control, "inputmode"); // Use inputMode to prevent virtual keyboard on iOS and Android
-		const nextFocus = isData(_focus) ? control : _focus;
-		self._speak = `${_texts[edits[0].isConnected ? "added" : "removed"]} ${text(edits[0])}, `; // Update aria-labels
+	if (_focus && input && (multiple ? edits.length === 1 : isChip)) {
+		const inputMode = attr(input, "inputmode"); // Use inputMode to prevent virtual keyboard on iOS and Android
+		const nextFocus = isChip ? input : _focus;
+		self._speak = `${_texts[edits[0].isConnected ? "added" : "removed"]} ${edits[0].label}, `; // Update aria-labels
 
-		if (IS_MOBILE || _focus === control) speak(self._speak); // Live announce when focus can not be moved
-		if (control !== nextFocus) {
-			attr(control, "aria-expanded", null); // Prevent announce state when temporarily focused
-			attr(control, "inputmode", "none"); // Prevent virtual keyboard on iOS and Android
+		if (IS_MOBILE || _focus === input) speak(self._speak); // Live announce when focus can not be moved
+		if (input !== nextFocus) {
+			attr(input, "aria-expanded", null); // Prevent announce state when temporarily focused
+			attr(input, "inputmode", "none"); // Prevent virtual keyboard on iOS and Android
 			label = "\u{A0}"; // Prevent VoiceOver announcing aria-label change
-			control.focus();
+			input.focus();
 		}
 
 		setTimeout(() => {
-			attr(control, "aria-expanded", "true"); // Revert aria-expanded
-			attr(control, "inputmode", inputMode); // Revert inputMode
+			attr(input, "aria-expanded", "true"); // Revert aria-expanded
+			attr(input, "inputmode", inputMode); // Revert inputMode
 
 			nextFocus?.focus?.();
 			self._speak = ""; // Prevent Firefox announcing aria-label change, but also support non-focus environments such as JAWS forms mode
@@ -195,58 +213,61 @@ const render = (
 		}, 100); // 100ms delay so VoiceOver + Chrome announces new ariaLabel
 	}
 
-	// Setup items (loop as static array to prevent live HTMLCollection)
-	let idx = 0;
-	for (const item of items) {
-		const label = text(item);
-		const value = item.value || label;
-		const aria = `${self._speak}${label}, ${_texts.remove}, ${++idx} ${_texts.of} ${items.length}`;
-		attr(item, "role", "button");
-		attr(item, "value", value);
-		attr(item, "tabindex", "-1");
-		attr(item, "aria-label", aria);
-	}
-	if (!multiple && idx > 1)
-		console.warn("u-combobox: Multiple <data> found in single mode.");
+	// Setup chips
+	if (!self.nochips)
+		Array.from(
+			{ length: Math.max(chips.length, selected.length) },
+			(_, idx) => {
+				const option = selected[idx];
+				const chip =
+					chips[idx] ||
+					input?.insertAdjacentElement("beforebegin", createElement("data"));
+
+				if (!option) return chip?.remove(); // Remove chip if no option
+				const aria = `${self._speak}${option.label}, ${_texts.remove}, ${idx + 1} ${_texts.of} ${selected.length}`;
+				chip.textContent = option.label;
+				attr(chip, "role", "button");
+				attr(chip, "tabindex", "-1");
+				attr(chip, "aria-label", aria);
+			},
+		);
 
 	// Setup input and list (Note: Label pointing to the input overwrites input's aria-label in Firefox)
 	if (list) attr(list, "aria-multiselectable", `${multiple}`); // Sync datalist multiselect
-	if (control) attr(control, "list", useId(list)); // Connect datalist and input
-	if (control) attr(control, "aria-label", `${self._speak}${label}`);
+	if (input) attr(input, "list", useId(list)); // Connect datalist and input
+	if (input) attr(input, "aria-label", `${self._speak}${label}`);
 
-	// Setup optional select
-	const select = self.querySelector("select");
-	if (select) select.multiple = multiple;
-	if (select) select.textContent = ""; // Remove all options
-	select?.append(...self.values.map((val) => new Option(val, val, true, true))); // Store programatic values
-
-	syncOptionsWithItems(self);
+	syncOptionsWithSelected(self);
+	syncClearWithInput(self);
+	mutationObserver(self)?.takeRecords();
 };
 
 const syncClearWithInput = (self: UHTMLComboboxElement) => {
 	if (self.clear) attr(self.clear, "role", "button");
-	if (self.clear) self.clear.hidden = !self.control?.value;
+	if (self.clear) self.clear.hidden = !self.input?.value;
 };
 
-const syncOptionsWithItems = (self: UHTMLComboboxElement) => {
-	const { _speak, options = [], values } = self;
+const syncOptionsWithSelected = (self: UHTMLComboboxElement) => {
+	const { _speak, options = [], selected } = self;
+	const values = Array.from(selected, (o) => o.value); // Get selected values
 	for (const opt of options) {
-		const value = attr(opt, "value") ?? text(opt); // u-option might not be initialized yet
-		attr(opt, "aria-label", _speak ? `${_speak}${text(opt)}` : null);
-		attr(opt, "selected", values.includes(value) ? "" : null); // u-option might not be initialized yet
+		const text = opt.textContent?.trim() || ""; // u-option might not be initialized yet
+		const value = attr(opt, "value") ?? attr(opt, "label") ?? text;
+		attr(opt, "aria-label", _speak ? `${_speak}${text}` : null);
+		attr(opt, "selected", values.includes(value) ? "" : null);
 	}
 };
 
 const syncInputValue = (self: UHTMLComboboxElement) => {
-	const { multiple, control, items } = self;
-	const value = text(items[0]);
-	if (!multiple && control && value !== control.value)
-		setValue(control, value, "insertText");
+	const { input, multiple, selected } = self;
+	const label = selected[0]?.label || "";
+	if (!multiple && input && label !== input.value)
+		setValue(input, label, "insertText");
 };
 
 const dispatchMatch = (self: UHTMLComboboxElement, sync = true) => {
-	const { _texts, options = [], creatable, control, items, multiple } = self;
-	const value = control?.value?.trim() || "";
+	const { _texts, options = [], creatable, input, selected, multiple } = self;
+	const value = input?.value?.trim() || "";
 	const query = value.toLowerCase() || null; // Fallback to null to prevent matching empty strings
 	let match = [...options].find((o) => o.label.trim().toLowerCase() === query); // Match label
 	const event = { bubbles: true, cancelable: true, detail: match };
@@ -254,11 +275,11 @@ const dispatchMatch = (self: UHTMLComboboxElement, sync = true) => {
 	if (self.dispatchEvent(new CustomEvent("beforematch", event)))
 		for (const opt of options) opt.selected = opt === match; // u-option is initialized at this point, so we can use .selected
 	match = [...options].find((o) => o.selected);
-	syncOptionsWithItems(self); // Re-sync options with items
+	syncOptionsWithSelected(self); // Re-sync options with items
 
 	if (match) return dispatchChange(self, match, false, !!sync);
 	if (creatable && value) return dispatchChange(self, { value }, false);
-	if (!multiple && items[0]) dispatchChange(self, items[0], true, false); // Remove items if no match
+	if (!multiple && selected[0]) dispatchChange(self, selected[0], true, false); // Remove items if no match
 	if (sync) speak(_texts.invalid);
 };
 
@@ -268,22 +289,18 @@ const dispatchChange = (
 	removable = true,
 	sync = true,
 ) => {
-	const { control, items, multiple } = self;
-	const add = createElement("data", item.label || item.value, {
-		value: item.value,
-	});
-	const remove = [...items].find((i) => i.value === item.value);
+	const { select, selected, multiple } = self;
+	const add = new Option(item.label || item.value, item.value, true, true);
+	const remove = [...selected].find((opt) => opt.value === item.value);
 	const event = { bubbles: true, cancelable: true, detail: remove || add };
 	const skip = remove && !removable;
 
-	if (!skip && self.dispatchEvent(new CustomEvent("beforechange", event))) {
-		if (!multiple) for (const item of [...items]) item.remove(); // Clear if multiple
-		if (remove) remove.remove();
-		else control?.insertAdjacentElement("beforebegin", add); // Add new item
-		self.dispatchEvent(new CustomEvent("afterchange", event));
+	if (!skip && self.select.dispatchEvent(new CustomEvent("change", event))) {
+		if (!multiple) for (const opt of [...selected]) opt.remove(); // Clear if multiple
+		remove ? remove.remove() : select.add(add);
 	}
 	// TODO: How can we sync value on option-click, and do an input event, without triggering a dispatchMatch?
-	if (sync) setTimeout(syncInputValue, 10, self); // 100ms so frameworks can update DOM first
+	// if (sync) setTimeout(syncInputValue, 10, self); // 100ms so frameworks can update DOM first
 };
 
 const onFocus = (self: UHTMLComboboxElement, { target }: Event) => {
@@ -301,26 +318,29 @@ const onBlurred = (self: UHTMLComboboxElement) => {
 
 const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
 	const { clientX: x, clientY: y, target } = event;
-	const { clear, control, items } = self;
+	const { clear, input, chips, selected } = self;
 
+	// Support clear button
 	if (clear?.contains(target as Node)) {
-		if (control) setValue(control, "", "deleteContentBackward"); // Support clear button
-		return control?.focus();
+		if (input) setValue(input, "", "deleteContentBackward");
+		return input?.focus();
 	}
-	for (const item of items) {
-		const { top, right, bottom, left } = item.getBoundingClientRect(); // Use coordinates to inside since pointer-events: none will prevent correct event.target
-		if (item.contains(target as Node)) return dispatchChange(self, item); // Keyboard and screen reader can set target to element with pointer-events: none
-		if (y >= top && y <= bottom && x >= left && x <= right) return item.focus(); // If clicking inside item, focus it
-	}
-	if (target === self) control?.focus(); // Focus input if clicking <u-combobox>
+
+	Array.from(chips, (chip, idx) => {
+		const { top, right, bottom, left } = chip.getBoundingClientRect(); // Use coordinates to inside since pointer-events: none will prevent correct event.target
+		if (chip.contains(target as Node))
+			return dispatchChange(self, selected[idx]); // Keyboard and screen reader can set target to element with pointer-events: none
+		if (y >= top && y <= bottom && x >= left && x <= right) return chip.focus(); // If clicking inside item, focus it
+	});
+	if (target === self) input?.focus(); // Focus input if clicking <u-combobox>
 };
 
 const onInput = (
 	self: UHTMLComboboxElement,
 	event: Event & Partial<InputEvent>,
 ) => {
-	const { options = [], control, multiple } = self;
-	const value = control?.value?.trim() || "";
+	const { options = [], input, multiple } = self;
+	const value = input?.value?.trim() || "";
 	const isClick =
 		event instanceof InputEvent
 			? !event.inputType || event.inputType === CLICK // Firefox uses inputType "insertReplacementText" when clicking on <datalist>
@@ -328,7 +348,7 @@ const onInput = (
 
 	if (isClick) {
 		event.stopImmediatePropagation(); // Prevent input event when reverting value anyway
-		if (control) control.value = self._value; // Revert value as it will be changed by dispatchChange if needed
+		if (input) input.value = self._value; // Revert value as it will be changed by dispatchChange if needed
 		for (const opt of options)
 			if (opt.value && opt.value === value)
 				return dispatchChange(self, opt, multiple);
@@ -338,37 +358,37 @@ const onInput = (
 
 const onKeyDown = (self: UHTMLComboboxElement, event: KeyboardEvent) => {
 	if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
-	const { clear, control, items } = self;
+	const { clear, input, chips } = self;
 	const { key, repeat, target } = event;
-	const isControl = control && control === target;
-	const inText = isControl && control?.selectionEnd;
-	let index = isControl
-		? items.length
-		: [...items].indexOf(target as HTMLDataElement);
+	const isInput = input && input === target;
+	const inText = isInput && input?.selectionEnd;
+	let index = isInput
+		? chips.length
+		: [...chips].indexOf(target as HTMLDataElement);
 
-	if (isControl && key === "Tab" && clear && !clear.hidden) {
+	if (isInput && key === "Tab" && clear && !clear.hidden) {
 		event.preventDefault(); // Prevent tabbing away from combobox
 		clear.tabIndex = -1; // Allow programatic focus
 		clear.focus(); // Focus first item on tab
 		on(clear, "blur", () => attr(clear, "tabindex", null), EVENT_ONCE); // Revert tabIndex
 	}
 
-	if ((!isControl && asButton(event)) || index === -1) return; // Skip if focus is neither on item or control or if item click
-	if (key === "ArrowRight" && !isControl) index += 1;
+	if ((!isInput && asButton(event)) || index === -1) return; // Skip if focus is neither on item or control or if item click
+	if (key === "ArrowRight" && !isInput) index += 1;
 	else if (key === "ArrowLeft" && !inText) index -= 1;
-	else if (key === "Enter" && isControl) {
-		const form = attr(control, "form");
-		attr(control, "form", "#"); // Prevent submit without preventing native datalist
-		requestAnimationFrame(() => attr(control, "form", form)); // Restore form attribute after event has bubbled;
+	else if (key === "Enter" && isInput) {
+		const form = attr(input, "form");
+		attr(input, "form", "#"); // Prevent submit without preventing native datalist
+		requestAnimationFrame(() => attr(input, "form", form)); // Restore form attribute after event has bubbled;
 		return dispatchMatch(self);
 	} else if ((key === "Backspace" || key === "Delete") && !inText) {
 		event.preventDefault(); // Prevent navigating away from page
-		if (!repeat && items[index]) return dispatchChange(self, items[index]);
-		if (isControl) index -= 1;
-	} else return isControl || control?.focus(); // Skip other keys and move back to control
+		if (!repeat && chips[index]) return dispatchChange(self, chips[index]);
+		if (isInput) index -= 1;
+	} else return isInput || input?.focus(); // Skip other keys and move back to control
 
 	event.preventDefault(); // Prevent datalist arrow events
-	(items[Math.max(0, index)] || control)?.focus();
+	(chips[Math.max(0, index)] || input)?.focus();
 };
 
 customElements.define("u-combobox", UHTMLComboboxElement);

@@ -220,6 +220,7 @@ const render = (
 	if (select) select.textContent = ""; // Remove all options
 	select?.append(...self.values.map((val) => new Option(val, val, true, true))); // Store programatic values
 
+	syncClearWithInput(self);
 	syncOptionsWithItems(self);
 };
 

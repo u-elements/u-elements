@@ -213,6 +213,7 @@ myCombobox.addEventListener('beforematch', (event) => {
 
 ## Changelog
 
+- **0.0.13:** Update sync state when options are changed
 - **0.0.12:** Always sync `<del>` with input value on mount
 - **0.0.11:** Improved performance
 - **0.0.10:** Only remove `<data>` during change event for React compatiliby

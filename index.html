@@ -97,6 +97,7 @@
       <script type="module">
         const combobox = document.querySelector('u-combobox');
         const input = document.getElementById('my-a11y-input');
+        const list = combobox.list;
         const select = document.querySelector('u-combobox select');
 
         // input.addEventListener('input', console.log);
@@ -115,7 +116,6 @@
 
         // const input = document.getElementById('my-a11y-input');
         let debounceTimer; // Debounce so we do not spam API
-        const list = input.list;
         const xhr = new XMLHttpRequest(); // Easy to abort
 
         // Same handler every time
@@ -131,21 +131,21 @@
           }
         });
 
-        // input.addEventListener('input', (event) => {
-        //   const value = encodeURIComponent(input.value.trim());
-        //   list.innerHTML = value ? '<u-option role="none">Loading</u-option>' : '';
+        input.addEventListener('input', (event) => {
+          const value = encodeURIComponent(input.value.trim());
+          list.innerHTML = value ? '<u-option role="none">Loading</u-option>' : '';
           
-        //   xhr.abort();
-        //   clearTimeout(debounceTimer);
+          xhr.abort();
+          clearTimeout(debounceTimer);
 
-        //   if (value) {
-        //     debounceTimer = setTimeout(() => {
-        //       console.log("Loading", value);
-        //       xhr.open('GET', `https://restcountries.com/v2/name/${value}?fields=name`, true);
-        //       xhr.send();
-        //     }, 600);
-        //   } 
-        // });
+          if (value) {
+            debounceTimer = setTimeout(() => {
+              console.log("Loading", value);
+              xhr.open('GET', `https://restcountries.com/v2/name/${value}?fields=name`, true);
+              xhr.send();
+            }, 600);
+          } 
+        });
       </script>
       <!-- <br>
       <br>

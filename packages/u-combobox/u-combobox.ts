@@ -88,7 +88,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		this._root = getRoot(this);
 
 		on(this, EVENTS, this, true); // Bind events using capture phase to run before framworks
-		mutationObserver(this, { childList: true });
+		mutationObserver(this, { childList: true, subtree: true });
 		setTimeout(render, 0, this); // Delay to allow DOM to be ready
 		setTimeout(syncInputValue, 0, this);
 	}
@@ -222,6 +222,7 @@ const render = (
 
 	syncClearWithInput(self);
 	syncOptionsWithItems(self);
+	mutationObserver(self)?.takeRecords(); // Clear mutation records
 };
 
 const syncClearWithInput = (self: UHTMLComboboxElement) => {

@@ -298,6 +298,7 @@ const onBlur = (self: UHTMLComboboxElement) =>
 
 const onBlurred = (self: UHTMLComboboxElement) => {
 	if (!self._focus || self.contains(self._root?.activeElement as Node)) return; // Blur is allready done or focus is still in combobox
+	self._focus = undefined; // Reset focus
 	syncInputValue(self);
 };
 

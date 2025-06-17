@@ -117,11 +117,6 @@ export class UHTMLDataListElement extends UHTMLElement {
 	}
 }
 
-const isVisible = (el: HTMLElement) =>
-	el.checkVisibility
-		? el.checkVisibility()
-		: !!(el.offsetHeight && el.offsetHeight);
-
 const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
 	if (self.hidden !== open) return; // Prevent unnecessary updates
 	self.hidden = !open;
@@ -210,7 +205,9 @@ const onKeyDown = (self: UHTMLDataListElement, e: KeyboardEvent) => {
 	setExpanded(self, e.key !== "Escape"); // Close on ESC but show on other keys
 
 	const { key, target } = e;
-	const options = [...self.options].filter(isVisible); // Filter out hidden options
+	const options = [...self.options].filter(
+		(el) => attr(el, "aria-hidden") !== "true" && el.offsetHeight,
+	); // Filter out hidden options
 	const prev = options.indexOf(target as HTMLOptionElement);
 	let next = -1; // If hidden - first arrow down should exit input
 
@@ -234,23 +231,33 @@ const onInput = (self: UHTMLDataListElement, e?: Event) => {
 	const { _texts, _root, _input, options } = self;
 	const value = _input?.value.toLowerCase().trim() || "";
 	const filter = !self.hasAttribute("data-nofilter"); // Support proposed nofilter attribute https://github.com/whatwg/html/issues/4882
+	const hidden: HTMLOptionElement[] = [];
 	const visible: HTMLOptionElement[] = [];
 
+	// Group all read operations for performance
+	// The spec does not specify how to filter, so we use "label" as it represents text content
 	for (const opt of options) {
-		const hidden = `${opt.disabled || opt.hidden || (filter && !opt.label.toLowerCase().includes(value))}`; // The spec does not specify how to filter, so we use "label" as it represents text content
-		attr(opt, "aria-hidden", hidden); // aria-hidden needed for correct counting in VoiceOver + Safari
-		if (isVisible(opt)) visible.push(opt);
+		const hide =
+			opt.disabled ||
+			opt.hidden ||
+			(filter && !opt.label.toLowerCase().includes(value)) ||
+			!opt.offsetHeight;
+		(hide ? hidden : visible).push(opt);
 	}
 
+	// Group all write operations for performance
+	for (const opt of hidden) attr(opt, "aria-hidden", "true");
+	for (const opt of visible) attr(opt, "aria-hidden", "false");
+
 	// Announce if content has changed
-	const { length: total } = visible;
+	const total = visible.length;
 	clearTimeout(LIVE_TIMER);
-	LIVE_TIMER = setTimeout(() => {
-		const text = `${(!total && self.innerText.trim()) || `${_texts[total === 1 ? "singular" : "plural"]}`.replace("%d", `${total}`)}`;
-		const isType = e?.type === "input" && value !== self._value;
-		if (isType && !self.hidden && _root?.activeElement === _input) speak(text);
-		self._value = value;
-	}, 1000); // 1 second makes room for screen reader to announce the typed character, before announcing the hits count
+	if (e?.type === "input" && value !== self._value)
+		LIVE_TIMER = setTimeout(() => {
+			const text = `${(!total && self.innerText.trim()) || `${_texts[total === 1 ? "singular" : "plural"]}`.replace("%d", `${total}`)}`;
+			if (!self.hidden && _root?.activeElement === _input) speak(text);
+			self._value = value;
+		}, 1000); // 1 second makes room for screen reader to announce the typed character, before announcing the hits count
 
 	// Needed to announce count in iOS
 	if (IS_IOS)

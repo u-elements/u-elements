@@ -470,6 +470,7 @@ Using [Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API
 
 ## Changelog
 
+- **1.0.8:** Only accept `aria-hidden="true"`, `hidden` or `disabled` to hide options for improved performance
 - **1.0.7:** Performance optimize by grouping read and write operations
 - **1.0.6:** Prevent announce hits count if closed
 - **1.0.5:** Improved support for nested DOM and CSS-hiding `options`

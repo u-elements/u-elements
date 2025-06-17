@@ -240,8 +240,7 @@ const onInput = (self: UHTMLDataListElement, e?: Event) => {
 		const hide =
 			opt.disabled ||
 			opt.hidden ||
-			(filter && !opt.label.toLowerCase().includes(value)) ||
-			!opt.offsetHeight;
+			(filter && !opt.label.toLowerCase().includes(value));
 		(hide ? hidden : visible).push(opt);
 	}
 

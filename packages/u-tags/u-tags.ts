@@ -275,7 +275,8 @@ function isDatalistClick(event?: Partial<InputEvent>) {
 			(opt) => opt.value === value,
 		);
 
-		event.target.value = value.split(SPLIT_CHAR)[ignored ? 1 : 0]; // Keep input text if ignored option
+		event.target.value =
+			value.split(SPLIT_CHAR)[ignored ? "pop" : "shift"]() || ""; // Keep input text if ignored option
 	}
 	return isClick;
 }
@@ -297,10 +298,10 @@ function attributeTexts(
 	return [];
 }
 
-const createAriaLive = (mode: "polite" | "assertive") => {
+function createAriaLive(mode: "polite" | "assertive") {
 	const live = createElement("div");
 	live.style.cssText =
 		"position:fixed;overflow:hidden;width:1px;white-space:nowrap";
 	attr(live, "aria-live", mode);
 	return live;
-};
+}

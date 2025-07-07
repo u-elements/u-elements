@@ -75,12 +75,12 @@ export default defineConfig({
 						link: "/elements/u-tabs",
 					},
 					{
-						text: '&lt;u-tags&gt; <mark data-badge="EXTENSION"></mark>',
-						link: "/elements/u-tags",
-					},
-					{
 						text: '&lt;u-combobox&gt; <mark data-badge="BETA"></mark>',
 						link: "/elements/u-combobox",
+					},
+					{
+						text: '<del>&lt;u-tags&gt;</del> <mark data-badge="DEPRECATED"></mark>',
+						link: "/elements/u-tags",
 					},
 					{
 						text: '<del>&lt;u-select&gt;</del> <mark data-badge="PENDING"></mark>',

@@ -87,6 +87,16 @@ but you can [work around this](https://react.dev/reference/react-dom/components#
 ```
 :::
 
+:::warning Using Next.js?
+u-elements need to dynamically add HTML attributes on the client side to ensure compatibility with the user's device. However, Next.js hydration does not allow attribute mismatches between server and client. To work around this, you can add [`suppressHydrationWarning`](https://nextjs.org/docs/messages/react-hydration-error) to the element:
+
+```jsx
+<u-datalist
+  suppressHydrationWarning // [!code ++]
+>
+```
+:::
+
 ## Usage in VSCode
 
 If you want autocompletion and inline documentation for u-elements while writing HTML in VSCode, 

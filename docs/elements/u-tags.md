@@ -5,7 +5,14 @@ title: u-tags
 import { data } from '../filesize.data.ts'
 </script>
 
-# &lt;u-tags&gt; <mark data-badge="EXTENSION"></mark>
+# &lt;u-tags&gt; <mark data-badge="DEPRECATED"></mark>
+
+:::danger DEPRECATED
+
+Please use [u-combobox](/elements/u-combobox) instead
+
+:::
+
 `<u-tags>` extends `<input>` with multiselect abilities. While multiselect combobox does not exist as a HTML element or ARIA pattern, `<u-tags>` adhere closely to HTML conventions while providing a thoroughly tested and accessible user experience.
 
 **Quick intro:**
@@ -180,3 +187,7 @@ myUTags.addEventListener('tags', (event) => {
 - HTML Standard: [The &lt;div&gt; element](https://html.spec.whatwg.org/multipage/grouping-content.html#the-div-element)
 - DOM interface: [HTMLDataElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDataElement)
 - HTML Standard: [The &lt;data&gt; element](https://html.spec.whatwg.org/multipage/text-level-semantics.html#the-data-element)
+
+## Changelog
+
+- **0.1.5:** Fix issue where `<data>` value rendered `undefined`

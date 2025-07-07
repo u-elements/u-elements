@@ -1,15 +1,15 @@
 import {
-	DISPLAY_BLOCK,
-	SAFE_LABELLEDBY,
-	UHTMLElement,
 	asButton,
 	attachStyle,
 	attr,
 	customElements,
+	DISPLAY_BLOCK,
 	getRoot,
 	mutationObserver,
 	off,
 	on,
+	SAFE_LABELLEDBY,
+	UHTMLElement,
 	useId,
 } from "../utils";
 

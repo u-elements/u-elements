@@ -190,4 +190,5 @@ myUTags.addEventListener('tags', (event) => {
 
 ## Changelog
 
+- **0.1.6:** Fix focus issue hwen using keyboard navigation on `<data>`
 - **0.1.5:** Fix issue where `<data>` value rendered `undefined`

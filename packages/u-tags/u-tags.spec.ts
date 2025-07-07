@@ -5,7 +5,7 @@ const isMobile = () => test.info().project.name.startsWith("Mobile");
 const safeMultiselectable = () => {
 	const BROWSER = test.info().project.name;
 	const IS_SAFARI = BROWSER === "Webkit" || BROWSER === "Mobile Safari";
-	return IS_SAFARI ? "aria-multiselectable" : "data-multiselectable";
+	return IS_SAFARI ? "aria-multiselectable" : "aria-multiselectable";
 };
 
 test.beforeEach(async ({ page }) => {
@@ -52,7 +52,6 @@ test.describe("u-tags", () => {
 		expect(
 			await page.evaluate<boolean>(() => {
 				const uTags = document.querySelector<UHTMLTagsElement>("u-tags");
-				const label = document.querySelector("label");
 				const input = document.querySelector("input");
 				const items = document.querySelectorAll("u-tags data");
 

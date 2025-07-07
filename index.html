@@ -64,6 +64,7 @@
       <br aria-hidden="true" />
 
       <u-combobox
+        data-multiple
         data-creatabl
         data-nochips
         data-sr-added="La til"
@@ -131,21 +132,21 @@
           }
         });
 
-        input.addEventListener('input', (event) => {
-          const value = encodeURIComponent(input.value.trim());
-          list.innerHTML = value ? '<u-option role="none">Loading</u-option>' : '';
+        // input.addEventListener('input', (event) => {
+        //   const value = encodeURIComponent(input.value.trim());
+        //   list.innerHTML = value ? '<u-option role="none">Loading</u-option>' : '';
           
-          xhr.abort();
-          clearTimeout(debounceTimer);
+        //   xhr.abort();
+        //   clearTimeout(debounceTimer);
 
-          if (value) {
-            debounceTimer = setTimeout(() => {
-              console.log("Loading", value);
-              xhr.open('GET', `https://restcountries.com/v2/name/${value}?fields=name`, true);
-              xhr.send();
-            }, 600);
-          } 
-        });
+        //   if (value) {
+        //     debounceTimer = setTimeout(() => {
+        //       console.log("Loading", value);
+        //       xhr.open('GET', `https://restcountries.com/v2/name/${value}?fields=name`, true);
+        //       xhr.send();
+        //     }, 600);
+        //   } 
+        // });
       </script>
       <!-- <br>
       <br>

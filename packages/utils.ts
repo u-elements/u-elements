@@ -104,7 +104,7 @@ export const mutationObserver = (
 	try {
 		observers.get(element).disconnect(); // Always unbind previous listener
 		observers.delete(element);
-	} catch (err) {
+	} catch (_err) {
 		// Could not unmount since element is removed
 	}
 	if (options) {

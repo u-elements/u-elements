@@ -1,13 +1,13 @@
 import {
-	DISPLAY_BLOCK,
-	UHTMLElement,
 	asButton,
 	attr,
 	createElement,
 	customElements,
+	DISPLAY_BLOCK,
 	getRoot,
 	off,
 	on,
+	UHTMLElement,
 } from "../utils";
 
 declare global {

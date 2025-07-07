@@ -1,20 +1,20 @@
 import type { UHTMLOptionElement } from "../u-datalist/u-option";
 import {
+	asButton,
+	attr,
+	createElement,
+	customElements,
 	FOCUS_OUTLINE,
+	getRoot,
 	IS_ANDROID,
 	IS_FIREFOX,
 	IS_IOS,
 	IS_MAC,
 	IS_SAFARI,
-	UHTMLElement,
-	asButton,
-	attr,
-	createElement,
-	customElements,
-	getRoot,
 	mutationObserver,
 	off,
 	on,
+	UHTMLElement,
 } from "../utils";
 
 declare global {
@@ -189,6 +189,7 @@ const onFocusIn = (self: UHTMLTagsElement, { target }: Event) => {
 const onFocusOut = (self: UHTMLTagsElement) => {
 	if (self._blurAnnounceReset) render(self);
 	self._blurTimer = setTimeout(() => {
+		if (self.contains(self._root?.activeElement as Node)) return; // Skip if focus is still inside
 		self._focusIndex = null;
 	});
 };

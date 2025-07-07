@@ -1,12 +1,12 @@
 import {
-	IS_FIREFOX,
-	IS_IOS,
-	UHTMLElement,
 	attr,
 	createElement,
 	customElements,
 	getLabel,
 	getRoot,
+	IS_FIREFOX,
+	IS_IOS,
+	UHTMLElement,
 	useId,
 } from "../utils";
 

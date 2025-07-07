@@ -1,4 +1,4 @@
-import { IS_IOS, UHTMLElement, attr, customElements } from "../utils";
+import { attr, customElements, IS_IOS, UHTMLElement } from "../utils";
 
 declare global {
 	interface HTMLElementTagNameMap {

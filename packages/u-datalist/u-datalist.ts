@@ -1,22 +1,22 @@
 export type { UHTMLOptionElement } from "./u-option";
 import "./u-option"; // Import to register u-option
 import {
-	DISPLAY_BLOCK,
-	FOCUS_OUTLINE,
-	IS_ANDROID,
-	IS_BROWSER,
-	IS_IOS,
-	SAFE_LABELLEDBY,
-	UHTMLElement,
 	attachStyle,
 	attr,
 	customElements,
+	DISPLAY_BLOCK,
+	FOCUS_OUTLINE,
 	getRoot,
+	IS_ANDROID,
+	IS_BROWSER,
+	IS_IOS,
 	mutationObserver,
 	off,
 	on,
+	SAFE_LABELLEDBY,
 	setValue,
 	speak,
+	UHTMLElement,
 	useId,
 } from "../utils";
 
@@ -76,6 +76,7 @@ export class UHTMLDataListElement extends UHTMLElement {
 		mutationObserver(this, {
 			attributeFilter: ["disabled", "hidden", "label", "value"],
 			attributes: true,
+			characterData: true,
 			childList: true,
 			subtree: true,
 		});
@@ -120,6 +121,8 @@ export class UHTMLDataListElement extends UHTMLElement {
 const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
 	if (self.hidden !== open) return; // Prevent unnecessary updates
 	self.hidden = !open;
+	mutationObserver(self)?.takeRecords(); // Prevent hidden attribute from triggering mutation observer
+
 	if (self._input) setupInput(self, self._input, open);
 	if (self.popover && self._input?.isConnected) {
 		attr(self._input, "popovertarget", useId(self)); // Prepare for Popover API
@@ -145,7 +148,7 @@ const setupInput = (
 	on(input, EVENTS_INPUT, self, true); // Need to capture blur/focus directly on input to prevent other consumers
 	attr(input, "aria-autocomplete", "list");
 	attr(input, "aria-controls", useId(self));
-	attr(input, "aria-expanded", `${IS_MOBILE ? open : "true"}`); // Used to prevent "expanded" announcement interrupting label // TODO: Test this
+	attr(input, "aria-expanded", `${IS_MOBILE ? open : "true"}`); // Used to prevent "expanded" announcement interrupting label
 	attr(input, "autocomplete", "off");
 	attr(input, "role", "combobox");
 };

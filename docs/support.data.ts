@@ -210,7 +210,7 @@ export default {
 			.filter((pkgDistFile) => fs.existsSync(pkgDistFile))
 			.map((pkgDistFile) => {
 				JSHINT(String(fs.readFileSync(pkgDistFile)), { esversion: 11 });
-				const { functions, options, errors, ...rest } = JSHINT.data();
+				const { _functions, _options, _errors, ...rest } = JSHINT.data();
 				mergeDeep(jshint, rest);
 			});
 

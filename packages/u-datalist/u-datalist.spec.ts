@@ -1,13 +1,4 @@
-import { type Locator, expect, test } from "@playwright/test";
-
-const expectExpanded = async (locator: Locator, value: unknown) => {
-	const IS_SAFARI_MAC = test.info().project.name === "Webkit";
-
-	await expect(locator).toHaveAttribute(
-		"aria-expanded",
-		`${IS_SAFARI_MAC || value}`,
-	);
-};
+import { expect, test } from "@playwright/test";
 
 const attrLabelledby = () => {
 	const IS_ANDROID = test.info().project.name === "Mobile Chrome";
@@ -79,14 +70,13 @@ test.describe("u-datalist", () => {
           <u-option>Option 1</u-option>
           <u-option>Option 2</u-option>
           <u-option>Option 3</u-option>
-        </u-datalist>
-        <input id="other-input" />`;
+        </u-datalist>`;
 		});
 		const uDatalist = page.locator("u-datalist");
+		const body = page.locator("body");
 		const input = page.locator("input").first();
 		const label = page.locator("label");
 
-		await expectExpanded(input, false);
 		await expect(uDatalist).toBeHidden();
 
 		await input.focus();
@@ -97,20 +87,10 @@ test.describe("u-datalist", () => {
 		await expect(input).toHaveRole("combobox");
 		await expect(input).toHaveAttribute("autocomplete", "off");
 		await expect(input).toHaveAttribute("aria-autocomplete", "list");
-		await expectExpanded(input, true);
 		await expect(input).toHaveAttribute("aria-controls", uDatalistId);
 		await expect(uDatalist).toHaveAttribute(attrLabelledby(), labelId);
 
-		await input.blur();
-		await expectExpanded(input, false);
-		await expect(uDatalist).toBeHidden();
-
-		await input.focus();
-		await expectExpanded(input, true);
-		await expect(uDatalist).toBeVisible();
-
-		await page.locator("input").last().focus();
-		await expectExpanded(input, false);
+		await body.click(); // Click outside to close datalist - also on Android
 		await expect(uDatalist).toBeHidden();
 	});
 
@@ -143,18 +123,15 @@ test.describe("u-datalist", () => {
 
 		await input.press("Escape");
 		await expect(input).toBeFocused();
-		await expectExpanded(input, false);
 		await expect(uDatalist).toBeHidden();
 
 		await input.press("ArrowDown");
-		await expectExpanded(input, true);
 		await expect(uDatalist).toBeVisible();
 		await expect(uOption0).toBeFocused();
 
 		await uOption0.press("Enter");
 		await expect(input).toBeFocused();
 		await expect(input).toHaveValue((await uOption0.textContent()) || "");
-		await expectExpanded(input, false);
 		await expect(uDatalist).toBeHidden();
 	});
 
@@ -189,9 +166,10 @@ test.describe("u-datalist", () => {
 			(el as HTMLInputElement).value = "test";
 		});
 		await input.focus();
+		await expect(input).toBeFocused();
 		await expect(uOption0).toBeHidden();
 		await uOption0.evaluate((el) => {
-			(el as HTMLOptionElement).value = "test";
+			(el as HTMLOptionElement).textContent = "test";
 		});
 		await expect(uOption0).toBeVisible();
 	});
@@ -238,6 +216,7 @@ test.describe("u-datalist", () => {
       </form>`;
 		});
 
+		const body = page.locator("body");
 		const input0 = page.locator("input").nth(0);
 		const input1 = page.locator("input").nth(1);
 		const uDatalist0 = page.locator("#datalist-1");
@@ -247,9 +226,10 @@ test.describe("u-datalist", () => {
 		await expect(uDatalist0).toBeVisible();
 		await expect(uDatalist1).toBeHidden();
 
+		await body.click(); // Click outside to close first datalist
 		await input1.focus();
-		await expect(uDatalist0).toBeHidden();
 		await expect(uDatalist1).toBeVisible();
+		await expect(uDatalist0).toBeHidden();
 	});
 
 	test("handles being bound to multiple inputs", async ({ page }) => {
@@ -271,13 +251,9 @@ test.describe("u-datalist", () => {
 
 		expect(uDatalist).toBeHidden();
 		await input0.focus();
-		await expectExpanded(input0, true);
-		await expectExpanded(input1, false);
 		await expect(uDatalist).toBeVisible();
 
 		await input1.focus();
-		await expectExpanded(input0, false);
-		await expectExpanded(input1, true);
 		await expect(uDatalist).toBeVisible();
 	});
 

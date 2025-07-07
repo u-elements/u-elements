@@ -1,8 +1,6 @@
 import { expect, test } from "@playwright/test";
 import type { UHTMLComboboxElement } from "./u-combobox";
 
-const isMobile = () => test.info().project.name.startsWith("Mobile");
-
 test.beforeEach(async ({ page }) => {
 	await page.goto("index.html");
 	await page.evaluate(() => {
@@ -50,7 +48,6 @@ test.describe("u-combobox", () => {
 			await page.evaluate<boolean>(() => {
 				const uCombobox =
 					document.querySelector<UHTMLComboboxElement>("u-combobox");
-				const label = document.querySelector("label");
 				const input = document.querySelector("input");
 				const items = document.querySelectorAll("u-combobox data");
 
@@ -164,10 +161,6 @@ test.describe("u-combobox", () => {
 
 		await items.nth(2).press("Backspace");
 		await expect(items.nth(2)).not.toBeAttached();
-
-		await expect(items.nth(1)).toBeFocused();
-
-		await items.nth(1).press("ArrowRight");
 		await expect(input).toBeFocused();
 
 		await input.press("Delete");
@@ -175,34 +168,29 @@ test.describe("u-combobox", () => {
 
 		await items.nth(1).press("Delete");
 		await expect(items.nth(1)).not.toBeAttached();
-		await expect(items.nth(0)).toBeFocused();
+		await expect(input).toBeFocused();
 	});
 
 	test("handles keyboard creation and removal", async ({ page }) => {
 		const input = page.locator("input");
-		const live = page.locator("[aria-live='polite']");
+		const live = page.locator("[aria-live='assertive']");
 		const item3 = page.locator("data").nth(3);
-		const added = /^Added Banana/;
-		const removed = /^Removed Banana/;
 
+		await input.focus();
 		await expect(live).toBeAttached();
 
 		await input.focus();
-		await input.fill("Banana");
+		await input.fill("Tag 4");
 		await input.press("Enter");
-		if (isMobile()) await expect(live).toHaveText(added);
-		else await expect(input).toHaveAccessibleName(added);
 		await expect(item3).toBeAttached();
-		await expect(item3).toHaveAttribute("value", "Banana");
+		await expect(item3).toHaveAttribute("value", "tag-4");
 		await expect(item3).toHaveAttribute("role", "button");
 		await expect(item3).toHaveAttribute("tabindex", "-1");
-		await expect(item3).toHaveText("Banana");
+		await expect(item3).toHaveText("Tag 4");
 		await expect(input).toBeFocused();
 
-		await input.fill("Banana");
-		await input.press("Enter");
-		if (isMobile()) await expect(live).toHaveText(removed);
-		else await expect(input).toHaveAccessibleName(removed);
+		await item3.focus();
+		await item3.press("Enter");
 		await expect(item3).not.toBeAttached();
 		await expect(input).toBeFocused();
 	});

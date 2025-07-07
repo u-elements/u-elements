@@ -1,18 +1,17 @@
 {
-	"$schema": "https://biomejs.dev/schemas/1.8.3/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.0.6/schema.json",
 	"files": {
-		"ignore": [
-			"dist",
-			"docs/.vitepress",
-			"frameworks",
-			"node_modules",
-			"playwright-report",
-			"test-results"
+		"includes": [
+			"**",
+			"!**/dist",
+			"!**/docs/.vitepress",
+			"!**/frameworks",
+			"!**/node_modules",
+			"!**/playwright-report",
+			"!**/test-results"
 		]
 	},
-	"organizeImports": {
-		"enabled": true
-	},
+	"assist": { "actions": { "source": { "organizeImports": "on" } } },
 	"formatter": {
 		"enabled": true
 	},

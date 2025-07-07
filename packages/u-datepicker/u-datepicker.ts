@@ -1,13 +1,14 @@
 export type { UHTMLOptionElement } from "../u-datalist/u-option";
+
 import { getWeekStartByRegion } from "./week-start";
 import "../u-datalist/u-option";
 import {
-	UHTMLElement,
 	createElement,
 	customElements,
 	getRoot,
 	off,
 	on,
+	UHTMLElement,
 } from "../utils";
 
 declare global {

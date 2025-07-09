@@ -64,7 +64,7 @@
       <br aria-hidden="true" />
 
       <u-combobox
-        data-multiple
+        data-multipl
         data-creatabl
         data-nochips
         data-sr-added="La til"
@@ -74,10 +74,8 @@
         data-sr-remove="Trykk for å fjerne"
         data-sr-removed="Fjernet"
       >
-        <select name="test" style="width:100px">
-          <option value="2" selected>Kokkos</option>
-        </select>
-        <!-- <data>Jordbær</data> -->
+        <select name="test" style="width:100px"></select>
+        <data>Jordbær</data>
         <input type="text" id="my-a11y-input">
         <del aria-label="Fjern tekst">&times;</del>
         <u-datalist>
@@ -102,16 +100,21 @@
         const select = document.querySelector('u-combobox select');
 
         // input.addEventListener('input', console.log);
-        select.addEventListener('change', (event) => {
-          event.preventDefault();
-          event.detail.isConnected ? event.detail.remove() : event.target.add(event.detail);
-        });
+        // combobox.addEventListener('beforechange', (event) => {
+        //   // console.log("Before change", event);
+        //   event.preventDefault();
+
+        //   if (event.detail.isConnected) event.detail.remove();
+        //   else {
+        //     for(const item of [...event.target.items]) item.remove();
+        //     event.target.prepend(event.detail);
+        //   }
+        // });
         // combobox.addEventListener('beforematch', (event) => {
         //   event.preventDefault();
-        //   const query = input.value.toLowerCase().trim() || false;
+        //   const query = input.value.toLowerCase().trim();
         //   for(const opt of input.list.options) {
-        //     opt.selected = query && opt.label.toLowerCase().trim().startsWith(query);
-        //     // opt.selected = opt.value === input.value;
+        //     opt.selected = query ? opt.label.toLowerCase().trim().startsWith(query) : false;
         //   }
         // });
 
@@ -132,21 +135,22 @@
           }
         });
 
-        // input.addEventListener('input', (event) => {
-        //   const value = encodeURIComponent(input.value.trim());
-        //   list.innerHTML = value ? '<u-option role="none">Loading</u-option>' : '';
+        input.addEventListener('input', (event) => {
+          const value = encodeURIComponent(input.value.trim());
+          console.log('Input event', value);
+          // list.innerHTML = value ? '<u-option role="none">Loading</u-option>' : '';
           
-        //   xhr.abort();
-        //   clearTimeout(debounceTimer);
+          // xhr.abort();
+          // clearTimeout(debounceTimer);
 
-        //   if (value) {
-        //     debounceTimer = setTimeout(() => {
-        //       console.log("Loading", value);
-        //       xhr.open('GET', `https://restcountries.com/v2/name/${value}?fields=name`, true);
-        //       xhr.send();
-        //     }, 600);
-        //   } 
-        // });
+          // if (value) {
+          //   debounceTimer = setTimeout(() => {
+          //     console.log("Loading", value);
+          //     xhr.open('GET', `https://restcountries.com/v2/name/${value}?fields=name`, true);
+          //     xhr.send();
+          //   }, 600);
+          // } 
+        });
       </script>
       <!-- <br>
       <br>

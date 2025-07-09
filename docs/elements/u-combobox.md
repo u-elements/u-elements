@@ -38,6 +38,7 @@ import { data } from '../filesize.data.ts'
   &lt;data&gt;Pineapple&lt;/data&gt;
   &lt;data&gt;Orange&lt;/data&gt;
   &lt;input id="my-input" list="my-list" /&gt;
+  &lt;del aria-label="Clear text"&gt;&times;&lt;/del&gt;
   &lt;u-datalist id="my-list" data-sr-singular="%d flavor" data-sr-plural="%d flavours"&gt;
     &lt;u-option&gt;Coconut&lt;/u-option&gt;
     &lt;u-option&gt;Strawberries&lt;/u-option&gt;
@@ -115,6 +116,7 @@ In addition to the [usual events supported by HTML elements](https://developer.m
 ### `beforechange`
 ```js
 myCombobox.addEventListener('beforechange', (event) => {
+  event.target // UHTMLComboboxElement
   event.detail // HTMLDataElement to add or remove
   event.detail.isConnnected // true if removing, false if adding
   event.preventDefault() // Optionally prevent action
@@ -124,6 +126,7 @@ myCombobox.addEventListener('beforechange', (event) => {
 ### `afterchange`
 ```js
 myCombobox.addEventListener('afterchange', (event) => {
+  event.target // UHTMLComboboxElement
   event.detail // HTMLDataElement added or removed
   event.detail.isConnnected // false if removing, true if adding
 })
@@ -132,7 +135,10 @@ myCombobox.addEventListener('afterchange', (event) => {
 ### `beforematch`
 ```js
 myCombobox.addEventListener('beforematch', (event) => {
+  event.target // UHTMLComboboxElement
   event.detail // HTMLOptionElement | undefined match in option list
+  // You can change match by looping options and setting option.selected:
+  // for (const opt of event.target.options) opt.selected = your-condition-here;
 })
 ```
 
@@ -145,7 +151,7 @@ myCombobox.addEventListener('beforematch', (event) => {
 
 <Sandbox label="u-details language example" lang="no" />
 <pre hidden>
-&lt;label for="my-norwegian-combobox"&gt;
+&lt;label for="my-norwegian-input"&gt;
   Velg type iskrem
 &lt;/label&gt;
 &lt;u-combobox
@@ -155,13 +161,10 @@ myCombobox.addEventListener('beforematch', (event) => {
   data-sr-empty="Ingen valgte"
   data-sr-found="Naviger til venstre for å finne %d valgte"
   data-sr-of="av"
-  id="my-norwegian-combobox"
 &gt;
   &lt;data&gt;Kokkos&lt;/data&gt;
-  &lt;data&gt;Banan&lt;/data&gt;
-  &lt;data&gt;Ananas&lt;/data&gt;
-  &lt;data&gt;Appelsin&lt;/data&gt;
-  &lt;input list="my-norwegian-list" /&gt;
+  &lt;input id="my-norwegian-input" list="my-norwegian-list" /&gt;
+  &lt;del aria-label="Fjern tekst"&gt;&times;&lt;/del&gt;
   &lt;u-datalist id="my-norwegian-list" data-sr-singular="%d smak" data-sr-plural="%d smaker"&gt;
     &lt;u-option&gt;Kokkos&lt;/u-option&gt;
     &lt;u-option&gt;Jordbær&lt;/u-option&gt;
@@ -173,6 +176,141 @@ myCombobox.addEventListener('beforematch', (event) => {
     &lt;u-option&gt;Hasselnøtt&lt;/u-option&gt;
   &lt;/u-datalist&gt;
 &lt;/u-combobox&gt;
+&lt;style&gt;
+  /* Styling just for example: */
+  u-combobox { border: 1px solid; display: flex; flex-wrap: wrap; gap: .5em; padding: .5em; position: relative }
+  u-option[selected] { font-weight: bold }
+  u-datalist { position: absolute; z-index: 9; inset: 100% -1px auto; border: 1px solid; background: white; padding: .5em }
+&lt;/style&gt;
+</pre>
+
+## Example: Custom matching
+
+<Sandbox label="u-details language example" lang="no" />
+<pre hidden>
+&lt;label for="my-matching-input"&gt;
+  Matches from start of word
+&lt;/label&gt;
+&lt;br&gt;
+&lt;small&gt;Try typing "c" and hitting "Enter"&lt;/small&gt;
+&lt;u-combobox id="my-matching-combobox"&gt;
+  &lt;input id="my-matching-input" list="my-matching-list" /&gt;
+  &lt;del aria-label="Clear text"&gt;&times;&lt;/del&gt;
+  &lt;u-datalist id="my-matching-list"&gt;
+    &lt;u-option&gt;Coconut&lt;/u-option&gt;
+    &lt;u-option&gt;Strawberries&lt;/u-option&gt;
+    &lt;u-option&gt;Chocolate&lt;/u-option&gt;
+    &lt;u-option&gt;Vanilla&lt;/u-option&gt;
+  &lt;/u-datalist&gt;
+&lt;/u-combobox&gt;
+&lt;script type="module"&gt;
+  const combobox = document.getElementById('my-matching-combobox');
+  combobox.addEventListener('beforematch', (event) => {
+    event.preventDefault();
+    const input = combobox.control;
+    const query = input.value.toLowerCase().trim();
+
+    for(const opt of input.list.options) {
+      opt.selected = !!query && opt.label.toLowerCase().trim().startsWith(query);
+    }
+  });
+&lt;/script&gt;
+&lt;style&gt;
+  /* Styling just for example: */
+  u-combobox { border: 1px solid; display: flex; flex-wrap: wrap; gap: .5em; padding: .5em; position: relative }
+  u-option[selected] { font-weight: bold }
+  u-datalist { position: absolute; z-index: 9; inset: 100% -1px auto; border: 1px solid; background: white; padding: .5em }
+&lt;/style&gt;
+</pre>
+
+## Example: Custom filtering
+
+Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
+
+<Sandbox label="u-details language example" lang="no" />
+<pre hidden>
+&lt;label for="my-filtering-input"&gt;
+  Filters case sensitive
+&lt;/label&gt;
+&lt;br&gt;
+&lt;small&gt;Try typing "v" versus "V"&lt;/small&gt;
+&lt;u-combobox id="my-filtering-combobox"&gt;
+  &lt;input id="my-matching-input" list="my-filtering-list" /&gt;
+  &lt;u-datalist data-nofilter id="my-filtering-list"&gt;
+    &lt;u-option&gt;Coconut&lt;/u-option&gt;
+    &lt;u-option&gt;Strawberries&lt;/u-option&gt;
+    &lt;u-option&gt;Chocolate&lt;/u-option&gt;
+    &lt;u-option&gt;Vanilla&lt;/u-option&gt;
+  &lt;/u-datalist&gt;
+&lt;/u-combobox&gt;
+&lt;script type="module"&gt;
+  const combobox = document.getElementById('my-filtering-combobox');
+  combobox.addEventListener('input', (event) => {
+    event.preventDefault();
+    const input = combobox.control;
+    const query = input.value.trim();
+
+    for(const opt of input.list.options) {
+      opt.hidden = !!query && !opt.label.trim().includes(query);
+    }
+  });
+&lt;/script&gt;
+&lt;style&gt;
+  /* Styling just for example: */
+  u-combobox { border: 1px solid; display: flex; flex-wrap: wrap; gap: .5em; padding: .5em; position: relative }
+  u-option[selected] { font-weight: bold }
+  u-datalist { position: absolute; z-index: 9; inset: 100% -1px auto; border: 1px solid; background: white; padding: .5em }
+&lt;/style&gt;
+</pre>
+
+## Example: API results
+
+<Sandbox label="u-details language example" lang="no" />
+<pre hidden>
+&lt;label for="my-api-input"&gt;
+  Search for a country
+&lt;/label&gt;
+&lt;u-combobox id="my-api-combobox"&gt;
+  &lt;input id="my-api-input" list="my-api-list" /&gt;
+  &lt;u-datalist id="my-api-list" data-nofilter&gt;
+    &lt;u-option value=""&gt;Type to search...&lt;/u-option&gt;
+  &lt;/u-datalist&gt;
+&lt;/u-combobox&gt;
+&lt;script type="module"&gt;
+  const combobox = document.getElementById('my-api-combobox');
+  const xhr = new XMLHttpRequest(); // Easy to abort
+  let debounceTimer; // Debounce so we do not spam API
+
+  // Same handler every time
+  xhr.addEventListener('load', () => {
+    const list = combobox.control.list;
+    try {
+      list.replaceChildren(...JSON.parse(xhr.responseText).map((country) => {
+        const option = document.createElement('u-option');
+        option.text = country.name;
+        return option;
+      }));
+    } catch (err) {
+      list.innerHTML = '&lt;u-option value=""&gt;No results&lt;/u-option&gt;';
+    }
+  });
+
+  combobox.addEventListener('input', (event) =&gt; {
+    const { list, value } = combobox.control;
+    const query = encodeURIComponent(value.trim());
+    list.innerHTML = query ? '&lt;u-option value=""&gt;Loading&lt;/u-option&gt;' : '';
+    
+    xhr.abort();
+    clearTimeout(debounceTimer);
+
+    if (query) {
+      debounceTimer = setTimeout(() => {
+        xhr.open('GET', `https://restcountries.com/v2/name/${query}?fields=name`, true);
+        xhr.send();
+      }, 600);
+    } 
+  });
+&lt;/script&gt;
 &lt;style&gt;
   /* Styling just for example: */
   u-combobox { border: 1px solid; display: flex; flex-wrap: wrap; gap: .5em; padding: .5em; position: relative }
@@ -213,6 +351,7 @@ myCombobox.addEventListener('beforematch', (event) => {
 
 ## Changelog
 
+- **0.0.15:** Sync input value when data-elements change and only trigger `beforechange` and `afterchange` on click, enter or blur, but not while typing in single mode
 - **0.0.14:** Fix issue where removing single element programmatically caused focus
 - **0.0.13:** Update sync state when options are changed
 - **0.0.12:** Always sync `<del>` with input value on mount

@@ -228,3 +228,14 @@ export const setValue = (input: HTMLInputElement, data: string, type = "") => {
 	input.dispatchEvent(new InputEvent("input", event));
 	input.dispatchEvent(new Event("change", { bubbles: true }));
 };
+
+// Prevent loosing focus on mousedown on <data> despite tabIndex -1
+let IS_PRESS = false;
+export const isMouseDown = (event?: Event) => {
+	if (event?.type === "mouseup") IS_PRESS = false;
+	if (event?.type === "mousedown") {
+		IS_PRESS = true;
+		on(document, "mouseup", isMouseDown, { once: true }); // Mousedown is "composed" so it also bubbles from ShadowDOM up to document
+	}
+	return IS_PRESS;
+};

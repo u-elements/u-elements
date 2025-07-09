@@ -10,6 +10,7 @@ import {
 	IS_ANDROID,
 	IS_BROWSER,
 	IS_IOS,
+	isMouseDown,
 	mutationObserver,
 	off,
 	on,
@@ -28,7 +29,6 @@ declare global {
 
 let LIVE_TIMER: ReturnType<typeof setTimeout>;
 let INPUT_DEBOUNCE: ReturnType<typeof setTimeout> | number = 0;
-let IS_PRESS = false; // Prevent loosing focus on mousedown on <u-option> despite tabIndex -1
 const IS_MOBILE = IS_IOS || IS_ANDROID;
 const EVENTS = "click,focusout,input,keydown,mousedown,mouseup";
 const EVENTS_INPUT = "focus,focusin,blur,focusout";
@@ -106,8 +106,8 @@ export class UHTMLDataListElement extends UHTMLElement {
 		if (type === "focus" || type === "focusin") onFocus(this, event);
 		if (type === "blur" || type === "focusout") onBlur(this, event);
 		if (type === "keydown") onKeyDown(this, event as KeyboardEvent);
-		if (type === "mousedown") IS_PRESS = this.contains(target as Node);
-		if (type === "mouseup") IS_PRESS = false;
+		if (type === "mousedown" && this.contains(target as Node))
+			isMouseDown(event);
 		if (type === "mutation" || type === "input") {
 			clearTimeout(INPUT_DEBOUNCE);
 			INPUT_DEBOUNCE = setTimeout(onInput, 0, this, event); // Squash mutations and input events
@@ -171,7 +171,8 @@ const onFocus = (self: UHTMLDataListElement, event: Event) => {
 };
 
 const onBlur = (self: UHTMLDataListElement, event: Event) => {
-	if (!IS_ANDROID && !IS_PRESS && self._input) setTimeout(onBlurred, 0, self); // Delay to allow focus to be set on new element
+	if (!IS_ANDROID && !isMouseDown() && self._input)
+		setTimeout(onBlurred, 0, self); // Delay to allow focus to be set on new element
 	if (event.target === self._input && event.isTrusted)
 		event.stopImmediatePropagation(); // Native datalist does not move focus out when selecting, so prevent blur events
 };

@@ -95,9 +95,11 @@ export class UHTMLDataListElement extends UHTMLElement {
 		const css = `input[list="${this.id}"]`; // Use attribute selector to avoid shadow DOM issues
 
 		if (TEXTS[text]) this._texts[text] = next || TEXTS[text];
-		else if (this._root)
+		else if (this._root) {
+			if (this._input) setupInput(this, this._input); // Update input if already connected
 			for (const input of this._root.querySelectorAll<HTMLInputElement>(css))
 				setupInput(this, input); // Setup inputs for correct announcment when moving screen reader focus on mobile
+		}
 	}
 	handleEvent(event: Event) {
 		const { target, type } = event;
@@ -125,7 +127,6 @@ const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
 
 	if (self._input) setupInput(self, self._input, open);
 	if (self.popover && self._input?.isConnected) {
-		attr(self._input, "popovertarget", useId(self)); // Prepare for Popover API
 		attr(self, "popover", "manual");
 		self.togglePopover(open); // Make popover always match open state
 	}
@@ -145,6 +146,7 @@ const setupInput = (
 	input: HTMLInputElement,
 	open = false,
 ) => {
+	if (self.popover) attr(input, "popovertarget", useId(self)); // Prepare for Popover API
 	on(input, EVENTS_INPUT, self, true); // Need to capture blur/focus directly on input to prevent other consumers
 	attr(input, "aria-autocomplete", "list");
 	attr(input, "aria-controls", useId(self));

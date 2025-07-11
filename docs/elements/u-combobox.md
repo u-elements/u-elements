@@ -351,6 +351,7 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
 
 ## Changelog
 
+- **0.0.17:** Input now gets new `list` attribute `id` of `datalist` changes
 - **0.0.15:** Sync input value when data-elements change and only trigger `beforechange` and `afterchange` on click, enter or blur, but not while typing in single mode
 - **0.0.14:** Fix issue where removing single element programmatically caused focus
 - **0.0.13:** Update sync state when options are changed

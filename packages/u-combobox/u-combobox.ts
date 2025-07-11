@@ -89,7 +89,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 
 		on(this, EVENTS, this, true); // Bind events using capture phase to run before framworks
 		mutationObserver(this, {
-			attributeFilter: ["value"], // Respond to changes in <data> value,
+			attributeFilter: ["value", "id"], // Respond to changes in <data> value or change of id for <datalist> to reconnect with input
 			attributes: true,
 			characterData: true, // Respond to changes in <data> textContent
 			childList: true,

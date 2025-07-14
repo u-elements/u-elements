@@ -50,14 +50,14 @@ const TEXTS = {
  */
 export class UHTMLComboboxElement extends UHTMLElement {
 	// Using underscore instead of private fields for backwards compatibility
-	_clear?: HTMLElement | null;
-	_control?: HTMLInputElement | null; // Speed up by caching
+	_clear?: HTMLElement | null; // Speed up by caching
+	_control?: HTMLInputElement | null;
 	_focus?: HTMLElement;
+	_item = ""; // Locally store item text to compare change in single mode
 	_items?: HTMLCollectionOf<HTMLDataElement>;
 	_list?: HTMLDataListElement | null;
 	_options?: HTMLCollectionOf<HTMLOptionElement>;
 	_root?: Document | ShadowRoot;
-	_itemText = ""; // Locally store item text to compare change in single mode
 	_speak = "";
 	_texts = { ...TEXTS };
 	_value = ""; // Locally store value to store value before input-click
@@ -224,9 +224,9 @@ const render = (
 	if (control) attr(control, "list", useId(list)); // Connect datalist and input
 	if (control) attr(control, "aria-label", `${self._speak}${label}`);
 
-	const itemText = text(items[0]);
-	if (itemText !== self._itemText) syncInputValue(self, false); // Sync input value, but without triggering input event
-	self._itemText = itemText;
+	const item = text(items[0]);
+	if (item !== self._item) syncInputValue(self); // Only syncInputValue if item text has changed
+	self._item = item;
 
 	syncClearWithInput(self);
 	syncOptionsWithItems(self);
@@ -247,16 +247,15 @@ const syncOptionsWithItems = (self: UHTMLComboboxElement) => {
 	}
 };
 
-const syncInputValue = (self: UHTMLComboboxElement, withEvent = true) => {
+const syncInputValue = (self: UHTMLComboboxElement) => {
 	const { multiple, control, items } = self;
 	const value = text(items[0]);
-	if (multiple || !control || value === control.value) return; // Skip if multiple or value is already set
-	if (withEvent) return setValue(control, value, "insertText"); // Using insertText to prevent input event behing handled as "click" on option
-	control.value = value;
+	if (!multiple && control && value !== control.value)
+		setValue(control, value, value ? "insertText" : "deleteContent"); // Prevent input event being handled as "click" on option
 };
 
 const dispatchMatch = (self: UHTMLComboboxElement, change = true) => {
-	const { _texts, options = [], creatable, control, items, multiple } = self; // TODO: Only trigger when value is actually changed?
+	const { _texts, options = [], creatable, control, items, multiple } = self;
 	const value = control?.value?.trim() || "";
 	const query = value.toLowerCase() || null; // Fallback to null to prevent matching empty strings
 	let match = [...options].find(
@@ -271,7 +270,7 @@ const dispatchMatch = (self: UHTMLComboboxElement, change = true) => {
 		syncOptionsWithItems(self); // Re-sync options with items as consumer can change opt.selected in beforematch event
 		if (match) return dispatchChange(self, match, false);
 		if (creatable && value) return dispatchChange(self, { value }, false);
-		if (!multiple && items[0]) dispatchChange(self, items[0]);
+		if (!multiple && !value && items[0]) dispatchChange(self, items[0]);
 		else syncInputValue(self); // If no match is found, but no item is removed, ensure input value is in sync
 		return speak(_texts.invalid); // Announce invalid value if no match
 	}

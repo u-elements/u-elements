@@ -196,6 +196,7 @@ const skip = [
 	"htmlelement.tostring",
 	"htmlelement.type",
 	"htmlelement.value",
+	"htmlelement.assign",
 	"length",
 	"name",
 	"navigator.useragentdata",

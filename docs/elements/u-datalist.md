@@ -291,6 +291,7 @@ Using [Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API
 
 ## Changelog
 
+- **1.0.11:** Respects input `disabled` and `readonly` and moves caret to end of text on `arrow up`
 - **1.0.10:** Automatically update `popovertarget` and `aria-controls` of input when `id` of datalist changes
 - **1.0.9:** Fix issue when mousedown inside, but mouseup outside datalist prevented blur events
 - **1.0.8:** Only accept `aria-hidden="true"`, `hidden` or `disabled` to hide options for improved performance

@@ -120,16 +120,23 @@ export class UHTMLDataListElement extends UHTMLElement {
 	}
 }
 
+const isDisabled = (input?: HTMLInputElement) =>
+	input?.disabled || input?.readOnly || false;
+
 const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
 	if (self.hidden !== open) return; // Prevent unnecessary updates
-	self.hidden = !open;
+	self.hidden = isDisabled(self?._input) || !open;
 	mutationObserver(self)?.takeRecords(); // Prevent hidden attribute from triggering mutation observer
 
+	const isPopover =
+		self.isConnected &&
+		self.popover &&
+		self._input?.isConnected &&
+		self._input?.popoverTargetElement === self;
+
 	if (self._input) setupInput(self, self._input, open);
-	if (self.popover && self._input?.isConnected) {
-		attr(self, "popover", "manual");
-		self.togglePopover(open); // Make popover always match open state
-	}
+	if (isPopover) attr(self, "popover", "manual");
+	if (isPopover) self.togglePopover(open); // Make popover always match open state
 	if (open) onInput(self); // Ensure correct state when opening if input.value has changed
 };
 
@@ -150,9 +157,9 @@ const setupInput = (
 	on(input, EVENTS_INPUT, self, true); // Need to capture blur/focus directly on input to prevent other consumers
 	attr(input, "aria-autocomplete", "list");
 	attr(input, "aria-controls", useId(self));
-	attr(input, "aria-expanded", `${IS_MOBILE ? open : "true"}`); // Used to prevent "expanded" announcement interrupting label
+	attr(input, "aria-expanded", `${!IS_MOBILE || open}`); // Used to prevent "expanded" announcement interrupting label
 	attr(input, "autocomplete", "off");
-	attr(input, "role", "combobox");
+	attr(input, "role", isDisabled(input) ? null : "combobox");
 };
 
 const onFocus = (self: UHTMLDataListElement, event: Event) => {
@@ -206,11 +213,14 @@ const onClick = (self: UHTMLDataListElement, { target }: Event) => {
 };
 
 const onKeyDown = (self: UHTMLDataListElement, e: KeyboardEvent) => {
-	if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || e.key === "Tab")
-		return;
-	setExpanded(self, e.key !== "Escape"); // Close on ESC but show on other keys
+	const { key, target, altKey, ctrlKey, shiftKey, metaKey } = e;
+	const isEscape = key === "Escape" || key === "Esc"; // Handle both Escape and Esc for compatibility
 
-	const { key, target } = e;
+	if (altKey || ctrlKey || metaKey || shiftKey || key === "Tab") return;
+	if (isEscape && target !== self._input) e?.preventDefault(); // Prevent Safari from minimizing the window and <dialog> from closing
+
+	setExpanded(self, !isEscape); // Close on ESC but show on other keys
+
 	const options = [...self.options].filter(
 		(el) => attr(el, "aria-hidden") !== "true" && el.offsetHeight,
 	); // Filter out hidden options
@@ -231,6 +241,8 @@ const onKeyDown = (self: UHTMLDataListElement, e: KeyboardEvent) => {
 	if (options[next]) for (const option of options) option.tabIndex = -1; // Ensure u-options can have focus if iOS has a attached external keyboard
 	if (options[next]) e.preventDefault(); // Prevent scroll when on option
 	(options[next] || self._input)?.focus(); // Move focus to next option or input
+	if (!options[next] && key === "ArrowUp")
+		setTimeout(() => self._input?.setSelectionRange(999, 999)); // Move cursor to end of input when focus has moved
 };
 
 const onInput = (self: UHTMLDataListElement, e?: Event) => {

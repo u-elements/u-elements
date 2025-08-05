@@ -73,13 +73,13 @@ export class UHTMLComboboxElement extends UHTMLElement {
 			createElement("slot"), // Content slot
 			createElement(
 				"style",
-				`:host(:not([hidden])) { display: block; cursor: pointer; -webkit-tap-highlight-color: rgba(0, 0, 0, 0) } /* Must be display block in Safari to allow focus inside */
+				`:host(:not([hidden])) { display: block; -webkit-tap-highlight-color: rgba(0, 0, 0, 0) } /* Must be display block in Safari to allow focus inside */
 				:host(:not([data-multiple])) ::slotted(data),
 				:host([data-multiple="false"]) ::slotted(data) { display: none } /* Hide data if not multiple */
 				::slotted(input[inputmode="none"]) { outline: none } /* Hide temporary foucs outline flash */
 				::slotted(del) { text-decoration: none }
 				::slotted(data:not([hidden])) { display: inline-block; pointer-events: none }
-        ::slotted(data)::after { content: '\\00D7'; content: '\\00D7' / ''; padding-inline: .5ch; pointer-events: auto }
+        ::slotted(data)::after { content: '\\00D7'; content: '\\00D7' / ''; padding-inline: .5ch; pointer-events: auto; cursor: pointer }
         ::slotted(data:focus) { ${FOCUS_OUTLINE} }`,
 			),
 		);
@@ -110,6 +110,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	}
 	handleEvent(event: Event) {
 		const target = event.target as HTMLInputElement | null;
+		if (isDisabled(this)) return; // Skip if control is disabled or readOnly
 		if (event.type === "beforeinput") this._value = target?.value || ""; // Store value before input to restore
 		if (event.type === "blur") onBlur(this);
 		if (event.type === "click") onClick(this, event as MouseEvent);
@@ -163,6 +164,9 @@ export class UHTMLComboboxElement extends UHTMLElement {
 
 const text = (el?: Node | null) => el?.textContent?.trim() || "";
 const isData = (el: unknown) => el instanceof HTMLDataElement;
+const isDisabled = ({ control }: UHTMLComboboxElement) =>
+	control?.disabled || control?.readOnly || false;
+
 const render = (
 	self: UHTMLComboboxElement,
 	event?: CustomEvent<MutationRecord[]>,
@@ -199,14 +203,16 @@ const render = (
 			else setTimeout(render, 100, self);
 		}, 100); // 100ms delay so VoiceOver + Chrome announces new ariaLabel
 	}
+
 	// Setup items and optional select
 	let idx = 0;
 	const select = self.querySelector("select");
+	const remove = isDisabled(self) ? "" : `${_texts.remove}, `;
 	for (const item of items) {
 		const option = select?.options[idx]; // Use existing option if available
 		const label = text(item);
 		const value = item.value || label;
-		const aria = `${self._speak}${label}, ${_texts.remove}, ${++idx} ${_texts.of} ${items.length}`;
+		const aria = `${self._speak}${label}, ${remove}${++idx} ${_texts.of} ${items.length}`;
 		attr(item, "role", "button");
 		attr(item, "value", value);
 		attr(item, "tabindex", "-1");
@@ -235,7 +241,7 @@ const render = (
 
 const syncClearWithInput = (self: UHTMLComboboxElement) => {
 	if (self.clear) attr(self.clear, "role", "button");
-	if (self.clear) self.clear.hidden = !self.control?.value;
+	if (self.clear) self.clear.hidden = !self.control?.value || isDisabled(self);
 };
 
 const syncOptionsWithItems = (self: UHTMLComboboxElement) => {

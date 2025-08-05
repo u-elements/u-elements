@@ -352,6 +352,7 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
 
 ## Changelog
 
+- **0.0.19:** Respects input `disabled` and `readonly` and moves caret to end of text on `arrow up`
 - **0.0.18:** Input value is now reverted instead of cleared when no match on blur/enter
 - **0.0.17:** Input now gets new `list` attribute `id` of `datalist` changes
 - **0.0.15:** Sync input value when data-elements change and only trigger `beforechange` and `afterchange` on click, enter or blur, but not while typing in single mode

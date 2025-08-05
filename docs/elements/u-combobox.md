@@ -352,6 +352,7 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
 
 ## Changelog
 
+- **0.0.20:** Clean up unused comma from `aria-label` when single mode
 - **0.0.19:** Respects input `disabled` and `readonly` and moves caret to end of text on `arrow up`
 - **0.0.18:** Input value is now reverted instead of cleared when no match on blur/enter
 - **0.0.17:** Input now gets new `list` attribute `id` of `datalist` changes

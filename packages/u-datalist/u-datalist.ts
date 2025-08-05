@@ -217,7 +217,7 @@ const onKeyDown = (self: UHTMLDataListElement, e: KeyboardEvent) => {
 	const isEscape = key === "Escape" || key === "Esc"; // Handle both Escape and Esc for compatibility
 
 	if (altKey || ctrlKey || metaKey || shiftKey || key === "Tab") return;
-	if (isEscape && target !== self._input) e?.preventDefault(); // Prevent Safari from minimizing the window and <dialog> from closing
+	if (isEscape && !self.hidden) e?.preventDefault(); // Prevent Safari from minimizing the window and <dialog> from closing
 
 	setExpanded(self, !isEscape); // Close on ESC but show on other keys
 

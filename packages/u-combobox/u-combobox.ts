@@ -172,7 +172,7 @@ const render = (
 	event?: CustomEvent<MutationRecord[]>,
 ) => {
 	const { _focus, _texts, items, control, list, multiple } = self;
-	let label = `${text(control?.labels?.[0])}, ${multiple ? (items.length ? _texts.found.replace("%d", `${items.length}`) : _texts.empty) : ""}`;
+	let label = `${text(control?.labels?.[0])}${multiple ? `, ${items.length ? _texts.found.replace("%d", `${items.length}`) : _texts.empty}` : ""}`;
 	const edits: HTMLDataElement[] = [];
 	for (const { addedNodes, removedNodes } of event?.detail || []) {
 		for (const el of addedNodes) if (isData(el)) edits.unshift(el); // Add added nodes to the front

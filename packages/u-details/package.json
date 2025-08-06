@@ -9,6 +9,18 @@
 	"module": "dist/u-details.js",
 	"types": "dist/u-details.d.ts",
 	"customElements": "dist/u-details.manifest.json",
+	"exports": {
+		".": {
+			"import": {
+				"types": "./dist/u-details.d.ts",
+				"default": "./dist/u-details.js"
+			},
+			"require": {
+				"types": "./dist/u-details.d.cts",
+				"default": "./dist/u-details.cjs"
+			}
+		}
+	},
 	"files": [
 		"dist"
 	],

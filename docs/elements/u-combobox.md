@@ -19,7 +19,7 @@ import { data } from '../filesize.data.ts'
 - Use `data-multiple` oto allow selecting multiple items
 - Use `data-creatable` to allow creating items not in the list
 - Use `data-*` attributes to translate screen reader announcements
-- Use `beforechange`, `afterchange` and `beforematch` events to manipulate state
+- Use `comboboxbeforeselect`, `comboboxafterselect` and `comboboxbeforematch` events to manipulate state
 - Add `<select>` as child for `FormData` or form submittion compatibility
 - Use matching `id` on `<input>` and `for` attribute on `<label>` to connect
 - **MDN Web Docs:** [&lt;data&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/data) ([HTMLDataElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDataElement)) / [&lt;input&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input) ([HTMLInputElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement)) / [&lt;datalist&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist) ([HTMLDatalistElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDatalistElement)) / [&lt;option&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option) ([HTMLOptionElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLOptionElement))
@@ -113,9 +113,9 @@ bun add -S @u-elements/u-combobox
 
 In addition to the [usual events supported by HTML elements](https://developer.mozilla.org/en-US/docs/Web/API/Element#events), the `<u-combobox>` elements dispatches custom events allowing you to affect state:
 
-### `beforechange`
+### `comboboxbeforeselect`
 ```js
-myCombobox.addEventListener('beforechange', (event) => {
+myCombobox.addEventListener('comboboxbeforeselect', (event) => {
   event.target // UHTMLComboboxElement
   event.detail // HTMLDataElement to add or remove
   event.detail.isConnnected // true if removing, false if adding
@@ -123,18 +123,18 @@ myCombobox.addEventListener('beforechange', (event) => {
 })
 ```
 
-### `afterchange`
+### `comboboxafterselect`
 ```js
-myCombobox.addEventListener('afterchange', (event) => {
+myCombobox.addEventListener('comboboxafterselect', (event) => {
   event.target // UHTMLComboboxElement
   event.detail // HTMLDataElement added or removed
   event.detail.isConnnected // false if removing, true if adding
 })
 ```
 
-### `beforematch`
+### `comboboxbeforematch`
 ```js
-myCombobox.addEventListener('beforematch', (event) => {
+myCombobox.addEventListener('comboboxbeforematch', (event) => {
   event.target // UHTMLComboboxElement
   event.detail // HTMLOptionElement | undefined match in option list
   // You can change match by looping options and setting option.selected:
@@ -205,7 +205,7 @@ myCombobox.addEventListener('beforematch', (event) => {
 &lt;/u-combobox&gt;
 &lt;script type="module"&gt;
   const combobox = document.getElementById('my-matching-combobox');
-  combobox.addEventListener('beforematch', (event) => {
+  combobox.addEventListener('comboboxbeforematch', (event) => {
     event.preventDefault();
     const input = combobox.control;
     const query = input.value.toLowerCase().trim();
@@ -337,7 +337,7 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
 | NVDA (PC) + Edge | :white_check_mark: |
 | NVDA (PC) + Firefox | :white_check_mark: needs focus mode to announce item removal |
 | Narrator (PC) + Chrome | :white_check_mark: |
-| Narrator (PC) + Edge | :white_check_mark: |
+| Narrator (PC) + Edge | :white_check_mark: 
 | Narrator (PC) + Firefox | :white_check_mark: |
 | TalkBack (Android) + Chrome | :white_check_mark: |
 | TalkBack (Android) + Firefox | :white_check_mark: |
@@ -352,6 +352,10 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
 
 ## Changelog
 
+- **1.0.0:** Renamed events to avoid conflict with native events:
+ - `afterchange` => `comboboxafterselect`
+ - `beforechange` => `comboboxbeforeselect`
+ - `beforematch` => `comboboxbeforematch`
 - **0.0.20:** Clean up unused comma from `aria-label` when single mode
 - **0.0.19:** Respects input `disabled` and `readonly` and moves caret to end of text on `arrow up`
 - **0.0.18:** Input value is now reverted instead of cleared when no match on blur/enter

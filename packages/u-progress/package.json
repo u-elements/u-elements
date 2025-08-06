@@ -9,6 +9,18 @@
 	"module": "dist/u-progress.js",
 	"types": "dist/u-progress.d.ts",
 	"customElements": "dist/u-progress.manifest.json",
+	"exports": {
+		".": {
+			"import": {
+				"types": "./dist/u-progress.d.ts",
+				"default": "./dist/u-progress.js"
+			},
+			"require": {
+				"types": "./dist/u-progress.d.cts",
+				"default": "./dist/u-progress.cjs"
+			}
+		}
+	},
 	"files": [
 		"dist"
 	],

@@ -102,7 +102,7 @@ bun add -S @u-elements/u-datalist
 ## Events
 While `<u-datalist>` support all events, *native* datalist does not as it is rendered as part of the browser UI. Therefore, it's recommended to avoid binding events to `<u-datalist>` or `<u-option>` if you want to ensure native compatibility and future seamless opt-out.
 
-If you need to detect click on options or require a more fine-grained API — including `beforechange` and `afterchange` events — we recommend using [`<u-combobox>`](/elements/u-combobox), which extends `<u-datalist>` with [several useful features →](/elements/u-combobox)
+If you need to detect click on options or require a more fine-grained API — including `comboboxbeforeselect` and `comboboxafterselect` events — we recommend using [`<u-combobox>`](/elements/u-combobox), which extends `<u-datalist>` with [several useful features →](/elements/u-combobox)
 
 ## Styling
 
@@ -291,6 +291,7 @@ Using [Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API
 
 ## Changelog
 
+- **1.0.13:** Prevent opening if `inputmode="none"`
 - **1.0.12:** Prevent ESC from closing `dialog` when datalist is open
 - **1.0.11:** Respects input `disabled` and `readonly` and moves caret to end of text on `arrow up`
 - **1.0.10:** Automatically update `popovertarget` and `aria-controls` of input when `id` of datalist changes

@@ -9,6 +9,18 @@
 	"module": "dist/u-datalist.js",
 	"types": "dist/u-datalist.d.ts",
 	"customElements": "dist/u-datalist.manifest.json",
+	"exports": {
+		".": {
+			"import": {
+				"types": "./dist/u-datalist.d.ts",
+				"default": "./dist/u-datalist.js"
+			},
+			"require": {
+				"types": "./dist/u-datalist.d.cts",
+				"default": "./dist/u-datalist.cjs"
+			}
+		}
+	},
 	"files": [
 		"dist"
 	],

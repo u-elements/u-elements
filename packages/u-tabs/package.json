@@ -9,6 +9,18 @@
 	"module": "dist/u-tabs.js",
 	"types": "dist/u-tabs.d.ts",
 	"customElements": "dist/u-tabs.manifest.json",
+	"exports": {
+		".": {
+			"import": {
+				"types": "./dist/u-tabs.d.ts",
+				"default": "./dist/u-tabs.js"
+			},
+			"require": {
+				"types": "./dist/u-tabs.d.cts",
+				"default": "./dist/u-tabs.cjs"
+			}
+		}
+	},
 	"files": [
 		"dist"
 	],

@@ -13,9 +13,10 @@ export default function App() {
 	const [selected, setSelected] = useState(["Test 1"]);
 	const ref = useRef<UHTMLComboboxElement>(null);
 
-	const handleBeforeChange = (event: CustomEvent<HTMLDataElement>) => {
+	const handleBeforeSelect = (event: CustomEvent<HTMLDataElement>) => {
 		const { multiple, values } = event.target as UHTMLComboboxElement;
 		const item = event.detail;
+		console.log("beforeselect", item, values, multiple);
 		event.preventDefault();
 
 		if (!multiple) setSelected(item.isConnected ? [] : [item.value]);
@@ -29,15 +30,15 @@ export default function App() {
 
 	// useEffect(() => {
 	//   const self = ref.current
-	//   const beforeChange = (event: CustomEvent<HTMLDataElement>) => {
+	//   const beforeSelect = (event: CustomEvent<HTMLDataElement>) => {
 	//     const target = event.target as UHTMLComboboxElement;
 	//     const item = event.detail;
 	//     event.preventDefault();
 	//     setSelected(target.values.concat(item.value).filter((v) => item.value !== v || !item.isConnected));
 	//   }
 
-	//   self?.addEventListener('beforechange', beforeChange, true)
-	//   return () => self?.removeEventListener('beforechange', beforeChange, true);
+	//   self?.addEventListener('comboboxbeforeselect', beforeSelect, true)
+	//   return () => self?.removeEventListener('comboboxbeforeselect', beforeSelect, true);
 	// }, []);
 
 	return (
@@ -53,7 +54,7 @@ export default function App() {
 			<label htmlFor="my-input">Choose ice cream</label>
 			<br />
 			{/* @ts-expect-error */}
-			<u-combobox ref={ref} onbeforechange={handleBeforeChange}>
+			<u-combobox ref={ref} oncomboboxbeforeselect={handleBeforeSelect}>
 				<select></select>
 				{selected.map((opt) => (
 					<data key={opt}>{opt}</data>
@@ -108,7 +109,7 @@ export default function App() {
 }
 
 // @ts-ignore
-const mount = (window.mount =
-	window.mount || ReactDOM.createRoot(document.getElementById("root")!));
-mount.render(<App />);
+window.mount = window.mount || ReactDOM.createRoot(document.getElementById("root"));
+// @ts-ignore
+window.mount.render(<App />);
 // render(<App />, document.getElementById('root')!); // For React 16.8

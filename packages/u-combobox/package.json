@@ -9,6 +9,18 @@
 	"module": "dist/u-combobox.js",
 	"types": "dist/u-combobox.d.ts",
 	"customElements": "dist/u-combobox.manifest.json",
+	"exports": {
+		".": {
+			"import": {
+				"types": "./dist/u-combobox.d.ts",
+				"default": "./dist/u-combobox.js"
+			},
+			"require": {
+				"types": "./dist/u-combobox.d.cts",
+				"default": "./dist/u-combobox.cjs"
+			}
+		}
+	},
 	"files": [
 		"dist"
 	],

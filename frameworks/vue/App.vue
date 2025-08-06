@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import '../../packages/u-progress'
-import '../../packages/u-datalist'
-import '../../packages/u-tags'
-import { UHTMLTagsElement } from '../../packages/u-tags';
+import { onMounted, ref } from "vue";
+import "../../packages/u-progress";
+import "../../packages/u-datalist";
+import "../../packages/u-combobox";
+import type { UHTMLComboboxElement } from "../../packages/u-combobox";
 
-const count = ref(0)
-const value = ref('')
-const tags = ref<UHTMLTagsElement>()
-const onTags = (event: GlobalEventHandlersEventMap['tags']) => console.log(event.detail)
+const count = ref(0);
+const value = ref("");
+const tags = ref<UHTMLComboboxElement>();
+const handleBeforeSelect = (
+	event: GlobalEventHandlersEventMap["comboboxbeforeselect"],
+) => console.log(event.detail);
 
-onMounted(() => console.log(tags.value?.items))
+onMounted(() => console.log(tags.value?.items));
 </script>
 
 <template>
@@ -20,15 +22,15 @@ onMounted(() => console.log(tags.value?.items))
   <br />
   <br />
   <input list="my-list" :value="value" @input="() => (value = '-') && (value = '')" />
-  <u-datalist id="my-list" data-sr-singular="%d hit" data-sr-plural="%d hits">
-    <u-option value="test-1">Test 1</u-option>
-    <u-option value="test-2">Test 2</u-option>
-    <u-option value="test-3">Test 3</u-option>
-  </u-datalist>
-  <u-tags ref="tags" v-on:tags="onTags">
+  <u-combobox ref="tags" v-on:comboboxbeforeselect="handleBeforeSelect">
     <data>Kokkos</data>
     <data>Banan</data>
     <data>Jordbær</data>
     <input type="text" />
-  </u-tags>
+    <u-datalist data-sr-singular="%d hit" data-sr-plural="%d hits">
+      <u-option value="test-1">Test 1</u-option>
+      <u-option value="test-2">Test 2</u-option>
+      <u-option value="test-3">Test 3</u-option>
+    </u-datalist>
+  </u-combobox>
 </template>

@@ -170,6 +170,7 @@ const skip = [
 	"element.checkvisibility", // Ignored because support is optional
 	"element.part",
 	"function.name",
+	"htmlelement.popovertargetelement", // Ignored because support is optional
 	"htmlelement.popover", // Ignored because support is optional
 	"htmlelement.togglepopover", // Ignored because support is optional
 	"htmlelement.inputmode", // Ignored because support is optional

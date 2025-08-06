@@ -174,7 +174,7 @@ const onFocus = (self: UHTMLDataListElement, event: Event) => {
 		self._input.dispatchEvent(new FocusEvent("focusin", { bubbles: true })); // Do not assign view: window to prevent JSDOM errorshttps://github.com/vitest-dev/vitest/issues/4685#issuecomment-1843178287
 		attr(self, SAFE_LABELLEDBY, useId(self._input.labels?.[0]));
 		on(self._root || self, EVENTS, self);
-		setExpanded(self, true);
+		setExpanded(self, attr(self._input, "inputmode") !== "none"); // Only open if keyboard is not disabled
 		speak(); // Prepare screen reader announcements
 	}
 };

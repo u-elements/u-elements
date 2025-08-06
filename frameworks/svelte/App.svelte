@@ -1,18 +1,18 @@
 <script lang="ts">
-  import '../../packages/u-datalist'
-  import '../../packages/u-tags'
-  // import Tabs from './Tabs.svelte'
+import "../../packages/u-datalist";
+import "../../packages/u-combobox";
+// import Tabs from './Tabs.svelte'
 
-  function handleTags(event: CustomEvent) {
-    console.log(event.detail)
-  }
+function handleBeforeSelect(event: CustomEvent) {
+	console.log(event.detail);
+}
 </script>
 
 <main>
   <h1>Svelte + u-elements</h1>
   <u-progress value="5" max="10">33%</u-progress>
   <br />
-  <u-tags ontags={handleTags}>
+  <u-combobox oncomboboxbeforeselect={handleBeforeSelect}>
     <data>Kokkos</data>
     <data>Banan</data>
     <data>Jordbær</data>
@@ -22,5 +22,5 @@
       <u-option value="test-2">Test 2</u-option>
       <u-option value="test-3">Test 3</u-option>
     </u-datalist>
-  </u-tags>
+  </u-combobox>
 </main>

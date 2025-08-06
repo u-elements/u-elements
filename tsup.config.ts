@@ -49,21 +49,24 @@ export default defineConfig({
 	},
 });
 
-function getFrameworkTypes([_file, code]: string[]) {
+function getFrameworkTypes([_file, code]: string[], index: number) {
 	const tagRexes = /['"](u-\S*?)['"]: (U?HTML[a-z]*Element)/gi;
 	const tagDefinitions = Array.from(code.matchAll(tagRexes));
 
 	const eventMap = `${code.match(/GlobalEventHandlersEventMap[^}]+/s) || ""}`;
-	const eventRexes = /(\S+): (CustomEvent(<[^>]+>)?)/gi;
+	const eventRexes = /['"]?(\S*?)['"]?: (CustomEvent(<[^>]+>)?)/gi;
 	const events = Array.from(eventMap.matchAll(eventRexes));
 
-	return `
-import type * as PreactTypes from 'preact'
+	return `${
+		index
+			? "" // Only add once for each package, not for every file
+			: `import type * as PreactTypes from 'preact'
 import type * as ReactTypes from 'react'
 import type * as SvelteTypes from 'svelte/elements'
 import type * as VueJSX from '@vue/runtime-dom'
 import type { JSX as QwikJSX } from '@builder.io/qwik/jsx-runtime'
-import type { JSX as SolidJSX } from 'solid-js'
+import type { JSX as SolidJSX } from 'solid-js'`
+	}
 
 ${tagDefinitions
 	.map(([, tag, domInterface]) => {
@@ -75,8 +78,8 @@ ${tagDefinitions
 export type Preact${type} = ${
 			isNative
 				? `PreactTypes.JSX.IntrinsicElements['${tagNative}']`
-				: `PreactTypes.JSX.HTMLAttributes<UHTMLTagsElement> & { ${events
-						.map(([, type, event]) => `on${type}?: (event: ${event}) => void`)
+				: `PreactTypes.JSX.HTMLAttributes<${domInterface}> & { ${events
+						.map(([, type, event]) => `"on${type}"?: (event: ${event}) => void`)
 						.join("; ")} }`
 		}
 export type React${type} = ${
@@ -92,7 +95,7 @@ export type Svelte${type} = ${
 				: `SvelteTypes.HTMLAttributes<${domInterface}> & { ${events
 						.map(
 							([, type, event]) =>
-								`'on:${type}'?: (event: ${event}) => void, on${type}?: (event: ${event}) => void`,
+								`"on:${type}"?: (event: ${event}) => void, "on${type}"?: (event: ${event}) => void`,
 						)
 						.join("; ")} }`
 		}
@@ -111,7 +114,7 @@ declare module 'svelte/elements' { interface SvelteHTMLElements { '${tag}': Svel
 declare module 'solid-js' {
   namespace JSX {
     interface IntrinsicElements { '${tag}': Solid${type} }
-    interface CustomEvents { ${events.map(([, type, event]) => `${type}: (event: ${event}) => void`).join("; ")} }
+    interface CustomEvents { ${events.map(([, type, event]) => `"${type}": (event: ${event}) => void`).join("; ")} }
   }
 }`;
 	})

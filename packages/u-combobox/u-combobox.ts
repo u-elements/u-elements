@@ -23,9 +23,9 @@ declare global {
 		"u-combobox": UHTMLComboboxElement;
 	}
 	interface GlobalEventHandlersEventMap {
-		afterchange: CustomEvent<HTMLDataElement>;
-		beforechange: CustomEvent<HTMLDataElement>;
-		beforematch: CustomEvent<HTMLOptionElement | undefined>;
+		comboboxafterselect: CustomEvent<HTMLDataElement>;
+		comboboxbeforeselect: CustomEvent<HTMLDataElement>;
+		comboboxbeforematch: CustomEvent<HTMLOptionElement | undefined>;
 	}
 }
 
@@ -181,11 +181,15 @@ const render = (
 
 	const shouldAnnounce = multiple ? edits.length === 1 : edits[0] === _focus; // Only announce in single mode if item is visible and focused
 	if (_focus && control && shouldAnnounce) {
-		const inputMode = attr(control, "inputmode"); // Use inputMode to prevent virtual keyboard on iOS and Android
+		const ariaExpanded = attr(control, "aria-expanded"); // Store previous aria-expanded state to prevent VoiceOver announcing it
+		const inputMode = attr(control, "inputmode"); // Store previous inputmode to prevent virtual keyboard on iOS and Android
 		const nextFocus = isData(_focus) ? control : _focus;
-		self._speak = `${_texts[edits[0].isConnected ? "added" : "removed"]} ${text(edits[0])}, `; // Update aria-labels
+		const isRemove = !edits[0].isConnected;
+		self._speak = `${_texts[isRemove ? "removed" : "added"]} ${text(edits[0])}, `; // Update aria-labels
 
 		if (IS_MOBILE || _focus === control) speak(self._speak); // Live announce when focus can not be moved
+
+		// Temporarily move focus the control to force reading new aria-label
 		if (control !== nextFocus) {
 			attr(control, "aria-expanded", null); // Prevent announce state when temporarily focused
 			attr(control, "inputmode", "none"); // Prevent virtual keyboard on iOS and Android
@@ -194,10 +198,11 @@ const render = (
 		}
 
 		setTimeout(() => {
-			attr(control, "aria-expanded", "true"); // Revert aria-expanded
-			attr(control, "inputmode", inputMode); // Revert inputMode
+			attr(control, "aria-expanded", ariaExpanded); // Revert aria-expanded
+			attr(control, "inputmode", isRemove ? "none" : inputMode); // Revert inputMode before focus, but keep keyboard closed if item remove
 
 			nextFocus?.focus?.();
+			attr(control, "inputmode", inputMode); // Revert inputMode after focus if removing
 			self._speak = ""; // Prevent Firefox announcing aria-label change, but also support non-focus environments such as JAWS forms mode
 			if (IS_FIREFOX_DESKTOP) on(self, "blur", () => render(self), EVENT_ONCE);
 			else setTimeout(render, 100, self);
@@ -269,11 +274,11 @@ const dispatchMatch = (self: UHTMLComboboxElement, change = true) => {
 	);
 	const event = { bubbles: true, cancelable: true, detail: match };
 
-	if (!self.dispatchEvent(new CustomEvent("beforematch", event)))
+	if (!self.dispatchEvent(new CustomEvent("comboboxbeforematch", event)))
 		match = [...options].find((o) => o.selected); // Only match first selected option if custom matching
 
 	if (change) {
-		syncOptionsWithItems(self); // Re-sync options with items as consumer can change opt.selected in beforematch event
+		syncOptionsWithItems(self); // Re-sync options with items as consumer can change opt.selected in comboboxbeforematch event
 		if (match) return dispatchChange(self, match, false);
 		if (creatable && value) return dispatchChange(self, { value }, false);
 		if (!multiple && !value && items[0]) dispatchChange(self, items[0]);
@@ -297,11 +302,11 @@ const dispatchChange = (
 	const skip = remove && !removable;
 
 	if (skip) return syncInputValue(self); // If item is already present and not removeable, skip change but ensure input value is in sync
-	if (self.dispatchEvent(new CustomEvent("beforechange", event))) {
+	if (self.dispatchEvent(new CustomEvent("comboboxbeforeselect", event))) {
 		if (!multiple) for (const item of [...items]) item.remove(); // Clear if single (loop as static array to prevent live HTMLCollection)
 		if (remove) remove.remove();
 		else control?.insertAdjacentElement("beforebegin", add); // Add new item
-		self.dispatchEvent(new CustomEvent("afterchange", event));
+		self.dispatchEvent(new CustomEvent("comboboxafterselect", event));
 	}
 };
 

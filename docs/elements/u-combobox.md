@@ -5,12 +5,8 @@ title: u-combobox
 import { data } from '../filesize.data.ts'
 </script>
 
-# &lt;u-combobox&gt; <mark data-badge="BETA"></mark>
+# &lt;u-combobox&gt;
 `<u-combobox>` extends `<datalist>` with support for multiselect, separate label and programmatic value and clear button. While these features are [not yet](https://open-ui.org/components/combobox.explainer/) part of any official ARIA pattern or HTML element, `<u-combobox>` adhere closely to HTML conventions.
-
-:::info BETA
-`u-combobox` is work in progress. Changes might apply and documentation is not complete.
-:::
 
 **Quick intro:**
 - Use `<data>` as direct child elements - these are the removable items

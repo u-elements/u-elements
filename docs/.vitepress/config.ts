@@ -25,9 +25,9 @@ export default defineConfig({
 	],
 	markdown: {
 		theme: {
-			light: 'github-light-high-contrast',
-			dark: 'github-dark-high-contrast'
-		}
+			light: "github-light-high-contrast",
+			dark: "github-dark-high-contrast",
+		},
 	},
 	themeConfig: {
 		logo: "/logo.svg",
@@ -75,7 +75,7 @@ export default defineConfig({
 						link: "/elements/u-tabs",
 					},
 					{
-						text: '&lt;u-combobox&gt; <mark data-badge="BETA"></mark>',
+						text: "&lt;u-combobox&gt;",
 						link: "/elements/u-combobox",
 					},
 					{

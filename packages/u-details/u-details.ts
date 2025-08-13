@@ -46,6 +46,7 @@ export class UHTMLDetailsElement extends UHTMLElement {
 	}
 	connectedCallback() {
 		this._content = this.shadowRoot?.children[1] as HTMLSlotElement;
+		attr(this, "role", "group"); // Set role to group align with HTMLDetailsElement
 		on(this._content, "beforematch", this); // Open if browsers Find in page reveals content
 		on(this, "click,keydown", this);
 		this.attributeChangedCallback(); // We now know the element is in the DOM, so run a attribute setup

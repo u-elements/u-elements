@@ -316,6 +316,39 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
 &lt;/style&gt;
 </pre>
 
+## Example: Only filter during typing
+
+<Sandbox label="u-details language example" lang="no" />
+<pre hidden>
+&lt;label for="my-typing-input"&gt;
+  All results will be visible on load and after selection:
+&lt;/label&gt;
+&lt;u-combobox id="my-typing-combobox"&gt;
+  &lt;input id="my-typing-input" list="my-typing-list" /&gt;
+  &lt;del aria-label="Clear text"&gt;&times;&lt;/del&gt;
+  &lt;u-datalist id="my-typing-list" data-nofilter&gt;
+    &lt;u-option&gt;Coconut&lt;/u-option&gt;
+    &lt;u-option&gt;Strawberries&lt;/u-option&gt;
+    &lt;u-option&gt;Chocolate&lt;/u-option&gt;
+    &lt;u-option&gt;Vanilla&lt;/u-option&gt;
+  &lt;/u-datalist&gt;
+&lt;/u-combobox&gt;
+&lt;script type="module"&gt;
+  const combobox = document.getElementById('my-typing-combobox');
+
+  combobox.addEventListener('input', (event) =&gt; {
+    // Only user can cause trusted typing events
+    combobox.list.toggleAttribute('data-nofilter', !event.isTrusted);
+  });
+&lt;/script&gt;
+&lt;style&gt;
+  /* Styling just for example: */
+  u-combobox { border: 1px solid; display: flex; flex-wrap: wrap; gap: .5em; padding: .5em; position: relative }
+  u-option[selected] { font-weight: bold }
+  u-datalist { position: absolute; z-index: 9; inset: 100% -1px auto; border: 1px solid; background: white; padding: .5em }
+&lt;/style&gt;
+</pre>
+
 
 ## Accessibility
 

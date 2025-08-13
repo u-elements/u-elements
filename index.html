@@ -78,7 +78,7 @@
         <data>Jordbær</data>
         <input type="text" id="my-a11y-input">
         <del aria-label="Fjern tekst">&times;</del>
-        <u-datalist>
+        <u-datalist popover="manual">
           <u-option value="">Empty value</u-option>
           <u-option value="2" label="Kokkos">Kokkos<div>Hei</div></u-option>
           <u-option>Jordbær</u-option>
@@ -98,6 +98,8 @@
         const input = document.getElementById('my-a11y-input');
         const list = combobox.list;
         const select = document.querySelector('u-combobox select');
+
+        document.addEventListener('toggle', console.log, true);
 
         // input.addEventListener('input', console.log);
         // combobox.addEventListener('comboboxbeforeselect', (event) => {

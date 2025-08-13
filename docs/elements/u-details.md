@@ -145,3 +145,7 @@ Even when a `<details>`/`<u-details>` element is closed, all of its content rema
 - DOM interface: [HTMLDetailsElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDetailsElement)
 - HTML Standard: [The &lt;details&gt; element](https://html.spec.whatwg.org/multipage/interactive-elements.html#the-details-element)
 - HTML Standard: [The &lt;summary&gt; element](https://html.spec.whatwg.org/multipage/interactive-elements.html#the-summary-element)
+
+## Changelog
+
+- **0.1.2:** Add `role="group"` to align with semantics

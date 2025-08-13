@@ -234,6 +234,10 @@ const render = (
 	if (list) attr(list, "aria-multiselectable", `${multiple}`); // Sync datalist multiselect
 	if (control) attr(control, "list", useId(list)); // Connect datalist and input
 	if (control) attr(control, "aria-label", `${self._speak}${label}`);
+	if (control && list?.hasAttribute("popover")) {
+		attr(control, "popovertarget", useId(list)); // Connect popover target to datalist
+		attr(list, "popover", "manual"); // Ensure correct popover behavior
+	}
 
 	const item = text(items[0]);
 	if (item !== self._item) syncInputValue(self); // Only syncInputValue if item text has changed

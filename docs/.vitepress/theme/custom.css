@@ -1,118 +1,198 @@
 /* Ensure accessible focus */
 :focus-visible {
-  outline: 0!important;
-  box-shadow: 0 0 0 1px var(--vp-c-bg),0 0 0 3px var(--vp-c-brand-1),0 0 0 4px var(--vp-c-bg);
+	outline: 0 !important;
+	box-shadow:
+		0 0 0 1px var(--vp-c-bg),
+		0 0 0 3px var(--vp-c-brand-1),
+		0 0 0 4px var(--vp-c-bg);
 }
 
 /* Ensure accessible code language labels */
 :root {
-  --vp-code-lang-color: inherit;
+	--vp-code-lang-color: inherit;
 }
 
 /* Ensure emoji and not unicode symbols are used */
-.icon { font-family: Apple Color Emoji,Segoe UI Emoji,Noto Color Emoji,Android Emoji,EmojiSymbols,EmojiOne Mozilla,Twemoji Mozilla,Segoe UI Symbol,Noto Color Emoji Compat,emoji,sans-serif }
+.icon {
+	font-family:
+		"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Android Emoji",
+		"EmojiSymbols", "EmojiOne Mozilla", "Twemoji Mozilla", "Segoe UI Symbol",
+		"Noto Color Emoji Compat", "emoji", sans-serif;
+}
 
 /* Markdown: Use first paragraph as introduction text */
 .vp-doc h1 + p {
-  color: var(--vp-c-text-2);
-  font-size: 1.5rem;
-  font-weight: 500;
-  letter-spacing: -.02em;
-  line-height: 1.5;
-  margin-bottom: 1em;
-  text-wrap: balance;
+	color: var(--vp-c-text-2);
+	font-size: 1.5rem;
+	font-weight: 500;
+	letter-spacing: -0.02em;
+	line-height: 1.5;
+	margin-bottom: 1em;
+	text-wrap: balance;
 }
 
 /* Markdown: Tables */
-.vp-doc table { display: table; table-layout: fixed; width: 100% }
-.vp-doc tr { vertical-align: top }
-.vp-doc :not(pre) > code { white-space: nowrap }
+.vp-doc table {
+	display: table;
+	table-layout: fixed;
+	width: 100%;
+}
+.vp-doc tr {
+	vertical-align: top;
+}
+.vp-doc :not(pre) > code {
+	white-space: nowrap;
+}
 
-.vp-doc div[class*='language-'], .vp-block {
-  background: none;
-  border: 1px solid var(--vp-c-divider)
+.vp-doc div[class*="language-"],
+.vp-block {
+	background: none;
+	border: 1px solid var(--vp-c-divider);
 }
 
 /* Front page: Background gradient */
 .is-home::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  filter: contrast(110%) saturate(50%) brightness(110%);
-  mix-blend-mode: multiply; /* Make it work with dark mode */
-  background:
-      linear-gradient(to bottom, transparent 60%, white),
-        url("data:image/svg+xml,%3Csvg width='220' height='220' viewBox='0 0 220 220' opacity='.5' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.81' numOctaves='6' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E"),
-        linear-gradient(150deg, #ecedee, transparent 30%),
-        linear-gradient(330deg, #a7b6ff, transparent 30%),
-        linear-gradient(225deg, #e5e7f2, #bbd7fe, #e1f0fa, #a7c9ff);
-
+	content: "";
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	filter: contrast(110%) saturate(50%) brightness(110%);
+	mix-blend-mode: multiply; /* Make it work with dark mode */
+	background:
+		linear-gradient(to bottom, transparent 60%, white),
+		url("data:image/svg+xml,%3Csvg width='220' height='220' viewBox='0 0 220 220' opacity='.5' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.81' numOctaves='6' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E"),
+		linear-gradient(150deg, #ecedee, transparent 30%),
+		linear-gradient(330deg, #a7b6ff, transparent 30%),
+		linear-gradient(225deg, #e5e7f2, #bbd7fe, #e1f0fa, #a7c9ff);
 }
 
 /* Front page: Logo gradient */
 :root {
-  --vp-home-hero-image-background-image: linear-gradient(-45deg, #5672cd 50%, #92beff 50%);
-  --vp-home-hero-image-filter: blur(40px) opacity(.25);
+	--vp-home-hero-image-background-image: linear-gradient(
+		-45deg,
+		#5672cd 50%,
+		#92beff 50%
+	);
+	--vp-home-hero-image-filter: blur(40px) opacity(0.25);
 }
-@media (min-width: 640px) { :root { --vp-home-hero-image-filter: blur(56px) opacity(.25) } }
-@media (min-width: 960px) { :root { --vp-home-hero-image-filter: blur(72px) opacity(.25) } }
+@media (min-width: 640px) {
+	:root {
+		--vp-home-hero-image-filter: blur(56px) opacity(0.25);
+	}
+}
+@media (min-width: 960px) {
+	:root {
+		--vp-home-hero-image-filter: blur(72px) opacity(0.25);
+	}
+}
 
 /* Front page: Balanced slogan and titles */
 .VPHomeHero .main .text,
-.VPFeature .title  { text-wrap: balance }
-
-/* VPTeamMembers used for overview pages */
-.VPTeamMembersItem { position: relative; transition: .2s }
-.VPTeamMembersItem:active { transform: scale(.98); }
-.VPTeamMembersItem .avatar { all: unset }
-.VPTeamMembersItem .avatar-img { position: static; width: 100%; object-fit: none; margin-bottom: 20px; aspect-ratio: 8 / 3 }
-.VPTeamMembersItem .avatar-img:not([src]) { display: none }
-.VPTeamMembersItem .data { padding: 0!important }
-.VPTeamMembersItem .name { display: none }
-.VPTeamMembersItem a { font-weight: 500; font-size: 1rem; text-decoration: none }
-.VPTeamMembersItem a::before { content: ''; position: absolute; inset: 0 } /* Large click surface */
-
-/* All pages: Badges */
-mark[data-badge] { background: none }
-mark[data-badge]::before {
-  background: var(--vp-c-gray-soft);
-  border-radius: 3px;
-  color: var(--vp-c-text-2);
-  content: attr(data-badge);
-  display: inline-block;
-  font-size: .6875rem;
-  font-weight: 700;
-  letter-spacing: 0;
-  line-height: 1;
-  padding: 3px;
-  vertical-align: middle;
+.VPFeature .title {
+	text-wrap: balance;
 }
 
+/* VPTeamMembers used for overview pages */
+.VPTeamMembersItem {
+	position: relative;
+	transition: 0.2s;
+}
+.VPTeamMembersItem:active {
+	transform: scale(0.98);
+}
+.VPTeamMembersItem .avatar {
+	all: unset;
+}
+.VPTeamMembersItem .avatar-img {
+	position: static;
+	width: 100%;
+	object-fit: none;
+	margin-bottom: 20px;
+	aspect-ratio: 8 / 3;
+}
+.VPTeamMembersItem .avatar-img:not([src]) {
+	display: none;
+}
+.VPTeamMembersItem .data {
+	padding: 0 !important;
+}
+.VPTeamMembersItem .name {
+	display: none;
+}
+.VPTeamMembersItem a {
+	font-weight: 500;
+	font-size: 1rem;
+	text-decoration: none;
+}
+.VPTeamMembersItem a::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+} /* Large click surface */
+
+/* All pages: Badges */
+mark[data-badge] {
+	background: none;
+}
+mark[data-badge]::before {
+	background: var(--vp-c-gray-soft);
+	border-radius: 3px;
+	color: var(--vp-c-text-2);
+	content: attr(data-badge);
+	display: inline-block;
+	font-size: 0.6875rem;
+	font-weight: 700;
+	letter-spacing: 0;
+	line-height: 1;
+	padding: 3px;
+	vertical-align: middle;
+}
+
+mark[data-badge="SUPPORTED"]::before,
 mark[data-badge="ARIA"]::before,
-mark[data-badge="HTML"]::before { content: '\2713\00A0 ' attr(data-badge); background: var(--vp-c-brand-soft); color: var(--vp-c-brand-1) }
-.VPSidebarItem mark[data-badge] { float: right }
-.VPLink.pager-link mark[data-badge] { display: none }
+mark[data-badge="HTML"]::before {
+	content: "\2713\00A0 " attr(data-badge);
+	background: var(--vp-c-brand-soft);
+	color: var(--vp-c-brand-1);
+}
+mark[data-badge="SUPPORTED"]::before {
+	color: #054449;
+	background: #e2f1df;
+}
+.VPSidebarItem mark[data-badge] {
+	float: right;
+}
+.VPLink.pager-link mark[data-badge] {
+	display: none;
+}
 
 /* All pages: Tooltip mark */
-mark[aria-description] { position: relative }
-mark[aria-description]:hover::after { opacity: .9; translate: -50% .5rem; visibility: visible }
-mark[aria-description]:hover { color: var(--vp-c-brand-1) }
+mark[aria-description] {
+	position: relative;
+}
+mark[aria-description]:hover::after {
+	opacity: 0.9;
+	translate: -50% 0.5rem;
+	visibility: visible;
+}
+mark[aria-description]:hover {
+	color: var(--vp-c-brand-1);
+}
 mark[aria-description]::after {
-  background: var(--vp-c-text-1);
-  border-radius: 3px;
-  color: var(--vp-c-bg);
-  content: attr(aria-description);
-  font-size: .875rem;
-  opacity: 0;
-  padding: .25em .5em;
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transition: .2s;
-  translate: -50% .25rem;
-  visibility: hidden;
-  width: max-content;
-  max-width: 25em;
-  z-index: 9000;
+	background: var(--vp-c-text-1);
+	border-radius: 3px;
+	color: var(--vp-c-bg);
+	content: attr(aria-description);
+	font-size: 0.875rem;
+	opacity: 0;
+	padding: 0.25em 0.5em;
+	position: absolute;
+	top: 100%;
+	left: 50%;
+	transition: 0.2s;
+	translate: -50% 0.25rem;
+	visibility: hidden;
+	width: max-content;
+	max-width: 25em;
+	z-index: 9000;
 }

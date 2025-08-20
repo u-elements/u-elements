@@ -55,28 +55,28 @@ export default defineConfig({
 				text: "Elements",
 				items: [
 					{
-						text: '&lt;u-datalist&gt; <mark data-badge="HTML"></mark>',
+						text: "&lt;u-datalist&gt;",
 						link: "/elements/u-datalist",
 					},
 					{
-						text: '&lt;u-details&gt; <mark data-badge="HTML"></mark>',
-						link: "/elements/u-details",
-					},
-					{
-						text: '<del>&lt;u-dialog&gt;</del> <mark data-badge="HTML"></mark>',
-						link: "/elements/u-dialog",
-					},
-					{
-						text: '&lt;u-progress&gt; <mark data-badge="HTML"></mark>',
+						text: "&lt;u-progress&gt;",
 						link: "/elements/u-progress",
 					},
 					{
-						text: '&lt;u-tabs&gt; <mark data-badge="ARIA"></mark>',
+						text: "&lt;u-tabs&gt;",
 						link: "/elements/u-tabs",
 					},
 					{
 						text: "&lt;u-combobox&gt;",
 						link: "/elements/u-combobox",
+					},
+					{
+						text: '&lt;u-details&gt; <mark data-badge="SUPPORTED"></mark>',
+						link: "/elements/u-details",
+					},
+					{
+						text: '&lt;u-dialog&gt; <mark data-badge="SUPPORTED"></mark>',
+						link: "/elements/u-dialog",
 					},
 					{
 						text: '<del>&lt;u-tags&gt;</del> <mark data-badge="DEPRECATED"></mark>',

@@ -318,7 +318,7 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
 
 ## Example: Only filter during typing
 
-<Sandbox label="u-details language example" lang="no" />
+<Sandbox label="u-details typing example" lang="no" />
 <pre hidden>
 &lt;label for="my-typing-input"&gt;
   All results will be visible on load and after selection:
@@ -339,6 +339,70 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
   combobox.addEventListener('input', (event) =&gt; {
     // Only user can cause trusted typing events
     combobox.list.toggleAttribute('data-nofilter', !event.isTrusted);
+  });
+&lt;/script&gt;
+&lt;style&gt;
+  /* Styling just for example: */
+  u-combobox { border: 1px solid; display: flex; flex-wrap: wrap; gap: .5em; padding: .5em; position: relative }
+  u-option[selected] { font-weight: bold }
+  u-datalist { position: absolute; z-index: 9; inset: 100% -1px auto; border: 1px solid; background: white; padding: .5em }
+&lt;/style&gt;
+</pre>
+
+## Example: Controlled render
+
+`u-combobox` adds and removes `<data>` elements, which can be confusing for frameworks such as React.
+If you encounter issues, it’s recommended to call `event.preventDefault()` inside the `comboboxbeforeselect` handler, 
+and then manually add or remove `<data>` elements as needed:
+
+<script>
+// Fake store for controlled example
+window.values = [];
+window.useState = (values) => [window.values, (values) => {
+  const combobox = document.getElementById('my-controlled-combobox');
+  window.values.length = 0; // Empty
+  window.values.push(...values);
+  combobox?.querySelectorAll('data').forEach((el) => el.remove());
+  combobox?.prepend(...values.map(({ value, label }) => Object.assign(document.createElement('data'), { value, textContent: label })))
+}]
+</script>
+<Sandbox label="u-details controlled example" lang="no" />
+<pre hidden>
+&lt;label for="my-controlled-input"&gt;
+  Controlled render:
+&lt;/label&gt;
+&lt;u-combobox id="my-controlled-combobox" data-multiple&gt;
+  &lt;!--
+    Your framework rendering here, i.e. React:
+    {values.map(({ value, label }) => (
+      &lt;data key={value} value={value}&gt;
+        {label}
+      &lt;/data&gt;
+    ))}
+  --&gt;
+  &lt;input id="my-controlled-input" list="my-controlled-list" /&gt;
+  &lt;del aria-label="Clear text"&gt;&times;&lt;/del&gt;
+  &lt;u-datalist id="my-controlled-list" data-nofilter&gt;
+    &lt;u-option&gt;Coconut&lt;/u-option&gt;
+    &lt;u-option&gt;Strawberries&lt;/u-option&gt;
+    &lt;u-option&gt;Chocolate&lt;/u-option&gt;
+    &lt;u-option&gt;Vanilla&lt;/u-option&gt;
+  &lt;/u-datalist&gt;
+&lt;/u-combobox&gt;
+&lt;script type="module"&gt;
+  const combobox = document.getElementById('my-controlled-combobox');
+  const [values, setValues] = useState([]);
+
+  combobox.addEventListener('comboboxbeforeselect', (event) =&gt; {
+    event.preventDefault(); // Stops u-combobox
+    const data = event.detail;
+    const label = data.textContent;
+    const value = data.value;
+    const isAdd = !data.isConnected;
+
+    // Add/remove:
+    if (isAdd) setValues([...values, { label, value }]);
+    else setValues(values.filter((item) => item.value !== value));
   });
 &lt;/script&gt;
 &lt;style&gt;

@@ -18,6 +18,7 @@ import { data } from '../filesize.data.ts'
 <Sandbox label="u-progress code example" />
 <pre hidden>
 &lt;u-progress aria-label="Loading" value="7.5" max="10"&gt;&lt;/u-progress&gt;
+&lt;br&gt;
 &lt;u-progress aria-label="Loading"&gt;&lt;/u-progress&gt;
 </pre>
 

@@ -154,8 +154,8 @@ export class UHTMLTabElement extends UHTMLElement {
 
 				tab.tabIndex = tab === this ? 0 : -1;
 				attr(tab, ARIA_SELECTED, `${tab === this}`);
+				attr(tab, ARIA_CONTROLS, panel?.id || null);
 				if (panel) panel.hidden = panel !== nextPanel;
-				if (panel) attr(tab, ARIA_CONTROLS, panel.id);
 			});
 			SKIP_ATTR_CHANGE = false;
 		}
@@ -202,11 +202,9 @@ export class UHTMLTabPanelElement extends UHTMLElement {
 		this.attributeChangedCallback(); // Setup initial tabindex
 	}
 	attributeChangedCallback() {
-		// Set tabIndex=0 only if firstElementChild is not interactive
-		// Follows https://www.w3.org/WAI/ARIA/apg/patterns/tabs/
-		if (this.hidden || isFocusable(this.firstChild))
-			attr(this, "tabindex", null);
-		else this.tabIndex = 0;
+		const hidden = this.hidden;
+		attr(this, "aria-hidden", `${hidden}`); // Safari 18.6 has a bug where hidden alone is not enough to prevent screen readers focus
+		attr(this, "tabindex", hidden || isFocusable(this.firstChild) ? null : "0"); // Set tabIndex=0 only if firstChild is not interactive
 	}
 	get tabsElement(): UHTMLTabsElement | null {
 		return this.closest("u-tabs");

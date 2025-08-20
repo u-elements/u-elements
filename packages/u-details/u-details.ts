@@ -7,7 +7,9 @@ import {
 	getRoot,
 	off,
 	on,
+	SAFE_LABELLEDBY,
 	UHTMLElement,
+	useId,
 } from "../utils";
 
 declare global {
@@ -62,7 +64,10 @@ export class UHTMLDetailsElement extends UHTMLElement {
 
 		// Uses nodeName (not instanceof) since UHTMLSummaryElement might not be initialized yet
 		for (const el of this.children)
-			if (el.nodeName === "U-SUMMARY") attr(el, "aria-expanded", `${open}`);
+			if (el.nodeName === "U-SUMMARY") {
+				attr(this, SAFE_LABELLEDBY, useId(el));
+				attr(el, "aria-expanded", `${open}`);
+			}
 
 		if (this._content) {
 			attr(this._content, "aria-hidden", `${!open}`); // Needed to prevent announcing "group" when closed in Chrome on Mac

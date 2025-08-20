@@ -192,3 +192,7 @@ document.addEventListener('click', ({ target }) => {
 
 - DOM interface: [HTMLElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement)
 - ARIA Authoring Practices: [Tabs](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)
+
+## Changelog
+
+- **0.0.10:** Automatically adds `aria-hidden="true"` when `hidden` to prevent Safari 18.6 from announcing hidden panels

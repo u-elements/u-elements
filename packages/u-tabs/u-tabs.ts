@@ -4,6 +4,7 @@ import {
 	attr,
 	customElements,
 	DISPLAY_BLOCK,
+	declarativeShadowRoot,
 	getRoot,
 	mutationObserver,
 	off,
@@ -22,6 +23,18 @@ declare global {
 	}
 }
 
+export const UHTMLTabsStyle = DISPLAY_BLOCK;
+export const UHTMLTabListStyle = DISPLAY_BLOCK;
+export const UHTMLTabPanelStyle = DISPLAY_BLOCK;
+export const UHTMLTabStyle =
+	":host(:not([hidden])) { cursor: pointer; display: inline-block }";
+
+export const UHTMLTabsShadowRoot = declarativeShadowRoot(UHTMLTabsStyle);
+export const UHTMLTabListShadowRoot = declarativeShadowRoot(UHTMLTabListStyle);
+export const UHTMLTabShadowRoot = declarativeShadowRoot(UHTMLTabStyle);
+export const UHTMLTabPanelShadowRoot =
+	declarativeShadowRoot(UHTMLTabPanelStyle);
+
 const ARIA_CONTROLS = "aria-controls";
 const ARIA_SELECTED = "aria-selected";
 
@@ -32,7 +45,7 @@ const ARIA_SELECTED = "aria-selected";
 export class UHTMLTabsElement extends UHTMLElement {
 	constructor() {
 		super();
-		attachStyle(this, DISPLAY_BLOCK);
+		attachStyle(this, UHTMLTabsStyle);
 	}
 	get tabList(): UHTMLTabListElement | null {
 		return queryWithoutNested("u-tablist", this)[0] || null;
@@ -58,7 +71,7 @@ export class UHTMLTabsElement extends UHTMLElement {
 export class UHTMLTabListElement extends UHTMLElement {
 	constructor() {
 		super();
-		attachStyle(this, DISPLAY_BLOCK);
+		attachStyle(this, UHTMLTabListStyle);
 	}
 	connectedCallback() {
 		attr(this, "role", "tablist");
@@ -132,10 +145,7 @@ export class UHTMLTabElement extends UHTMLElement {
 	}
 	constructor() {
 		super();
-		attachStyle(
-			this,
-			":host(:not([hidden])) { cursor: pointer; display: inline-block }",
-		);
+		attachStyle(this, UHTMLTabStyle);
 	}
 	connectedCallback() {
 		attr(this, "role", "tab");
@@ -194,7 +204,7 @@ export class UHTMLTabPanelElement extends UHTMLElement {
 	}
 	constructor() {
 		super();
-		attachStyle(this, DISPLAY_BLOCK);
+		attachStyle(this, UHTMLTabPanelStyle);
 	}
 	connectedCallback() {
 		attr(this, "role", "tabpanel");

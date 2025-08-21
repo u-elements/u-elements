@@ -65,7 +65,7 @@ test.describe("u-combobox", () => {
 		const input = page.locator("input");
 		const items = page.locator("data");
 		const itemsCount = await items.count();
-		const inputLabel = `My label, Navigate left to find ${itemsCount} selected`;
+		const inputLabel = `My label, Navigate left to find ${itemsCount} selected${"\u{200B}".repeat(5)}`;
 
 		await expect(input).toHaveAttribute("aria-label", inputLabel);
 		await expect(uDatalist).toHaveAttribute("aria-multiselectable", "true");

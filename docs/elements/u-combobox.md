@@ -443,8 +443,30 @@ window.useState = (values) => [window.values, (values) => {
 - DOM interface: [HTMLDataElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDataElement)
 - HTML Standard: [The &lt;data&gt; element](https://html.spec.whatwg.org/multipage/text-level-semantics.html#the-data-element)
 
+## Server side rendering
+You can server side render `<u-combobox>` by using [Declarative Shadow DOM](https://web.dev/articles/declarative-shadow-dom).
+Styling and markup needed is exported as `UHTMLComboboxShadowRoot`. Example:
+
+ ```TS
+import { UHTMLComboboxShadowRoot } from '@u-elements/u-combobox';
+import { UHTMLDataListShadowRoot } from '@u-elements/u-datalist';
+
+const renderToStaticMarkup = (data: string, options: string) =>
+  `<label for="my-ssr-input">Server side rendered</label>
+  <u-combobox>
+    ${UHTMLComboboxShadowRoot}
+    ${data}
+    <input id="my-ssr-input" />
+    <u-datalist>
+      ${UHTMLDataListShadowRoot}
+      ${options}
+    </u-datalist>
+  </u-combobox>`
+```
+
 ## Changelog
 
+- **1.0.1:** Support setting `aria-label` on input and enable declarative shadow root support and export `UHTMLComboboxShadowRoot` for easier server side rendering
 - **1.0.0:** Renamed events to avoid conflict with native events:
  - `afterchange` => `comboboxafterselect`
  - `beforechange` => `comboboxbeforeselect`

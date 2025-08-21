@@ -117,6 +117,21 @@ If your [browser supports `interpolate-size`](https://caniuse.com/mdn-css_proper
 ## Find-in-page
 Even when a `<details>`/`<u-details>` element is closed, all of its content remains discoverable through the find-in-page search feature (e.g., Ctrl or Command + F keys). This behavior is [supported by various browsers](https://caniuse.com/mdn-html_global_attributes_hidden_until-found_value). If a user conducts a search for content within a details element, it will automatically open and trigger the `toggle` event.
 
+## Server side rendering
+You can server side render `<u-details>` by using [Declarative Shadow DOM](https://web.dev/articles/declarative-shadow-dom).
+Styling and markup needed is exported as `UHTMLDetailsShadowRoot`. Example:
+
+ ```TS
+import { UHTMLDetailsShadowRoot } from '@u-elements/u-details';
+
+const renderToStaticMarkup = (title: string, content: string) =>
+  `<u-details>
+    ${UHTMLDetailsShadowRoot}
+    <u-summary slot="summary">${title}</u-summary>
+    ${content}
+  </u-details>`
+```
+
 ## Accessibility (tested 16.09.24)
 
 | Screen reader | `<details>` | `<u-details>` |
@@ -148,4 +163,5 @@ Even when a `<details>`/`<u-details>` element is closed, all of its content rema
 
 ## Changelog
 
+- **0.1.3:** Enable declarative shadow root support and export `UHTMLDetailsShadowRoot` for easier server side rendering
 - **0.1.2:** Add `role="group"` to align with semantics

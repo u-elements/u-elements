@@ -2,6 +2,7 @@ import {
 	attr,
 	createElement,
 	customElements,
+	declarativeShadowRoot,
 	getLabel,
 	getRoot,
 	IS_FIREFOX,
@@ -15,6 +16,17 @@ declare global {
 		"u-progress": HTMLProgressElement;
 	}
 }
+
+export const UHTMLProgressStyle = `:host(:not([hidden])) { box-sizing: border-box; border: 1px solid; display: inline-block; height: .5em; width: 10em; overflow: hidden }
+:host::before { content: ''; display: block; height: 100%; background: currentColor; width: var(--percentage, 0%); transition: width .2s }
+:host(:not([value])) { background: linear-gradient(90deg,currentColor 25%, transparent 50%, currentColor 75%) 50%/400% }
+@media (prefers-reduced-motion: no-preference) { :host { animation: indeterminate 2s linear infinite }  }
+@keyframes indeterminate { from { background-position-x: 100% } to { background-position-x: 0 } }`;
+
+export const UHTMLProgressShadowRoot = declarativeShadowRoot(
+	UHTMLProgressStyle,
+	"<slot hidden></slot>",
+);
 
 // Skip attributeChangedCallback caused by attributeChangedCallback
 let SKIP_ATTR_CHANGE = false;
@@ -33,17 +45,11 @@ export class UHTMLProgressElement extends UHTMLElement {
 	}
 	constructor() {
 		super();
-		this.attachShadow({ mode: "open" }).append(
-			createElement("slot", null, { hidden: "" }), // Slot hiding content allows legacy browser to display fallback text
-			createElement(
-				"style",
-				`:host(:not([hidden])) { box-sizing: border-box; border: 1px solid; display: inline-block; height: .5em; width: 10em; overflow: hidden }
-        :host::before { content: ''; display: block; height: 100%; background: currentColor; width: var(--percentage, 0%); transition: width .2s }
-        :host(:not([value])) { background: linear-gradient(90deg,currentColor 25%, transparent 50%, currentColor 75%) 50%/400% }
-        @media (prefers-reduced-motion: no-preference) { :host { animation: indeterminate 2s linear infinite }  }
-        @keyframes indeterminate { from { background-position-x: 100% } to { background-position-x: 0 } }`,
-			),
-		);
+		if (!this.shadowRoot)
+			this.attachShadow({ mode: "open" }).append(
+				createElement("slot", null, { hidden: "" }), // Slot hiding content allows legacy browser to display fallback text
+				createElement("style", UHTMLProgressStyle),
+			);
 	}
 	connectedCallback() {
 		this.attributeChangedCallback(); // We now know the element is in the DOM, so run a attribute setup

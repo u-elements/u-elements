@@ -78,7 +78,7 @@
         <data>Jordbær</data>
         <input type="text" id="my-a11y-input">
         <del aria-label="Fjern tekst">&times;</del>
-        <u-datalist popover="manual">
+        <u-datalist>
           <u-option value="">Empty value</u-option>
           <u-option value="2" label="Kokkos">Kokkos<div>Hei</div></u-option>
           <u-option>Jordbær</u-option>
@@ -306,6 +306,21 @@
       <u-datepicker-item>10</u-datepicker-item>
       <table></table> -->
       <button>Etter</button>
+      <u-details>
+        <template shadowrootmode="open">
+          <slot name="summary"></slot>
+          <slot part="details-content" aria-hidden="true" hidden="until-found"></slot>
+          <style>
+            :host(:not([hidden])) { display: block }
+            ::slotted(u-summary) { cursor: pointer; display: block }
+            ::slotted(u-summary)::before { content: ''; display: inline-block; vertical-align: middle; margin-inline: .05em .3125em; border-block: .3125em solid transparent; border-inline-start: .5em solid }
+            ::slotted(u-summary[aria-expanded="true"])::before { rotate: 90deg }
+            :host > [part="details-content"]:not([hidden=""]) { display: block }
+          </style>
+        </template>
+        <u-summary slot="summary">Åpne/lukk</u-summary>
+        <div>Innhold</div>
+      </u-details>
       <!-- <template></template> -->
       <!-- <u-test></u-test> -->
       <!-- <br>

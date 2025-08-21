@@ -3,7 +3,9 @@ import {
 	attr,
 	createElement,
 	customElements,
+	declarativeShadowRoot,
 	FOCUS_OUTLINE,
+	getLabel,
 	getRoot,
 	IS_ANDROID,
 	IS_FIREFOX,
@@ -29,10 +31,23 @@ declare global {
 	}
 }
 
+export const UHTMLComboboxStyle = `:host(:not([hidden])) { display: block; -webkit-tap-highlight-color: rgba(0, 0, 0, 0) } /* Must be display block in Safari to allow focus inside */
+:host(:not([data-multiple])) ::slotted(data),
+:host([data-multiple="false"]) ::slotted(data) { display: none } /* Hide data if not multiple */
+::slotted(input[inputmode="none"]) { outline: none } /* Hide temporary foucs outline flash */
+::slotted(del) { text-decoration: none }
+::slotted(data:not([hidden])) { display: inline-block; pointer-events: none }
+::slotted(data)::after { content: '\\00D7'; content: '\\00D7' / ''; padding-inline: .5ch; pointer-events: auto; cursor: pointer }
+::slotted(data:focus) { ${FOCUS_OUTLINE} }`;
+
+export const UHTMLComboboxShadowRoot =
+	declarativeShadowRoot(UHTMLComboboxStyle);
+
 const EVENTS = "beforeinput,blur,focus,click,input,keydown,mousedown";
 const EVENT_ONCE = { once: true, passive: true };
 const IS_FIREFOX_DESKTOP = IS_FIREFOX && !IS_ANDROID;
 const IS_MOBILE = IS_ANDROID || IS_IOS;
+const MODIFIED = "\u{200B}".repeat(5); // Use unicode U+200B zero width white-space to detect modified aria-label
 const FALSE = "false";
 const TEXTS = {
 	added: "Added",
@@ -69,20 +84,11 @@ export class UHTMLComboboxElement extends UHTMLElement {
 
 	constructor() {
 		super();
-		this.attachShadow({ mode: "open" }).append(
-			createElement("slot"), // Content slot
-			createElement(
-				"style",
-				`:host(:not([hidden])) { display: block; -webkit-tap-highlight-color: rgba(0, 0, 0, 0) } /* Must be display block in Safari to allow focus inside */
-				:host(:not([data-multiple])) ::slotted(data),
-				:host([data-multiple="false"]) ::slotted(data) { display: none } /* Hide data if not multiple */
-				::slotted(input[inputmode="none"]) { outline: none } /* Hide temporary foucs outline flash */
-				::slotted(del) { text-decoration: none }
-				::slotted(data:not([hidden])) { display: inline-block; pointer-events: none }
-        ::slotted(data)::after { content: '\\00D7'; content: '\\00D7' / ''; padding-inline: .5ch; pointer-events: auto; cursor: pointer }
-        ::slotted(data:focus) { ${FOCUS_OUTLINE} }`,
-			),
-		);
+		if (!this.shadowRoot)
+			this.attachShadow({ mode: "open" }).append(
+				createElement("slot"), // Content slot
+				createElement("style", UHTMLComboboxStyle),
+			);
 	}
 	connectedCallback() {
 		this._root = getRoot(this);
@@ -172,7 +178,15 @@ const render = (
 	event?: CustomEvent<MutationRecord[]>,
 ) => {
 	const { _focus, _texts, items, control, list, multiple } = self;
-	let label = `${text(control?.labels?.[0])}${multiple ? `, ${items.length ? _texts.found.replace("%d", `${items.length}`) : _texts.empty}` : ""}`;
+	if (!control || !list) return;
+
+	// Support both labeling with <label> and aria-label
+	// Since we need to modify aria-label, we need to identify if it has been modified
+	const prev = getLabel(control);
+	const next = prev.endsWith(MODIFIED) ? attr(control, "data-label") : prev;
+	attr(control, "data-label", next);
+
+	let label = `${next}${multiple ? `, ${items.length ? _texts.found.replace("%d", `${items.length}`) : _texts.empty}` : ""}`;
 	const edits: HTMLDataElement[] = [];
 	for (const { addedNodes, removedNodes } of event?.detail || []) {
 		for (const el of addedNodes) if (isData(el)) edits.unshift(el); // Add added nodes to the front
@@ -180,7 +194,7 @@ const render = (
 	}
 
 	const shouldAnnounce = multiple ? edits.length === 1 : edits[0] === _focus; // Only announce in single mode if item is visible and focused
-	if (_focus && control && shouldAnnounce) {
+	if (_focus && shouldAnnounce) {
 		const ariaExpanded = attr(control, "aria-expanded"); // Store previous aria-expanded state to prevent VoiceOver announcing it
 		const inputMode = attr(control, "inputmode"); // Store previous inputmode to prevent virtual keyboard on iOS and Android
 		const nextFocus = isData(_focus) ? control : _focus;
@@ -231,10 +245,10 @@ const render = (
 		console.warn("u-combobox: Multiple <data> found in single mode.");
 
 	// Setup input and list (Note: Label pointing to the input overwrites input's aria-label in Firefox)
-	if (list) attr(list, "aria-multiselectable", `${multiple}`); // Sync datalist multiselect
-	if (control) attr(control, "list", useId(list)); // Connect datalist and input
-	if (control) attr(control, "aria-label", `${self._speak}${label}`);
-	if (control && list?.hasAttribute("popover")) {
+	attr(list, "aria-multiselectable", `${multiple}`); // Sync datalist multiselect
+	attr(control, "list", useId(list)); // Connect datalist and input
+	attr(control, "aria-label", `${self._speak}${label}${MODIFIED}`);
+	if (list.hasAttribute("popover")) {
 		attr(control, "popovertarget", useId(list)); // Connect popover target to datalist
 		attr(list, "popover", "manual"); // Ensure correct popover behavior
 	}

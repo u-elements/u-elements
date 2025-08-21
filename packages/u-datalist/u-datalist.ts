@@ -5,6 +5,7 @@ import {
 	attr,
 	customElements,
 	DISPLAY_BLOCK,
+	declarativeShadowRoot,
 	FOCUS_OUTLINE,
 	getRoot,
 	IS_ANDROID,
@@ -26,6 +27,16 @@ declare global {
 		"u-datalist": HTMLDataListElement;
 	}
 }
+
+export const UHTMLDataListStyle = `${DISPLAY_BLOCK}
+::slotted(u-option) { display: block; cursor: pointer }
+::slotted(u-option:focus) { ${FOCUS_OUTLINE} }
+::slotted(u-option[aria-hidden="true"]),
+::slotted(u-option[disabled]),
+::slotted(u-option[hidden]) { display: none !important }`;
+
+export const UHTMLDataListShadowRoot =
+	declarativeShadowRoot(UHTMLDataListStyle);
 
 let LIVE_TIMER: ReturnType<typeof setTimeout>;
 let INPUT_DEBOUNCE: ReturnType<typeof setTimeout> | number = 0;
@@ -55,15 +66,7 @@ export class UHTMLDataListElement extends UHTMLElement {
 
 	constructor() {
 		super();
-		attachStyle(
-			this,
-			`${DISPLAY_BLOCK}
-			::slotted(u-option) { display: block; cursor: pointer }
-			::slotted(u-option:focus) { ${FOCUS_OUTLINE} }
-			::slotted(u-option[aria-hidden="true"]),
-			::slotted(u-option[disabled]),
-			::slotted(u-option[hidden]) { display: none !important }`,
-		);
+		attachStyle(this, UHTMLDataListStyle);
 	}
 	connectedCallback() {
 		this.hidden = true;
@@ -278,7 +281,7 @@ const onInput = (self: UHTMLDataListElement, e?: Event) => {
 
 	// Needed to announce count in iOS
 	if (IS_IOS)
-		visible.forEach((opt, idx) => attr(opt, "title", `${idx + 1}/${total}`));
+		visible.map((opt, idx) => attr(opt, "title", `${idx + 1}/${total}`));
 };
 
 // Polyfill input.list so it also receives u-datalist

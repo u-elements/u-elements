@@ -166,6 +166,27 @@ document.addEventListener('click', ({ target }) => {
 &lt;/u-tabs&gt;
 </pre>
 
+## Server side rendering
+You can server side render `<u-tabs>` by using [Declarative Shadow DOM](https://web.dev/articles/declarative-shadow-dom). Example:
+
+ ```TS
+import { UHTMLTabsShadowRoot, UHTMLTabListShadowRoot, UHTMLTabShadowRoot, UHTMLTabPanelShadowRoot } from '@u-elements/u-tabs';
+
+const renderToStaticMarkup = (tabs: string[], panels[]) =>
+  `<u-tabs>
+    ${UHTMLTabsShadowRoot}
+    <u-tablist>
+      ${UHTMLTabListShadowRoot}
+      ${tabs.map((tab: string) =>
+        `<u-tab>${UHTMLTabShadowRoot}${tab}</u-tab>`
+      ).join('')}
+    </u-tablist>
+    ${panels.map((panel: string) =>
+      `<u-tabpanel>${UHTMLTabPanelShadowRoot}${panel}</u-tabpanel>`
+    ).join('')}
+  </u-tabs>`
+```
+
 ## Accessibility
 
 | Screen reader | `<u-tabs>` |
@@ -195,4 +216,5 @@ document.addEventListener('click', ({ target }) => {
 
 ## Changelog
 
+- **0.0.11:** Enable declarative shadow root support and export `UHTMLTabsShadowRoot`, `UHTMLTabListShadowRoot`, `UHTMLTabShadowRoot` and `UHTMLTabPanelShadowRoot` for easier server side rendering
 - **0.0.10:** Automatically adds `aria-hidden="true"` when `hidden` to prevent Safari 18.6 from announcing hidden panels

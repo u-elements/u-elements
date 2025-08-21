@@ -96,6 +96,22 @@ In most cases you should provide an accessible label when using `<u-progress>`. 
 <!--## Describing a loading region
 If the `<u-progress>` element is describing the loading progress of a region on your page, use `aria-describedby="my-progress-id"` to point to the `<u-progress id="my-progress-id">`, and set `aria-busy="true"` on the region that is loading. Removing the `aria-busy` attribute when it has finished loading.-->
 
+## Server side rendering
+You can server side render `<u-progress>` by using [Declarative Shadow DOM](https://web.dev/articles/declarative-shadow-dom).
+Styling and markup needed is exported as `UHTMLProgressShadowRoot`. Example:
+
+ ```TS
+import { UHTMLProgressShadowRoot } from '@u-elements/u-progress';
+
+const renderToStaticMarkup = (value?: number, max?: number) =>
+  `<u-progress
+    ${value ? ` value="${value}"` : ''}
+    ${max ? ` max="${max}"` : ''}
+  >
+    ${UHTMLProgressShadowRoot}
+  </u-progress>`
+```
+
 ## Accessibility
 
 | Screen reader | `<progress>` | `<u-progress>` |
@@ -123,3 +139,7 @@ If the `<u-progress>` element is describing the loading progress of a region on 
 
 - DOM interface: [HTMLProgressElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLProgressElement)
 - HTML Standard: [The &lt;progress&gt; element](https://html.spec.whatwg.org/multipage/interactive-elements.html#the-progress-element)
+
+## Changelog
+
+- **0.0.6:** Enable declarative shadow root support and export `UHTMLProgressShadowRoot` for easier server side rendering

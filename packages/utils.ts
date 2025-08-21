@@ -85,6 +85,7 @@ export const off = (
  * @param css The css to inject
  */
 export const attachStyle = (element: Element, css: string) =>
+	element.shadowRoot ||
 	element.attachShadow({ mode: "open" }).append(
 		createElement("slot"), // Unnamed slot does automatically render all top element nodes
 		createElement("style", css),
@@ -191,11 +192,10 @@ export const customElements = {
  * @return string
  */
 export const getLabel = (el: Element) => {
-	const root = getRoot(el); // Might not return document, so can not use root.getElementById
 	const label = attr(el, "aria-label") || "";
 	const labels = attr(el, "aria-labelledby")?.trim().split(/\s+/) || [];
 	return [
-		...labels.map((id) => root?.querySelector<HTMLElement>(`[id="${id}"]`)), // Get all labelledby elements
+		...labels.map((id) => document.getElementById(id)), // Get all labelledby elements
 		...Array.from((el as HTMLInputElement).labels || []), // Get all <label> elements
 	].reduce((acc, el) => acc || el?.innerText?.trim() || "", label);
 };
@@ -239,3 +239,6 @@ export const isMouseDown = (event?: Event) => {
 	}
 	return IS_PRESS;
 };
+
+export const declarativeShadowRoot = (style: string, slot = "<slot></slot>") =>
+	`<template shadowrootmode="open">${slot}<style>${style}</style></template>`;

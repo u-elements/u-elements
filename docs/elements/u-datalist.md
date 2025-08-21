@@ -259,6 +259,20 @@ Using [Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API
 &lt;/script&gt;
 </pre>
 
+## Server side rendering
+You can server side render `<u-datalist>` by using [Declarative Shadow DOM](https://web.dev/articles/declarative-shadow-dom).
+Styling and markup needed is exported as `UHTMLDataListShadowRoot`. Example:
+
+ ```TS
+import { UHTMLDataListShadowRoot } from '@u-elements/u-datalist';
+
+const renderToStaticMarkup = (options: string) =>
+  `<u-datalist>
+    ${UHTMLDataListShadowRoot}
+    ${options}
+  </u-datalist>`
+```
+
 ## Accessibility
 
 | Screen reader | `<datalist>` | `<u-datalist>` |
@@ -291,6 +305,7 @@ Using [Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API
 
 ## Changelog
 
+- **1.0.14:** Enable declarative shadow root support and export `UHTMLDataListShadowRoot` for easier server side rendering
 - **1.0.13:** Prevent opening if `inputmode="none"`
 - **1.0.12:** Prevent ESC from closing `dialog` when datalist is open
 - **1.0.11:** Respects input `disabled` and `readonly` and moves caret to end of text on `arrow up`

@@ -4,6 +4,7 @@ import {
 	createElement,
 	customElements,
 	DISPLAY_BLOCK,
+	declarativeShadowRoot,
 	getRoot,
 	off,
 	on,
@@ -19,6 +20,17 @@ declare global {
 	}
 }
 
+export const UHTMLDetailsStyle = `${DISPLAY_BLOCK}
+::slotted(u-summary) { cursor: pointer; display: block }
+::slotted(u-summary)::before { content: ''; display: inline-block; vertical-align: middle; margin-inline: .05em .3125em; border-block: .3125em solid transparent; border-inline-start: .5em solid }
+::slotted(u-summary[aria-expanded="true"])::before { rotate: 90deg }
+:host > [part="details-content"]:not([hidden=""]) { display: block }`;
+
+export const UHTMLDetailsShadowRoot = declarativeShadowRoot(
+	UHTMLDetailsStyle,
+	'<slot name="summary"></slot><slot part="details-content" hidden="until-found"></slot>',
+);
+
 /**
  * The `<u-details>` HTML element creates a disclosure widget in which information is visible only when the widget is toggled into an "open" state. A summary or label must be provided using the `<u-summary>` element.
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details)
@@ -33,18 +45,12 @@ export class UHTMLDetailsElement extends UHTMLElement {
 	}
 	constructor() {
 		super();
-		this.attachShadow({ mode: "open" }).append(
-			createElement("slot", null, { name: "summary" }),
-			createElement("slot", null, { part: "details-content" }),
-			createElement(
-				"style",
-				`${DISPLAY_BLOCK}
-        ::slotted(u-summary) { cursor: pointer; display: block }
-				::slotted(u-summary)::before { content: ''; display: inline-block; vertical-align: middle; margin-inline: .05em .3125em; border-block: .3125em solid transparent; border-inline-start: .5em solid }
-				::slotted(u-summary[aria-expanded="true"])::before { rotate: 90deg }
-				:host > [part="details-content"]:not([hidden=""]) { display: block }`,
-			),
-		);
+		if (!this.shadowRoot)
+			this.attachShadow({ mode: "open" }).append(
+				createElement("slot", null, { name: "summary" }),
+				createElement("slot", null, { part: "details-content" }),
+				createElement("style", UHTMLDetailsStyle),
+			);
 	}
 	connectedCallback() {
 		this._content = this.shadowRoot?.children[1] as HTMLSlotElement;

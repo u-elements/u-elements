@@ -357,14 +357,16 @@ and then manually add or remove `<data>` elements as needed:
 
 <script>
 // Fake store for controlled example
-window.values = [];
-window.useState = (values) => [window.values, (values) => {
-  const combobox = document.getElementById('my-controlled-combobox');
-  window.values.length = 0; // Empty
-  window.values.push(...values);
-  combobox?.querySelectorAll('data').forEach((el) => el.remove());
-  combobox?.prepend(...values.map(({ value, label }) => Object.assign(document.createElement('data'), { value, textContent: label })))
-}]
+if (typeof window !== 'undefined') {
+  window.values = [];
+  window.useState = (values) => [window.values, (values) => {
+    const combobox = document.getElementById('my-controlled-combobox');
+    window.values.length = 0; // Empty
+    window.values.push(...values);
+    combobox?.querySelectorAll('data').forEach((el) => el.remove());
+    combobox?.prepend(...values.map(({ value, label }) => Object.assign(document.createElement('data'), { value, textContent: label })))
+  }]
+}
 </script>
 <Sandbox label="u-details controlled example" lang="no" />
 <pre hidden>

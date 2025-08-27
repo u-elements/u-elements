@@ -216,5 +216,6 @@ const renderToStaticMarkup = (tabs: string[], panels[]) =>
 
 ## Changelog
 
+- **0.0.12:** Respect `aria-disabled="true"`
 - **0.0.11:** Enable declarative shadow root support and export `UHTMLTabsShadowRoot`, `UHTMLTabListShadowRoot`, `UHTMLTabShadowRoot` and `UHTMLTabPanelShadowRoot` for easier server side rendering
 - **0.0.10:** Automatically adds `aria-hidden="true"` when `hidden` to prevent Safari 18.6 from announcing hidden panels

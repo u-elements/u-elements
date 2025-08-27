@@ -27,7 +27,7 @@ export const UHTMLTabsStyle = DISPLAY_BLOCK;
 export const UHTMLTabListStyle = DISPLAY_BLOCK;
 export const UHTMLTabPanelStyle = DISPLAY_BLOCK;
 export const UHTMLTabStyle =
-	":host(:not([hidden])) { cursor: pointer; display: inline-block }";
+	':host(:not([hidden])) { display: inline-block; cursor: pointer }:host([aria-disabled="true"]) { cursor: default }';
 
 export const UHTMLTabsShadowRoot = declarativeShadowRoot(UHTMLTabsStyle);
 export const UHTMLTabListShadowRoot = declarativeShadowRoot(UHTMLTabListStyle);
@@ -244,7 +244,9 @@ const getSelectedIndex = (tabs: Iterable<UHTMLTabElement>) =>
 	[...tabs].findIndex((tab) => attr(tab, ARIA_SELECTED) === "true");
 
 const setSelected = (tab: UHTMLTabElement) =>
-	tab && attr(tab, "aria-selected", "true");
+	tab &&
+	attr(tab, "aria-disabled") !== "true" &&
+	attr(tab, "aria-selected", "true");
 
 const isFocusable = (el?: Node | null) =>
 	el instanceof Element &&

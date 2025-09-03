@@ -1,4 +1,4 @@
 
-        <u-details role="group" aria-labelledby="summary-1"><u-summary id="summary-1" aria-expanded="false" role="button" slot="summary" tabindex="0">Summary 1</u-summary>Details 1</u-details>
-        <u-details open="" aria-labelledby="summary-2" role="group"><u-summary id="summary-2" aria-expanded="true" role="button" slot="summary" tabindex="0">Summary 2</u-summary>Details 2</u-details>
-        <u-details role="group" aria-labelledby="summary-3"><u-summary id="summary-3" aria-expanded="false" role="button" slot="summary" tabindex="0">Summary 3</u-summary>Details 3</u-details>
+        <u-details role="group"><u-summary id="summary-1" aria-expanded="false" role="button" slot="summary" tabindex="0">Summary 1</u-summary>Details 1</u-details>
+        <u-details open="" role="group"><u-summary id="summary-2" aria-expanded="true" role="button" slot="summary" tabindex="0">Summary 2</u-summary>Details 2</u-details>
+        <u-details role="group"><u-summary id="summary-3" aria-expanded="false" role="button" slot="summary" tabindex="0">Summary 3</u-summary>Details 3</u-details>

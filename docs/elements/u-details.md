@@ -163,6 +163,7 @@ const renderToStaticMarkup = (title: string, content: string) =>
 
 ## Changelog
 
+- **0.1.5:** Add `tabindex="-1"` to content when closed to preved Firefox from making it a tabstop
 - **0.1.4:** Remove `aria-labelledby="summary-id"` to reduce information duplication
 - **0.1.3:** Enable declarative shadow root support and export `UHTMLDetailsShadowRoot` for easier server side rendering
 - **0.1.2:** Add `role="group"` to align with semantics

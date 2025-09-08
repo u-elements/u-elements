@@ -72,6 +72,7 @@ export class UHTMLDetailsElement extends UHTMLElement {
 
 		if (this._content) {
 			attr(this._content, "aria-hidden", `${!open}`); // Needed to prevent announcing "group" when closed in Chrome on Mac
+			attr(this._content, "tabindex", open ? null : "-1"); // Needed to Firefox from adding tabstop on content when closed and has CSS overflow
 			this._content.hidden = open ? false : (hide as boolean); // Make typescript accept "until-found"
 		}
 

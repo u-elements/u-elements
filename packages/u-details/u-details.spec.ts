@@ -3,8 +3,11 @@ import { expect, test } from "@playwright/test";
 test.beforeEach(async ({ page }) => {
 	await page.goto("index.html");
 	await page.evaluate(() => {
-		document.body.innerHTML =
-			"<u-details><u-summary>Summary 1</u-summary><div>Details 1</div></u-details>";
+		// Safari test runnner does falsely support hidden="until-found"
+		document.body.innerHTML = `
+			<style>u-details:not([open])::part(details-content){display:none}</style>
+			<u-details><u-summary>Summary 1</u-summary><div>Details 1</div></u-details>
+		`;
 	});
 });
 

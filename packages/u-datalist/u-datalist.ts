@@ -160,6 +160,13 @@ const setupInput = (
 	on(input, EVENTS_INPUT, self, true); // Need to capture blur/focus directly on input to prevent other consumers
 	attr(input, "aria-autocomplete", "list");
 	attr(input, "aria-controls", useId(self));
+
+	/**
+	 * NOTE: Screen readers announce aria-expanded changes with high priority, often interrupting other announcements.
+	 * Since we need to prioritize announcing aria-label, we set aria-expanded="true" on desktop where screen readers
+	 * always causes focus and therefore always opens the datalist. On mobile on the other hand, screen reader focus
+	 * can be on the input without it having real focus, so there we need to toggle aria-expanded properly there:
+	 */
 	attr(input, "aria-expanded", `${!IS_MOBILE || open}`); // Used to prevent "expanded" announcement interrupting label
 	attr(input, "autocomplete", "off");
 	attr(input, "role", isDisabled(input) ? null : "combobox");

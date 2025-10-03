@@ -45,10 +45,12 @@ export const UHTMLComboboxShadowRoot =
 
 const EVENTS = "beforeinput,blur,focus,click,input,keydown,mousedown";
 const EVENT_ONCE = { once: true, passive: true };
+const FALSE = "false";
 const IS_FIREFOX_DESKTOP = IS_FIREFOX && !IS_ANDROID;
 const IS_MOBILE = IS_ANDROID || IS_IOS;
 const MODIFIED = "\u{200B}".repeat(5); // Use unicode U+200B zero width white-space to detect modified aria-label
-const FALSE = "false";
+const VALUE_DELETE = "deleteContentBackward";
+const VALUE_INSERT = "insertText";
 const TEXTS = {
 	added: "Added",
 	empty: "No selected",
@@ -280,7 +282,7 @@ const syncInputValue = (self: UHTMLComboboxElement) => {
 	const { multiple, control, items } = self;
 	const value = text(items[0]);
 	if (!multiple && control && value !== control.value)
-		setValue(control, value, value ? "insertText" : "deleteContent"); // Prevent input event being handled as "click" on option
+		setValue(control, value, value ? VALUE_INSERT : VALUE_DELETE); // Prevent input event being handled as "click" on option
 };
 
 const dispatchMatch = (self: UHTMLComboboxElement, change = true) => {
@@ -347,7 +349,7 @@ const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
 	const { clear, control, items } = self;
 
 	if (clear?.contains(target as Node)) {
-		if (control) setValue(control, "", "deleteContentBackward"); // Support clear button
+		if (control) setValue(control, "", VALUE_DELETE); // Support clear button
 		return control?.focus();
 	}
 	for (const item of items) {

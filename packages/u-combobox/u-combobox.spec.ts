@@ -162,13 +162,6 @@ test.describe("u-combobox", () => {
 		await items.nth(2).press("Backspace");
 		await expect(items.nth(2)).not.toBeAttached();
 		await expect(input).toBeFocused();
-
-		await input.press("Delete");
-		await expect(items.nth(1)).toBeFocused();
-
-		await items.nth(1).press("Delete");
-		await expect(items.nth(1)).not.toBeAttached();
-		await expect(input).toBeFocused();
 	});
 
 	test("handles keyboard creation and removal", async ({ page }) => {

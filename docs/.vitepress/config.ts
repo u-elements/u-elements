@@ -71,7 +71,7 @@ export default defineConfig({
 						link: "/elements/u-combobox",
 					},
 					{
-						text: '&lt;u-details&gt; <mark data-badge="SUPPORTED"></mark>',
+						text: '&lt;u-details&gt;',
 						link: "/elements/u-details",
 					},
 					{

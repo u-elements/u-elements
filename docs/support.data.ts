@@ -3,7 +3,9 @@ import path from "node:path";
 import type { CompatStatement } from "@mdn/browser-compat-data";
 import bcd from "@mdn/browser-compat-data/forLegacyNode";
 import caniuse from "caniuse-lite";
+// @ts-expect-error no types available
 import no from "caniuse-lite/data/regions/NO";
+// @ts-expect-error no types available
 import { JSHINT } from "jshint";
 
 const usageNorway = caniuse.region(no);
@@ -55,7 +57,7 @@ function getBrowserSupport(feature: CompatStatement, region = {}) {
 		Number.parseFloat(`${value}`.replace(/[^\d.]+/g, ""));
 
 	const toPercentage = (sup: { yes: number; no: number }) =>
-		(sup.yes / (sup.yes + sup.no)) * 100;
+		(sup.yes / (sup.yes + sup.no)) * 100 || 0;
 
 	for (const [browser, versions] of Object.entries(stats)) {
 		const added =
@@ -63,17 +65,20 @@ function getBrowserSupport(feature: CompatStatement, region = {}) {
 			(toFloat(versions.version_added) || Number.POSITIVE_INFINITY);
 
 		const agent = agents[browser];
-		const usage = region[agent?.caniuseKey] || agent?.usage;
+		const usage =
+			region[agent?.caniuseKey as keyof typeof region] || agent?.usage;
 		const support = { yes: 0, no: 0, version: 0, date: "" };
 
 		if (!usage) continue;
 		for (const [version, release] of agent.releases) {
 			const noSupport = added
 				? Number.parseFloat(version?.split("-").pop() || "") < added
-				: versions[version] === "n";
+				: versions[version as keyof typeof versions] === "n";
 
 			const supportKey = noSupport ? "no" : "yes";
 			const percentage = Number.parseFloat(usage[version]) || 0;
+
+			// 	console.log({ noSupport, supportKey, percentage });
 
 			total[supportKey] += percentage;
 			support[supportKey] += percentage;
@@ -96,25 +101,21 @@ function getBrowserSupport(feature: CompatStatement, region = {}) {
 	};
 }
 
-function getFeatureName(feature?: CompatStatement) {
-	return (
-		feature?.description?.replace(/<[^>]+>/g, "") ||
-		feature?.mdn_url
-			?.split("/")
-			.slice(-2)
-			.join(".")
-			.replace(/^(API|Global_Objects)\./g, "")
-			.replace(/^(EventTarget)\./g, "Element.")
-			.replace(/^(Global_attributes)\./g, "Element.") ||
-		""
-	);
-}
+const getFeatureName = (feature?: CompatStatement) =>
+	feature?.description?.replace(/<[^>]+>/g, "") ||
+	feature?.mdn_url
+		?.split("/")
+		.slice(-2)
+		.join(".")
+		.replace(/^(API|Global_Objects)\./g, "")
+		.replace(/^(EventTarget)\./g, "Element.")
+		.replace(/^(Global_attributes)\./g, "Element.") ||
+	"";
 
-function isObject(item: unknown) {
-	return item && typeof item === "object" && !Array.isArray(item);
-}
+const isObject = (item: unknown): item is Record<string, object> =>
+	typeof item === "object" && !Array.isArray(item);
 
-function mergeDeep(target: object, ...sources: object[]) {
+const mergeDeep = (target: object, ...sources: object[]) => {
 	if (!sources.length) return target;
 	const source = sources.shift();
 
@@ -130,18 +131,21 @@ function mergeDeep(target: object, ...sources: object[]) {
 	}
 
 	return mergeDeep(target, ...sources);
-}
+};
 
-function flattenBCDName(...name: string[]) {
-	return name
+const flattenBCDName = (...name: string[]) =>
+	name
 		.slice(-2)
 		.join(".")
 		.replace(/^HTML\S+Element\./, "HTMLElement.")
 		.replace(/^window\./i, "")
 		.toLowerCase();
-}
 
-function flattenBCD(obj: object, path: string[] = [], flat = {}) {
+function flattenBCD(
+	obj: object,
+	path: string[] = [],
+	flat: Record<string, object> = {},
+) {
 	for (const [key, val] of Object.entries(obj)) {
 		if (key !== "__compat") flattenBCD(val, path.concat(key), flat);
 		else if (val.status.standard_track && path.length > 1) {
@@ -210,7 +214,7 @@ export default {
 		fs.readdirSync(pkgsPath)
 			.map((pkgName) => path.resolve(pkgsPath, pkgName, `dist/${pkgName}.js`))
 			.filter((pkgDistFile) => fs.existsSync(pkgDistFile))
-			.map((pkgDistFile) => {
+			.forEach((pkgDistFile) => {
 				JSHINT(String(fs.readFileSync(pkgDistFile)), { esversion: 11 });
 				const { _functions, _options, _errors, ...rest } = JSHINT.data();
 				mergeDeep(jshint, rest);
@@ -239,10 +243,10 @@ export default {
 			.sort();
 
 		const found: [string, CompatStatement][] = [];
-		Object.keys(jshint.member).map((key) => {
+		Object.keys(jshint.member).forEach((key) => {
 			for (const global of globals) {
 				const path = flattenBCDName(global, key);
-				if (miniBCD[path]) found.push([path, miniBCD[path]]);
+				if (miniBCD[path]) found.push([path, miniBCD[path] as CompatStatement]);
 			}
 		});
 
@@ -262,12 +266,14 @@ export default {
 			}));
 
 		// Create object of supported browsers
-		const browsers = {};
-		for (const feature of features)
+		type Browser = (typeof features)[number]["world"]["agents"][number];
+		const browsers: Record<string, Browser> = {};
+		for (const feature of features) {
 			for (const [name, browser] of Object.entries(feature.world.agents)) {
 				const prevVersion = browsers[name]?.version ?? 0;
 				if (browser.version > prevVersion) browsers[name] = browser;
 			}
+		}
 
 		return {
 			browsers,

@@ -406,7 +406,7 @@ const onKeyDown = (self: UHTMLComboboxElement, event: KeyboardEvent) => {
 		attr(control, "form", "#"); // Prevent submit without preventing native datalist
 		requestAnimationFrame(() => attr(control, "form", form)); // Restore form attribute after event has bubbled
 		return dispatchMatch(self);
-	} else if ((key === "Backspace" || key === "Delete") && !inText) {
+	} else if (key === "Backspace" && !inText) {
 		event.preventDefault(); // Prevent navigating away from page
 		if (!repeat && items[index]) return dispatchChange(self, items[index]);
 		if (isControl) index -= 1;

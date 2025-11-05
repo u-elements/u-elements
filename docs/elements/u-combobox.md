@@ -468,6 +468,7 @@ const renderToStaticMarkup = (data: string, options: string) =>
 
 ## Changelog
 
+- **1.0.4:** Prevent focus trap on Safari caused by `tabindex="-1"` on `<del>`
 - **1.0.3:** Let `Delete` key do native text deletion instead of chip removal
 - **1.0.2:** Fix sync issue when single mode and deleting `<data>` element
 - **1.0.1:** Support setting `aria-label` on input and enable declarative shadow root support and export `UHTMLComboboxShadowRoot` for easier server side rendering

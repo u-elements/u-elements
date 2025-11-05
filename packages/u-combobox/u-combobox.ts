@@ -393,8 +393,8 @@ const onKeyDown = (self: UHTMLComboboxElement, event: KeyboardEvent) => {
 
 	if (isControl && key === "Tab" && clear && !clear.hidden) {
 		event.preventDefault(); // Prevent tabbing away from combobox
-		clear.tabIndex = -1; // Allow programatic focus only on tab key, not when moving focus with screen reader
-		clear.focus(); // Focus first item on tab
+		clear.tabIndex = 0;
+		clear.focus(); // Focus del element
 		on(clear, "blur", () => attr(clear, "tabindex", null), EVENT_ONCE); // Revert tabIndex
 	}
 

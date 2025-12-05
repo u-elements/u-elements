@@ -10,7 +10,7 @@ export default defineConfig({
 	use: {
 		baseURL: "http://127.0.0.1:5173",
 		trace: "on-first-retry", // See https://playwright.dev/docs/trace-viewer
-		timezoneId: "GMT", // Avoid any time-zone shift when testing Zulu dates
+		timezoneId: "Europe/Berlin", // Avoid any time-zone shift when testing Zulu dates
 	},
 
 	/* Configure projects for major browsers */

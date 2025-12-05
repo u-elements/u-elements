@@ -123,11 +123,11 @@ export const mutationObserver = (
  * @param event Any event object
  * @return Whether the event should be forwarded to a click
  */
-export const asButton = (event: Event): boolean => {
-	const isClick =
-		"key" in event && (event.key === " " || event.key === "Enter");
-	if (isClick) event.preventDefault(); // Prevent scroll
-	if (isClick && event.target instanceof HTMLElement) event.target.click(); // Forward to real click
+export const asButton = (event: Partial<KeyboardEvent>): boolean => {
+	const isClick = event.key === " " || event.key === "Enter";
+	if (isClick) event.preventDefault?.(); // Prevent scroll
+	if (isClick && event.target instanceof HTMLElement)
+		event.target.dispatchEvent(new MouseEvent("click", event)); // Forward to real click
 	return isClick;
 };
 
@@ -164,11 +164,11 @@ export const useId = (el?: Element | null) => {
  */
 export const createElement = <TagName extends keyof HTMLElementTagNameMap>(
 	tagName: TagName,
-	text?: string | null,
+	content?: string | null,
 	attrs?: Record<string, string>,
 ): HTMLElementTagNameMap[TagName] => {
 	const el = document.createElement(tagName);
-	if (text) el.textContent = text;
+	if (content) el[tagName === "style" ? "textContent" : "innerHTML"] = content;
 	if (attrs) for (const [key, val] of Object.entries(attrs)) attr(el, key, val);
 	return el;
 };

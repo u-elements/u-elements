@@ -81,6 +81,10 @@
         <input type="text" id="my-a11y-input">
         <del aria-label="Fjern tekst">&times;</del>
         <u-datalist>
+          <u-option value="https://u-elements.github.io/u-elements/elements/u-datalist">u-datalist</u-option>
+          <u-option value="https://u-elements.github.io/u-elements/elements/u-progress">u-progress</u-option>
+          <u-option value="https://u-elements.github.io/u-elements/elements/u-details">u-details</u-option>
+          <u-option value="https://u-elements.github.io/u-elements/elements/u-combobox">u-combobox</u-option>
           <u-option value="">Empty value</u-option>
           <u-option value="2" label="Kokkos">Kokkos<div>Hei</div></u-option>
           <u-option>Jordbær</u-option>
@@ -99,9 +103,20 @@
         const combobox = document.querySelector('u-combobox');
         const input = document.getElementById('my-a11y-input');
         const list = combobox.list;
-        const select = document.querySelector('u-combobox select');
+        const _select = document.querySelector('u-combobox select');
 
         document.addEventListener('toggle', console.log, true);
+
+        combobox.addEventListener('click', (event) => {
+          const { metaKey, ctrlKey, target } = event;
+          const option = target instanceof Element && target.closest('u-option');
+
+          if (option) {
+            event.preventDefault(); // Prevent filling input
+            if (metaKey || ctrlKey) window.open(option.value);
+            else window.location.href = option.value;
+          }
+        });
 
         // input.addEventListener('input', console.log);
         // combobox.addEventListener('comboboxbeforeselect', (event) => {
@@ -123,7 +138,7 @@
         // });
 
         // const input = document.getElementById('my-a11y-input');
-        let debounceTimer; // Debounce so we do not spam API
+        let _debounceTimer; // Debounce so we do not spam API
         const xhr = new XMLHttpRequest(); // Easy to abort
 
         // Same handler every time
@@ -134,13 +149,13 @@
               option.text = country.name;
               return option;
             }));
-          } catch (err) {
+          } catch (_err) {
             list.innerHTML = '<u-option role="none">No results</u-option>';
           }
         });
 
-        input.addEventListener('input', (event) => {
-          const value = encodeURIComponent(input.value.trim());
+        input.addEventListener('input', (_event) => {
+          const _value = encodeURIComponent(input.value.trim());
           // console.log('Input event', value);
           // list.innerHTML = value ? '<u-option role="none">Loading</u-option>' : '';
           
@@ -179,8 +194,9 @@
       <u-tabpanel id="panel-1">Panel 1 with <a href="#">link</a></u-tabpanel>
       <u-tabpanel id="panel-2">Panel 2 with <a href="#">link</a></u-tabpanel>
       <u-tabpanel id="panel-3">Panel 3 with <a href="#">link</a></u-tabpanel> -->
-      <!-- <form>
-        <u-datepicker lang="no" data-value="2024-05-02, 2024-05-03, 2024-05-04">
+      <form>
+        <input type="date" name="dato" />
+        <u-datepicker data-value="2024-05-02, 2024-05-03, 2024-05-04">
           <span name="2024-05-02">HEI</span>
           <time dateime="2024-05-02">HADE</time>
           <time dateime="2024-05-03">HEST</time>
@@ -188,7 +204,7 @@
           <time dateime="2024-05-07"><slot></slot>🌟<br><span>Special!</span><div>Heisann</div></time>
         </u-datepicker>
         <button type="submit">Send</button>
-      </form> -->
+      </form>
       <!-- <u-datepicker-head></u-datepicker-head> -->
       <!-- <u-datepicker-option value="2024-05-02" selected></u-datepicker-option>
       <u-datepicker-option value="2024-05-07">Special!</u-datepicker-option> -->
@@ -324,7 +340,7 @@
         <div>Innhold</div>
       </u-details>
       <!-- <template></template> -->
-      <!-- <u-test></u-test> -->
+      <u-test></u-test>
       <!-- <br>
       <br>
       <br><label for="my-for-progress">For label of apple</label>

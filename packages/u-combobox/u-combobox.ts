@@ -382,11 +382,12 @@ const onInput = (
 };
 
 const onKeyDown = (self: UHTMLComboboxElement, event: KeyboardEvent) => {
-	if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
 	const { clear, control, items } = self;
 	const { key, repeat, target } = event;
 	const isControl = control && control === target;
-	const inText = isControl && control?.selectionEnd;
+	const inText = isControl && control.selectionEnd;
+	const isModified =
+		event.altKey || event.ctrlKey || event.metaKey || event.shiftKey;
 	let index = isControl
 		? items.length
 		: [...items].indexOf(target as HTMLDataElement);
@@ -398,7 +399,7 @@ const onKeyDown = (self: UHTMLComboboxElement, event: KeyboardEvent) => {
 		on(clear, "blur", () => attr(clear, "tabindex", null), EVENT_ONCE); // Revert tabIndex
 	}
 
-	if ((!isControl && asButton(event)) || index === -1) return; // Skip if focus is neither on item or control or if item click
+	if ((!isControl && asButton(event)) || index === -1 || isModified) return; // Skip if focus is neither on item or control or if item click
 	if (key === "ArrowRight" && !isControl) index += 1;
 	else if (key === "ArrowLeft" && !inText) index -= 1;
 	else if (key === "Enter" && isControl) {

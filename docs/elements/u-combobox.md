@@ -349,7 +349,46 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
 &lt;/style&gt;
 </pre>
 
-## Example: Controlled render
+## Example: Links
+
+<Sandbox label="u-details link example" lang="no" />
+<pre hidden>
+&lt;label for="my-link-input"&gt;
+  Click on a result:
+&lt;/label&gt;
+&lt;u-combobox id="my-link-combobox"&gt;
+  &lt;input id="my-link-input" list="my-link-list" /&gt;
+  &lt;del aria-label="Clear text"&gt;&times;&lt;/del&gt;
+  &lt;u-datalist id="my-link-list"&gt;
+    &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-datalist"&gt;u-datalist&lt;/u-option&gt;
+    &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-progress"&gt;u-progress&lt;/u-option&gt;
+    &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-details"&gt;u-details&lt;/u-option&gt;
+    &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-combobox"&gt;u-combobox&lt;/u-option&gt;
+  &lt;/u-datalist&gt;
+&lt;/u-combobox&gt;
+&lt;script type="module"&gt;
+  const combobox = document.getElementById('my-link-combobox');
+
+  combobox.addEventListener('click', (event) =&gt; {
+    const { ctrlKey, metaKey, target } = event;
+    const option = target instanceof Element && target.closest('u-option');
+
+    if (option) {
+      event.preventDefault(); // Prevent filling input
+      if (ctrlKey || metaKey) window.open(option.value);
+      else window.location.href = option.value;
+    }
+  });
+&lt;/script&gt;
+&lt;style&gt;
+  /* Styling just for example: */
+  u-combobox { border: 1px solid; display: flex; flex-wrap: wrap; gap: .5em; padding: .5em; position: relative }
+  u-option[selected] { font-weight: bold }
+  u-datalist { position: absolute; z-index: 9; inset: 100% -1px auto; border: 1px solid; background: white; padding: .5em }
+&lt;/style&gt;
+</pre>
+
+## Example: React controlled render
 
 `u-combobox` adds and removes `<data>` elements, which can be confusing for frameworks such as React.
 If you encounter issues, it’s recommended to call `event.preventDefault()` inside the `comboboxbeforeselect` handler, 
@@ -468,6 +507,7 @@ const renderToStaticMarkup = (data: string, options: string) =>
 
 ## Changelog
 
+- **1.0.5:** Allow clicks even when `ctrlKey`, `altKey` or `shiftKey`
 - **1.0.4:** Prevent focus trap on Safari caused by `tabindex="-1"` on `<del>`
 - **1.0.3:** Let `Delete` key do native text deletion instead of chip removal
 - **1.0.2:** Fix sync issue when single mode and deleting `<data>` element

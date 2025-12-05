@@ -132,14 +132,14 @@ const renderToStaticMarkup = (title: string, content: string) =>
   </u-details>`
 ```
 
-## Accessibility (tested 16.09.24)
+## Accessibility (tested 21.08.25)
 
 | Screen reader | `<details>` | `<u-details>` |
 | --- | --- | --- |
 | VoiceOver (Mac) + Chrome | :white_check_mark: | :white_check_mark: |
 | VoiceOver (Mac) + Edge | :white_check_mark: | :white_check_mark: |
 | VoiceOver (Mac) + Firefox | :white_check_mark: | :white_check_mark: |
-| VoiceOver (Mac) + Safari | :x: Does not announce state + looses screen reader focus | :white_check_mark: |
+| VoiceOver (Mac) + Safari | :white_check_mark: | :white_check_mark: |
 | VoiceOver (iOS) + Chrome | :white_check_mark: | :white_check_mark: |
 | VoiceOver (iOS) + Safari | :white_check_mark: | :white_check_mark: |
 | Jaws (PC) + Chrome | :white_check_mark: | :white_check_mark: |
@@ -151,9 +151,9 @@ const renderToStaticMarkup = (title: string, content: string) =>
 | Narrator (PC) + Chrome | :x: Does not announce state | :white_check_mark: |
 | Narrator (PC) + Edge | :white_check_mark: | :white_check_mark: |
 | Narrator (PC) + Firefox | :white_check_mark: | :white_check_mark: |
-| TalkBack (Android) + Chrome | :x: Does not announce role | :white_check_mark: |
-| TalkBack (Android) + Firefox | :x: Does not announce role or state on focus | :white_check_mark: |
-| TalkBack (Android) + Samsung Internet | :x: Does not announce role | :white_check_mark: |
+| TalkBack (Android) + Chrome | :x: Staggered announcement | :white_check_mark: |
+| TalkBack (Android) + Samsung Internet | :x: Staggered announcement | | :white_check_mark: |
+| TalkBack (Android) + Firefox | :x: Click only on triangle icon | :white_check_mark: |
 
 ## Specifications
 

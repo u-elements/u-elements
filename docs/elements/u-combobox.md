@@ -12,7 +12,7 @@ import { data } from '../filesize.data.ts'
 - Use `<data>` as direct child elements - these are the removable items
 - Use `<input>` and `<u-datalist>` to allow adding and suggesting items
 - Use `<del>` between `input` and `datalist` to create a clear button
-- Use `data-multiple` oto allow selecting multiple items
+- Use `data-multiple` to allow selecting multiple items
 - Use `data-creatable` to allow creating items not in the list
 - Use `data-*` attributes to translate screen reader announcements
 - Use `comboboxbeforeselect`, `comboboxafterselect` and `comboboxbeforematch` events to manipulate state
@@ -114,7 +114,7 @@ In addition to the [usual events supported by HTML elements](https://developer.m
 myCombobox.addEventListener('comboboxbeforeselect', (event) => {
   event.target // UHTMLComboboxElement
   event.detail // HTMLDataElement to add or remove
-  event.detail.isConnnected // true if removing, false if adding
+  event.detail.isConnected // true if removing, false if adding
   event.preventDefault() // Optionally prevent action
 })
 ```
@@ -124,7 +124,7 @@ myCombobox.addEventListener('comboboxbeforeselect', (event) => {
 myCombobox.addEventListener('comboboxafterselect', (event) => {
   event.target // UHTMLComboboxElement
   event.detail // HTMLDataElement added or removed
-  event.detail.isConnnected // false if removing, true if adding
+  event.detail.isConnected // false if removing, true if adding
 })
 ```
 

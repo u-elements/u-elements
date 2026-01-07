@@ -23,10 +23,8 @@ export const UHTMLProgressStyle = `:host(:not([hidden])) { box-sizing: border-bo
 @media (prefers-reduced-motion: no-preference) { :host { animation: indeterminate 2s linear infinite }  }
 @keyframes indeterminate { from { background-position-x: 100% } to { background-position-x: 0 } }`;
 
-export const UHTMLProgressShadowRoot = declarativeShadowRoot(
-	UHTMLProgressStyle,
-	"<slot hidden></slot>",
-);
+export const UHTMLProgressShadowRoot =
+	declarativeShadowRoot(UHTMLProgressStyle);
 
 // Skip attributeChangedCallback caused by attributeChangedCallback
 let SKIP_ATTR_CHANGE = false;
@@ -47,7 +45,6 @@ export class UHTMLProgressElement extends UHTMLElement {
 		super();
 		if (!this.shadowRoot)
 			this.attachShadow({ mode: "open" }).append(
-				createElement("slot", null, { hidden: "" }), // Slot hiding content allows legacy browser to display fallback text
 				createElement("style", UHTMLProgressStyle),
 			);
 	}

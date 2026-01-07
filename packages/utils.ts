@@ -202,7 +202,7 @@ export const getLabel = (el: Element) => {
 
 /**
  * speak
- * @description Creates a aria-live element for announcements
+ * @description Creates a aria-live element for announcements. Needed since Safari+VO does not announce aria-live inside ShadowDOM
  * @param text Optional text to announce
  */
 let LIVE: HTMLElement;

@@ -17,6 +17,10 @@
       body { margin: 15vh auto 100vh; max-width: 500px }
       input { font: inherit }
 
+      .hei {
+        border: 2px solid rebeccapurple;
+      }
+
       u-tab { padding: 2px 5px }
       u-tab[aria-selected="true"] { background: black; color: white }
       u-tabpanel { padding: 10px; border: 1px solid }
@@ -24,10 +28,26 @@
       u-tags { border: 2px solid; border-radius: 4px; display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; padding: 5px; }
       u-option[selected] { color: red; font-weight: bold; }
 
-      u-datepicker::part(row-0) { border: 1px solid red }
-      u-datepicker::part(saturday),
-      u-datepicker::part(sunday) { border: 1px solid red }
-      u-datepicker u-option { border: 1px solid blue }
+      u-datepicker {
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
+        margin-bottom: 2em;
+        padding: 1em;
+        width: 300px;
+      }
+      /*u-datepicker::part(day) {
+        border-radius: 100%;
+      }
+      u-datepicker::part(day):hover {
+        background: #eee;
+      }*/
+      /* u-datepicker::part(row-0) { border: 1px solid red }
+      u-datepicker::part(saturday weekday),
+      u-datepicker::part(sunday weekday) { border: 1px solid red }
+      u-datepicker::part(today) { border: 2px solid blue }
+      u-datepicker::part(date):focus { outline: 9px solid blue } */
+      u-datepicker::part(selected) { background: tomato }
 
       u-details {
         @media (prefers-reduced-motion: no-preference) {
@@ -56,10 +76,27 @@
   </head>
   <body>
     <main>
-      <br />
+      <br>
       <button type="button" name="before">Før</button>
-      <br />
-      <!-- <form> -->
+      <br>
+      <br>
+      <form>
+        <input type="date" name="dato" value="2025-12-02" />
+        <u-datepicker
+          data-value="2025-12-02, 2025-12-03, 2025-12-04"
+          data-disabled="2025-12-20"
+          data-week="Uke"
+          data-months="2"
+        >
+          <!-- <span slot="prev-icon">Tilbake</span> -->
+          <!-- <button slot="prev" type="button" aria-label="Forrige måned">Forrige</button> -->
+          <!-- <button slot="next" type="button" aria-label="Neste måned" class="hei">&rarr;</button> -->
+          <time slot="2025-12-07-after">FEST!</time>
+          <time slot="2025-12-24">🎄</time>
+        </u-datepicker>
+        <!-- <button type="submit">Send</button> -->
+      </form>
+      <!-- <form>
       <label for="my-a11y-input">Velg type iskrem</label>
       <br aria-hidden="true" />
 
@@ -98,14 +135,11 @@
           <u-option>Hasselnøtt</u-option>
         </u-datalist>
       </u-combobox>
-    <!-- </form> -->
+    </form>
       <script type="module">
         const combobox = document.querySelector('u-combobox');
         const input = document.getElementById('my-a11y-input');
         const list = combobox.list;
-        const _select = document.querySelector('u-combobox select');
-
-        document.addEventListener('toggle', console.log, true);
 
         combobox.addEventListener('click', (event) => {
           const { metaKey, ctrlKey, target } = event;
@@ -116,6 +150,13 @@
             if (metaKey || ctrlKey) window.open(option.value);
             else window.location.href = option.value;
           }
+        });
+
+        combobox.addEventListener('keydown', (event) => {
+          const { key, target } = event;
+          const input = target instanceof Element && target.closest('input');
+
+          if (key === 'Enter') input?.form.submit();
         });
 
         // input.addEventListener('input', console.log);
@@ -170,22 +211,20 @@
           //   }, 600);
           // } 
         });
-      </script>
-      <!-- <br>
-      <br>
-      <label>
+      </script> -->
+      <!-- <label>
         Nested label of apple
-        <br><u-progress value="5" max="10">70%</u-progress>
+        <br aria-hidden="true"><u-progress value="5" max="10">70%</u-progress>
       </label>
       <br /><label for="my-for-progress">For label of apple</label>
       <br><u-progress id="my-for-progress" value="5" max="10">70%</u-progress>
       <br /><span id="label-for-progress">Labelledby of apple</span>
       <br><u-progress aria-labelledby="label-for-progress" value="5" max="10">70%</u-progress>
+      <br>
+      <br>
+      <br>
+      <br>
       <br> -->
-      <br>
-      <br>
-      <br>
-      <br>
       <!-- <u-tablist>
         <u-tab aria-controls="panel-1">Rosinbolle</u-tab>
         <u-tab aria-controls="panel-2">Skolebolle</u-tab>
@@ -194,17 +233,6 @@
       <u-tabpanel id="panel-1">Panel 1 with <a href="#">link</a></u-tabpanel>
       <u-tabpanel id="panel-2">Panel 2 with <a href="#">link</a></u-tabpanel>
       <u-tabpanel id="panel-3">Panel 3 with <a href="#">link</a></u-tabpanel> -->
-      <form>
-        <input type="date" name="dato" />
-        <u-datepicker data-value="2024-05-02, 2024-05-03, 2024-05-04">
-          <span name="2024-05-02">HEI</span>
-          <time dateime="2024-05-02">HADE</time>
-          <time dateime="2024-05-03">HEST</time>
-          <time dateime="2024-05-04">FEST</time>
-          <time dateime="2024-05-07"><slot></slot>🌟<br><span>Special!</span><div>Heisann</div></time>
-        </u-datepicker>
-        <button type="submit">Send</button>
-      </form>
       <!-- <u-datepicker-head></u-datepicker-head> -->
       <!-- <u-datepicker-option value="2024-05-02" selected></u-datepicker-option>
       <u-datepicker-option value="2024-05-07">Special!</u-datepicker-option> -->
@@ -324,7 +352,7 @@
       <u-datepicker-item>10</u-datepicker-item>
       <table></table> -->
       <button>Etter</button>
-      <u-details>
+      <!-- <u-details>
         <template shadowrootmode="open">
           <slot name="summary"></slot>
           <slot part="details-content" aria-hidden="true" hidden="until-found"></slot>
@@ -338,9 +366,9 @@
         </template>
         <u-summary slot="summary">Åpne/lukk</u-summary>
         <div>Innhold</div>
-      </u-details>
+      </u-details> -->
       <!-- <template></template> -->
-      <u-test></u-test>
+      <!-- <u-test></u-test> -->
       <!-- <br>
       <br>
       <br><label for="my-for-progress">For label of apple</label>

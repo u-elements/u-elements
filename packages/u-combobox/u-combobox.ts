@@ -31,6 +31,8 @@ declare global {
 	}
 }
 
+// TODO: Example search vs autocomplete like Matvaretabellen
+
 export const UHTMLComboboxStyle = `:host(:not([hidden])) { display: block; -webkit-tap-highlight-color: rgba(0, 0, 0, 0) } /* Must be display block in Safari to allow focus inside */
 :host(:not([data-multiple])) ::slotted(data),
 :host([data-multiple="false"]) ::slotted(data) { display: none } /* Hide data if not multiple */

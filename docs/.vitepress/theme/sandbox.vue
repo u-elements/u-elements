@@ -40,7 +40,7 @@ watch(code, () => {
 <style>
   .demo { border-radius: 8px; border: 2px dashed var(--vp-c-divider); margin-block: .5em }
   .demo-code, .demo-view { box-sizing: border-box; display: block; max-width: 100%; min-width: 0 }
-  .demo-code { font: .875rem/1.5 var(--vp-font-family-mono); field-sizing: content; background: none; padding: .5em; resize: horizontal; }
+  .demo-code { font: .875rem/1.5 var(--vp-font-family-mono); field-sizing: content; background: none; padding: .5em; resize: vertical; }
   .demo-view { border-bottom: inherit; min-height: 200px; padding: 1rem; margin: -2px }
   .demo-view :where(button,input) { all: revert }
 </style>

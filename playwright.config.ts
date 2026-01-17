@@ -28,7 +28,7 @@ export default defineConfig({
 		{ name: "Mobile Safari", use: { ...devices["iPhone 12"] } },
 	],
 	webServer: {
-		command: "npm run start -- --host",
+		command: "npm run dev -- --host",
 		url: "http://127.0.0.1:5173",
 		reuseExistingServer: !process.env.CI,
 	},

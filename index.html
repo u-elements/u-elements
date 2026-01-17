@@ -79,8 +79,18 @@
       <br>
       <button type="button" name="before">Før</button>
       <br>
-      <br>
-      <form>
+      <div hidden>
+        <label style="display: block;">
+          Nested label of apple
+          <br><u-progress value="5" max="10">70%</u-progress>
+        </label>
+        <br>
+        <label style="display: block;" for="my-for-progress">For label of apple</label>
+        <u-progress id="my-for-progress" value="5" max="10">70%</u-progress>
+        <br>
+        <br>
+      </div>
+      <form hidden>
         <input type="date" name="dato" value="2025-12-02" />
         <u-datepicker
           data-value="2025-12-02, 2025-12-03, 2025-12-04"
@@ -96,7 +106,7 @@
         </u-datepicker>
         <!-- <button type="submit">Send</button> -->
       </form>
-      <!-- <form>
+      <form>
       <label for="my-a11y-input">Velg type iskrem</label>
       <br aria-hidden="true" />
 
@@ -118,11 +128,11 @@
         <input type="text" id="my-a11y-input">
         <del aria-label="Fjern tekst">&times;</del>
         <u-datalist>
-          <u-option value="https://u-elements.github.io/u-elements/elements/u-datalist">u-datalist</u-option>
+          <!-- <u-option value="https://u-elements.github.io/u-elements/elements/u-datalist">u-datalist</u-option>
           <u-option value="https://u-elements.github.io/u-elements/elements/u-progress">u-progress</u-option>
           <u-option value="https://u-elements.github.io/u-elements/elements/u-details">u-details</u-option>
           <u-option value="https://u-elements.github.io/u-elements/elements/u-combobox">u-combobox</u-option>
-          <u-option value="">Empty value</u-option>
+          <u-option value="">Empty value</u-option> -->
           <u-option value="2" label="Kokkos">Kokkos<div>Hei</div></u-option>
           <u-option>Jordbær</u-option>
           <u-option value="4" label="Sjokolade">Sjokolade (utgått)</u-option>
@@ -135,8 +145,9 @@
           <u-option>Hasselnøtt</u-option>
         </u-datalist>
       </u-combobox>
+      <code></code>
     </form>
-      <script type="module">
+      <template type="module">
         const combobox = document.querySelector('u-combobox');
         const input = document.getElementById('my-a11y-input');
         const list = combobox.list;
@@ -211,7 +222,7 @@
           //   }, 600);
           // } 
         });
-      </script> -->
+      </template>
       <!-- <label>
         Nested label of apple
         <br aria-hidden="true"><u-progress value="5" max="10">70%</u-progress>
@@ -368,14 +379,14 @@
         <div>Innhold</div>
       </u-details> -->
       <!-- <template></template> -->
-      <!-- <u-test></u-test> -->
+      <u-test></u-test>
       <!-- <br>
       <br>
       <br><label for="my-for-progress">For label of apple</label>
-      <br><u-progress id="my-for-progress" value="5" max="10">70%</u-progress>
-      <br>Aria-label of apple
-      <br><u-progress aria-label="This is the aria-label" id="my-progress" value="5" max="10">70%</u-progress>
-      <br>-->
+      <br><u-progress id="my-for-progress" value="5" max="20">70%</u-progress>
+      <br><label>Aria-label of apple
+      <br><u-progress aria-label="This is the aria-label" id="my-progress" value="20" max="30">30%</u-progress></label>
+      <br> -->
       <script>
         // setTimeout(() => {
         //   let i = 0
@@ -398,6 +409,43 @@
         //   })
         // }, 200)
       </script>
+      <details>
+        <summary>Et spørsmål</summary>
+        Et svar
+      </details>
+      <script>
+        const IS_BROWSER =
+          typeof window !== "undefined" &&
+          typeof window.document !== "undefined" &&
+          typeof window.navigator !== "undefined";
+
+        // Bad, but needed
+        const IS_ANDROID = IS_BROWSER && /android/i.test(navigator.userAgent);
+        const IS_FIREFOX = IS_BROWSER && /firefox/i.test(navigator.userAgent);
+
+        if (IS_BROWSER && IS_ANDROID && IS_FIREFOX) {
+          const BUTTON = 'button';
+          const OPEN = 'aria-expanded';
+          const ROLE = 'role';
+          const summarys = document.getElementsByTagName("summary");
+
+          const handleMutation = () => {
+            for(const summary of summarys) {
+              const open = `${!!summary.parentElement.open}`;
+              summary.getAttribute(ROLE) === BUTTON || summary.setAttribute(ROLE, BUTTON);
+              summary.getAttribute(OPEN) === open || summary.setAttribute(OPEN, open);
+            }
+          };
+
+          handleMutation(); // Initial run
+          new MutationObserver(handleMutation).observe(document, {
+            attributeFilter: ["open"],
+            attributes: true,
+            childList: true,
+            subtree: true,
+          });
+        }
+      </script>
       <script>
         class UTest extends HTMLElement {
           connectedCallback() {
@@ -408,7 +456,7 @@
                   <u-tab>Rosinbolle</u-tab>
                   <u-tab aria-disabled="true">Skolebolle</u-tab>
                   <u-tab aria-controls="panel-inside">Kanelknute</u-tab>
-                  <u-tab aria-controls="panel-outlier">Pistasjbolle</u-tab>
+                  <u-tab aria-controls="panel-outlier" aria-selected="true">Pistasjbolle</u-tab>
                   <u-tab-close hidden>Lukk</u-tab-close>
                 </u-tablist>
                 <u-tabpanel id="panel-inside">
@@ -445,9 +493,9 @@
                 u-tabpanel { padding: 10px; border: 1px solid }
                 u-option[selected] { color: red }
                 input { font-size: inherit }
-              </>
+              </style>
               <u-tabpanel id="panel-outlier">Panel outlier</u-tabpanel>
-            `
+            `;
           }
         }
         window.customElements.define('u-test', UTest)

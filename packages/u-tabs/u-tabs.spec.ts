@@ -107,14 +107,17 @@ test.describe("u-tabs", () => {
 		expect(
 			await page.evaluate(() => {
 				const uTabs = document.querySelector("u-tabs");
-				return (
-					uTabs?.selectedIndex === 0 &&
-					uTabs?.tabList === document.querySelector("u-tablist") &&
-					uTabs?.tabs instanceof NodeList &&
-					uTabs?.tabs.length === 2 &&
-					uTabs?.panels instanceof NodeList &&
-					uTabs?.panels.length === 2
-				);
+				const checks = {
+					selectedIndex: uTabs?.selectedIndex === 0,
+					tabList: uTabs?.tabList === document.querySelector("u-tablist"),
+					tabsNodeList: uTabs?.tabs instanceof NodeList,
+					tabsLength: uTabs?.tabs.length === 2,
+					panelsNodeList: uTabs?.panels instanceof NodeList,
+					panelsLength: uTabs?.panels.length === 2,
+				};
+
+				console.log(checks);
+				return Object.values(checks).every(Boolean);
 			}),
 		).toBeTruthy();
 
@@ -304,7 +307,7 @@ test.describe("u-tabs", () => {
 		await expect(uTab1).toHaveAttribute("aria-selected", "true");
 	});
 
-	test("respects only first aria-selected attribute", async ({ page }) => {
+	test("respects only last aria-selected attribute", async ({ page }) => {
 		await page.evaluate(() => {
 			document.body.innerHTML = `<u-tabs>
         <u-tablist>
@@ -320,12 +323,12 @@ test.describe("u-tabs", () => {
 		const uTabpanel0 = page.locator("u-tabpanel").nth(0);
 		const uTabpanel1 = page.locator("u-tabpanel").nth(1);
 
-		await expect(uTab0).toHaveJSProperty("tabIndex", 0);
-		await expect(uTabpanel0).toHaveJSProperty("hidden", false);
-		await expect(uTab0).toHaveAttribute("aria-selected", "true");
-		await expect(uTab1).toHaveJSProperty("tabIndex", -1);
-		await expect(uTabpanel1).toHaveJSProperty("hidden", true);
-		await expect(uTab1).toHaveAttribute("aria-selected", "false");
+		await expect(uTab0).toHaveJSProperty("tabIndex", -1);
+		await expect(uTabpanel0).toHaveJSProperty("hidden", true);
+		await expect(uTab0).toHaveAttribute("aria-selected", "false");
+		await expect(uTab1).toHaveJSProperty("tabIndex", 0);
+		await expect(uTabpanel1).toHaveJSProperty("hidden", false);
+		await expect(uTab1).toHaveAttribute("aria-selected", "true");
 	});
 
 	test("respects id attributes", async ({ page }) => {

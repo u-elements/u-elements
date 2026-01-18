@@ -49,20 +49,6 @@ export class UHTMLTabsElement extends UHTMLElement {
 		attr(this, ATTR_TABS, ""); // Used to identify tabs container without relying on tagName
 		attachStyle(this, UHTMLTabsStyle);
 	}
-	connectedCallback() {
-		mutationObserver(this, {
-			attributeFilter: ["role"],
-			attributes: true,
-			childList: true,
-			subtree: true,
-		}); // Using mutation to ensure all u-tab elements have rendered
-	}
-	handleEvent() {
-		this.tabList?.handleEvent(); // Delegate to tablist
-	}
-	disconnectedCallback() {
-		mutationObserver(this, false);
-	}
 	get tabList(): UHTMLTabListElement | null {
 		return queryWithoutNested<UHTMLTabListElement>("tablist", this)[0] || null;
 	}
@@ -153,7 +139,7 @@ export class UHTMLTabListElement extends UHTMLElement {
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/tab_role)
  */
 // Skip attributeChangedCallback caused by attributeChangedCallback
-let SKIP_ATTR_CHANGE = false;
+let SKIP_ATTR_CHANGE_TAB = false;
 export class UHTMLTabElement extends UHTMLElement {
 	// Using ES2015 syntax for backwards compatibility
 	static get observedAttributes() {
@@ -168,8 +154,8 @@ export class UHTMLTabElement extends UHTMLElement {
 		attr(this, "tabindex", this.selected ? "0" : "-1");
 	}
 	attributeChangedCallback() {
-		if (!SKIP_ATTR_CHANGE && this.selected && this.tabList) {
-			SKIP_ATTR_CHANGE = true;
+		if (!SKIP_ATTR_CHANGE_TAB && this.selected && this.tabList) {
+			SKIP_ATTR_CHANGE_TAB = true;
 			const tabs = this.tabList ? getTabs(this.tabList) : [];
 			const panels = queryWithoutNested("tabpanel", this.tabsElement || this);
 			const nextPanel = getPanel(this, panels[[...tabs].indexOf(this)]);
@@ -184,7 +170,7 @@ export class UHTMLTabElement extends UHTMLElement {
 				if (panel?.id) attr(tab, ARIA_CONTROLS, panel.id); // Leave aria-controls intact if set manually
 				if (panel) panel.hidden = panel !== nextPanel;
 			}
-			SKIP_ATTR_CHANGE = false;
+			SKIP_ATTR_CHANGE_TAB = false;
 		}
 	}
 	get tabsElement(): UHTMLTabsElement | null {
@@ -214,10 +200,11 @@ export class UHTMLTabElement extends UHTMLElement {
  * The `<u-tabpanel>` HTML element is a container for the resources of layered content associated with a `<u-tab>`.
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/tabpanel_role)
  */
+let SKIP_ATTR_CHANGE_PANEL = false;
 export class UHTMLTabPanelElement extends UHTMLElement {
 	// Using ES2015 syntax for backwards compatibility
 	static get observedAttributes() {
-		return ["hidden"];
+		return ["id", "hidden"];
 	}
 	constructor() {
 		super();
@@ -225,13 +212,17 @@ export class UHTMLTabPanelElement extends UHTMLElement {
 	}
 	connectedCallback() {
 		attr(this, "role", "tabpanel");
-		this.hidden = getSelectedIndex(this.tabs) === -1;
-		this.attributeChangedCallback(); // Setup initial tabindex
+		this.tabsElement?.tabList?.handleEvent(); // Ensure proper setup when added to DOM
+		this.attributeChangedCallback(); // Initial setup
 	}
 	attributeChangedCallback() {
-		const hidden = this.hidden;
-		attr(this, "aria-hidden", `${hidden}`); // Safari 18.6 has a bug where hidden alone is not enough to prevent screen readers focus
-		attr(this, "tabindex", hidden || isFocusable(this.firstChild) ? null : "0"); // Set tabIndex=0 only if firstChild is not interactive
+		if (SKIP_ATTR_CHANGE_PANEL) return;
+		SKIP_ATTR_CHANGE_PANEL = true; // Prevent loop when setting hidden attribute
+		const hasFocusable = isFocusable(this.firstChild);
+		this.hidden = getSelectedIndex(this.tabs) === -1; // Setup initial tabindex when mounted and attributes are set
+		attr(this, "aria-hidden", `${this.hidden}`); // Safari 18.6 has a bug where hidden alone is not enough to prevent screen readers focus
+		attr(this, "tabindex", this.hidden || hasFocusable ? null : "0"); // Set tabIndex=0 only if firstChild is not interactive
+		SKIP_ATTR_CHANGE_PANEL = false;
 	}
 	get tabsElement(): UHTMLTabsElement | null {
 		return getTabsElement(this);

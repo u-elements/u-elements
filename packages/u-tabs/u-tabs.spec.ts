@@ -104,22 +104,25 @@ test.describe("u-tabs", () => {
 	});
 
 	test("sets up properties", async ({ page }) => {
-		expect(
-			await page.evaluate(() => {
-				const uTabs = document.querySelector("u-tabs");
-				const checks = {
-					selectedIndex: uTabs?.selectedIndex === 0,
-					tabList: uTabs?.tabList === document.querySelector("u-tablist"),
-					tabsNodeList: uTabs?.tabs instanceof NodeList,
-					tabsLength: uTabs?.tabs.length === 2,
-					panelsNodeList: uTabs?.panels instanceof NodeList,
-					panelsLength: uTabs?.panels.length === 2,
-				};
-
-				console.log(checks);
-				return Object.values(checks).every(Boolean);
-			}),
-		).toBeTruthy();
+		const checks = await page.evaluate(() => {
+			const uTabs = document.querySelector("u-tabs");
+			return {
+				panelsLength: uTabs?.panels.length,
+				panelsNodeList: uTabs?.panels instanceof NodeList,
+				selectedIndex: uTabs?.selectedIndex,
+				tabList: uTabs?.tabList === document.querySelector("u-tablist"),
+				tabsLength: uTabs?.tabs.length,
+				tabsNodeList: uTabs?.tabs instanceof NodeList,
+			};
+		});
+		expect(checks).toMatchObject({
+			panelsLength: 2,
+			panelsNodeList: true,
+			selectedIndex: 0,
+			tabList: true,
+			tabsLength: 2,
+			tabsNodeList: true,
+		});
 
 		expect(
 			await page.evaluate(() => {
@@ -602,5 +605,54 @@ test.describe("u-tabs", () => {
 		const uTabpanel = page.locator("u-tabpanel");
 		await expect(uTabpanel.nth(0)).toHaveAttribute("tabindex", "0");
 		await expect(uTabpanel.nth(1)).not.toHaveAttribute("tabindex");
+	});
+
+	test("handles DOM changes", async ({ page }) => {
+		await page.evaluate(() => {
+			document.body.innerHTML = `<u-tabs>
+        <u-tablist>
+          <u-tab>Tab 1</u-tab>
+          <u-tab id="tab-2" aria-selected="true">Tab 2</u-tab>
+        </u-tablist>
+				<u-tabpanel>Panel 1</u-tabpanel>
+      </u-tabs>`;
+		});
+		const uTab = page.locator("u-tab");
+		const uTabpanel = page.locator("u-tabpanel");
+		await expect(uTab.nth(0)).toHaveAttribute("tabindex", "-1");
+		await expect(uTab.nth(1)).toHaveAttribute("tabindex", "0");
+		await expect(uTabpanel.nth(0)).toHaveAttribute("hidden");
+		await expect(uTabpanel.nth(1)).toBeHidden();
+
+		await page.evaluate(() => {
+			document.body
+				.querySelector("u-tabs")
+				?.insertAdjacentHTML(
+					"beforeend",
+					'<u-tabpanel id="panel-2">Panel 2</u-tabpanel>',
+				);
+		});
+		await expect(uTab.nth(1)).toHaveAttribute("aria-controls", "panel-2");
+		await expect(uTabpanel.nth(1)).toHaveAttribute(attrLabelledby(), "tab-2");
+
+		await page.evaluate(() => {
+			const panel = document.getElementById("panel-2");
+			if (panel) document.body.append(panel);
+		});
+
+		await expect(uTab.nth(1)).toHaveAttribute("aria-controls", "panel-2");
+		await expect(uTabpanel.nth(1)).toHaveAttribute(attrLabelledby(), "tab-2");
+
+		await uTab.nth(0).click();
+		await expect(uTabpanel.nth(0)).not.toHaveAttribute("hidden");
+		await uTab.nth(1).click();
+		await expect(uTabpanel.nth(0)).toHaveAttribute("hidden");
+
+		await page.evaluate(() => {
+			document.getElementById("panel-2")?.removeAttribute("id");
+		});
+
+		await expect(uTabpanel.nth(0)).toHaveAttribute("hidden");
+		await expect(uTabpanel.nth(1)).toHaveAttribute("hidden");
 	});
 });

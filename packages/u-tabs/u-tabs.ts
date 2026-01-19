@@ -46,8 +46,10 @@ const ATTR_TABS = "data-utabs";
 export class UHTMLTabsElement extends UHTMLElement {
 	constructor() {
 		super();
-		attr(this, ATTR_TABS, ""); // Used to identify tabs container without relying on tagName
 		attachStyle(this, UHTMLTabsStyle);
+	}
+	connectedCallback() {
+		attr(this, ATTR_TABS, ""); // Used to identify tabs container without relying on tagName
 	}
 	get tabList(): UHTMLTabListElement | null {
 		return queryWithoutNested<UHTMLTabListElement>("tablist", this)[0] || null;

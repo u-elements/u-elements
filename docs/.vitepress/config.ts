@@ -71,20 +71,20 @@ export default defineConfig({
 						link: "/elements/u-combobox",
 					},
 					{
-						text: '&lt;u-details&gt;',
+						text: '&lt;u-details&gt; <mark data-badge="POLYFILL"></mark>',
 						link: "/elements/u-details",
 					},
 					{
-						text: '&lt;u-dialog&gt; <mark data-badge="SUPPORTED"></mark>',
+						text: '<del>&lt;u-dialog&gt;</del> <mark data-badge="SUPPORTED"></mark>',
 						link: "/elements/u-dialog",
+					},
+					{
+						text: '<del>&lt;u-select&gt;</del> <mark data-badge="SUPPORTED"></mark>',
+						link: "/elements/u-select",
 					},
 					{
 						text: '<del>&lt;u-tags&gt;</del> <mark data-badge="DEPRECATED"></mark>',
 						link: "/elements/u-tags",
-					},
-					{
-						text: '<del>&lt;u-select&gt;</del> <mark data-badge="PENDING"></mark>',
-						link: "/elements/u-select",
 					},
 				],
 			},

@@ -1,5 +1,6 @@
 ---
 title: u-select
 ---
-# <del>&lt;u-select&gt;</del> <mark data-badge="PENDING"></mark>
-The W3C Community Group [Open UI](https://open-ui.org/) has started drafting a [customizable `<select>` element](https://open-ui.org/components/customizableselect/). However, the specification is currently undergoing frequent revisions, making it premature to implement `<u-select>` at this stage.
+# <del>&lt;u-select&gt;</del> <mark data-badge="SUPPORTED"></mark>
+There is no need for `<u-select>` :tada:<br />
+Native customizable [`<select>`](https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Forms/Customizable_select) has sufficient screen reader support, and good fallbacks mechanisms when not supported by browser.

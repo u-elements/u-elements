@@ -230,9 +230,7 @@ export class UHTMLTabPanelElement extends UHTMLElement {
 		return getTabsElement(this);
 	}
 	get tabs(): NodeListOf<UHTMLTabElement> {
-		return getRoot(this).querySelectorAll(
-			`[role="tab"][${ARIA_CONTROLS}="${this.id}"]`,
-		);
+		return getRoot(this).querySelectorAll(`[${ARIA_CONTROLS}="${this.id}"]`);
 	}
 }
 

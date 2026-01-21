@@ -8,7 +8,6 @@ import {
 	getLabel,
 	getRoot,
 	IS_ANDROID,
-	IS_FIREFOX,
 	IS_IOS,
 	isMouseDown,
 	mutationObserver,
@@ -31,8 +30,6 @@ declare global {
 	}
 }
 
-// TODO: Example search vs autocomplete like Matvaretabellen
-
 export const UHTMLComboboxStyle = `:host(:not([hidden])) { display: block; -webkit-tap-highlight-color: rgba(0, 0, 0, 0) } /* Must be display block in Safari to allow focus inside */
 :host(:not([data-multiple])) ::slotted(data),
 :host([data-multiple="false"]) ::slotted(data) { display: none } /* Hide data if not multiple */
@@ -46,18 +43,19 @@ export const UHTMLComboboxShadowRoot =
 	declarativeShadowRoot(UHTMLComboboxStyle);
 
 const EVENTS = "beforeinput,blur,focus,click,input,keydown,mousedown";
-const EVENT_ONCE = { once: true, passive: true };
+const EVENT_ONCE = { once: true, capture: true, passive: true };
 const FALSE = "false";
-const IS_FIREFOX_DESKTOP = IS_FIREFOX && !IS_ANDROID;
 const IS_MOBILE = IS_ANDROID || IS_IOS;
 const MODIFIED = "\u{200B}".repeat(5); // Use unicode U+200B zero width white-space to detect modified aria-label
 const VALUE_DELETE = "deleteContentBackward";
 const VALUE_INSERT = "insertText";
+const WHITE_SPACE = "\u{A0}"; // Use unicode U+00A0 non-breaking space to prevent VoiceOver announcing aria-label change
 const TEXTS = {
 	added: "Added",
 	empty: "No selected",
 	found: "Navigate left to find %d selected",
 	invalid: "Invalid value",
+	items: "Selected", // Note: Not announced by NVDA
 	of: "of",
 	remove: "Press to remove",
 	removed: "Removed",
@@ -80,6 +78,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	_speak = "";
 	_texts = { ...TEXTS };
 	_value = ""; // Locally store value to store value before input-click
+	_form?: string | null;
 
 	// Using ES2015 syntax for backwards compatibility
 	static get observedAttributes() {
@@ -90,7 +89,18 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		super();
 		if (!this.shadowRoot)
 			this.attachShadow({ mode: "open" }).append(
-				createElement("slot"), // Content slot
+				createElement("slot", null, {
+					"aria-orientation": "horizontal",
+					tabindex: "-1",
+					role: "listbox", // Note: Not announced by JAWS
+					name: "items",
+				}),
+				createElement("slot"),
+				// Used to prevent exiting JAWS forms mode when an item is removed, using listbox as this forces JAWS to stay in forms mode without mobile keyboard opening
+				createElement("div", '<div role="option" tabindex="-1"></div>', {
+					"aria-hidden": "true", // Prevent screen readers from announcing this element
+					role: "listbox",
+				}),
 				createElement("style", UHTMLComboboxStyle),
 			);
 	}
@@ -99,7 +109,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 
 		on(this, EVENTS, this, true); // Bind events using capture phase to run before framworks
 		mutationObserver(this, {
-			attributeFilter: ["value", "id"], // Respond to changes in <data> value or change of id for <datalist> to reconnect with input
+			attributeFilter: ["value", "id", "role"], // Respond to changes in <data> value or change of id or role for <datalist> to reconnect with input
 			attributes: true,
 			characterData: true, // Respond to changes in <data> textContent
 			childList: true,
@@ -116,7 +126,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		mutationObserver(this, false);
 		off(this, EVENTS, this, true);
 		this._items = this._clear = this._focus = this._control = undefined;
-		this._list = this._options = this._root = undefined;
+		this._list = this._options = this._root = this._form = undefined;
 	}
 	handleEvent(event: Event) {
 		const target = event.target as HTMLInputElement | null;
@@ -149,7 +159,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	}
 	get list(): HTMLDataListElement | null {
 		if (!this._list?.isConnected)
-			this._list = this.querySelector("u-datalist,datalist");
+			this._list = this.querySelector('datalist,[role="listbox"]'); // Can not use this.control.list as they might not be connected yet
 		return this._list; // Inspired by https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/list
 	}
 	get clear(): HTMLElement | null {
@@ -162,8 +172,8 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	}
 	get options(): HTMLCollectionOf<HTMLOptionElement> | undefined {
 		if (!this._options) {
-			const tag = this.list?.nodeName === "U-DATALIST" ? "u-option" : "option";
-			this._options = this.list?.getElementsByTagName(tag as "option"); // u-datalist might not be initialized yet
+			const tag = this.list?.querySelector('[role="option"],option')?.nodeName;
+			if (tag) this._options = this.getElementsByTagName(tag as "option"); // Support renaming u-option element
 		}
 		return this._options;
 	}
@@ -182,7 +192,7 @@ const render = (
 	event?: CustomEvent<MutationRecord[]>,
 ) => {
 	const { _focus, _texts, items, control, list, multiple } = self;
-	if (!control || !list) return;
+	if (!control) return;
 
 	// Support both labeling with <label> and aria-label
 	// Since we need to modify aria-label, we need to identify if it has been modified
@@ -209,9 +219,9 @@ const render = (
 
 		// Temporarily move focus the control to force reading new aria-label
 		if (control !== nextFocus) {
-			attr(control, "aria-expanded", null); // Prevent announce state when temporarily focused
-			attr(control, "inputmode", "none"); // Prevent virtual keyboard on iOS and Android
-			label = "\u{A0}"; // Prevent VoiceOver announcing aria-label change
+			if (IS_MOBILE) attr(control, "aria-expanded", null); // Prevent announce state when temporarily focused
+			if (IS_MOBILE) attr(control, "inputmode", "none"); // Prevent virtual keyboard on iOS and Android
+			label = WHITE_SPACE; // Prevent VoiceOver announcing aria-label change
 			control.focus();
 		}
 
@@ -222,39 +232,51 @@ const render = (
 			nextFocus?.focus?.();
 			attr(control, "inputmode", inputMode); // Revert inputMode after focus if removing
 			self._speak = ""; // Prevent Firefox announcing aria-label change, but also support non-focus environments such as JAWS forms mode
-			if (IS_FIREFOX_DESKTOP) on(self, "blur", () => render(self), EVENT_ONCE);
-			else setTimeout(render, 100, self);
-		}, 100); // 100ms delay so VoiceOver + Chrome announces new ariaLabel
+			if (IS_MOBILE)
+				setTimeout(render, 100, self); // Re-render on timeout on mobile since we do not have real focus on touch
+			else on(self, "blur", () => render(self), EVENT_ONCE);
+		}, 100); // 100ms delay so VoiceOver + Chrome announces new ariaLabel. Note: Causes short double/hiccup announce in NVDA Firefox
 	}
 
 	// Setup items and optional select
 	let idx = 0;
 	const select = self.querySelector("select");
-	const remove = isDisabled(self) ? "" : `${_texts.remove}, `;
+	const remove = isDisabled(self) ? "" : _texts.remove;
+	const itemsList = self.shadowRoot?.firstElementChild;
+	if (itemsList) attr(itemsList, "aria-label", _texts.items);
 	for (const item of items) {
-		const option = select?.options[idx]; // Use existing option if available
+		const option = select?.options[idx++]; // Use existing option if available
 		const label = text(item);
 		const value = item.value || label;
-		const aria = `${self._speak}${label}, ${remove}${++idx} ${_texts.of} ${items.length}`;
-		attr(item, "role", "button");
-		attr(item, "value", value);
-		attr(item, "tabindex", "-1");
+		const aria = `${self._speak}${label}, ${remove}`;
 		attr(item, "aria-label", aria);
+		attr(item, "aria-selected", "true");
+		attr(item, "role", "option");
+		attr(item, "slot", "items"); // Place item in correct slot
+		attr(item, "tabindex", "-1");
+		attr(item, "value", value);
+
 		if (option) Object.assign(option, { textContent: label, value });
 		else select?.appendChild(new Option(label, value, true, true));
+		if (IS_IOS) attr(item, "title", `${idx} ${_texts.of} ${items.length}`); // Needed to announce count in iOS
 	}
 	if (select) attr(select, "multiple", multiple ? "" : null);
 	for (const opt of [...(select?.options || [])].slice(idx)) opt.remove();
 	if (!multiple && idx > 1)
-		console.warn("u-combobox: Multiple <data> found in single mode.");
+		console.warn(self, ` Multiple <data> found in single mode.`);
 
 	// Setup input and list (Note: Label pointing to the input overwrites input's aria-label in Firefox)
-	attr(list, "aria-multiselectable", `${multiple}`); // Sync datalist multiselect
-	attr(control, "list", useId(list)); // Connect datalist and input
-	attr(control, "aria-label", `${self._speak}${label}${MODIFIED}`);
-	if (list.hasAttribute("popover")) {
-		attr(control, "popovertarget", useId(list)); // Connect popover target to datalist
-		attr(list, "popover", "manual"); // Ensure correct popover behavior
+	if (list) {
+		attr(list, "aria-multiselectable", `${multiple}`); // Sync datalist multiselect
+		attr(control, "list", useId(list)); // Connect datalist and input
+		attr(control, "aria-label", `${self._speak}${label}${MODIFIED}`);
+		if (list.hasAttribute("popover")) {
+			attr(control, "popovertarget", useId(list)); // Connect popover target to datalist
+			attr(list, "popover", "manual"); // Ensure correct popover behavior
+		}
+
+		// @ts-expect-error Forward of text to u-datalist for better screen reader announcements
+		list._of = _texts.of;
 	}
 
 	const item = text(items[0]);
@@ -324,6 +346,8 @@ const dispatchChange = (
 	const skip = remove && !removable;
 
 	if (skip) return syncInputValue(self); // If item is already present and not removeable, skip change but ensure input value is in sync
+	if (remove === getRoot(self)?.activeElement)
+		self.shadowRoot?.querySelector<HTMLElement>('[role="option"]')?.focus(); // Foucsing jaws fix instead of input to allow next focus move to go to input
 	if (self.dispatchEvent(new CustomEvent("comboboxbeforeselect", event))) {
 		if (!multiple) for (const item of [...items]) item.remove(); // Clear if single (loop as static array to prevent live HTMLCollection)
 		if (remove) remove.remove();
@@ -333,7 +357,12 @@ const dispatchChange = (
 };
 
 const onFocus = (self: UHTMLComboboxElement, { target }: Event) => {
+	const { _form, control, multiple } = self;
 	if (target instanceof HTMLElement) self._focus = target;
+	if (multiple && _form === undefined && control && target === control) {
+		self._form = attr(control, "form"); // Store for later restore
+		attr(control, "form", "#"); // Prevent submit while focused
+	}
 	speak(); // Prepare for screen reader announcements
 };
 
@@ -341,9 +370,11 @@ const onBlur = (self: UHTMLComboboxElement) =>
 	isMouseDown() || setTimeout(onBlurred, 0, self); // Delay to allow focus to be set on new element
 
 const onBlurred = (self: UHTMLComboboxElement) => {
-	if (!self._focus || self.contains(self._root?.activeElement as Node)) return; // Blur is allready done or focus is still in combobox
-	if (!self.multiple) dispatchMatch(self); // Try to match if single
-	self._focus = undefined; // Reset focus
+	const { _focus, _root, _form, multiple, control } = self;
+	if (!_focus || self.contains(_root?.activeElement as Node)) return; // Blur is allready done or focus is still in combobox
+	if (!multiple) dispatchMatch(self); // Try to match if single
+	if (_form && control) attr(control, "form", _form); // Reset form attribute
+	self._focus = self._form = undefined; // Reset focus
 };
 
 const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
@@ -389,12 +420,12 @@ const onKeyDown = (self: UHTMLComboboxElement, event: KeyboardEvent) => {
 	const isControl = control && control === target;
 	const inText = isControl && control.selectionEnd;
 	const isModified =
-		event.altKey || event.ctrlKey || event.metaKey || event.shiftKey;
+		event.ctrlKey || event.metaKey || event.shiftKey || event.key === "Alt"; // Firefox sets altKey: false when VO key
 	let index = isControl
 		? items.length
 		: [...items].indexOf(target as HTMLDataElement);
 
-	if (isControl && key === "Tab" && clear && !clear.hidden) {
+	if (isControl && key === "Tab" && !event.shiftKey && clear && !clear.hidden) {
 		event.preventDefault(); // Prevent tabbing away from combobox
 		clear.tabIndex = 0;
 		clear.focus(); // Focus del element
@@ -404,12 +435,8 @@ const onKeyDown = (self: UHTMLComboboxElement, event: KeyboardEvent) => {
 	if ((!isControl && asButton(event)) || index === -1 || isModified) return; // Skip if focus is neither on item or control or if item click
 	if (key === "ArrowRight" && !isControl) index += 1;
 	else if (key === "ArrowLeft" && !inText) index -= 1;
-	else if (key === "Enter" && isControl) {
-		const form = attr(control, "form");
-		attr(control, "form", "#"); // Prevent submit without preventing native datalist
-		requestAnimationFrame(() => attr(control, "form", form)); // Restore form attribute after event has bubbled
-		return dispatchMatch(self);
-	} else if (key === "Backspace" && !inText) {
+	else if (key === "Enter" && isControl) return dispatchMatch(self);
+	else if (key === "Backspace" && !inText) {
 		event.preventDefault(); // Prevent navigating away from page
 		if (!repeat && items[index]) return dispatchChange(self, items[index]);
 		if (isControl) index -= 1;

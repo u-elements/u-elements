@@ -29,11 +29,11 @@ declare global {
 }
 
 export const UHTMLDataListStyle = `${DISPLAY_BLOCK}
-::slotted(u-option) { display: block; cursor: pointer }
-::slotted(u-option:focus) { ${FOCUS_OUTLINE} }
-::slotted(u-option[aria-hidden="true"]),
-::slotted(u-option[disabled]),
-::slotted(u-option[hidden]) { display: none !important }`;
+::slotted([role="option"]) { display: block; cursor: pointer }
+::slotted([role="option"]:focus) { ${FOCUS_OUTLINE} }
+::slotted([role="option"][aria-hidden="true"]),
+::slotted([role="option"][disabled]),
+::slotted([role="option"][hidden]) { display: none !important }`;
 
 export const UHTMLDataListShadowRoot =
 	declarativeShadowRoot(UHTMLDataListStyle);
@@ -55,9 +55,11 @@ const TEXTS = {
 export class UHTMLDataListElement extends UHTMLElement {
 	// Using underscore instead of private fields for backwards compatibility
 	_input?: HTMLInputElement;
+	_options?: HTMLCollectionOf<HTMLOptionElement>;
 	_root?: Document | ShadowRoot;
 	_texts = { ...TEXTS };
 	_value = ""; // Used to prevent unnecessary announcements
+	_of = "/"; // Can be set by <u-combobox>
 
 	// Using ES2015 syntax for backwards compatibility
 	static get observedAttributes() {
@@ -119,7 +121,11 @@ export class UHTMLDataListElement extends UHTMLElement {
 		}
 	}
 	get options(): HTMLCollectionOf<HTMLOptionElement> {
-		return this.getElementsByTagName("u-option");
+		if (!this._options) {
+			const tag = this.querySelector('[role="option"],option')?.nodeName;
+			if (tag) this._options = this.getElementsByTagName(tag as "option"); // Support renaming u-option element
+		}
+		return this._options || this.getElementsByTagName("option"); // Fallback when u-option is not initialized yet
 	}
 }
 
@@ -287,8 +293,10 @@ const onInput = (self: UHTMLDataListElement, e?: Event) => {
 		}, 1000); // 1 second makes room for screen reader to announce the typed character, before announcing the hits count
 
 	// Needed to announce count in iOS
+	let idx = 0;
 	if (IS_IOS)
-		visible.map((opt, idx) => attr(opt, "title", `${idx + 1}/${total}`));
+		for (const opt of visible)
+			attr(opt, "title", `${++idx} ${self._of} ${total}`);
 };
 
 // Polyfill input.list so it also receives u-datalist

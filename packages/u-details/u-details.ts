@@ -19,9 +19,9 @@ declare global {
 }
 
 export const UHTMLDetailsStyle = `${DISPLAY_BLOCK}
-::slotted(u-summary) { cursor: pointer; display: block }
-::slotted(u-summary)::before { content: ''; display: inline-block; vertical-align: middle; margin-inline: .05em .3125em; border-block: .3125em solid transparent; border-inline-start: .5em solid }
-::slotted(u-summary[aria-expanded="true"])::before { rotate: 90deg }
+::slotted([slot="summary"]) { cursor: pointer; display: block }
+::slotted([slot="summary"])::before { content: ''; display: inline-block; vertical-align: middle; margin-inline: .05em .3125em; border-block: .3125em solid transparent; border-inline-start: .5em solid }
+::slotted([slot="summary"][aria-expanded="true"])::before { rotate: 90deg }
 :host > [part="details-content"]:not([hidden=""]) { display: block }`;
 
 export const UHTMLDetailsShadowRoot = declarativeShadowRoot(
@@ -49,6 +49,10 @@ export class UHTMLDetailsElement extends UHTMLElement {
 				createElement("slot", null, { part: "details-content" }),
 				createElement("style", UHTMLDetailsStyle),
 			);
+		console.warn(
+			"\x1B[1m<u-details> is deprecated as <details> now has sufficient screen reader support 🎉\x1B[0m\nPlease use <details> and <summary>, but import '@u-details/polyfill' to polyfill support for Talkback screen reader when used with Firefox on Android.",
+			this,
+		);
 	}
 	connectedCallback() {
 		this._content = this.shadowRoot?.children[1] as HTMLSlotElement;
@@ -92,8 +96,9 @@ export class UHTMLDetailsElement extends UHTMLElement {
 			this.dispatchEvent(new Event("toggle"));
 	}
 	handleEvent(event: Event) {
-		const summary = this.querySelector(":scope > u-summary");
-		const isSummary = summary?.contains(event.target as Node);
+		const isSummary =
+			event.target instanceof Element &&
+			event.target.closest('[slot="summary"]')?.parentElement === this;
 
 		if (event.defaultPrevented) return; // Allow all events to be canceled
 		if (event.type === "beforematch") this.open = true;

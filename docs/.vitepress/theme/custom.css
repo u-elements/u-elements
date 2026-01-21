@@ -148,6 +148,7 @@ mark[data-badge]::before {
 	vertical-align: middle;
 }
 
+mark[data-badge="POLYFILL"]::before,
 mark[data-badge="SUPPORTED"]::before,
 mark[data-badge="ARIA"]::before,
 mark[data-badge="HTML"]::before {
@@ -155,6 +156,7 @@ mark[data-badge="HTML"]::before {
 	background: var(--vp-c-brand-soft);
 	color: var(--vp-c-brand-1);
 }
+mark[data-badge="POLYFILL"]::before,
 mark[data-badge="SUPPORTED"]::before {
 	color: #054449;
 	background: #e2f1df;

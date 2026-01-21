@@ -305,6 +305,7 @@ const renderToStaticMarkup = (options: string) =>
 
 ## Changelog
 
+- **1.1.0:** Allows changing tag name when extending `UHTMLDataListElement` class
 - **1.0.14:** Enable declarative shadow root support and export `UHTMLDataListShadowRoot` for easier server side rendering
 - **1.0.13:** Prevent opening if `inputmode="none"`
 - **1.0.12:** Prevent ESC from closing `dialog` when datalist is open

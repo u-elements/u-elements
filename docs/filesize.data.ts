@@ -8,7 +8,10 @@ export default {
 		const pkgsPath = path.resolve(__dirname, "../packages");
 		const pkgsDistFiles = fs
 			.readdirSync(pkgsPath)
-			.map((pkgName) => path.resolve(pkgsPath, pkgName, `dist/${pkgName}.js`))
+			.flatMap((pkgName) => [
+				path.resolve(pkgsPath, pkgName, `dist/${pkgName}.js`),
+				path.resolve(pkgsPath, pkgName, `dist/polyfill.js`),
+			])
 			.filter((pkgDistFile) => fs.existsSync(pkgDistFile));
 
 		return Object.fromEntries(

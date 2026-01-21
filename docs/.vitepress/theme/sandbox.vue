@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import * as datalist from "../../../packages/u-datalist/u-datalist";
+import "../../../packages/u-details/polyfill";
 
 const { label, lang } = defineProps<{ label: string; lang?: string }>();
 

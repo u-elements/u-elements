@@ -70,6 +70,7 @@
     <script type="module" src="/packages/u-datalist/u-datalist.ts"></script>
     <script type="module" src="/packages/u-datepicker/u-datepicker.ts"></script>
     <script type="module" src="/packages/u-details/u-details.ts"></script>
+    <script type="module" src="/packages/u-details/polyfill.ts"></script>
     <script type="module" src="/packages/u-progress/u-progress.ts"></script>
     <script type="module" src="/packages/u-tabs/u-tabs.ts"></script>
     <script type="module" src="/packages/u-tags/u-tags.ts"></script>
@@ -81,11 +82,11 @@
       <br>
       <div hidden>
         <label style="display: block;">
-          Nested label of apple
-          <br><u-progress value="5" max="10">70%</u-progress>
+          Label 1
+          <br aria-hidden="true"><u-progress value="5" max="20">70%</u-progress>
         </label>
         <br>
-        <label style="display: block;" for="my-for-progress">For label of apple</label>
+        <label style="display: block;" for="my-for-progress">Label 2</label>
         <u-progress id="my-for-progress" value="5" max="10">70%</u-progress>
         <br>
         <br>
@@ -109,7 +110,6 @@
       <form>
       <label for="my-a11y-input">Velg type iskrem</label>
       <br aria-hidden="true" />
-
       <u-combobox
         data-multiple
         data-creatabl
@@ -362,6 +362,11 @@
       <u-datepicker-item>9</u-datepicker-item>
       <u-datepicker-item>10</u-datepicker-item>
       <table></table> -->
+
+      <details>
+        <summary>Et spørsmål</summary>
+        Et svar
+      </details>
       <button>Etter</button>
       <!-- <u-details>
         <template shadowrootmode="open">
@@ -408,43 +413,6 @@
         //     })
         //   })
         // }, 200)
-      </script>
-      <details>
-        <summary>Et spørsmål</summary>
-        Et svar
-      </details>
-      <script>
-        const IS_BROWSER =
-          typeof window !== "undefined" &&
-          typeof window.document !== "undefined" &&
-          typeof window.navigator !== "undefined";
-
-        // Bad, but needed
-        const IS_ANDROID = IS_BROWSER && /android/i.test(navigator.userAgent);
-        const IS_FIREFOX = IS_BROWSER && /firefox/i.test(navigator.userAgent);
-
-        if (IS_BROWSER && IS_ANDROID && IS_FIREFOX) {
-          const BUTTON = 'button';
-          const OPEN = 'aria-expanded';
-          const ROLE = 'role';
-          const summarys = document.getElementsByTagName("summary");
-
-          const handleMutation = () => {
-            for(const summary of summarys) {
-              const open = `${!!summary.parentElement.open}`;
-              summary.getAttribute(ROLE) === BUTTON || summary.setAttribute(ROLE, BUTTON);
-              summary.getAttribute(OPEN) === open || summary.setAttribute(OPEN, open);
-            }
-          };
-
-          handleMutation(); // Initial run
-          new MutationObserver(handleMutation).observe(document, {
-            attributeFilter: ["open"],
-            attributes: true,
-            childList: true,
-            subtree: true,
-          });
-        }
       </script>
       <script>
         class UTest extends HTMLElement {

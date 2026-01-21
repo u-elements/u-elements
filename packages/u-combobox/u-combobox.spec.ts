@@ -78,8 +78,8 @@ test.describe("u-combobox", () => {
 		await expect(items.nth(2)).toHaveAttribute("value", "tag-3");
 
 		for (let i = 0; i < itemsCount; i++) {
-			const label = `Tag ${i + 1}, Press to remove, ${i + 1} of ${itemsCount}`;
-			await expect(items.nth(i)).toHaveAttribute("role", "button");
+			const label = `Tag ${i + 1}, Press to remove`;
+			await expect(items.nth(i)).toHaveAttribute("role", "option");
 			await expect(items.nth(i)).toHaveAttribute("tabindex", "-1");
 			await expect(items.nth(i)).toHaveAttribute("aria-label", label);
 		}
@@ -177,7 +177,7 @@ test.describe("u-combobox", () => {
 		await input.press("Enter");
 		await expect(item3).toBeAttached();
 		await expect(item3).toHaveAttribute("value", "tag-4");
-		await expect(item3).toHaveAttribute("role", "button");
+		await expect(item3).toHaveAttribute("role", "option");
 		await expect(item3).toHaveAttribute("tabindex", "-1");
 		await expect(item3).toHaveText("Tag 4");
 		await expect(input).toBeFocused();

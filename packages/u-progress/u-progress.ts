@@ -5,7 +5,6 @@ import {
 	declarativeShadowRoot,
 	getLabel,
 	getRoot,
-	IS_FIREFOX,
 	IS_IOS,
 	UHTMLElement,
 	useId,
@@ -54,21 +53,18 @@ export class UHTMLProgressElement extends UHTMLElement {
 	attributeChangedCallback() {
 		if (SKIP_ATTR_CHANGE) return; // Skip attributeChangedCallback caused by attributeChangedCallback
 		SKIP_ATTR_CHANGE = true;
-		const roleImage = IS_IOS || IS_FIREFOX; // iOS and Firefox does not correctly read value of role="progress"
 		const percentage = Math.max(0, Math.round(this.position * 100)); // Always use percentage as iOS role="progressbar"
 		this.style.setProperty("--percentage", `${percentage}%`); // Write style before any read operation to avoid excess animation
 		let label = getLabel(this); // Uses innerText so must be after setting this.style
 
-		if (roleImage) label = `${label.replace(/\d+%$/, "")} ${percentage}%`;
-		if (IS_FIREFOX) for (const el of this.labels) attr(el, "aria-label", label); // Fixes double announcement in Firefox
-
+		if (IS_IOS) label = `${label.replace(/\d+%$/, "")} ${percentage}%`; // Replace removes previously added percentage
 		attr(this, "aria-busy", `${this.position === -1}`); // true if indeterminate
-		attr(this, "aria-label", label.trim());
+		attr(this, "aria-label", label.trim()); // Must use aria-label to include percentage value
 		attr(this, "aria-labelledby", null); // Since we always want to use aria-label
 		attr(this, "aria-valuemax", "100");
 		attr(this, "aria-valuemin", "0");
 		attr(this, "aria-valuenow", `${percentage}`);
-		attr(this, "role", roleImage ? "img" : "progressbar");
+		attr(this, "role", IS_IOS ? "img" : "progressbar"); // iOS does not announce amount, so we use img and percentage
 
 		SKIP_ATTR_CHANGE = false;
 	}

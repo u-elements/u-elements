@@ -30,7 +30,7 @@ test.describe("u-progress", () => {
 
 	test("sets up attributes", async ({ page }) => {
 		const browser = test.info().project.name;
-		const asImage = browser === "Mobile Safari" || browser === "Firefox";
+		const asImage = browser === "Mobile Safari";
 		const uProgress = page.locator("u-progress");
 
 		await expect(uProgress).toHaveAttribute("aria-valuemin", "0");

@@ -216,7 +216,7 @@ const renderToStaticMarkup = (tabs: string[], panels[]) =>
 
 ## Changelog
 
-- **0.1.2:** Enhanced React compatibility by removing u-tabs unknown attribute warning
+- **0.1.2:** Enhanced React compatibility by removing `u-tabs` unknown attribute warning
 - **0.1.1:** Enhanced performance by not relying on UTabsElement MutationObserver
 - **0.1.0:** Allows changing tag name when extending CustomElement class
 - **0.0.12:** Respect `aria-disabled="true"`

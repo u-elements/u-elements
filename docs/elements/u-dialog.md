@@ -2,7 +2,7 @@
 title: u-dialog
 ---
 # <del>&lt;u-dialog&gt;</del> <mark data-badge="SUPPORTED"></mark>
-There is no longer need for `<u-dialog>` :tada:
+There is no longer need for `<u-dialog>` :tada:<br />
 Please use native [`<dialog>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog) as it has sufficient support
 in major browsers and screen readers.
 

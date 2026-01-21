@@ -83,7 +83,6 @@ bun add -S @u-elements/u-combobox
 
 ### `<u-combobox>`
 
-
 - **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
   - `data-sr-added` prefixes announcements about additions. Defaults to `"Added"`
   - `data-sr-removed` prefixes announcements about removals. Defaults to `"Removed"`
@@ -92,6 +91,7 @@ bun add -S @u-elements/u-combobox
   - `data-sr-found` announces where to find amount of selected items. Defaults to `"Navigate left to find %d selected"`
   - `data-sr-invalid` announces if trying to select invalid value. Defaults to `"Invalid value""`
   - `data-sr-of` separates "number _of_ total" in announcements. Defaults to `"of"`
+  - `data-sr-items` aria-label for listbox containing selected items. Defaults to `"Selected"`
 - **DOM interface:** `UHTMLComboboxElement` extends [`HTMLElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement)
   - `UHTMLComboboxElement.control` returns `HTMLInputElement | null`
   - `UHTMLComboboxElement.items` returns `HTMLCollectionOf<HTMLDataElement>`
@@ -470,9 +470,9 @@ if (typeof window !== 'undefined') {
 | NVDA (PC) + Chrome | :white_check_mark: |
 | NVDA (PC) + Edge | :white_check_mark: |
 | NVDA (PC) + Firefox | :white_check_mark: needs focus mode to announce item removal |
-| Narrator (PC) + Chrome | :white_check_mark: |
-| Narrator (PC) + Edge | :white_check_mark: 
-| Narrator (PC) + Firefox | :white_check_mark: |
+| Narrator (PC) + Chrome | :warning: Needs "scanning off" mode |
+| Narrator (PC) + Edge | :warning: Needs "scanning off" mode |
+| Narrator (PC) + Firefox | :warning: Needs "scanning off" mode |
 | TalkBack (Android) + Chrome | :white_check_mark: |
 | TalkBack (Android) + Firefox | :white_check_mark: |
 | TalkBack (Android) + Samsung Internet | :white_check_mark: |
@@ -507,6 +507,7 @@ const renderToStaticMarkup = (data: string, options: string) =>
 
 ## Changelog
 
+- **1.0.6:** Fixes FormsMode compatibility for JAWS and NVDA
 - **1.0.5:** Allow clicks even when `ctrlKey`, `altKey` or `shiftKey`
 - **1.0.4:** Prevent focus trap on Safari caused by `tabindex="-1"` on `<del>`
 - **1.0.3:** Let `Delete` key do native text deletion instead of chip removal

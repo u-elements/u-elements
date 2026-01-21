@@ -1,6 +1,6 @@
 {
 	"name": "@u-elements/u-details",
-	"version": "0.1.5",
+	"version": "0.2.0",
 	"license": "MIT",
 	"description": "HTML tags, just truly accessible",
 	"homepage": "https://u-elements.github.io/u-elements/",
@@ -19,6 +19,16 @@
 				"types": "./dist/u-details.d.cts",
 				"default": "./dist/u-details.cjs"
 			}
+		},
+		"./polyfill": {
+			"import": {
+				"types": "./dist/polyfill.d.ts",
+				"default": "./dist/polyfill.js"
+			},
+			"require": {
+				"types": "./dist/polyfill.d.cts",
+				"default": "./dist/polyfill.cjs"
+			}
 		}
 	},
 	"files": [
@@ -32,7 +42,7 @@
 		"url": "https://github.com/u-elements/u-elements/issues"
 	},
 	"scripts": {
-		"build": "tsup --config ../../tsup.config.ts",
+		"build": "tsup --config ../../tsup.config.ts && tsup --config ./tsup.polyfill.config.ts",
 		"publish:patch": "npm version patch && git push --tags origin main && npm publish",
 		"publish:minor": "npm version minor && git push --tags origin main && npm publish",
 		"publish:major": "npm version major && git push --tags origin main && npm publish"

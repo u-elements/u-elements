@@ -7,7 +7,7 @@ import { data } from '../filesize.data.ts'
 
 # <del>&lt;u-details&gt;</del> <mark data-badge="POLYFILL"></mark>
 There is no longer need for `<u-details>` :tada:<br />
-Please use native [`<details>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog) as it has sufficient support
+Please use native [`<details>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details) as it has sufficient support
 in major browsers and screen readers, but import `@u-details/polyfill` to support [Android Firefox users with Talkback screen reader](https://bugzilla.mozilla.org/show_bug.cgi?id=1834198).
 
 `<details>` lets you open and close content when clicking on a child `<summary>`.

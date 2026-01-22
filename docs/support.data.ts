@@ -202,6 +202,8 @@ const skip = [
 	"htmlelement.type",
 	"htmlelement.value",
 	"htmlelement.assign",
+	"htmlelement.capture",
+	"element.role",
 	"length",
 	"name",
 	"navigator.useragentdata",

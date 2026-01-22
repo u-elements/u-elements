@@ -151,6 +151,7 @@ Even when a `<details>` element is closed, all of its content remains discoverab
 
 ## Changelog
 
+- **0.2.1:** Ensures single polyfill instance in hot-reloaded environments
 - **0.2.0:** Deprecateds `<u-details>` and adds `@u-details/polyfill`
 - **0.1.5:** Add `tabindex="-1"` to content when closed to preved Firefox from making it a tabstop
 - **0.1.4:** Remove `aria-labelledby="summary-id"` to reduce information duplication

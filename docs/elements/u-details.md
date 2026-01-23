@@ -8,7 +8,7 @@ import { data } from '../filesize.data.ts'
 # <del>&lt;u-details&gt;</del> <mark data-badge="POLYFILL"></mark>
 There is no longer need for `<u-details>` :tada:<br />
 Please use native [`<details>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details) as it has sufficient support
-in major browsers and screen readers, but import `@u-details/polyfill` to support [Android Firefox users with Talkback screen reader](https://bugzilla.mozilla.org/show_bug.cgi?id=1834198).
+in major browsers and screen readers, but import `@u-elements/u-details/polyfill` to support [Android Firefox users with Talkback screen reader](https://bugzilla.mozilla.org/show_bug.cgi?id=1834198).
 
 `<details>` lets you open and close content when clicking on a child `<summary>`.
 You can use it to make things like accordions, expandables, FAQs, dropdowns, etc.
@@ -34,19 +34,19 @@ You can use it to make things like accordions, expandables, FAQs, dropdowns, etc
 ::: code-group
 
 ```bash [NPM]
-npm add -S @u-elements/polyfill
+npm add -S @u-elements/u-details/polyfill
 ```
 
 ```bash [PNPM]
-pnpm add -S @u-elements/polyfill
+pnpm add -S @u-elements/u-details/polyfill
 ```
 
 ```bash [Yarn]
-yarn add @u-elements/polyfill
+yarn add @u-elements/u-details/polyfill
 ```
 
 ```bash [Bun]
-bun add -S @u-elements/polyfill
+bun add -S @u-elements/u-details/polyfill
 ```
 
 ```html [CDN]
@@ -122,7 +122,7 @@ Even when a `<details>` element is closed, all of its content remains discoverab
 
 ## Accessibility (tested 21.01.26)
 
-| Screen reader | `<details>` | `@u-details/polyfill` |
+| Screen reader | `<details>` | `@u-elements/u-details/polyfill` |
 | --- | --- | --- |
 | VoiceOver (Mac) + Chrome | :white_check_mark: | :white_check_mark: |
 | VoiceOver (Mac) + Edge | :white_check_mark: | :white_check_mark: |
@@ -151,8 +151,9 @@ Even when a `<details>` element is closed, all of its content remains discoverab
 
 ## Changelog
 
+- **0.2.2:** Correct package name in deprecation message
 - **0.2.1:** Ensures single polyfill instance in hot-reloaded environments
-- **0.2.0:** Deprecateds `<u-details>` and adds `@u-details/polyfill`
+- **0.2.0:** Deprecateds `<u-details>` and adds `@u-elements/u-details/polyfill`
 - **0.1.5:** Add `tabindex="-1"` to content when closed to preved Firefox from making it a tabstop
 - **0.1.4:** Remove `aria-labelledby="summary-id"` to reduce information duplication
 - **0.1.3:** Enable declarative shadow root support and export `UHTMLDetailsShadowRoot` for easier server side rendering

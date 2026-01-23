@@ -50,7 +50,7 @@ export class UHTMLDetailsElement extends UHTMLElement {
 				createElement("style", UHTMLDetailsStyle),
 			);
 		console.warn(
-			"\x1B[1m<u-details> is deprecated as <details> now has sufficient screen reader support 🎉\x1B[0m\nPlease use <details> and <summary>, but import '@u-details/polyfill' to polyfill support for Talkback screen reader when used with Firefox on Android.",
+			"\x1B[1m<u-details> is deprecated as <details> now has sufficient screen reader support 🎉\x1B[0m\nPlease use <details> and <summary>, but import '@u-elements/u-details/polyfill' to polyfill support for Talkback screen reader when used with Firefox on Android.",
 			this,
 		);
 	}

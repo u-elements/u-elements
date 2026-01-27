@@ -507,6 +507,7 @@ const renderToStaticMarkup = (data: string, options: string) =>
 
 ## Changelog
 
+- **1.0.7:** Fixes so display: flex on u-combobox renders as expected
 - **1.0.6:** Fixes FormsMode compatibility for JAWS and NVDA
 - **1.0.5:** Allow clicks even when `ctrlKey`, `altKey` or `shiftKey`
 - **1.0.4:** Prevent focus trap on Safari caused by `tabindex="-1"` on `<del>`

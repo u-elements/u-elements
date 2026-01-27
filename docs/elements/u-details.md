@@ -34,25 +34,29 @@ You can use it to make things like accordions, expandables, FAQs, dropdowns, etc
 ::: code-group
 
 ```bash [NPM]
-npm add -S @u-elements/u-details/polyfill
+npm add -S @u-elements/u-details
 ```
 
 ```bash [PNPM]
-pnpm add -S @u-elements/u-details/polyfill
+pnpm add -S @u-elements/u-details
 ```
 
 ```bash [Yarn]
-yarn add @u-elements/u-details/polyfill
+yarn add @u-elements/u-details
 ```
 
 ```bash [Bun]
-bun add -S @u-elements/u-details/polyfill
+bun add -S @u-elements/u-details
 ```
 
 ```html [CDN]
 <script type="module" src="https://unpkg.com/@u-elements/u-details@latest/dist/polyfill.js"></script>
 ```
 :::
+
+```js
+import '@u-elements/u-details/polyfill';
+```
 
 ## Attributes and props
 

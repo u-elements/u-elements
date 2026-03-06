@@ -1,13 +1,14 @@
 import {
 	asButton,
+	attachStyle,
 	attr,
-	createElement,
 	customElements,
 	DISPLAY_BLOCK,
 	declarativeShadowRoot,
 	getRoot,
 	off,
 	on,
+	tag,
 	UHTMLElement,
 } from "../utils";
 
@@ -34,8 +35,7 @@ export const UHTMLDetailsShadowRoot = declarativeShadowRoot(
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details)
  */
 export class UHTMLDetailsElement extends UHTMLElement {
-	// Using underscore instead of private fields for backwards compatibility
-	_content: HTMLSlotElement | null = null;
+	_content?: HTMLSlotElement; // Using underscore instead of private fields for backwards compatibility
 
 	// Using ES2015 syntax for backwards compatibility
 	static get observedAttributes() {
@@ -43,12 +43,11 @@ export class UHTMLDetailsElement extends UHTMLElement {
 	}
 	constructor() {
 		super();
-		if (!this.shadowRoot)
-			this.attachShadow({ mode: "open" }).append(
-				createElement("slot", null, { name: "summary" }),
-				createElement("slot", null, { part: "details-content" }),
-				createElement("style", UHTMLDetailsStyle),
-			);
+		attachStyle(this, UHTMLDetailsStyle);
+		this.shadowRoot?.prepend(
+			tag("slot", { name: "summary" }),
+			tag("slot", { part: "details-content" }),
+		);
 		console.warn(
 			"\x1B[1m<u-details> is deprecated as <details> now has sufficient screen reader support 🎉\x1B[0m\nPlease use <details> and <summary>, but import '@u-elements/u-details/polyfill' to polyfill support for Talkback screen reader when used with Firefox on Android.",
 			this,
@@ -58,13 +57,13 @@ export class UHTMLDetailsElement extends UHTMLElement {
 		this._content = this.shadowRoot?.children[1] as HTMLSlotElement;
 		attr(this, "role", "group"); // Set role to group align with HTMLDetailsElement
 		on(this._content, "beforematch", this); // Open if browsers Find in page reveals content
-		on(this, "click,keydown", this);
+		on(this, "click keydown", this);
 		this.attributeChangedCallback(); // We now know the element is in the DOM, so run a attribute setup
 	}
 	disconnectedCallback() {
 		if (this._content) off(this._content, "beforematch", this);
-		off(this, "click,keydown", this);
-		this._content = null;
+		off(this, "click keydown", this);
+		this._content = undefined;
 	}
 	attributeChangedCallback(prop?: string, prev?: string, next?: string) {
 		const hide = "onbeforematch" in this ? "until-found" : true; // Use "until-found" if supported

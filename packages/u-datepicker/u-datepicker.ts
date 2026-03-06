@@ -3,12 +3,12 @@ export type { UHTMLOptionElement } from "../u-datalist/u-option";
 import { getWeekStartByRegion } from "./week-start";
 import "../u-datalist/u-option";
 import {
+	attachStyle,
 	attr,
-	createElement,
 	customElements,
+	getFocused,
 	off,
 	on,
-	speak,
 	UHTMLElement,
 } from "../utils";
 
@@ -31,10 +31,21 @@ declare global {
 // TODO: Remove trailing dot in short days?
 
 type DateValue = Date | number | string;
-const EVENTS = "click,input,focusin,keydown,pointerdown,pointerup";
-const ENGLISH_DAYS = "sun,mon,tues,wednes,thurs,fri,satur"
-	.replace(/(,|$)/g, "day$1")
-	.split(",");
+const EVENTS = "click input focusin keydown pointerdown pointerup";
+const ENGLISH_DAYS = "sun mon tues wednes thurs fri satur"
+	.replace(/( |$)/g, "day$1")
+	.split(" ");
+
+export const createEl = <TagName extends keyof HTMLElementTagNameMap>(
+	tagName: TagName,
+	attrs?: Record<string, string>,
+	html?: string | null,
+): HTMLElementTagNameMap[TagName] => {
+	const el = document.createElement(tagName);
+	if (html) el.innerHTML = html;
+	if (attrs) for (const [key, val] of Object.entries(attrs)) attr(el, key, val);
+	return el;
+};
 
 /**
  * The `<u-datepicker>` HTML element contains lets you pick a date from a grid.
@@ -56,46 +67,47 @@ export class UHTMLDatePickerElement extends UHTMLElement {
 	}
 	constructor() {
 		super();
-		this.attachShadow({ mode: "open" }).append(
-			createElement(
-				"slot",
-				`<slot name="month"><select name="month" part="month">${Array.from({ length: 12 }, (_, i) => `<option value="${i}"></option>`).join("")}</select></slot>
+		if (!this.shadowRoot)
+			this.attachShadow({ mode: "open" }).append(
+				createEl(
+					"slot",
+					{ part: "controls", name: "controls" },
+					`<slot name="month"><select name="month" part="month">${Array.from({ length: 12 }, (_, i) => `<option value="${i}"></option>`).join("")}</select></slot>
 				<slot name="year"><input name="year" part="year" type="number" /></slot>
 				<slot name="prev"><button name="prev" part="prev" type="button"><slot name="prev-icon">&larr;</slot></button></slot>
 				<slot name="next"><button name="next" part="next" type="button"><slot name="next-icon">&rarr;</slot></button></slot>`,
-				{ part: "controls", name: "controls" },
-			),
-			createElement(
-				"table",
-				`<thead part="thead" aria-hidden="true"><tr part="tr days"><th scope="col"><slot name="week"></slot></th>${`<th scope="col"><slot name="-"></slot></th>`.repeat(7)}</tr></thead>
+				),
+				createEl(
+					"table",
+					{ part: "table" },
+					`<thead part="thead" aria-hidden="true"><tr part="tr days"><th scope="col"><slot name="week"></slot></th>${`<th scope="col"><slot name="-"></slot></th>`.repeat(7)}</tr></thead>
 				<tbody part="tbody">${`<tr role="row"><th scope="row" part="weeknumber"><slot name="-"></slot></th>${`<td part="td"><button type="button" part="date"><slot name="-before"></slot><slot name="-"></slot><slot name="-after"></slot></button></td>`.repeat(7)}</tr>`.repeat(6)}</tbody>
 			`,
-				{ part: "table" },
-			),
-			createElement(
-				"table",
-				`<thead part="thead" aria-hidden="true"><tr part="tr days"><th scope="col"><slot name="week"></slot></th>${`<th scope="col"><slot name="-"></slot></th>`.repeat(7)}</tr></thead>
+				),
+				createEl(
+					"table",
+					{ part: "table" },
+					`<thead part="thead" aria-hidden="true"><tr part="tr days"><th scope="col"><slot name="week"></slot></th>${`<th scope="col"><slot name="-"></slot></th>`.repeat(7)}</tr></thead>
 				<tbody part="tbody">${`<tr role="row"><th scope="row" part="weeknumber"><slot name="-"></slot></th>${`<td part="td"><button type="button" part="date"><slot name="-before"></slot><slot name="-"></slot><slot name="-after"></slot></button></td>`.repeat(7)}</tr>`.repeat(6)}</tbody>
 			`,
-				{ part: "table" },
-			),
-			createElement(
-				"style",
-				`:host(:not([hidden])) { display: flex; flex-wrap: wrap; gap: 1em; background: Canvas; color: CanvasText }
-				:host(:not([data-week])) th:first-child { display: none }
-				slot[name="controls"] { display: flex; align-items: center; gap: inherit; width: 100% }
-				slot[name="year"] { display: block; margin-right: auto }
-				button, input, select, th, td { box-sizing: border-box; field-sizing: content; font: inherit; background: none; color: inherit; padding: 0; margin: 0; border: 0; text-align: inherit }
-				th { font-weight: bold }
+				),
+			);
+		attachStyle(
+			this,
+			`:host(:not([hidden])) { display: flex; flex-wrap: wrap; gap: 1em; background: Canvas; color: CanvasText }
+			:host(:not([data-week])) th:first-child { display: none }
+			slot[name="controls"] { display: flex; align-items: center; gap: inherit; width: 100% }
+			slot[name="year"] { display: block; margin-right: auto }
+			button, input, select, th, td { box-sizing: border-box; field-sizing: content; font: inherit; background: none; color: inherit; padding: 0; margin: 0; border: 0; text-align: inherit }
+			th { font-weight: bold }
 
-				table { border-collapse: collapse; border-spacing: 0; table-layout: fixed; flex: 1 1 auto; text-align: center }
-				th::before, button::before { content: attr(data-text) / attr(data-aria) }
-				td button { width: 100% }
-				button[data-month="outside"] { color: GrayText }
-				button[aria-disabled="true"] { color: GrayText; text-decoration: line-through }
-				button[aria-current="date"] { text-decoration: underline }
-				button:enabled { cursor: pointer }`,
-			),
+			table { border-collapse: collapse; border-spacing: 0; table-layout: fixed; flex: 1 1 auto; text-align: center }
+			th::before, button::before { content: attr(data-text) / attr(data-aria) }
+			td button { width: 100% }
+			button[data-month="outside"] { color: GrayText }
+			button[aria-disabled="true"] { color: GrayText; text-decoration: line-through }
+			button[aria-current="date"] { text-decoration: underline }
+			button:enabled { cursor: pointer }`,
 		);
 	}
 	connectedCallback() {
@@ -144,7 +156,6 @@ export class UHTMLDatePickerElement extends UHTMLElement {
 		if (event.type === "click") onClick(this, event);
 		if (event.type === "input") onInput(this, event);
 		if (event.type === "keydown") onKeyDown(this, event as KeyboardEvent);
-		if (event.type === "focusin") speak(); // Prepare for screen reader
 	}
 	// Focused is the date rendered in monthpicker - not using activeElement as we need to persist it when changing month/year
 	get focusedDate(): Date {
@@ -209,7 +220,7 @@ const renderTHead = (self: UHTMLDatePickerElement, table: HTMLTableElement) => {
 };
 
 const renderTbody = (self: UHTMLDatePickerElement, table: HTMLTableElement) => {
-	const hasFocus = table.contains(self.shadowRoot?.activeElement as Node);
+	const hasFocus = table.contains(getFocused(self));
 	const date = self.focusedDate;
 	const today = new Date();
 	const month = date.getMonth();
@@ -220,10 +231,10 @@ const renderTbody = (self: UHTMLDatePickerElement, table: HTMLTableElement) => {
 	const disabledYMD = self.disabled.map(getYMD);
 
 	// Update caption and announce
-	const prev = attr(table, "aria-label");
+	// const prev = attr(table, "aria-label");
 	const next = `${self.getMonthName(date)}, ${date.getFullYear()}`;
 	attr(table, "aria-label", next); // Must be set before moving to first day of week
-	if (prev !== next) speak(next);
+	// if (prev !== next) speak(next); // TODO EIRIK
 
 	// Update select/input
 	const select = get(self, "select");

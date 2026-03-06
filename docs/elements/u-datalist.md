@@ -281,20 +281,20 @@ const renderToStaticMarkup = (options: string) =>
 | VoiceOver (Mac) + Edge | :white_check_mark: | :white_check_mark: |
 | VoiceOver (Mac) + Firefox | :x: Does not announce option count  | :white_check_mark: |
 | VoiceOver (Mac) + Safari | :x: Does not announce option count | :white_check_mark: |
-| VoiceOver (iOS) + Chrome | :x: Does not announce options | :white_check_mark: |
-| VoiceOver (iOS) + Safari | :x: Does not announce options | :white_check_mark: |
+| VoiceOver (iOS) + Chrome | :warning: Shows 3 unannounced options only in keyboard | :white_check_mark: |
+| VoiceOver (iOS) + Safari | :warning: Shows 3 unannounced options only in keyboard | :white_check_mark: |
 | Jaws (PC) + Chrome | :white_check_mark: | :white_check_mark: |
 | Jaws (PC) + Edge | :white_check_mark: | :white_check_mark: |
 | Jaws (PC) + Firefox | :white_check_mark: | :white_check_mark: |
 | NVDA (PC) + Chrome | :white_check_mark: | :white_check_mark: |
 | NVDA (PC) + Edge | :white_check_mark: | :white_check_mark: |
 | NVDA (PC) + Firefox | :white_check_mark: | :white_check_mark: |
-| Narrator (PC) + Chrome | :white_check_mark: | :white_check_mark: |
-| Narrator (PC) + Edge | :white_check_mark: | :white_check_mark: |
-| Narrator (PC) + Firefox | :x: Does not show options | :white_check_mark: |
-| TalkBack (Android) + Chrome | :white_check_mark: | :white_check_mark: |
-| TalkBack (Android) + Firefox | :x: Does not show options | :white_check_mark: |
-| TalkBack (Android) + Samsung Internet | :white_check_mark: | :white_check_mark: |
+| Narrator (PC) + Chrome | :white_check_mark: | :warning: Requires user to deactivate "scan mode" |
+| Narrator (PC) + Edge | :white_check_mark: | :warning: Requires user to deactivate "scan mode" |
+| Narrator (PC) + Firefox | :warning: Requires user to press `AltKey` + `ArrowDown` twice | :warning: Requires user to deactivate "scan mode" |
+| TalkBack (Android) + Chrome | :white_check_mark: | :white_check_mark: Shows/hides based on focus |
+| TalkBack (Android) + Firefox | :x: Does not show options | :white_check_mark: Shows/hides based on focus |
+| TalkBack (Android) + Samsung Internet | :white_check_mark: | :white_check_mark: Shows/hides based on focus |
 
 ## Specifications
 
@@ -305,6 +305,7 @@ const renderToStaticMarkup = (options: string) =>
 
 ## Changelog
 
+- **1.1.1:** Speed up popover check
 - **1.1.0:** Allows changing tag name when extending `UHTMLDataListElement` class
 - **1.0.14:** Enable declarative shadow root support and export `UHTMLDataListShadowRoot` for easier server side rendering
 - **1.0.13:** Prevent opening if `inputmode="none"`

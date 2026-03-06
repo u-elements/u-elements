@@ -1,4 +1,4 @@
-import { attr, customElements, IS_IOS, UHTMLElement } from "../utils";
+import { attr, customElements, IS_IOS, UHTMLElement, useId } from "../utils";
 
 declare global {
 	interface HTMLElementTagNameMap {
@@ -17,16 +17,17 @@ const SELECTED = "selected";
 export class UHTMLOptionElement extends UHTMLElement {
 	// Using ES2015 syntax for backwards compatibility
 	static get observedAttributes() {
-		return [DISABLED, SELECTED];
+		return ["id", DISABLED, SELECTED];
 	}
 	connectedCallback() {
 		if (!IS_IOS) this.tabIndex = -1; // Do not set tabIndex on iOS as this causes keyboard to toggle on and off
-		if (!this.hasAttribute("role")) attr(this, "role", "option"); // Only set role if not allready specified
+		if (!this.hasAttribute("role")) attr(this, "role", "option"); // Only set role if not allready specified, to allow role="none"
 		this.attributeChangedCallback(); // Setup aria attributes (Firefox defaults to "selected" unless aria-selected="false" is set)
 	}
 	attributeChangedCallback() {
 		attr(this, "aria-disabled", `${this.disabled}`);
 		attr(this, "aria-selected", `${this.selected}`);
+		useId(this); // Ensure id is present for aria referencing
 	}
 	/** Sets or retrieves whether the option in the list box is the default item. */
 	get defaultSelected(): boolean {

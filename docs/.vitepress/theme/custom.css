@@ -50,6 +50,10 @@
 	border: 1px solid var(--vp-c-divider);
 }
 
+.vp-doc summary {
+	margin: 0;
+}
+
 /* Front page: Background gradient */
 .is-home::after {
 	content: "";

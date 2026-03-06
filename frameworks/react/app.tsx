@@ -1,11 +1,15 @@
 import { useRef, useState } from "react";
 import ReactDOM from "react-dom/client";
 // import { render } from 'react-dom' // For React 16.8
-import type { UHTMLComboboxElement } from "../../packages/u-combobox/u-combobox";
-import "../../packages/u-progress";
-import "../../packages/u-datalist";
+import "../../packages/u-progress/u-progress";
+import "../../packages/u-datalist/u-datalist";
 import "../../packages/u-combobox/u-combobox";
-import "../../packages/u-tags";
+import "../../packages/u-tabs/u-tabs";
+
+// Import types
+import type { UHTMLComboboxElement } from "../../packages/u-combobox/u-combobox";
+import "../../packages/u-datalist";
+import "../../packages/u-progress";
 import "../../packages/u-tabs";
 
 export default function App() {
@@ -54,12 +58,13 @@ export default function App() {
 			<label htmlFor="my-input">Choose ice cream</label>
 			<br />
 			{/* @ts-expect-error */}
-			<u-combobox ref={ref} oncomboboxbeforeselect={handleBeforeSelect}>
+			<u-combobox ref={ref} data-multiple oncomboboxbeforeselect={handleBeforeSelect}>
 				<select></select>
 				{selected.map((opt) => (
 					<data key={opt}>{opt}</data>
 				))}
 				<input
+					autoFocus
 					id="my-input"
 					onInput={(e) => console.log("onInput", e.currentTarget.value)}
 				/>

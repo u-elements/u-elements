@@ -20,12 +20,14 @@
       .hei {
         border: 2px solid rebeccapurple;
       }
+      label {
+        display: block;
+      }
 
       u-tab { padding: 2px 5px }
       u-tab[aria-selected="true"] { background: black; color: white }
       u-tabpanel { padding: 10px; border: 1px solid }
 
-      u-tags { border: 2px solid; border-radius: 4px; display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; padding: 5px; }
       u-option[selected] { color: red; font-weight: bold; }
 
       u-datepicker {
@@ -73,66 +75,19 @@
     <script type="module" src="/packages/u-details/polyfill.ts"></script>
     <script type="module" src="/packages/u-progress/u-progress.ts"></script>
     <script type="module" src="/packages/u-tabs/u-tabs.ts"></script>
-    <script type="module" src="/packages/u-tags/u-tags.ts"></script>
   </head>
   <body>
     <main>
       <br>
       <button type="button" name="before">Før</button>
       <br>
-      <div hidden>
-        <label style="display: block;">
-          Label 1
-          <br aria-hidden="true"><u-progress value="5" max="20">70%</u-progress>
-        </label>
-        <br>
-        <label style="display: block;" for="my-for-progress">Label 2</label>
-        <u-progress id="my-for-progress" value="5" max="10">70%</u-progress>
-        <br>
-        <br>
-      </div>
-      <form hidden>
-        <input type="date" name="dato" value="2025-12-02" />
-        <u-datepicker
-          data-value="2025-12-02, 2025-12-03, 2025-12-04"
-          data-disabled="2025-12-20"
-          data-week="Uke"
-          data-months="2"
-        >
-          <!-- <span slot="prev-icon">Tilbake</span> -->
-          <!-- <button slot="prev" type="button" aria-label="Forrige måned">Forrige</button> -->
-          <!-- <button slot="next" type="button" aria-label="Neste måned" class="hei">&rarr;</button> -->
-          <time slot="2025-12-07-after">FEST!</time>
-          <time slot="2025-12-24">🎄</time>
-        </u-datepicker>
-        <!-- <button type="submit">Send</button> -->
-      </form>
-      <form>
-      <label for="my-a11y-input">Velg type iskrem</label>
-      <br aria-hidden="true" />
-      <u-combobox
-        data-multiple
-        data-creatabl
-        data-nochips
-        data-sr-added="La til"
-        data-sr-empty="Ingen valgte"
-        data-sr-found="Naviger til venstre for å finne %d valgte"
-        data-sr-of="av"
-        data-sr-remove="Trykk for å fjerne"
-        data-sr-removed="Fjernet"
-      >
-        <select name="test" style="width:100px" hidden></select>
-        <data>Jordbær</data>
-        <data>Oslo</data>
-        <data>Lakris</data>
-        <input type="text" id="my-a11y-input">
-        <del aria-label="Fjern tekst">&times;</del>
-        <u-datalist>
-          <!-- <u-option value="https://u-elements.github.io/u-elements/elements/u-datalist">u-datalist</u-option>
-          <u-option value="https://u-elements.github.io/u-elements/elements/u-progress">u-progress</u-option>
-          <u-option value="https://u-elements.github.io/u-elements/elements/u-details">u-details</u-option>
-          <u-option value="https://u-elements.github.io/u-elements/elements/u-combobox">u-combobox</u-option>
-          <u-option value="">Empty value</u-option> -->
+      <br>
+      <!-- <label>
+        Velg type iskrem
+        <br aria-hidden="true" />
+        <input list="my-list" />
+      </label>
+      <u-datalist id="my-list" hidden>
           <u-option value="2" label="Kokkos">Kokkos<div>Hei</div></u-option>
           <u-option>Jordbær</u-option>
           <u-option value="4" label="Sjokolade">Sjokolade (utgått)</u-option>
@@ -143,58 +98,100 @@
           <u-option>Pistasj</u-option>
           <u-option>Mango</u-option>
           <u-option>Hasselnøtt</u-option>
-        </u-datalist>
-      </u-combobox>
-      <code></code>
-    </form>
-      <template type="module">
+        </u-datalist> -->
+      <!-- <div>
+        <label>
+          Label 1
+          <br aria-hidden="true"><u-progress value="5" max="20">70%</u-progress>
+        </label>
+        <label for="my-for-progress">Label 2</label>
+        <u-progress id="my-for-progress" value="5" max="10">70%</u-progress>
+        <br>
+        <br>
+      </div> -->
+      <form hidden>
+        <input type="date" name="dato" value="2025-12-02" />
+        <mu-datepicker
+          data-value="2025-12-02, 2025-12-03, 2025-12-04"
+          data-disabled="2025-12-20"
+          data-week="Uke"
+          data-months="2"
+        >
+          <!-- <span slot="prev-icon">Tilbake</span> -->
+          <!-- <button slot="prev" type="button" aria-label="Forrige måned">Forrige</button> -->
+          <!-- <button slot="next" type="button" aria-label="Neste måned" class="hei">&rarr;</button> -->
+          <time slot="2025-12-07-after">FEST!</time>
+          <time slot="2025-12-24">🎄</time>
+        </mu-datepicker>
+        <!-- <button type="submit">Send</button> -->
+      </form>
+      <form>
+        <label for="input-1">Velg type iskrem</label>
+        <u-combobox
+          data-creatable
+          data-multiple
+          data-sr-added="La til"
+          data-sr-empty="Ingen valgte"
+          data-sr-found="Naviger til venstre for å finne %d valgte"
+          data-sr-invalid="Ugyldig verdi"
+          data-sr-items="Valgte"
+          data-sr-of="av"
+          data-sr-remove="Trykk for å fjerne"
+          data-sr-removed="Fjernet"
+        >
+          <select name="test" hidden></select>
+          <u-comboboxitems>
+            <data>Jordbær</data>
+            <data>Oslo</data>
+            <data>Lakris</data>
+          </u-comboboxitems>
+          <input id="input-1">
+          <del></del>
+          <!-- <datalist>
+            <option value="2" label="Kokkos">Kokkos<div>Hei</div></option>
+            <option>Jordbær</option>
+            <option value="4" label="Sjokolade">Sjokolade (utgått)</option>
+            <option>Vanilje</option>
+            <option>Oslo</option>
+            <option>Oslofjorden</option>
+            <option>Lakris</option>
+            <option>Pistasj</option>
+            <option>Mango</option>
+            <option>Hasselnøtt</option>
+          </datalist> -->
+          <u-datalist hidden>
+            <u-option value="2" label="Kokkos">Kokkos<div>Hei</div></u-option>
+            <u-option>Jordbær</u-option>
+            <u-option value="4" label="Sjokolade">Sjokolade (utgått)</u-option>
+            <u-option>Vanilje</u-option>
+            <u-option>Oslo</u-option>
+            <u-option>Oslofjorden</u-option>
+            <u-option>Lakris</u-option>
+            <u-option>Pistasj</u-option>
+            <u-option>Mango</u-option>
+            <u-option>Hasselnøtt</u-option>
+          </u-datalist>
+        </u-combobox>
+      </form>
+      <script type="module">
         const combobox = document.querySelector('u-combobox');
-        const input = document.getElementById('my-a11y-input');
-        const list = combobox.list;
-
-        combobox.addEventListener('click', (event) => {
-          const { metaKey, ctrlKey, target } = event;
-          const option = target instanceof Element && target.closest('u-option');
-
-          if (option) {
-            event.preventDefault(); // Prevent filling input
-            if (metaKey || ctrlKey) window.open(option.value);
-            else window.location.href = option.value;
-          }
-        });
-
-        combobox.addEventListener('keydown', (event) => {
-          const { key, target } = event;
-          const input = target instanceof Element && target.closest('input');
-
-          if (key === 'Enter') input?.form.submit();
-        });
-
-        // input.addEventListener('input', console.log);
-        // combobox.addEventListener('comboboxbeforeselect', (event) => {
-        //   // console.log("Before change", event);
-        //   event.preventDefault();
-
-        //   if (event.detail.isConnected) event.detail.remove();
-        //   else {
-        //     for(const item of [...event.target.items]) item.remove();
-        //     event.target.prepend(event.detail);
-        //   }
-        // });
-        // combobox.addEventListener('beforematching', (event) => {
-        //   event.preventDefault();
-        //   const query = input.value.toLowerCase().trim();
-        //   for(const opt of input.list.options) {
-        //     opt.selected = query ? opt.label.toLowerCase().trim().startsWith(query) : false;
-        //   }
-        // });
-
-        // const input = document.getElementById('my-a11y-input');
-        let _debounceTimer; // Debounce so we do not spam API
         const xhr = new XMLHttpRequest(); // Easy to abort
+        let debounceTimer; // Debounce so we do not spam API
+
+        // combobox.addEventListener('comboboxbeforematch', (event) => {
+        //   event.preventDefault();
+        //   const input = combobox.control;
+        //   const query = input.value.toLowerCase().trim();
+        //   console.log("Before match", { value: input.value });
+
+        //   for(const opt of input.list.options) {
+        //     opt.selected = !!query && opt.label.toLowerCase().trim().startsWith(query);
+        //   }
+        // });
 
         // Same handler every time
         xhr.addEventListener('load', () => {
+          const list = combobox.control.list;
           try {
             list.replaceChildren(...JSON.parse(xhr.responseText).map((country) => {
               const option = document.createElement('u-option');
@@ -202,35 +199,101 @@
               return option;
             }));
           } catch (_err) {
-            list.innerHTML = '<u-option role="none">No results</u-option>';
+            list.innerHTML = '<u-option value="">No results</u-option>';
           }
         });
 
-        input.addEventListener('input', (_event) => {
-          const _value = encodeURIComponent(input.value.trim());
-          // console.log('Input event', value);
-          // list.innerHTML = value ? '<u-option role="none">Loading</u-option>' : '';
+        combobox.addEventListener('input', () => {
+          const { list, value } = combobox.control;
+          const query = encodeURIComponent(value.trim());
+          // list.innerHTML = query ? '<u-option value="">Loading</u-option>' : '';
           
           // xhr.abort();
           // clearTimeout(debounceTimer);
 
-          // if (value) {
+          // if (query) 
           //   debounceTimer = setTimeout(() => {
-          //     console.log("Loading", value);
-          //     xhr.open('GET', `https://restcountries.com/v2/name/${value}?fields=name`, true);
+          //     xhr.open('GET', `https://restcountries.com/v2/name/${query}?fields=name`, true);
           //     xhr.send();
           //   }, 600);
-          // } 
         });
-      </template>
-      <!-- <label>
-        Nested label of apple
-        <br aria-hidden="true"><u-progress value="5" max="10">70%</u-progress>
-      </label>
-      <br /><label for="my-for-progress">For label of apple</label>
-      <br><u-progress id="my-for-progress" value="5" max="10">70%</u-progress>
-      <br /><span id="label-for-progress">Labelledby of apple</span>
-      <br><u-progress aria-labelledby="label-for-progress" value="5" max="10">70%</u-progress>
+
+        // const combobox = document.querySelector('u-combobox');
+        // const input = document.getElementById('my-a11y-input');
+        // const list = combobox.list;
+
+        // combobox.addEventListener('click', (event) => {
+        //   const { metaKey, ctrlKey, target } = event;
+        //   const option = target instanceof Element && target.closest('u-option');
+
+        //   if (option) {
+        //     event.preventDefault(); // Prevent filling input
+        //     if (metaKey || ctrlKey) window.open(option.value);
+        //     else window.location.href = option.value;
+        //   }
+        // });
+
+        // combobox.addEventListener('keydown', (event) => {
+        //   const { key, target } = event;
+        //   const input = target instanceof Element && target.closest('input');
+
+        //   if (key === 'Enter') input?.form.submit();
+        // });
+
+        // input.addEventListener('input', console.log);
+        // combobox.addEventListener('comboboxbeforeselect', (event) => {
+        //   console.log("Before change", event);
+        //   event.preventDefault();
+
+        //   // if (event.detail.isConnected) event.detail.remove();
+        //   // else {
+        //   //   for(const item of [...event.target.items]) item.remove();
+        //   //   event.target.prepend(event.detail);
+        //   // }
+        // });
+        // combobox.addEventListener('comboboxbeforematch', (event) => {
+        //   event.preventDefault();
+        //   const query = input.value.toLowerCase().trim();
+        //   for(const opt of input.list.options) {
+        //     opt.selected = query ? opt.label.toLowerCase().trim().startsWith(query) : false;
+        //   }
+        // });
+
+        // // const input = document.getElementById('my-a11y-input');
+        // let _debounceTimer; // Debounce so we do not spam API
+        // const xhr = new XMLHttpRequest(); // Easy to abort
+
+        // // Same handler every time
+        // xhr.addEventListener('load', () => {
+        //   try {
+        //     list.replaceChildren(...JSON.parse(xhr.responseText).map((country) => {
+        //       const option = document.createElement('u-option');
+        //       option.text = country.name;
+        //       return option;
+        //     }));
+        //   } catch (_err) {
+        //     list.innerHTML = '<u-option role="none">No results</u-option>';
+        //   }
+        // });
+
+        // input.addEventListener('input', (_event) => {
+        //   const value = encodeURIComponent(input.value.trim());
+        //   console.log('Input event', value);
+        //   list.innerHTML = value ? '<u-option role="none">Loading</u-option>' : '';
+          
+        //   xhr.abort();
+        //   clearTimeout(debounceTimer);
+
+        //   if (value) {
+        //     debounceTimer = setTimeout(() => {
+        //       console.log("Loading", value);
+        //       xhr.open('GET', `https://restcountries.com/v2/name/${value}?fields=name`, true);
+        //       xhr.send();
+        //     }, 600);
+        //   } 
+        // });
+      </script>
+      <!--
       <br>
       <br>
       <br>
@@ -363,11 +426,12 @@
       <u-datepicker-item>10</u-datepicker-item>
       <table></table> -->
 
-      <details>
+      <details hidden>
         <summary>Et spørsmål</summary>
         Et svar
       </details>
-      <button>Etter</button>
+      <br />
+      <button type="button">Etter</button>
       <!-- <u-details>
         <template shadowrootmode="open">
           <slot name="summary"></slot>
@@ -383,15 +447,7 @@
         <u-summary slot="summary">Åpne/lukk</u-summary>
         <div>Innhold</div>
       </u-details> -->
-      <!-- <template></template> -->
-      <u-test></u-test>
-      <!-- <br>
-      <br>
-      <br><label for="my-for-progress">For label of apple</label>
-      <br><u-progress id="my-for-progress" value="5" max="20">70%</u-progress>
-      <br><label>Aria-label of apple
-      <br><u-progress aria-label="This is the aria-label" id="my-progress" value="20" max="30">30%</u-progress></label>
-      <br> -->
+      <!-- <u-test></u-test> -->
       <script>
         // setTimeout(() => {
         //   let i = 0
@@ -414,10 +470,20 @@
         //   })
         // }, 200)
       </script>
-      <script>
+      <script type="module">
+        import { attachStyle } from '/packages/utils'
+
         class UTest extends HTMLElement {
           connectedCallback() {
             const shadowRoot = this.attachShadow({ mode: 'open' })
+            attachStyle(this, `
+              u-tab { padding: 2px 5px }
+              u-tab[aria-selected="true"] { background: black; color: white }
+              u-tabpanel { padding: 10px; border: 1px solid }
+              u-option[selected] { color: red }
+              input { font-size: inherit }
+            `)
+
             shadowRoot.innerHTML = `
               <u-tabs>
                 <u-tablist>
@@ -442,26 +508,6 @@
                 <u-tabpanel>Panel 3 with <a href="#">link</a></u-tabpanel>
                 <u-tabpanel>Panel 4 with <a href="#">link</a></u-tabpanel>
               </u-tabs>
-              <br>
-              <u-details name="group-1">
-                <u-summary>Test 1</u-summary>
-                <div>Innhold 1</div>
-                <div>Innhold 2</div>
-                <div>Innhold 3</div>
-                Innhold 4
-              </u-details>
-              <u-details name="group-1">
-                <u-summary>Test 2</u-summary>
-                <div>Innhold test 2</div>
-              </u-details>
-              <br>
-              <style>
-                u-tab { padding: 2px 5px }
-                u-tab[aria-selected="true"] { background: black; color: white }
-                u-tabpanel { padding: 10px; border: 1px solid }
-                u-option[selected] { color: red }
-                input { font-size: inherit }
-              </style>
               <u-tabpanel id="panel-outlier">Panel outlier</u-tabpanel>
             `;
           }

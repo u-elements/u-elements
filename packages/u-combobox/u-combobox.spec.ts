@@ -7,9 +7,11 @@ test.beforeEach(async ({ page }) => {
 		document.body.innerHTML = `
 			<label for="my-tags">My label</label>
 			<u-combobox data-multiple>
-				<data>Tag 1</data>
-				<data>Tag 2</data>
-				<data value="tag-3">Tag 3</data>
+					<u-comboboxitems>
+					<data>Tag 1</data>
+					<data>Tag 2</data>
+					<data value="tag-3">Tag 3</data>
+				</u-comboboxitems>
 				<input id="my-tags" list="my-list" />
 				<u-datalist id="my-list">
 					<u-option>Tag 1</u-option>
@@ -60,15 +62,23 @@ test.describe("u-combobox", () => {
 	});
 
 	test("sets up attributes", async ({ page }) => {
+		const browser = test.info().project.name;
+		const IS_IOS = browser === "Mobile Safari";
+		const IS_ANDROID = browser === "Mobile Chrome";
+
 		const uDatalist = page.locator("u-datalist");
 		const uOption = page.locator("u-option");
 		const input = page.locator("input");
 		const items = page.locator("data");
 		const itemsCount = await items.count();
-		const inputLabel = `My label, Navigate left to find ${itemsCount} selected${"\u{200B}".repeat(5)}`;
+		const inputDesctipion = `Navigate left to find ${itemsCount} selected`;
 
-		await expect(input).toHaveAttribute("aria-label", inputLabel);
-		await expect(uDatalist).toHaveAttribute("aria-multiselectable", "true");
+		await expect(input).toHaveAttribute("aria-description", inputDesctipion);
+		await expect(uDatalist).toHaveAttribute(
+			`${IS_ANDROID ? "data" : "aria"}-multiselectable`,
+			"true",
+		);
+
 		await expect(uOption.nth(0)).toHaveAttribute("selected");
 		await expect(uOption.nth(1)).toHaveAttribute("selected");
 		await expect(uOption.nth(2)).toHaveAttribute("selected");
@@ -78,31 +88,21 @@ test.describe("u-combobox", () => {
 		await expect(items.nth(2)).toHaveAttribute("value", "tag-3");
 
 		for (let i = 0; i < itemsCount; i++) {
-			const label = `Tag ${i + 1}, Press to remove`;
+			const label = `Tag ${i + 1}, Press to remove${IS_IOS ? `, ${i + 1} of ${itemsCount}` : ""}`;
 			await expect(items.nth(i)).toHaveAttribute("role", "option");
 			await expect(items.nth(i)).toHaveAttribute("tabindex", "-1");
 			await expect(items.nth(i)).toHaveAttribute("aria-label", label);
 		}
 	});
 
-	// Need another test, as live is no longer added and removed
-	// test("responds on focus and blur", async ({ page }) => {
-	// 	const input = page.locator("input");
-	// 	const live = page.locator("[aria-live]");
-	// 	const items0 = page.locator("data").nth(0);
-	// 	const uOption0 = page.locator("u-option").nth(0);
+	test("responds on focus and blur", async ({ page }) => {
+		const input = page.locator("input");
+		const live = page.locator("[aria-live]");
 
-	// 	await expect(live).not.toBeAttached();
-	// 	await input.focus();
-	// 	await expect(live).toBeAttached();
-	// 	await items0.focus();
-	// 	await expect(live).toBeAttached();
-	// 	await uOption0.focus();
-	// 	await expect(live).toBeAttached();
-	// 	await input.focus();
-	// 	await input.blur();
-	// 	await expect(live).not.toBeAttached();
-	// });
+		await expect(live).not.toBeAttached();
+		await input.focus();
+		await expect(live).toBeAttached();
+	});
 
 	test("handles keyboard arrow navigation", async ({ page }) => {
 		const input = page.locator("input");
@@ -156,17 +156,21 @@ test.describe("u-combobox", () => {
 		await input.press("ArrowRight");
 		await expect(input).toBeFocused(); // Should not cycle, so staying on input is correct
 
+		await input.evaluate<void, HTMLInputElement>((input) => {
+			input.selectionStart = input.selectionEnd = 0; // Set caret to start of text
+		});
 		await input.press("Backspace");
 		await expect(items.nth(2)).toBeFocused();
 
 		await items.nth(2).press("Backspace");
 		await expect(items.nth(2)).not.toBeAttached();
-		await expect(input).toBeFocused();
+		await expect(items.nth(1)).toBeFocused();
 	});
 
 	test("handles keyboard creation and removal", async ({ page }) => {
 		const input = page.locator("input");
 		const live = page.locator("[aria-live='assertive']");
+		const item2 = page.locator("data").nth(2);
 		const item3 = page.locator("data").nth(3);
 
 		await input.focus();
@@ -185,7 +189,7 @@ test.describe("u-combobox", () => {
 		await item3.focus();
 		await item3.press("Enter");
 		await expect(item3).not.toBeAttached();
-		await expect(input).toBeFocused();
+		await expect(item2).toBeFocused();
 	});
 
 	// TODO: Does not make announcements when blurred

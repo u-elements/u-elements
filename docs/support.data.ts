@@ -166,6 +166,10 @@ const skip = [
 	"array.entries",
 	"attr.name",
 	"attr.value",
+	"cssstylesheet.replacesync", // Ignored because support is optional
+	"cssstylesheet.replace", // Ignored because support is optional
+	"shadowroot.adoptedstylesheets", // Ignored because support is optional
+	"document.adoptedstylesheets", // Ignored because support is optional
 	"document.append",
 	"document.children",
 	"document.hidden",

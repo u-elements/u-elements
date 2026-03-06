@@ -1,7 +1,8 @@
 import {
+	attachStyle,
 	attr,
-	createElement,
 	customElements,
+	debounce,
 	declarativeShadowRoot,
 	getLabel,
 	getRoot,
@@ -25,14 +26,13 @@ export const UHTMLProgressStyle = `:host(:not([hidden])) { box-sizing: border-bo
 export const UHTMLProgressShadowRoot =
 	declarativeShadowRoot(UHTMLProgressStyle);
 
-// Skip attributeChangedCallback caused by attributeChangedCallback
-let SKIP_ATTR_CHANGE = false;
-
 /**
  * The `<u-progress value="70" max="100">` HTML element displays an indicator showing the completion progress of a task, typically displayed as a progress bar.
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/progress)
  */
 export class UHTMLProgressElement extends UHTMLElement {
+	_render?: () => void; // Using underscore instead of private fields for backwards compatibility
+
 	// Prevent Chrome DevTools warning about <label for=""> pointing to <u-progress>
 	static formAssociated = true;
 
@@ -42,37 +42,23 @@ export class UHTMLProgressElement extends UHTMLElement {
 	}
 	constructor() {
 		super();
-		if (!this.shadowRoot)
-			this.attachShadow({ mode: "open" }).append(
-				createElement("style", UHTMLProgressStyle),
-			);
+		attachStyle(this, UHTMLProgressStyle);
 	}
 	connectedCallback() {
-		this.attributeChangedCallback(); // We now know the element is in the DOM, so run a attribute setup
+		render(this); // We now know the element is in the DOM, so run a attribute setup before connecting attributeChangedCallback
+		this._render = debounce(() => render(this), 0); // Using debounce to squash multiple mutations into one render
 	}
 	attributeChangedCallback() {
-		if (SKIP_ATTR_CHANGE) return; // Skip attributeChangedCallback caused by attributeChangedCallback
-		SKIP_ATTR_CHANGE = true;
-		const percentage = Math.max(0, Math.round(this.position * 100)); // Always use percentage as iOS role="progressbar"
-		this.style.setProperty("--percentage", `${percentage}%`); // Write style before any read operation to avoid excess animation
-		let label = getLabel(this); // Uses innerText so must be after setting this.style
-
-		if (IS_IOS) label = `${label.replace(/\d+%$/, "")} ${percentage}%`; // Replace removes previously added percentage
-		attr(this, "aria-busy", `${this.position === -1}`); // true if indeterminate
-		attr(this, "aria-label", label.trim()); // Must use aria-label to include percentage value
-		attr(this, "aria-labelledby", null); // Since we always want to use aria-label
-		attr(this, "aria-valuemax", "100");
-		attr(this, "aria-valuemin", "0");
-		attr(this, "aria-valuenow", `${percentage}`);
-		attr(this, "role", IS_IOS ? "img" : "progressbar"); // iOS does not announce amount, so we use img and percentage
-
-		SKIP_ATTR_CHANGE = false;
+		this._render?.();
+	}
+	disconnectedCallback() {
+		this._render = undefined;
 	}
 	get labels(): NodeListOf<HTMLLabelElement> {
 		const label = this.closest<HTMLLabelElement>("label:not([for])");
 		const id = useId(this);
 
-		if (label) label.htmlFor = id; // Set for of parent label to include it in returned NodeList
+		if (label) attr(label, "for", id); // Set for of parent label to include it in returned NodeList
 		const el = getRoot(this).querySelectorAll<HTMLLabelElement>(
 			`label[for="${id}"]`,
 		);
@@ -94,6 +80,21 @@ export class UHTMLProgressElement extends UHTMLElement {
 		setNumber(this, "max", max);
 	}
 }
+
+const render = (self: UHTMLProgressElement) => {
+	const percentage = Math.max(0, Math.round(self.position * 100)); // Always use percentage as iOS role="progressbar"
+	self.style.setProperty("--percentage", `${percentage}%`); // Write style before any read operation to avoid excess animation
+	let label = getLabel(self); // Uses innerText so must be after setting self.style
+
+	if (IS_IOS) label = `${label.replace(/\d+%$/, "")} ${percentage}%`; // Replace removes previously added percentage
+	attr(self, "aria-busy", `${self.position === -1}`); // true if indeterminate
+	attr(self, "aria-label", label.trim()); // Must use aria-label to include percentage value
+	attr(self, "aria-labelledby", null); // Since we always want to use aria-label
+	attr(self, "aria-valuemax", "100");
+	attr(self, "aria-valuemin", "0");
+	attr(self, "aria-valuenow", `${percentage}`);
+	attr(self, "role", IS_IOS ? "img" : "progressbar"); // iOS does not announce amount, so we use img and percentage
+};
 
 const isNumeric = (value: unknown): value is number | string =>
 	!Number.isNaN(Number.parseFloat(`${value}`)) &&

@@ -52,3 +52,6 @@ Here are the web features used by `u-elements` that are not yet fully supported 
   </tbody>
 </table>
 
+## Content Security Policy (CSP)
+
+`u-elements` uses [constructable stylesheets](https://web.dev/articles/constructable-stylesheets) to inject styles. If the browser does not support constructable stylesheets (iOS 16.3 and older), `u-elements` will fall back to instead inject an inline `<style>` element. Be aware that if you enforce a strict Content Security Policy that blocks the `style-src-elem` directive, these inline `<style>` elements will be blocked as well and thus cause styling issues for users on iOS 16.3 and older.

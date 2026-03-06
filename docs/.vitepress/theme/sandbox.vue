@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import * as datalist from "../../../packages/u-datalist/u-datalist";
 import "../../../packages/u-details/polyfill";
 
 const { label, lang } = defineProps<{ label: string; lang?: string }>();
@@ -20,7 +19,6 @@ const demo = ref<HTMLElement | null>(null);
 const updateView = () => {
 	if (!view.value) return;
 	view.value.innerHTML = code.value;
-	Object.assign(window, datalist); // Special handle utils exported from u-datalist
 
 	for (const script of view.value.querySelectorAll("script"))
 		Function(script.textContent?.replace(/import [^;]+;/g, "") || "")(); // Exec scripts

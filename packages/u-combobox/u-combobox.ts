@@ -404,8 +404,9 @@ const syncInputWithItemSingleMode = (self: UHTMLComboboxElement) => {
 };
 
 export const UHTMLComboboxItemsStyle = `:host(:not([hidden])) { display: inline-flex }${DataStyles}`;
-export const UHTMLComboboxItemsShadowRoot =
-	declarativeShadowRoot(UHTMLComboboxStyle);
+export const UHTMLComboboxItemsShadowRoot = declarativeShadowRoot(
+	UHTMLComboboxItemsStyle,
+);
 
 /**
  * The `<u-comboboxitems>` HTML element contains a set of `<data>` elements.

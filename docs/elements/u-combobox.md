@@ -89,7 +89,7 @@ bun add -S @u-elements/u-combobox
   - `data-sr-remove` announces ability to remove. Defaults to `"Press to remove"`
   - `data-sr-of` separates "number _of_ total" in announcements. Defaults to `"of"`
   - `data-sr-items` screen reader label for listbox containing selected items. Defaults to `"Selected"`
-  - `data-sr-invalid` announces if trying to select invalid value. Defaults to `"Invalid value""`
+  - `data-sr-invalid` announces if trying to select invalid value. Defaults to `"Invalid value"`
   - `data-sr-found` announces where to find amount of selected items. Defaults to `"Navigate left to find %d selected"`
   - `data-sr-empty` announces no selected items. Defaults to `"No selected"`
   - `data-sr-clear` screen reader label for clear button. Defaults to `"Clear input"`
@@ -97,7 +97,7 @@ bun add -S @u-elements/u-combobox
 - **DOM interface:** `UHTMLComboboxElement` extends [`HTMLElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement)
   - `UHTMLComboboxElement.clear` returns `HTMLModElement | null`
   - `UHTMLComboboxElement.control` returns `HTMLInputElement | null`
-  - `UHTMLComboboxElement.itemsElement` returns `UHTMLComboboxElement | null`
+  - `UHTMLComboboxElement.itemsElement` returns `HTMLElement | null`
   - `UHTMLComboboxElement.items` returns `HTMLCollectionOf<HTMLDataElement>`
   - `UHTMLComboboxElement.list` returns `HTMLDataListElement | null`
   - `UHTMLComboboxElement.options` returns `HTMLCollectionOf<HTMLOptionElement>`
@@ -163,7 +163,7 @@ myCombobox.addEventListener('comboboxbeforematch', (event) => {
   data-sr-empty="Ingen valgte"
   data-sr-found="Naviger til venstre for å finne %d valgte"
   data-sr-invalid="Ugyldig verdi"
-  data-sr-items="Valge"
+  data-sr-items="Valgte"
   data-sr-of="av"
   data-sr-remove="Trykk for å fjerne"
   data-sr-removed="Fjernet"

@@ -9,7 +9,6 @@ import {
 	getFocused,
 	off,
 	on,
-	tag,
 	UHTMLElement,
 } from "../utils";
 
@@ -35,7 +34,18 @@ type DateValue = Date | number | string;
 const EVENTS = "click input focusin keydown pointerdown pointerup";
 const ENGLISH_DAYS = "sun mon tues wednes thurs fri satur"
 	.replace(/( |$)/g, "day$1")
-	.split(",");
+	.split(" ");
+
+export const createEl = <TagName extends keyof HTMLElementTagNameMap>(
+	tagName: TagName,
+	attrs?: Record<string, string>,
+	html?: string | null,
+): HTMLElementTagNameMap[TagName] => {
+	const el = document.createElement(tagName);
+	if (html) el.innerHTML = html;
+	if (attrs) for (const [key, val] of Object.entries(attrs)) attr(el, key, val);
+	return el;
+};
 
 /**
  * The `<u-datepicker>` HTML element contains lets you pick a date from a grid.
@@ -57,30 +67,31 @@ export class UHTMLDatePickerElement extends UHTMLElement {
 	}
 	constructor() {
 		super();
-		this.attachShadow({ mode: "open" }).append(
-			tag(
-				"slot",
-				{ part: "controls", name: "controls" },
-				`<slot name="month"><select name="month" part="month">${Array.from({ length: 12 }, (_, i) => `<option value="${i}"></option>`).join("")}</select></slot>
+		if (!this.shadowRoot)
+			this.attachShadow({ mode: "open" }).append(
+				createEl(
+					"slot",
+					{ part: "controls", name: "controls" },
+					`<slot name="month"><select name="month" part="month">${Array.from({ length: 12 }, (_, i) => `<option value="${i}"></option>`).join("")}</select></slot>
 				<slot name="year"><input name="year" part="year" type="number" /></slot>
 				<slot name="prev"><button name="prev" part="prev" type="button"><slot name="prev-icon">&larr;</slot></button></slot>
 				<slot name="next"><button name="next" part="next" type="button"><slot name="next-icon">&rarr;</slot></button></slot>`,
-			),
-			tag(
-				"table",
-				{ part: "table" },
-				`<thead part="thead" aria-hidden="true"><tr part="tr days"><th scope="col"><slot name="week"></slot></th>${`<th scope="col"><slot name="-"></slot></th>`.repeat(7)}</tr></thead>
+				),
+				createEl(
+					"table",
+					{ part: "table" },
+					`<thead part="thead" aria-hidden="true"><tr part="tr days"><th scope="col"><slot name="week"></slot></th>${`<th scope="col"><slot name="-"></slot></th>`.repeat(7)}</tr></thead>
 				<tbody part="tbody">${`<tr role="row"><th scope="row" part="weeknumber"><slot name="-"></slot></th>${`<td part="td"><button type="button" part="date"><slot name="-before"></slot><slot name="-"></slot><slot name="-after"></slot></button></td>`.repeat(7)}</tr>`.repeat(6)}</tbody>
 			`,
-			),
-			tag(
-				"table",
-				{ part: "table" },
-				`<thead part="thead" aria-hidden="true"><tr part="tr days"><th scope="col"><slot name="week"></slot></th>${`<th scope="col"><slot name="-"></slot></th>`.repeat(7)}</tr></thead>
+				),
+				createEl(
+					"table",
+					{ part: "table" },
+					`<thead part="thead" aria-hidden="true"><tr part="tr days"><th scope="col"><slot name="week"></slot></th>${`<th scope="col"><slot name="-"></slot></th>`.repeat(7)}</tr></thead>
 				<tbody part="tbody">${`<tr role="row"><th scope="row" part="weeknumber"><slot name="-"></slot></th>${`<td part="td"><button type="button" part="date"><slot name="-before"></slot><slot name="-"></slot><slot name="-after"></slot></button></td>`.repeat(7)}</tr>`.repeat(6)}</tbody>
 			`,
-			),
-		);
+				),
+			);
 		attachStyle(
 			this,
 			`:host(:not([hidden])) { display: flex; flex-wrap: wrap; gap: 1em; background: Canvas; color: CanvasText }

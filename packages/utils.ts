@@ -42,7 +42,7 @@ export const attr = (
 	name: string,
 	value?: string | null,
 ): string | null => {
-	if (value === undefined) return el.getAttribute(name) ?? null; // Fallback to null only if el is undefined
+	if (value === undefined) return el.getAttribute(name);
 	if (value === null) el.removeAttribute(name);
 	else if (el.getAttribute(name) !== value) el.setAttribute(name, value);
 	return null;
@@ -105,7 +105,7 @@ export const attachStyle = (el: Element, css: string) => {
 
 /**
  * Speed up MutationObserver by debouncing and only running when page is visible
- * @return new MutaionObserver
+ * @return new MutationObserver
  */
 export const onMutation = (
 	el: Node,

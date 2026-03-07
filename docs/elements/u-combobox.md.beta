@@ -9,15 +9,15 @@ import { data } from '../filesize.data.ts'
 `<u-combobox>` extends `<datalist>` with support for multiselect, separate label and programmatic value and clear button. While these features are [not yet](https://open-ui.org/components/combobox.explainer/) part of any official ARIA pattern or HTML element, `<u-combobox>` adhere closely to HTML conventions.
 
 **Quick intro:**
-- Use `<data>` as direct child elements - these are the removable items
+- Use `<u-comboboxitems>` as a child of `<u-combobox>` - this will contain selected items
+- Use `<data>` as direct children of `<u-comboboxitems>` - these are the removable items
 - Use `<input>` and `<u-datalist>` to allow adding and suggesting items
 - Use `<del>` between `input` and `datalist` to create a clear button
 - Use `data-multiple` to allow selecting multiple items
 - Use `data-creatable` to allow creating items not in the list
-- Use `data-*` attributes to translate screen reader announcements
+- Use `data-sr-*` attributes to translate screen reader announcements
 - Use `comboboxbeforeselect`, `comboboxafterselect` and `comboboxbeforematch` events to manipulate state
 - Add `<select>` as child for `FormData` or form submittion compatibility
-- Use matching `id` on `<input>` and `for` attribute on `<label>` to connect
 - **MDN Web Docs:** [&lt;data&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/data) ([HTMLDataElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDataElement)) / [&lt;input&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input) ([HTMLInputElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement)) / [&lt;datalist&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist) ([HTMLDatalistElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDatalistElement)) / [&lt;option&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option) ([HTMLOptionElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLOptionElement))
 
 
@@ -29,13 +29,15 @@ import { data } from '../filesize.data.ts'
   Choose flavor of ice cream
 &lt;/label&gt;
 &lt;u-combobox data-multiple&gt;
-  &lt;data&gt;Coconut&lt;/data&gt;
-  &lt;data&gt;Banana&lt;/data&gt;
-  &lt;data&gt;Pineapple&lt;/data&gt;
-  &lt;data&gt;Orange&lt;/data&gt;
-  &lt;input id="my-input" list="my-list" /&gt;
-  &lt;del aria-label="Clear text"&gt;&times;&lt;/del&gt;
-  &lt;u-datalist id="my-list" data-sr-singular="%d flavor" data-sr-plural="%d flavours"&gt;
+  &lt;u-comboboxitems&gt;
+    &lt;data&gt;Coconut&lt;/data&gt;
+    &lt;data&gt;Banana&lt;/data&gt;
+    &lt;data&gt;Pineapple&lt;/data&gt;
+    &lt;data&gt;Orange&lt;/data&gt;
+  &lt;/u-comboboxitems&gt;
+  &lt;input id="my-input" /&gt;
+  &lt;del&gt;&times;&lt;/del&gt;
+  &lt;u-datalist data-sr-singular="%d flavor" data-sr-plural="%d flavours" hidden&gt;
     &lt;u-option&gt;Coconut&lt;/u-option&gt;
     &lt;u-option&gt;Strawberries&lt;/u-option&gt;
     &lt;u-option&gt;Chocolate&lt;/u-option&gt;
@@ -82,22 +84,28 @@ bun add -S @u-elements/u-combobox
 ## Attributes and props
 
 ### `<u-combobox>`
-
 - **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
-  - `data-sr-added` prefixes announcements about additions. Defaults to `"Added"`
   - `data-sr-removed` prefixes announcements about removals. Defaults to `"Removed"`
   - `data-sr-remove` announces ability to remove. Defaults to `"Press to remove"`
-  - `data-sr-empty` announces no selected items. Defaults to `"No selected"`
-  - `data-sr-found` announces where to find amount of selected items. Defaults to `"Navigate left to find %d selected"`
-  - `data-sr-invalid` announces if trying to select invalid value. Defaults to `"Invalid value""`
   - `data-sr-of` separates "number _of_ total" in announcements. Defaults to `"of"`
-  - `data-sr-items` aria-label for listbox containing selected items. Defaults to `"Selected"`
+  - `data-sr-items` screen reader label for listbox containing selected items. Defaults to `"Selected"`
+  - `data-sr-invalid` announces if trying to select invalid value. Defaults to `"Invalid value"`
+  - `data-sr-found` announces where to find amount of selected items. Defaults to `"Navigate left to find %d selected"`
+  - `data-sr-empty` announces no selected items. Defaults to `"No selected"`
+  - `data-sr-clear` screen reader label for clear button. Defaults to `"Clear input"`
+  - `data-sr-added` prefixes announcements about additions. Defaults to `"Added"`
 - **DOM interface:** `UHTMLComboboxElement` extends [`HTMLElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement)
+  - `UHTMLComboboxElement.clear` returns `HTMLModElement | null`
   - `UHTMLComboboxElement.control` returns `HTMLInputElement | null`
+  - `UHTMLComboboxElement.itemsElement` returns `HTMLElement | null`
   - `UHTMLComboboxElement.items` returns `HTMLCollectionOf<HTMLDataElement>`
   - `UHTMLComboboxElement.list` returns `HTMLDataListElement | null`
-  - `UHTMLComboboxElement.options` returns `HTMLCollectionOf<HTMLOptionElement> | undefined`
+  - `UHTMLComboboxElement.options` returns `HTMLCollectionOf<HTMLOptionElement>`
   - `UHTMLComboboxElement.values` returns `string[]` with `value` of each item
+
+### `<u-comboboxitems>`
+- **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
+- **DOM interface:** `UHTMLComboboxItemsElement` extends [`HTMLElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement)
 
 ### `<data>`
 - **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
@@ -152,16 +160,20 @@ myCombobox.addEventListener('comboboxbeforematch', (event) => {
 &lt;/label&gt;
 &lt;u-combobox
   data-sr-added="La til"
-  data-sr-remove="Trykk for å fjerne"
-  data-sr-removed="Fjernet"
   data-sr-empty="Ingen valgte"
   data-sr-found="Naviger til venstre for å finne %d valgte"
+  data-sr-invalid="Ugyldig verdi"
+  data-sr-items="Valgte"
   data-sr-of="av"
+  data-sr-remove="Trykk for å fjerne"
+  data-sr-removed="Fjernet"
 &gt;
-  &lt;data&gt;Kokkos&lt;/data&gt;
-  &lt;input id="my-norwegian-input" list="my-norwegian-list" /&gt;
+  &lt;u-comboboxitems&gt;
+    &lt;data&gt;Kokkos&lt;/data&gt;
+  &lt;/u-comboboxitems&gt;
+  &lt;input id="my-norwegian-input" /&gt;
   &lt;del aria-label="Fjern tekst"&gt;&times;&lt;/del&gt;
-  &lt;u-datalist id="my-norwegian-list" data-sr-singular="%d smak" data-sr-plural="%d smaker"&gt;
+  &lt;u-datalist data-sr-singular="%d smak" data-sr-plural="%d smaker" hidden&gt;
     &lt;u-option&gt;Kokkos&lt;/u-option&gt;
     &lt;u-option&gt;Jordbær&lt;/u-option&gt;
     &lt;u-option&gt;Sjokolade&lt;/u-option&gt;
@@ -190,9 +202,10 @@ myCombobox.addEventListener('comboboxbeforematch', (event) => {
 &lt;br&gt;
 &lt;small&gt;Try typing "c" and hitting "Enter"&lt;/small&gt;
 &lt;u-combobox id="my-matching-combobox"&gt;
-  &lt;input id="my-matching-input" list="my-matching-list" /&gt;
-  &lt;del aria-label="Clear text"&gt;&times;&lt;/del&gt;
-  &lt;u-datalist id="my-matching-list"&gt;
+  &lt;u-comboboxitems&gt;&lt;/u-comboboxitems&gt;
+  &lt;input id="my-matching-input" /&gt;
+  &lt;del&gt;&times;&lt;/del&gt;
+  &lt;u-datalist hidden&gt;
     &lt;u-option&gt;Coconut&lt;/u-option&gt;
     &lt;u-option&gt;Strawberries&lt;/u-option&gt;
     &lt;u-option&gt;Chocolate&lt;/u-option&gt;
@@ -231,8 +244,9 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
 &lt;br&gt;
 &lt;small&gt;Try typing "v" versus "V"&lt;/small&gt;
 &lt;u-combobox id="my-filtering-combobox"&gt;
-  &lt;input id="my-matching-input" list="my-filtering-list" /&gt;
-  &lt;u-datalist data-nofilter id="my-filtering-list"&gt;
+  &lt;u-comboboxitems&gt;&lt;/u-comboboxitems&gt;
+  &lt;input id="my-matching-input" /&gt;
+  &lt;u-datalist data-nofilter hidden&gt;
     &lt;u-option&gt;Coconut&lt;/u-option&gt;
     &lt;u-option&gt;Strawberries&lt;/u-option&gt;
     &lt;u-option&gt;Chocolate&lt;/u-option&gt;
@@ -267,9 +281,10 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
   Search for a country
 &lt;/label&gt;
 &lt;u-combobox id="my-api-combobox"&gt;
-  &lt;input id="my-api-input" list="my-api-list" /&gt;
-  &lt;del aria-label="Clear text"&gt;&times;&lt;/del&gt;
-  &lt;u-datalist id="my-api-list" data-nofilter&gt;
+  &lt;u-comboboxitems&gt;&lt;/u-comboboxitems&gt;
+  &lt;input id="my-api-input" /&gt;
+  &lt;del&gt;&times;&lt;/del&gt;
+  &lt;u-datalist data-nofilter hidden&gt;
     &lt;u-option value=""&gt;Type to search...&lt;/u-option&gt;
   &lt;/u-datalist&gt;
 &lt;/u-combobox&gt;
@@ -292,7 +307,7 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
     }
   });
 
-  combobox.addEventListener('input', (event) =&gt; {
+  combobox.addEventListener('input', () =&gt; {
     const { list, value } = combobox.control;
     const query = encodeURIComponent(value.trim());
     list.innerHTML = query ? '&lt;u-option value=""&gt;Loading&lt;/u-option&gt;' : '';
@@ -324,9 +339,10 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
   All results will be visible on load and after selection:
 &lt;/label&gt;
 &lt;u-combobox id="my-typing-combobox"&gt;
-  &lt;input id="my-typing-input" list="my-typing-list" /&gt;
-  &lt;del aria-label="Clear text"&gt;&times;&lt;/del&gt;
-  &lt;u-datalist id="my-typing-list" data-nofilter&gt;
+  &lt;u-comboboxitems&gt;&lt;/u-comboboxitems&gt;
+  &lt;input id="my-typing-input" /&gt;
+  &lt;del&gt;&times;&lt;/del&gt;
+  &lt;u-datalist data-nofilter hidden&gt;
     &lt;u-option&gt;Coconut&lt;/u-option&gt;
     &lt;u-option&gt;Strawberries&lt;/u-option&gt;
     &lt;u-option&gt;Chocolate&lt;/u-option&gt;
@@ -357,9 +373,10 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
   Click on a result:
 &lt;/label&gt;
 &lt;u-combobox id="my-link-combobox"&gt;
-  &lt;input id="my-link-input" list="my-link-list" /&gt;
-  &lt;del aria-label="Clear text"&gt;&times;&lt;/del&gt;
-  &lt;u-datalist id="my-link-list"&gt;
+  &lt;u-comboboxitems&gt;&lt;/u-comboboxitems&gt;
+  &lt;input id="my-link-input" /&gt;
+  &lt;del&gt;&times;&lt;/del&gt;
+  &lt;u-datalist hidden&gt;
     &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-datalist"&gt;u-datalist&lt;/u-option&gt;
     &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-progress"&gt;u-progress&lt;/u-option&gt;
     &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-details"&gt;u-details&lt;/u-option&gt;
@@ -399,11 +416,16 @@ and then manually add or remove `<data>` elements as needed:
 if (typeof window !== 'undefined') {
   window.values = [];
   window.useState = (values) => [window.values, (values) => {
-    const combobox = document.getElementById('my-controlled-combobox');
+    const { items, itemsElement } = document.getElementById('my-controlled-combobox');
+    const isRemoveFirst = [...items].includes(document.activeElement) && window.values[0]?.value !== values[0]?.value
+
+    if (isRemoveFirst) items[0].remove()
     window.values.length = 0; // Empty
     window.values.push(...values);
-    combobox?.querySelectorAll('data').forEach((el) => el.remove());
-    combobox?.prepend(...values.map(({ value, label }) => Object.assign(document.createElement('data'), { value, textContent: label })))
+    window.values.forEach(({ value, label }, index) => {
+      Object.assign(items[index] || itemsElement.appendChild(document.createElement('data')), { value, textContent: label })
+    });
+    [...items].slice(window.values.length).forEach((el) => el.remove()); // Remove unused items
   }]
 }
 </script>
@@ -413,17 +435,19 @@ if (typeof window !== 'undefined') {
   Controlled render:
 &lt;/label&gt;
 &lt;u-combobox id="my-controlled-combobox" data-multiple&gt;
-  &lt;!--
-    Your framework rendering here, i.e. React:
-    {values.map(({ value, label }) => (
-      &lt;data key={value} value={value}&gt;
-        {label}
-      &lt;/data&gt;
-    ))}
-  --&gt;
-  &lt;input id="my-controlled-input" list="my-controlled-list" /&gt;
-  &lt;del aria-label="Clear text"&gt;&times;&lt;/del&gt;
-  &lt;u-datalist id="my-controlled-list" data-nofilter&gt;
+  &lt;u-comboboxitems&gt;
+    &lt;!--
+      Your framework rendering here, i.e. React:
+      {values.map(({ value, label }) => (
+        &lt;data key={value} value={value}&gt;
+          {label}
+        &lt;/data&gt;
+      ))}
+    --&gt;
+  &lt;/u-comboboxitems&gt;
+  &lt;input id="my-controlled-input" /&gt;
+  &lt;del&gt;&times;&lt;/del&gt;
+  &lt;u-datalist hidden&gt;
     &lt;u-option&gt;Coconut&lt;/u-option&gt;
     &lt;u-option&gt;Strawberries&lt;/u-option&gt;
     &lt;u-option&gt;Chocolate&lt;/u-option&gt;
@@ -469,7 +493,7 @@ if (typeof window !== 'undefined') {
 | Jaws (PC) + Firefox | :white_check_mark: |
 | NVDA (PC) + Chrome | :white_check_mark: |
 | NVDA (PC) + Edge | :white_check_mark: |
-| NVDA (PC) + Firefox | :white_check_mark: needs focus mode to announce item removal |
+| NVDA (PC) + Firefox | :white_check_mark: |
 | Narrator (PC) + Chrome | :warning: Needs "scanning off" mode |
 | Narrator (PC) + Edge | :warning: Needs "scanning off" mode |
 | Narrator (PC) + Firefox | :warning: Needs "scanning off" mode |

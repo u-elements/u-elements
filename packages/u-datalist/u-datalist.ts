@@ -167,7 +167,7 @@ const onFocus = (self: UHTMLDataListElement, { target }: Event) => {
 		speak(); // Prepare for aria-live announcements
 		self._input = target;
 		if (IS_ANDROID) setExpanded(self, true); // Android TalkBack does not trigger click event on input, so expand right away
-	} else if (self._input) onBlurred(self);
+	} else onBlurred(self);
 };
 
 const onBlur = (

@@ -16,16 +16,16 @@ export default defineConfig({
 	/* Configure projects for major browsers */
 	projects: [
 		{ name: "Chromium", use: { ...devices["Desktop Chrome"] } },
-		// { name: "Firefox", use: { ...devices["Desktop Firefox"] } },
-		// { name: "Webkit", use: { ...devices["Desktop Safari"] } },
-		// {
-		// 	name: "Microsoft Edge",
-		// 	use: { ...devices["Desktop Edge"], channel: "msedge" },
-		// },
+		{ name: "Firefox", use: { ...devices["Desktop Firefox"] } },
+		{ name: "Webkit", use: { ...devices["Desktop Safari"] } },
+		{
+			name: "Microsoft Edge",
+			use: { ...devices["Desktop Edge"], channel: "msedge" },
+		},
 
-		// // Mobile viewport
-		// { name: "Mobile Chrome", use: { ...devices["Pixel 5"] } },
-		// { name: "Mobile Safari", use: { ...devices["iPhone 12"] } },
+		// Mobile viewport
+		{ name: "Mobile Chrome", use: { ...devices["Pixel 5"] } },
+		{ name: "Mobile Safari", use: { ...devices["iPhone 12"] } },
 	],
 	webServer: {
 		command: "npm run dev -- --host",

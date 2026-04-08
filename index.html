@@ -17,6 +17,18 @@
       body { margin: 15vh auto 100vh; max-width: 500px }
       input { font: inherit }
 
+      /* u-combobox::part(item) {
+        background: lightblue;
+        border:1px solid;
+      }
+      u-combobox::part(item)::after {
+        color: red
+      }
+      u-combobox::part(item) b {
+        display: block;
+        border: 1px solid;
+      } */
+
       .hei {
         border: 2px solid rebeccapurple;
       }
@@ -129,8 +141,9 @@
         <label for="input-1">Velg type iskrem</label>
         <u-combobox
           data-creatable
-          data-multiple
+          data-multiple="true"
           data-sr-added="La til"
+          data-sr-clear="Tøm tekstfelt"
           data-sr-empty="Ingen valgte"
           data-sr-found="Naviger til venstre for å finne %d valgte"
           data-sr-invalid="Ugyldig verdi"
@@ -140,13 +153,12 @@
           data-sr-removed="Fjernet"
         >
           <select name="test" hidden></select>
-          <u-comboboxitems>
-            <data>Jordbær</data>
-            <data>Oslo</data>
-            <data>Lakris</data>
-          </u-comboboxitems>
+          <data>Jordbær</data>
+          <data>Oslo</data>
+          <data>Lakris</data>
           <input id="input-1">
-          <del></del>
+          <button type="reset"></button>
+          <!-- <del>hei</del> -->
           <!-- <datalist>
             <option value="2" label="Kokkos">Kokkos<div>Hei</div></option>
             <option>Jordbær</option>
@@ -203,9 +215,9 @@
           }
         });
 
-        combobox.addEventListener('input', () => {
-          const { list, value } = combobox.control;
-          const query = encodeURIComponent(value.trim());
+        combobox?.addEventListener('input', () => {
+          // const { list, value } = combobox.control;
+          // const query = encodeURIComponent(value.trim());
           // list.innerHTML = query ? '<u-option value="">Loading</u-option>' : '';
           
           // xhr.abort();
@@ -447,7 +459,7 @@
         <u-summary slot="summary">Åpne/lukk</u-summary>
         <div>Innhold</div>
       </u-details> -->
-      <!-- <u-test></u-test> -->
+      <u-test></u-test>
       <script>
         // setTimeout(() => {
         //   let i = 0
@@ -488,12 +500,14 @@
               <u-tabs>
                 <u-tablist>
                   <u-tab>Rosinbolle</u-tab>
+                  <u-tab aria-selected="true">Kanelbolle</u-tab>
+                  <!--<a role="tab" href="https://nrk.no"><NRK</a>
                   <u-tab aria-disabled="true">Skolebolle</u-tab>
                   <u-tab aria-controls="panel-inside">Kanelknute</u-tab>
-                  <u-tab aria-controls="panel-outlier" aria-selected="true">Pistasjbolle</u-tab>
-                  <u-tab-close hidden>Lukk</u-tab-close>
+                  <u-tab aria-controls="panel-outlier">Pistasjbolle</u-tab>
+                  <u-tab-close hidden>Lukk</u-tab-close>-->
                 </u-tablist>
-                <u-tabpanel id="panel-inside">
+                <!--<u-tabpanel id="panel-inside">
                   Panel 1 with <a href="#">link</a>
                   <u-tabs>
                     <u-tablist>
@@ -505,7 +519,7 @@
                   </u-tabs>
                 </u-tabpanel>
                 <u-tabpanel>Panel 2 with <a href="#">link</a></u-tabpanel>
-                <u-tabpanel>Panel 3 with <a href="#">link</a></u-tabpanel>
+                <u-tabpanel>Panel 3 with <a href="#">link</a></u-tabpanel>-->
                 <u-tabpanel>Panel 4 with <a href="#">link</a></u-tabpanel>
               </u-tabs>
               <u-tabpanel id="panel-outlier">Panel outlier</u-tabpanel>

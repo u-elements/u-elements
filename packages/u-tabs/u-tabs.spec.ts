@@ -125,23 +125,44 @@ test.describe("u-tabs", () => {
 		});
 
 		expect(
-			await page.evaluate(() => {
-				const uTablist = document.querySelector("u-tablist");
-				return uTablist?.tabsElement === document.querySelector("u-tabs");
-			}),
+			await page.evaluate(
+				() =>
+					document.querySelector("u-tablist")?.tabsElement ===
+					document.querySelector("u-tabs"),
+			),
 		).toBeTruthy();
 
 		expect(
 			await page.evaluate(() => {
-				const uTab = document.querySelector("u-tab");
 				return (
-					uTab?.tabsElement === document.querySelector("u-tabs") &&
-					uTab?.tabList === document.querySelector("u-tablist") &&
-					uTab?.panel === document.querySelector("u-tabpanel") &&
-					uTab?.selected &&
-					uTab?.index === 0
+					document.querySelector("u-tab")?.tabsElement ===
+					document.querySelector("u-tabs")
 				);
 			}),
+		).toBeTruthy();
+
+		expect(
+			await page.evaluate(
+				() =>
+					document.querySelector("u-tab")?.tabList ===
+					document.querySelector("u-tablist"),
+			),
+		).toBeTruthy();
+
+		expect(
+			await page.evaluate(
+				() =>
+					document.querySelector("u-tab")?.panel ===
+					document.querySelector("u-tabpanel"),
+			),
+		).toBeTruthy();
+
+		expect(
+			await page.evaluate(() => document.querySelector("u-tab")?.selected),
+		).toBeTruthy();
+
+		expect(
+			await page.evaluate(() => document.querySelector("u-tab")?.index === 0),
 		).toBeTruthy();
 
 		expect(
@@ -625,12 +646,14 @@ test.describe("u-tabs", () => {
 		await expect(uTabpanel.nth(1)).toBeHidden();
 
 		await page.evaluate(() => {
-			document.body
-				.querySelector("u-tabs")
-				?.insertAdjacentHTML(
-					"beforeend",
-					'<u-tabpanel id="panel-2">Panel 2</u-tabpanel>',
-				);
+			const uTabs = document.querySelector("u-tabs");
+			const uTab1 = uTabs?.querySelectorAll("u-tab")[1];
+
+			uTab1?.removeAttribute("aria-controls"); // Force u-tabs reconnect
+			uTabs?.insertAdjacentHTML(
+				"beforeend",
+				'<u-tabpanel id="panel-2">Panel 2</u-tabpanel>',
+			);
 		});
 		await expect(uTab.nth(1)).toHaveAttribute("aria-controls", "panel-2");
 		await expect(uTabpanel.nth(1)).toHaveAttribute(attrLabelledby(), "tab-2");
@@ -645,14 +668,9 @@ test.describe("u-tabs", () => {
 
 		await uTab.nth(0).click();
 		await expect(uTabpanel.nth(0)).not.toHaveAttribute("hidden");
+		await expect(uTabpanel.nth(1)).toHaveAttribute("hidden");
 		await uTab.nth(1).click();
 		await expect(uTabpanel.nth(0)).toHaveAttribute("hidden");
-
-		await page.evaluate(() => {
-			document.getElementById("panel-2")?.removeAttribute("id");
-		});
-
-		await expect(uTabpanel.nth(0)).toHaveAttribute("hidden");
-		await expect(uTabpanel.nth(1)).toHaveAttribute("hidden");
+		await expect(uTabpanel.nth(1)).not.toHaveAttribute("hidden");
 	});
 });

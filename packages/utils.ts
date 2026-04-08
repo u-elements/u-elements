@@ -1,14 +1,15 @@
-export const IS_BROWSER =
+export const isBrowser = () =>
 	typeof window !== "undefined" &&
 	typeof window.document !== "undefined" &&
-	typeof window.navigator !== "undefined";
+	typeof window.navigator !== "undefined"; // Dynamic since Jest+jsdom tests can unmount document live
 
 // Bad, but needed
-const agent = IS_BROWSER ? navigator.userAgent : "";
-export const IS_ANDROID = /android/i.test(agent);
-export const IS_FIREFOX = /firefox/i.test(agent);
-export const IS_IOS = /iPad|iPhone|iPod/.test(agent);
-export const IS_SAFARI = /^((?!chrome|android).)*safari/i.test(agent);
+const IS_BROWSER = isBrowser(); // Cache this since it's used in many places and can be dynamic in tests
+const AGENT = IS_BROWSER ? navigator.userAgent : "";
+export const IS_ANDROID = /android/i.test(AGENT);
+export const IS_FIREFOX = /firefox/i.test(AGENT);
+export const IS_IOS = /iPad|iPhone|iPod/.test(AGENT);
+export const IS_SAFARI = /^((?!chrome|android).)*safari/i.test(AGENT);
 export const IS_MAC =
 	IS_BROWSER &&
 	// @ts-expect-error Typescript has not implemented userAgentData yet https://stackoverflow.com/a/71392474
@@ -77,18 +78,6 @@ export const off = (
 	for (const type of types.split(" ")) el.removeEventListener(type, ...options);
 };
 
-export function debounce<T extends unknown[]>(
-	callback: (...args: T) => void,
-	delay: number,
-) {
-	let timer: ReturnType<typeof setTimeout>;
-
-	return function (this: unknown, ...args: T) {
-		clearTimeout(timer);
-		timer = setTimeout(() => callback.apply(this, args), delay);
-	};
-}
-
 /**
  * attachStyle
  * @param el The Element to scope styles for
@@ -101,47 +90,28 @@ export const attachStyle = (el: Element, css: string) => {
 		sheet.replaceSync(css);
 		(el.shadowRoot as ShadowRoot).adoptedStyleSheets = [sheet];
 	} else el.shadowRoot?.append(tag("style", undefined, css));
+	return el.shadowRoot as ShadowRoot;
 };
 
 /**
- * Speed up MutationObserver by debouncing and only running when page is visible
- * @return new MutationObserver
+ * MutationObserver wrapper with automatic cleanup
+ * @return new MutaionObserver
  */
-export const onMutation = (
-	el: Node,
-	callback: (mutations: MutationRecord[], observer: MutationObserver) => void,
+export const onMutation = <T extends Node>(
+	el: T,
+	callback: (el: T, records?: MutationRecord[]) => void,
 	options: MutationObserverInit,
 ) => {
-	const queue: MutationRecord[] = [];
-	const clear = () => (queue.length = 0);
-	const onFrame = () => {
-		if (!el.isConnected) return cleanup(); // If using JSDOM, the document might have been removed
-		callback(queue, observer);
-		cleanup.takeRecords();
-	};
-	const observer = new MutationObserver((mutations) => {
-		if (!queue.length) requestAnimationFrame(onFrame); // requestAnimationFrame only runs when page is visible
-		queue.push(...mutations);
+	const cleanup = () => observer.disconnect();
+	const observer = new MutationObserver((records) => {
+		if (!isBrowser() || !el.isConnected) return cleanup(); // Stop observing if element is removed from DOM or document is removed by jdsom tests
+		callback(el, records);
 	});
-	const cleanup = () => clear() || observer.disconnect();
-	cleanup.takeRecords = () => clear() || observer.takeRecords();
-	observer.observe(el, options);
-	requestAnimationFrame(onFrame); // Initial run when page is visible and rendered
-	return cleanup;
-};
 
-/**
- * asButton
- * @description Helper to forward Enter and Space keyboard events to click events (typically used on role="button")
- * @param event Any event object
- * @return Whether the event should be forwarded to a click
- */
-export const asButton = (event: Partial<KeyboardEvent>): boolean => {
-	const isClick = event.key === " " || event.key === "Enter";
-	if (isClick) event.preventDefault?.(); // Prevent scroll
-	if (isClick && event.target instanceof HTMLElement)
-		event.target.dispatchEvent(new MouseEvent("click", event)); // Forward to real click
-	return isClick;
+	cleanup.takeRecords = () => observer.takeRecords(); // Expose takeRecords - useful if mutating a attribute that is observed
+	observer.observe(el, options);
+	callback(el); // Initial is run instantly to make test markup predictable
+	return cleanup;
 };
 
 /**
@@ -156,15 +126,6 @@ export const getRoot = (node: Node): Document | ShadowRoot => {
 		? root
 		: document;
 };
-
-/**
- * getFocused
- * @description Helper to get focused element within same root
- * @param node The target node
- * @return The root document fragment or shadow root
- */
-export const getFocused = (node: Node): Element | null =>
-	getRoot(node).activeElement;
 
 /**
  * getLabel
@@ -185,10 +146,16 @@ export const getLabel = (el: Element) => {
  * useId
  * @return A generated unique ID
  */
-let id = 0;
+declare global {
+	interface Window {
+		uElementsId?: number; // Use a global counter to ensure this works even when loading designsystemet multiple times
+	}
+}
+
 export const useId = (el?: Element | null) => {
 	if (!el) return null;
-	if (!el.id) el.id = `:${el.nodeName.toLowerCase()}${(++id).toString(32)}`;
+	if (!window.uElementsId) window.uElementsId = 0; // In case of multiple instances of utils, ensure global counter
+	if (!el.id) el.id = `:${el.nodeName.toLowerCase()}${++window.uElementsId}`;
 	return el.id;
 };
 
@@ -201,7 +168,7 @@ export const useId = (el?: Element | null) => {
  */
 export const tag = <TagName extends keyof HTMLElementTagNameMap>(
 	tagName: TagName,
-	attrs?: Record<string, string>,
+	attrs?: Record<string, string> | null,
 	content?: string | null,
 ): HTMLElementTagNameMap[TagName] => {
 	const el = document.createElement(tagName);
@@ -217,7 +184,7 @@ export const tag = <TagName extends keyof HTMLElementTagNameMap>(
  */
 export const customElements = {
 	define: (name: string, instance: CustomElementConstructor) =>
-		!IS_BROWSER ||
+		!isBrowser() ||
 		window.customElements.get(name) ||
 		window.customElements.define(name, instance),
 };
@@ -268,8 +235,10 @@ export const declarativeShadowRoot = (style: string, slot = "<slot></slot>") =>
 export const preventSubmit = (input: HTMLInputElement) => {
 	const form = attr(input, "form");
 	attr(input, "form", "#"); // Temporarily remove form association to prevent submit on enter
-	requestAnimationFrame(() => attr(input, "form", form)); // Restore form association on next frame
+	setTimeout(restoreSubmit, 0, input, form); // Restore form association on next frame
 };
+const restoreSubmit = (input: HTMLInputElement, form: string | null) =>
+	attr(input, "form", form);
 
 /**
  * getText

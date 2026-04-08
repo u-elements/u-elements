@@ -9,6 +9,7 @@ declare global {
 // Constants for better compression
 const DISABLED = "disabled";
 const SELECTED = "selected";
+type Observed = (typeof UHTMLOptionElement.observedAttributes)[number];
 
 /**
  * The `<u-option>` HTML element is used to define an item contained in a `<u-datalist>` element. As such, <u-option> can represent lists of items in an HTML document.
@@ -17,17 +18,17 @@ const SELECTED = "selected";
 export class UHTMLOptionElement extends UHTMLElement {
 	// Using ES2015 syntax for backwards compatibility
 	static get observedAttributes() {
-		return ["id", DISABLED, SELECTED];
+		return [DISABLED, SELECTED] as const;
 	}
 	connectedCallback() {
 		if (!IS_IOS) this.tabIndex = -1; // Do not set tabIndex on iOS as this causes keyboard to toggle on and off
 		if (!this.hasAttribute("role")) attr(this, "role", "option"); // Only set role if not allready specified, to allow role="none"
-		this.attributeChangedCallback(); // Setup aria attributes (Firefox defaults to "selected" unless aria-selected="false" is set)
-	}
-	attributeChangedCallback() {
 		attr(this, "aria-disabled", `${this.disabled}`);
-		attr(this, "aria-selected", `${this.selected}`);
+		attr(this, "aria-selected", `${this.selected}`); // Setup aria attributes (Firefox defaults to "selected" unless aria-selected="false" is set)
 		useId(this); // Ensure id is present for aria referencing
+	}
+	attributeChangedCallback(name: Observed) {
+		attr(this, `aria-${name}`, `${this[name]}`);
 	}
 	/** Sets or retrieves whether the option in the list box is the default item. */
 	get defaultSelected(): boolean {

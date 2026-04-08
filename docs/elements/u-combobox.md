@@ -142,7 +142,7 @@ myCombobox.addEventListener('comboboxbeforematch', (event) => {
 ## Styling
 
 `<u-combobox>` renders as `display: block`, while `<data>` renders as `display: inline-block` with a `::after` element to render the removal `×`.
-Use `u-combobox::part(listbox)` to style box around items, and `u-combobox::part(item):focus` to change focus styling for items.
+Use `u-combobox::part(items)` to style box around items, and `u-combobox::part(item):focus` to change focus styling for items.
 
 ## Example: Norwegian
 

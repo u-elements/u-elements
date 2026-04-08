@@ -82,16 +82,16 @@ const onMutations = (self: UHTMLProgressElement) => {
 	self.style.setProperty("--percentage", `${percentage}%`); // Write style before any read operation to avoid excess animation
 	let label = getLabel(self); // Uses innerText so must be after setting self.style
 
-	if (IS_IOS) label = `${label.replace(/\d+%$/, "")} ${percentage}%`; // Replace removes previously added percentage
+	if (IS_IOS) label = `${label.replace(/\d+%$/, "").trim()} ${percentage}%`; // Replace removes previously added percentage
 	attr(self, "aria-busy", `${self.position === -1}`); // true if indeterminate
-	attr(self, "aria-label", label.trim()); // Must use aria-label to include percentage value
+	attr(self, "aria-label", label); // Must use aria-label to include percentage value
 	attr(self, "aria-labelledby", null); // Since we always want to use aria-label
 	attr(self, "aria-valuemax", "100");
 	attr(self, "aria-valuemin", "0");
 	attr(self, "aria-valuenow", `${percentage}`);
 	attr(self, "role", IS_IOS ? "img" : "progressbar"); // iOS does not announce amount, so we use img and percentage
 
-	self._unmutate?.takeRecords(); // Prevent infinted loop that would be caused by updating aria-label and aria-valuenow
+	self._unmutate?.takeRecords(); // Prevent infinite loop that would be caused by updating aria-label and aria-valuenow
 };
 
 const isNumeric = (value: unknown): value is number | string =>

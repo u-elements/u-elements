@@ -104,7 +104,7 @@ export const onMutation = <T extends Node>(
 ) => {
 	const cleanup = () => observer.disconnect();
 	const observer = new MutationObserver((records) => {
-		if (!isBrowser() || !el.isConnected) return cleanup(); // Stop observing if element is removed from DOM or document is removed by jdsom tests
+		if (!isBrowser() || !el.isConnected) return cleanup(); // Stop observing if element is removed from DOM or document is removed by JSDOM tests
 		callback(el, records);
 	});
 
@@ -139,7 +139,9 @@ export const getLabel = (el: Element) => {
 	return [
 		...labels.map((id) => document.getElementById(id.trim() || "-")), // Get all labelledby elements
 		...Array.from((el as HTMLInputElement).labels || []), // Get all <label> elements
-	].reduce((acc, el) => acc || el?.innerText?.trim() || "", label);
+	]
+		.reduce((acc, el) => acc || el?.innerText?.trim() || "", label)
+		.trim();
 };
 
 /**
@@ -153,7 +155,7 @@ declare global {
 }
 
 export const useId = (el?: Element | null) => {
-	if (!el) return null;
+	if (!el || !IS_BROWSER) return null;
 	if (!window.uElementsId) window.uElementsId = 0; // In case of multiple instances of utils, ensure global counter
 	if (!el.id) el.id = `:${el.nodeName.toLowerCase()}${++window.uElementsId}`;
 	return el.id;

@@ -84,7 +84,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	_focusMoved = false; // Used to determine if we announce through aria-live or aria-label when items are added or removed
 	_match?: HTMLDataElement | { value: string }; // Used to store current match
 	_texts = { ...TEXTS };
-	_slots = 0; // Used to creat unique slot names
+	_slots = 0; // Used to create unique slot names
 	_speak = "";
 	_value = ""; // Locally store value to store value before input-click
 
@@ -100,7 +100,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		attachStyle(this, UHTMLComboboxStyle);
 	}
 	connectedCallback() {
-		on(this, EVENTS, this, true); // Bind events using capture phase to run before framworks
+		on(this, EVENTS, this, true); // Bind events using capture phase to run before frameworks
 		this._unmutate = onMutation(this, onMutations, {
 			attributeFilter: ["id", "value", "role"], // Respond to changes in <data> value or id or role of <datalist>
 			attributes: true,

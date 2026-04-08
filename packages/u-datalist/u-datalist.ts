@@ -103,7 +103,7 @@ export class UHTMLDataListElement extends UHTMLElement {
 	handleEvent(event: Event) {
 		if (event.defaultPrevented) return;
 		if (event.type === "focus") onFocus(this, event);
-		if (event.type === "blur") onBlur(this, event);
+		if (event.type === "focusout") onBlur(this, event);
 		if (event.type === "click") onClick(this, event);
 		if (event.type === "input") onMutations(this);
 		if (event.type === "keydown") onKeyDown(this, event as KeyboardEvent);

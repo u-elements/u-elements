@@ -98,7 +98,7 @@ export class UHTMLTabListElement extends UHTMLElement {
 	handleEvent(event: Partial<KeyboardEvent>) {
 		const { key, type, target } = event;
 		const tabs = [...this.tabs];
-		const prev = tabs.indexOf(target as UHTMLTabElement);
+		const prev = tabs.findIndex((tab) => tab.contains(target as Node));
 		let next = prev;
 
 		if (event.defaultPrevented || prev === -1) return; // Event prevented or not a tab
@@ -159,7 +159,7 @@ const onMutations = (self: UHTMLTabsElement, records?: MutationRecord[]) => {
 		if (panel) attr(panel, "hidden", panel === nextPanel ? null : "");
 	});
 
-	self._unmutate?.takeRecords(); // Prevent infinted loop that would be caused by updating aria-selected
+	self._unmutate?.takeRecords(); // Prevent infinite loop that would be caused by updating aria-selected
 };
 
 /**

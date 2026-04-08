@@ -95,7 +95,7 @@ export const attachStyle = (el: Element, css: string) => {
 
 /**
  * MutationObserver wrapper with automatic cleanup
- * @return new MutaionObserver
+ * @return new MutationObserver
  */
 export const onMutation = <T extends Node>(
 	el: T,

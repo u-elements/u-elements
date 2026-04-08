@@ -36,10 +36,6 @@
         display: block;
       }
 
-      u-tab { padding: 2px 5px }
-      u-tab[aria-selected="true"] { background: black; color: white }
-      u-tabpanel { padding: 10px; border: 1px solid }
-
       u-option[selected] { color: red; font-weight: bold; }
 
       u-datepicker {
@@ -489,9 +485,9 @@
           connectedCallback() {
             const shadowRoot = this.attachShadow({ mode: 'open' })
             attachStyle(this, `
-              u-tab { padding: 2px 5px }
-              u-tab[aria-selected="true"] { background: black; color: white }
-              u-tabpanel { padding: 10px; border: 1px solid }
+              [role="tab"] { display: inline-block; padding: 2px 5px }
+              [role="tab"][aria-selected="true"] { background: black; color: white }
+              [role="tabpanel"] { padding: 10px; border: 1px solid }
               u-option[selected] { color: red }
               input { font-size: inherit }
             `)
@@ -501,13 +497,13 @@
                 <u-tablist>
                   <u-tab>Rosinbolle</u-tab>
                   <u-tab aria-selected="true">Kanelbolle</u-tab>
-                  <!--<a role="tab" href="https://nrk.no"><NRK</a>
+                  <a role="tab" href="javascript:void(0)">NRK</a>
                   <u-tab aria-disabled="true">Skolebolle</u-tab>
                   <u-tab aria-controls="panel-inside">Kanelknute</u-tab>
                   <u-tab aria-controls="panel-outlier">Pistasjbolle</u-tab>
-                  <u-tab-close hidden>Lukk</u-tab-close>-->
+                  <u-tab-close hidden>Lukk</u-tab-close>
                 </u-tablist>
-                <!--<u-tabpanel id="panel-inside">
+                <u-tabpanel id="panel-inside">
                   Panel 1 with <a href="#">link</a>
                   <u-tabs>
                     <u-tablist>
@@ -519,7 +515,7 @@
                   </u-tabs>
                 </u-tabpanel>
                 <u-tabpanel>Panel 2 with <a href="#">link</a></u-tabpanel>
-                <u-tabpanel>Panel 3 with <a href="#">link</a></u-tabpanel>-->
+                <u-tabpanel>Panel 3 with <a href="#">link</a></u-tabpanel>
                 <u-tabpanel>Panel 4 with <a href="#">link</a></u-tabpanel>
               </u-tabs>
               <u-tabpanel id="panel-outlier">Panel outlier</u-tabpanel>

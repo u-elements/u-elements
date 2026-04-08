@@ -150,14 +150,18 @@ export const getLabel = (el: Element) => {
  */
 declare global {
 	interface Window {
-		uElementsId?: number; // Use a global counter to ensure this works even when loading designsystemet multiple times
+		uElementsId?: Record<string, number>; // Use a global counter to ensure this works even when loading designsystemet multiple times
 	}
 }
 
 export const useId = (el?: Element | null) => {
 	if (!el || !IS_BROWSER) return null;
-	if (!window.uElementsId) window.uElementsId = 0; // In case of multiple instances of utils, ensure global counter
-	if (!el.id) el.id = `:${el.nodeName.toLowerCase()}${++window.uElementsId}`;
+	if (!window.uElementsId) window.uElementsId = {}; // In case of multiple instances of utils, ensure global counter
+	if (!el.id) {
+		const node = el.nodeName.toLowerCase();
+		if (!window.uElementsId[node]) window.uElementsId[node] = 1;
+		el.id = `:${node}${window.uElementsId[node]++}`;
+	}
 	return el.id;
 };
 
@@ -237,7 +241,7 @@ export const declarativeShadowRoot = (style: string, slot = "<slot></slot>") =>
 export const preventSubmit = (input: HTMLInputElement) => {
 	const form = attr(input, "form");
 	attr(input, "form", "#"); // Temporarily remove form association to prevent submit on enter
-	setTimeout(restoreSubmit, 0, input, form); // Restore form association on next frame
+	setTimeout(restoreSubmit, 0, input, form); // Restore form association on next macrotask
 };
 const restoreSubmit = (input: HTMLInputElement, form: string | null) =>
 	attr(input, "form", form);

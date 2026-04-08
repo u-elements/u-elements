@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import type { UHTMLComboboxElement } from "./u-combobox";
 
 const isFocused = (el: Element) => el.assignedSlot?.matches(":focus");
-const setCarretStart = (input: HTMLInputElement) => {
+const setCaretStart = (input: HTMLInputElement) => {
 	input.selectionStart = input.selectionEnd = 0; // Set caret to start of text
 };
 
@@ -119,7 +119,7 @@ test.describe("u-combobox", () => {
 		await input.pressSequentially("Test");
 		await expect(input).toBeFocused();
 		await expect(input).toHaveValue("Test");
-		await input.evaluate<void, HTMLInputElement>(setCarretStart);
+		await input.evaluate<void, HTMLInputElement>(setCaretStart);
 
 		await input.press("ArrowRight"); // Move caret into text
 		await input.press("ArrowLeft"); // Move caret back to start of text
@@ -161,7 +161,7 @@ test.describe("u-combobox", () => {
 		await input.press("ArrowRight");
 		await expect(input).toBeFocused(); // Should not cycle, so staying on input is correct
 
-		await input.evaluate<void, HTMLInputElement>(setCarretStart);
+		await input.evaluate<void, HTMLInputElement>(setCaretStart);
 		await input.press("Backspace");
 		expect(await items.nth(2).evaluate(isFocused)).toBeTruthy();
 
@@ -193,7 +193,7 @@ test.describe("u-combobox", () => {
 		await expect(item3).toHaveText("Tag 4");
 		await expect(input).toBeFocused();
 
-		await input.evaluate<void, HTMLInputElement>(setCarretStart);
+		await input.evaluate<void, HTMLInputElement>(setCaretStart);
 		await input.press("ArrowLeft");
 		await item3.press("Enter");
 		await expect(item3).not.toBeAttached();

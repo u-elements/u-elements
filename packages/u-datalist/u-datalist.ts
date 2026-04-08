@@ -225,7 +225,7 @@ const onKeyDown = (self: UHTMLDataListElement, event: KeyboardEvent) => {
 	if (isEnter && opts[next]) {
 		event.stopImmediatePropagation(); // Native datalist does not trigger Enter on keydown on item, but instead a input event
 		preventSubmit(self._input); // Prevent form submit on enter if "focus" is inside datalist
-		opts[next].click(); // Trigger click on next tick to allow input event to run first
+		opts[next].click();
 	} else setActive(self, opts[next]);
 };
 

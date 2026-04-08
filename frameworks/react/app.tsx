@@ -94,21 +94,16 @@ export default function App() {
 			</div>
 			<br />
 			<br />
-			<u-tablist>
-				<u-tab id="t1" role="tab" aria-controls="panel1">
-					Tab 1
-				</u-tab>
-				<u-tab id="t2" aria-controls="panel2">
-					Tab 2
-				</u-tab>
-				<u-tab id="t3" aria-controls="panel3" aria-selected="true">
-					Tab 3
-				</u-tab>
-			</u-tablist>
-
-			<u-tabpanel id="panel1">Panel 1</u-tabpanel>
-			<u-tabpanel id="panel2">Panel 2</u-tabpanel>
-			<u-tabpanel id="panel3">Panel 3</u-tabpanel>
+			<u-tabs>
+				<u-tablist>
+					<u-tab>Tab 1</u-tab>
+					<u-tab>Tab 2</u-tab>
+					<u-tab aria-selected="true">Tab 3</u-tab>
+				</u-tablist>
+				<u-tabpanel>Panel 1</u-tabpanel>
+				<u-tabpanel>Panel 2</u-tabpanel>
+				<u-tabpanel>Panel 3</u-tabpanel>
+			</u-tabs>
 		</div>
 	);
 }

@@ -38,8 +38,8 @@ export const UHTMLComboboxStyle = `${DISPLAY_BLOCK}
 :is(:host(:not([data-multiple])), :host([data-multiple="false"])) [part="items"] { display: none }
 ::slotted(button[type="reset"]),::slotted(del) { font: inherit; border: 0; padding: 0; background: none; color: inherit; cursor: pointer; text-decoration: none }
 [part="items"] { display: contents }
-[role="option"] { display: inline }
-[role="option"]:focus, ::slotted(del):focus { ${FOCUS_OUTLINE} }
+[part="item"] { display: inline }
+[part="item"]:focus, ::slotted(del:focus) { ${FOCUS_OUTLINE} }
 ::slotted(data) { cursor: pointer; pointer-events: none }
 ::slotted(data)::after { padding-inline: .5ch; pointer-events: auto }
 ::slotted(data)::after,::slotted(button[type="reset"]:empty)::before,::slotted(del:empty)::before { content: '\\00D7'; content: '\\00D7' / '' }`;
@@ -231,7 +231,6 @@ const onBlurred = (self: UHTMLComboboxElement) =>
 const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
 	const { clientX: x, clientY: y, target } = event;
 	const { clear, control, items } = self;
-	const path = event.composedPath();
 
 	if (control && clear?.contains(target as Node)) {
 		event.preventDefault(); // Prevent button[type="reset"]
@@ -240,9 +239,9 @@ const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
 	}
 	for (const item of items) {
 		const { top, right, bottom, left } = item.getBoundingClientRect(); // Use coordinates to inside since pointer-events: none will prevent correct event.target
-		if (item.hasAttribute("slot") && path.includes(item.assignedSlot as Node))
-			return dispatchSelect(self, item); // Keyboard and screen reader can set target to element with pointer-events: none
-		if (y >= top && y <= bottom && x >= left && x <= right) return item.focus(); // If clicking inside item, focus it
+		if (item.contains(target as Node)) return dispatchSelect(self, item); // Keyboard and screen reader can set target to element with pointer-events: none
+		if (y >= top && y <= bottom && x >= left && x <= right)
+			return item.assignedSlot?.focus(); // If clicking inside item, focus it
 	}
 	if (target === self) control?.focus(); // Focus input if clicking <u-combobox>
 };
@@ -295,8 +294,8 @@ const onKeyDownItems = (self: UHTMLComboboxElement, event: KeyboardEvent) => {
 	const slots = _itemsElement.children as HTMLCollectionOf<HTMLSlotElement>;
 	const index = [...slots].indexOf(event.composedPath()[0] as HTMLSlotElement);
 
-	if ((key === "Enter" || key === " ") && (slots[index] || target === clear)) {
-		(slots[index] || clear)?.click(); // Trigger click to ensure consistent behavior with mouse and screen readers
+	if ((key === "Enter" || key === " ") && (items[index] || target === clear)) {
+		(items[index] || clear)?.click(); // Trigger click to ensure consistent behavior with mouse and screen readers
 		return event.preventDefault(); // Prevent scrolling or submitting
 	}
 	if (!slots[index]) return;

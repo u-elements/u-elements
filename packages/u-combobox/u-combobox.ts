@@ -91,9 +91,9 @@ export class UHTMLComboboxElement extends UHTMLElement {
 
 	constructor() {
 		super();
+		const root = attachStyle(this, UHTMLComboboxStyle);
 		// biome-ignore format:next-line
-		this.attachShadow({ mode: "open" }).append(tag("div", { part: "items", role: "listbox", tabIndex: "-1" }, tag("slot", { name: "items" })), tag("slot"));
-		attachStyle(this, UHTMLComboboxStyle);
+		if (!root.querySelector('[role="listbox"]')) root.prepend(tag("div", { part: "items", role: "listbox", tabIndex: "-1" }, tag("slot", { name: "items" })));
 	}
 	connectedCallback() {
 		on(this, EVENTS, this, true); // Bind events using capture phase to run before frameworks

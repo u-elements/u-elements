@@ -84,7 +84,8 @@ export const off = (
  * @param css The css to inject
  */
 export const attachStyle = (el: Element, css: string) => {
-	if (!el.shadowRoot) el.attachShadow({ mode: "open" }).append(tag("slot"));
+	if (!el.shadowRoot) el.attachShadow({ mode: "open" }); // Respects Declarative Shadow DOM
+	if (!el.shadowRoot?.querySelector("slot")) el.shadowRoot?.append(tag("slot"));
 	if (SUPPORTS_CONSTRUCTED_CSS) {
 		const sheet = new CSSStyleSheet();
 		sheet.replaceSync(css);

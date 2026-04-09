@@ -114,7 +114,7 @@ export class UHTMLTabListElement extends UHTMLElement {
 		if (type === "keydown") {
 			if (key === " " || key === "Enter") {
 				event.preventDefault?.(); // Prevent scroll
-				const click = { bubbles: true, cancelable: true }; // Forward to real click
+				const click = { bubbles: true, cancelable: true, composed: true }; // Forward to real click
 				return tabs[prev].dispatchEvent(new MouseEvent("click", click));
 			}
 			if (key === "ArrowDown" || key === "ArrowRight")

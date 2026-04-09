@@ -176,10 +176,10 @@ export const useId = (el?: Element | null) => {
 export const tag = <TagName extends keyof HTMLElementTagNameMap>(
 	tagName: TagName,
 	attrs?: Record<string, string> | null,
-	content?: string | Node | null,
+	content?: string | null,
 ): HTMLElementTagNameMap[TagName] => {
 	const el = document.createElement(tagName);
-	if (content) el.append(content);
+	if (content) el.textContent = content;
 	if (attrs) for (const [key, val] of Object.entries(attrs)) attr(el, key, val);
 	return el;
 };

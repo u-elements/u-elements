@@ -36,7 +36,6 @@ declare global {
 
 export const UHTMLComboboxStyle = `${DISPLAY_BLOCK}
 :is(:host(:not([data-multiple])), :host([data-multiple="false"])) [part="items"] { display: none }
-[part="items"] { display: contents }
 ::slotted(button[type="reset"]),::slotted(del) { font: inherit; border: 0; padding: 0; background: none; color: inherit; cursor: pointer; text-decoration: none }
 ::slotted(data) { cursor: pointer; pointer-events: none }
 ::slotted(data:focus), ::slotted(del:focus) { ${FOCUS_OUTLINE} }
@@ -92,9 +91,15 @@ export class UHTMLComboboxElement extends UHTMLElement {
 
 	constructor() {
 		super();
-		// biome-ignore format:next-line
-		this._listbox = this.shadowRoot?.querySelector('[role="listbox"]') || tag("div", { part: "items", role: "listbox", tabIndex: "-1" }, tag("slot", { name: "items" }));
-		attachStyle(this, UHTMLComboboxStyle).prepend(this._listbox); // Make sure listbox is first
+		const root = attachStyle(this, UHTMLComboboxStyle);
+		this._listbox = root.querySelector('[role="listbox"]') || tag("div");
+		this._listbox.innerHTML = `<slot name="items"></slot>`;
+		this._listbox.style.display = "contents";
+		attr(this._listbox, "aria-orientation", "horizontal");
+		attr(this._listbox, "role", "listbox");
+		attr(this._listbox, "part", "items");
+		attr(this._listbox, "tabindex", "-1"); // Prevent tabstop even if consumer sets overflow: auto (https://issues.chromium.org/issues/40456188)
+		root.prepend(this._listbox); // Make sure listbox is first
 	}
 	connectedCallback() {
 		on(this, EVENTS, this, true); // Bind events using capture phase to run before frameworks

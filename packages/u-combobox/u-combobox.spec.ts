@@ -203,4 +203,6 @@ test.describe("u-combobox", () => {
 	// TODO: Focus input when clicking related label
 	// TODO: Handles multiple u-combobox on same page
 	// TODO: Handles click on option in datalist
+	// TODO: Handles clear button, and to not reset form
+	// TODO: Handles clear button with <del> element
 });

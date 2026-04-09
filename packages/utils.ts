@@ -103,13 +103,13 @@ export const onMutation = <T extends Node>(
 	callback: (el: T, records?: MutationRecord[]) => void,
 	options: MutationObserverInit,
 ) => {
-	const cleanup = () => observer.disconnect();
 	const observer = new MutationObserver((records) => {
 		if (!isBrowser() || !el.isConnected) return cleanup(); // Stop observing if element is removed from DOM or document is removed by JSDOM tests
 		callback(el, records);
 	});
-
-	cleanup.takeRecords = () => observer.takeRecords(); // Expose takeRecords - useful if mutating a attribute that is observed
+	const cleanup = Object.assign(() => observer.disconnect(), {
+		takeRecords: () => observer.takeRecords(), // Expose takeRecords - useful if mutating a attribute that is observed
+	});
 	observer.observe(el, options);
 	callback(el); // Initial is run instantly to make test markup predictable
 	return cleanup;

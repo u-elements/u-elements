@@ -113,8 +113,8 @@ export const onMutation = <T extends Node>(
 	const cleanup = Object.assign(() => observer.disconnect(), {
 		takeRecords: () => observer.takeRecords(), // Expose takeRecords - useful if mutating a attribute that is observed
 	});
-	observer.observe(el, options);
 	callback(el); // Initial is run instantly to make test markup predictable
+	observer.observe(el, options); // Observe after initial callback to avoid additional triggering
 	return cleanup;
 };
 

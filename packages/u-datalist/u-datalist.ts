@@ -117,6 +117,8 @@ export class UHTMLDataListElement extends UHTMLElement {
 }
 
 const isDisabled = (el: HTMLInputElement) => el.disabled || el.readOnly;
+const isInput = (el: unknown): el is HTMLInputElement =>
+	el instanceof HTMLInputElement;
 const isVisible = (el: Element) =>
 	attr(el, ARIA_HIDDEN) !== "true" && el.clientHeight;
 
@@ -156,7 +158,7 @@ const setInputAttributes = (
 
 const onFocus = (self: UHTMLDataListElement, { target: el }: Event) => {
 	if (self._input === el) return; // Connected to the current target
-	if (el instanceof HTMLInputElement && el.getAttribute("list") === self.id) {
+	if (isInput(el) && el.getAttribute("list") === self.id) {
 		setInputAttributes(self, null); // Reset previous input
 		setInputAttributes(self, el); // Ensure attributes
 		if (isDisabled(el)) return; // Do not open if disabled or readOnly
@@ -188,7 +190,7 @@ const onPointerDown = (self: UHTMLDataListElement, event: Event) =>
 	self.contains(event.target as Node) && isPointerDown(event); // Prevent unwanted blur when pressing options with tabindex="-1"
 
 const onClick = (self: UHTMLDataListElement, event: Event) => {
-	onFocus(self, event); // Make sure we potentially connect, in case focus happens before u-datalist connectedCallback has run
+	if (isInput(event.target)) onFocus(self, event); // Make sure we potentially connect, in case focus happens before u-datalist connectedCallback has run
 	if (self._input === event.target) return setExpanded(self, true);
 	if (!self.contains(event.target as Node)) return onBlurred(self);
 	for (const opt of self.options)
@@ -200,7 +202,7 @@ const onClick = (self: UHTMLDataListElement, event: Event) => {
 };
 
 const onKeyDown = (self: UHTMLDataListElement, event: KeyboardEvent) => {
-	onFocus(self, event); // Make sure we potentially connect, in case focus happens before u-datalist connectedCallback has run
+	if (isInput(event.target)) onFocus(self, event); // Make sure we potentially connect, in case focus happens before u-datalist connectedCallback has run
 	if (self._input !== event.target) return; // Only handle events from connected input
 	const { key, ctrlKey: c, metaKey: m, shiftKey: s, altKey: alt } = event;
 	if (c || m || s || key === "Tab" || (alt && !key.startsWith("Arrow"))) return; // Skip if modifier keys or tab or non-arrow with alt

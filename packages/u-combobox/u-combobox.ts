@@ -70,6 +70,7 @@ const TEXTS = {
  */
 export class UHTMLComboboxElement extends UHTMLElement {
 	_unmutate?: ReturnType<typeof onMutation>; // Using underscore instead of private fields for backwards compatibility
+	_listbox: HTMLElement;
 
 	// Speed up by caching elements
 	_clear?: HTMLElement | null;
@@ -91,9 +92,9 @@ export class UHTMLComboboxElement extends UHTMLElement {
 
 	constructor() {
 		super();
-		const root = attachStyle(this, UHTMLComboboxStyle);
 		// biome-ignore format:next-line
-		if (!root.querySelector('[role="listbox"]')) root.prepend(tag("div", { part: "items", role: "listbox", tabIndex: "-1" }, tag("slot", { name: "items" })));
+		this._listbox = this.shadowRoot?.querySelector('[role="listbox"]') || tag("div", { part: "items", role: "listbox", tabIndex: "-1" }, tag("slot", { name: "items" }));
+		attachStyle(this, UHTMLComboboxStyle).prepend(this._listbox); // Make sure listbox is first
 	}
 	connectedCallback() {
 		on(this, EVENTS, this, true); // Bind events using capture phase to run before frameworks
@@ -323,11 +324,10 @@ const onMutations = (self: UHTMLComboboxElement, edit?: MutationRecord[]) => {
 	syncOptionsWithItems(self);
 	syncSelectWithItems(self);
 
-	const listbox = self.shadowRoot?.firstElementChild;
 	const hint = `${items.length ? _texts.found.replace("%d", `${items.length}`) : _texts.empty}`;
 	attr(control, "aria-description", multiple ? hint : null);
 	attr(control, "list", useId(list)); // Connect datalist and input
-	if (listbox) attr(listbox, ARIA_LABEL, _texts.items);
+	attr(self._listbox, ARIA_LABEL, _texts.items);
 
 	self._unmutate?.takeRecords(); // Clear mutation records caused by updating control "id"
 };

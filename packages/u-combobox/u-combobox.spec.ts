@@ -1,7 +1,6 @@
 import { expect, test } from "@playwright/test";
 import type { UHTMLComboboxElement } from "./u-combobox";
 
-const isFocused = (el: Element) => el.assignedSlot?.matches(":focus");
 const setCaretStart = (input: HTMLInputElement) => {
 	input.selectionStart = input.selectionEnd = 0; // Set caret to start of text
 };
@@ -93,11 +92,9 @@ test.describe("u-combobox", () => {
 		for (let i = 0; i < itemsCount; i++) {
 			const item = items.nth(i);
 			const label = `Tag ${i + 1}, Press to remove${IS_IOS ? `, ${i + 1} of ${itemsCount}` : ""}`;
-			const role = item.evaluate((el) => el.assignedSlot?.getAttribute("role"));
-			const tabindex = item.evaluate((el) => el.assignedSlot?.tabIndex);
 
-			expect(await role).toBe("option");
-			expect(await tabindex).toBe(-1);
+			await expect(item).toHaveAttribute("role", "option");
+			await expect(item).toHaveAttribute("tabindex", "-1");
 			await expect(item).toHaveAttribute("aria-label", label);
 		}
 	});
@@ -126,22 +123,22 @@ test.describe("u-combobox", () => {
 		await expect(input).toBeFocused(); // Input should therefore still be focused
 
 		await input.press("ArrowLeft");
-		expect(await items.nth(2).evaluate(isFocused)).toBeTruthy();
+		await expect(items.nth(2)).toBeFocused();
 
 		await items.nth(2).press("ArrowLeft");
-		expect(await items.nth(1).evaluate(isFocused)).toBeTruthy();
+		await expect(items.nth(1)).toBeFocused();
 
 		await items.nth(1).press("ArrowLeft");
-		expect(await items.nth(0).evaluate(isFocused)).toBeTruthy();
+		await expect(items.nth(0)).toBeFocused();
 
 		await items.nth(0).press("ArrowLeft");
-		expect(await items.nth(0).evaluate(isFocused)).toBeTruthy(); // Should not cycle, so staying on 0 is correct
+		await expect(items.nth(0)).toBeFocused(); // Should not cycle, so staying on 0 is correct
 
 		await items.nth(0).press("ArrowRight");
-		expect(await items.nth(1).evaluate(isFocused)).toBeTruthy();
+		await expect(items.nth(1)).toBeFocused();
 
 		await items.nth(1).press("ArrowRight");
-		expect(await items.nth(2).evaluate(isFocused)).toBeTruthy();
+		await expect(items.nth(2)).toBeFocused();
 
 		await items.nth(2).press("ArrowRight");
 		await expect(input).toBeFocused();
@@ -163,11 +160,11 @@ test.describe("u-combobox", () => {
 
 		await input.evaluate<void, HTMLInputElement>(setCaretStart);
 		await input.press("Backspace");
-		expect(await items.nth(2).evaluate(isFocused)).toBeTruthy();
+		await expect(items.nth(2)).toBeFocused();
 
 		await items.nth(2).press("Backspace");
 		await expect(items.nth(2)).not.toBeAttached();
-		expect(await items.nth(1).evaluate(isFocused)).toBeTruthy();
+		await expect(items.nth(1)).toBeFocused();
 	});
 
 	test("handles keyboard creation and removal", async ({ page }) => {
@@ -184,12 +181,8 @@ test.describe("u-combobox", () => {
 		await input.press("Enter");
 		await expect(item3).toBeAttached();
 		await expect(item3).toHaveAttribute("value", "tag-4");
-
-		const role = item3.evaluate((el) => el.assignedSlot?.getAttribute("role"));
-		const tabindex = item3.evaluate((el) => el.assignedSlot?.tabIndex);
-		expect(await role).toBe("option");
-		expect(await tabindex).toBe(-1);
-
+		await expect(item3).toHaveAttribute("role", "option");
+		await expect(item3).toHaveAttribute("tabindex", "-1");
 		await expect(item3).toHaveText("Tag 4");
 		await expect(input).toBeFocused();
 
@@ -197,7 +190,7 @@ test.describe("u-combobox", () => {
 		await input.press("ArrowLeft");
 		await item3.press("Enter");
 		await expect(item3).not.toBeAttached();
-		expect(await item2.evaluate(isFocused)).toBeTruthy();
+		await expect(item2).toBeFocused();
 	});
 
 	// TODO: Does not make announcements when blurred

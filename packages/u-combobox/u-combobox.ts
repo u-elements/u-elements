@@ -36,11 +36,10 @@ declare global {
 
 export const UHTMLComboboxStyle = `${DISPLAY_BLOCK}
 :is(:host(:not([data-multiple])), :host([data-multiple="false"])) [part="items"] { display: none }
-::slotted(button[type="reset"]),::slotted(del) { font: inherit; border: 0; padding: 0; background: none; color: inherit; cursor: pointer; text-decoration: none }
 [part="items"] { display: contents }
-[part="item"] { display: inline }
-[part="item"]:focus, ::slotted(del:focus) { ${FOCUS_OUTLINE} }
+::slotted(button[type="reset"]),::slotted(del) { font: inherit; border: 0; padding: 0; background: none; color: inherit; cursor: pointer; text-decoration: none }
 ::slotted(data) { cursor: pointer; pointer-events: none }
+::slotted(data:focus), ::slotted(del:focus) { ${FOCUS_OUTLINE} }
 ::slotted(data)::after { padding-inline: .5ch; pointer-events: auto }
 ::slotted(data)::after,::slotted(button[type="reset"]:empty)::before,::slotted(del:empty)::before { content: '\\00D7'; content: '\\00D7' / '' }`;
 
@@ -71,7 +70,6 @@ const TEXTS = {
  */
 export class UHTMLComboboxElement extends UHTMLElement {
 	_unmutate?: ReturnType<typeof onMutation>; // Using underscore instead of private fields for backwards compatibility
-	_itemsElement: HTMLElement;
 
 	// Speed up by caching elements
 	_clear?: HTMLElement | null;
@@ -84,7 +82,6 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	_focusMoved = false; // Used to determine if we announce through aria-live or aria-label when items are added or removed
 	_match?: HTMLDataElement | { value: string }; // Used to store current match
 	_texts = { ...TEXTS };
-	_slots = 0; // Used to create unique slot names
 	_speak = "";
 	_value = ""; // Locally store value to store value before input-click
 
@@ -95,8 +92,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	constructor() {
 		super();
 		// biome-ignore format:next-line
-		this._itemsElement = tag("div", { part: "items", role: "listbox", tabIndex: "-1" });
-		this.attachShadow({ mode: "open" }).append(this._itemsElement, tag("slot"));
+		this.attachShadow({ mode: "open" }).append(tag("div", { part: "items", role: "listbox", tabIndex: "-1" }, tag("slot", { name: "items" })), tag("slot"));
 		attachStyle(this, UHTMLComboboxStyle);
 	}
 	connectedCallback() {
@@ -190,20 +186,19 @@ const dispatchSelect = (
 	item?: { value: string; label?: string },
 	canRemove = true,
 ) => {
-	const { _itemsElement, _texts, control, items, multiple } = self;
+	const { _texts, control, items, multiple } = self;
 	if (!item) {
 		if (multiple) return speak(_texts.invalid); // Warn about trying to select a invalid value in multiple mode
 		if (!control?.value && items[0]) return dispatchSelect(self, items[0]); // Clear if empty input and single mode
 		return syncInputWithItemSingleMode(self); // Restore previous item if non-empty input and single mode
 	}
 
-	const slots = _itemsElement.children as HTMLCollectionOf<HTMLSlotElement>;
 	const index = [...items].findIndex((i) => i.value === item.value);
 	const remove = multiple || !index ? items[index] : null; // In single mode, only accept index 0 as it is the only visible item
 	const focus =
 		remove &&
-		slots[index]?.matches(":focus") &&
-		(slots[index - 1] || slots[index + 1] || control);
+		items[index]?.matches(":focus") &&
+		(items[index - 1] || items[index + 1] || control);
 
 	if (remove && !canRemove) return syncInputWithItemSingleMode(self); // If item is already present and not removeable
 	if (focus) focus.focus(); // Move focus if item might be removed (can be prevented by comboboxbeforeselect)
@@ -240,8 +235,7 @@ const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
 	for (const item of items) {
 		const { top, right, bottom, left } = item.getBoundingClientRect(); // Use coordinates to inside since pointer-events: none will prevent correct event.target
 		if (item.contains(target as Node)) return dispatchSelect(self, item); // Keyboard and screen reader can set target to element with pointer-events: none
-		if (y >= top && y <= bottom && x >= left && x <= right)
-			return item.assignedSlot?.focus(); // If clicking inside item, focus it
+		if (y >= top && y <= bottom && x >= left && x <= right) return item.focus(); // If clicking inside item, focus it
 	}
 	if (target === self) control?.focus(); // Focus input if clicking <u-combobox>
 };
@@ -271,10 +265,10 @@ const onKeyDown = (self: UHTMLComboboxElement, e: KeyboardEvent) => {
 };
 
 const onKeyDownControl = (self: UHTMLComboboxElement, e: KeyboardEvent) => {
-	const { _itemsElement, _match, clear, control: input, multiple } = self;
+	const { _match, clear, control: input, items, multiple } = self;
 
 	if ((e.key === "ArrowLeft" || e.key === "Backspace") && !input?.selectionEnd)
-		(_itemsElement.lastElementChild as HTMLElement)?.focus(); // Focus last item if pressing left or backspace at start of input
+		items[items.length - 1]?.focus(); // Focus last item if pressing left or backspace at start of input
 	if (e.key === "Enter" && input) {
 		preventSubmit(input); // Prevent submitting form as we want to preform a match instead
 		dispatchSelect(self, multiple ? dispatchMatch(self) : _match, multiple);
@@ -289,18 +283,17 @@ const onKeyDownControl = (self: UHTMLComboboxElement, e: KeyboardEvent) => {
 };
 
 const onKeyDownItems = (self: UHTMLComboboxElement, event: KeyboardEvent) => {
-	const { _itemsElement, clear, control, items } = self;
+	const { clear, control, items } = self;
 	const { key, repeat, target } = event;
-	const slots = _itemsElement.children as HTMLCollectionOf<HTMLSlotElement>;
-	const index = [...slots].indexOf(event.composedPath()[0] as HTMLSlotElement);
+	const index = [...items].indexOf(target as HTMLDataElement);
 
 	if ((key === "Enter" || key === " ") && (items[index] || target === clear)) {
 		(items[index] || clear)?.click(); // Trigger click to ensure consistent behavior with mouse and screen readers
 		return event.preventDefault(); // Prevent scrolling or submitting
 	}
-	if (!slots[index]) return;
-	if (key === "ArrowLeft") return slots[index - 1]?.focus();
-	if (key === "ArrowRight") return (slots[index + 1] || control)?.focus();
+	if (!items[index]) return;
+	if (key === "ArrowLeft") return items[index - 1]?.focus();
+	if (key === "ArrowRight") return (items[index + 1] || control)?.focus();
 	if (key === "Backspace") {
 		event.preventDefault(); // Prevent navigating away from page
 		return repeat || dispatchSelect(self, items[index]);
@@ -310,7 +303,7 @@ const onKeyDownItems = (self: UHTMLComboboxElement, event: KeyboardEvent) => {
 
 const onMutations = (self: UHTMLComboboxElement, edit?: MutationRecord[]) => {
 	if (!self.control) return;
-	const { _itemsElement, _texts, control, items, list, multiple } = self;
+	const { _texts, control, items, list, multiple } = self;
 	const edits: HTMLDataElement[] = [];
 	for (const { addedNodes: add, removedNodes: del } of edit || []) {
 		for (const el of add) if (el instanceof HTMLDataElement) edits.unshift(el); // Added nodes to the front
@@ -330,10 +323,11 @@ const onMutations = (self: UHTMLComboboxElement, edit?: MutationRecord[]) => {
 	syncOptionsWithItems(self);
 	syncSelectWithItems(self);
 
+	const listbox = self.shadowRoot?.firstElementChild;
 	const hint = `${items.length ? _texts.found.replace("%d", `${items.length}`) : _texts.empty}`;
 	attr(control, "aria-description", multiple ? hint : null);
 	attr(control, "list", useId(list)); // Connect datalist and input
-	attr(_itemsElement, ARIA_LABEL, _texts.items);
+	if (listbox) attr(listbox, ARIA_LABEL, _texts.items);
 
 	self._unmutate?.takeRecords(); // Clear mutation records caused by updating control "id"
 };
@@ -345,30 +339,17 @@ const speakReset = (self: UHTMLComboboxElement, label: string | null) => {
 };
 
 const syncItems = (self: UHTMLComboboxElement) => {
-	const { _itemsElement, _texts, _speak, items } = self;
+	const { _texts, _speak, items } = self;
 
 	let idx = 0;
-	const append: Element[] = [];
 	for (const item of items) {
-		// biome-ignore format:next-line
-		const props = { "aria-selected": "true", name: item.getAttribute('slot') || `item-${self._slots++}`, part: "item", role: "option", tabindex: "-1" };
-		const slot = item.hasAttribute("slot") && item.assignedSlot; // Use existing option if available
 		const text = `${_speak}${getText(item)}, ${_texts.remove}${IS_IOS ? `, ${++idx} ${_texts.of} ${items.length}` : ""}`;
-
 		attr(item, ARIA_LABEL, text);
-		attr(item, "slot", props.name);
+		attr(item, "aria-selected", "true");
+		attr(item, "role", "option");
+		attr(item, "slot", "items");
+		attr(item, "tabindex", "-1");
 		attr(item, "value", item.value || getText(item));
-		append.push(slot || tag("slot", props));
-	}
-
-	idx = 0;
-	const slots = _itemsElement.children;
-	for (const slot of slots) if (!append.includes(slot)) slot.remove(); // Remove unused slots
-	for (const add of append) {
-		const slot = slots[idx++];
-		if (slot === add) continue; // No need to move, keep in place to prevent focus loss
-		if (slot) slot.insertAdjacentElement("afterend", add);
-		else _itemsElement.append(add); // Append only if not already in correct order
 	}
 };
 
@@ -397,6 +378,7 @@ const syncClearWithInput = (self: UHTMLComboboxElement) => {
 	if (!self.clear) return;
 	const { clear, control } = self;
 	const hidden = !control?.value || control?.disabled || control?.readOnly;
+	if (clear.nodeName === "DEL") attr(clear, "role", "button"); // Backwards compatibility for older versions using <del> as clear button
 	attr(clear, "aria-hidden", `${IS_IOS || IS_ANDROID}`); // Hide from screen readers to keep datalist open on swipe right navigation
 	attr(clear, "hidden", hidden ? "" : null);
 	attr(clear, "tabindex", "-1");

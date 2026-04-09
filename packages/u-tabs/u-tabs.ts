@@ -150,9 +150,8 @@ export class UHTMLTabListElement extends UHTMLElement {
 
 const onMutations = (
 	self: UHTMLTabsElement | UHTMLTabListElement,
-	records?: MutationRecord[],
+	records: MutationRecord[] = [],
 ) => {
-	if (!records) return; // Skip initial callback since <u-tab> will always trigger ARIA_SELECTED
 	const root = (self as UHTMLTabListElement).tabsElement || self;
 	const tabs = [...queryWithoutNested("tab", root)];
 

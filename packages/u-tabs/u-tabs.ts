@@ -107,12 +107,13 @@ export class UHTMLTabListElement extends UHTMLElement {
 		const { key, type, target } = event;
 		const tabs = [...this.tabs];
 		const prev = tabs.findIndex((tab) => tab.contains(target as Node));
+		const isKeyClick = key === " " || key === "Enter";
 		let next = prev;
 
 		if (event.defaultPrevented || prev === -1) return; // Event prevented or not a tab
 		if (type === "click") setSelected(tabs[prev]);
 		if (type === "keydown") {
-			if (key === " " || key === "Enter") {
+			if (isKeyClick) {
 				event.preventDefault?.(); // Prevent scroll
 				const click = { bubbles: true, cancelable: true, composed: true }; // Forward to real click
 				return tabs[prev].dispatchEvent(new MouseEvent("click", click));
@@ -165,8 +166,9 @@ const onMutations = (
 	const nextPanel = nextTab && getPanel(nextTab, panels[tabs.indexOf(nextTab)]);
 	if (nextPanel) attr(nextPanel, SAFE_LABELLEDBY, useId(nextTab));
 
-	tabs.forEach((tab, index) => {
-		const panel = getPanel(tab, panels[index]);
+	let idx = 0;
+	for (const tab of tabs) {
+		const panel = getPanel(tab, panels[idx++]);
 		const panelHidden = panel !== nextPanel;
 		attr(tab, TABINDEX, tab === nextTab ? "0" : "-1");
 		attr(tab, ARIA_SELECTED, `${tab === nextTab}`);
@@ -176,7 +178,7 @@ const onMutations = (
 			attr(panel, "hidden", panelHidden ? "" : null);
 			attr(panel, TABINDEX, panelHidden ? null : "0");
 		}
-	});
+	}
 
 	self._unmutate?.takeRecords(); // Prevent infinite loop that would be caused by updating aria-selected
 };

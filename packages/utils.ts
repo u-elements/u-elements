@@ -84,14 +84,17 @@ export const off = (
  * @param css The css to inject
  */
 export const attachStyle = (el: Element, css: string) => {
-	if (!el.shadowRoot) el.attachShadow({ mode: "open" }); // Respects Declarative Shadow DOM
-	if (!el.shadowRoot?.querySelector("slot")) el.shadowRoot?.append(tag("slot"));
-	if (SUPPORTS_CONSTRUCTED_CSS) {
-		const sheet = new CSSStyleSheet();
-		sheet.replaceSync(css);
-		(el.shadowRoot as ShadowRoot).adoptedStyleSheets = [sheet];
-	} else el.shadowRoot?.append(tag("style", undefined, css));
-	return el.shadowRoot as ShadowRoot;
+	const root = el.shadowRoot || el.attachShadow({ mode: "open" }); // Respects Declarative Shadow DOM
+	if (!root.querySelector("slot")) root.append(tag("slot"));
+	if (!root.querySelector("style")) {
+		if (!SUPPORTS_CONSTRUCTED_CSS) root.append(tag("style", null, css));
+		else {
+			const sheet = new CSSStyleSheet();
+			sheet.replaceSync(css);
+			root.adoptedStyleSheets = [sheet];
+		}
+	}
+	return root;
 };
 
 /**

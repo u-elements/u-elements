@@ -36,6 +36,7 @@ declare global {
 
 export const UHTMLComboboxStyle = `${DISPLAY_BLOCK}
 :is(:host(:not([data-multiple])), :host([data-multiple="false"])) [part="items"] { display: none }
+[role="listbox"] { display: contents }
 ::slotted(button[type="reset"]),::slotted(del) { font: inherit; border: 0; padding: 0; background: none; color: inherit; cursor: pointer; text-decoration: none }
 ::slotted(data) { cursor: pointer; pointer-events: none }
 ::slotted(data:focus), ::slotted(del:focus) { ${FOCUS_OUTLINE} }
@@ -94,7 +95,6 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		const root = attachStyle(this, UHTMLComboboxStyle);
 		this._listbox = root.querySelector('[role="listbox"]') || tag("div");
 		this._listbox.innerHTML = `<slot name="items"></slot>`;
-		this._listbox.style.display = "contents";
 		attr(this._listbox, "aria-orientation", "horizontal");
 		attr(this._listbox, "role", "listbox");
 		attr(this._listbox, "part", "items");
@@ -292,8 +292,9 @@ const onKeyDownItems = (self: UHTMLComboboxElement, event: KeyboardEvent) => {
 	const { clear, control, items } = self;
 	const { key, repeat, target } = event;
 	const index = [...items].indexOf(target as HTMLDataElement);
+	const isKeyClick = key === " " || key === "Enter";
 
-	if ((key === "Enter" || key === " ") && (items[index] || target === clear)) {
+	if (isKeyClick && (items[index] || target === clear)) {
 		(items[index] || clear)?.click(); // Trigger click to ensure consistent behavior with mouse and screen readers
 		return event.preventDefault(); // Prevent scrolling or submitting
 	}

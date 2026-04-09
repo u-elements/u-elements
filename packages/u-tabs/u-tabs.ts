@@ -138,7 +138,7 @@ export class UHTMLTabListElement extends UHTMLElement {
 		return getTabsElement(this);
 	}
 	get tabs(): NodeListOf<Element> {
-		return queryWithoutNested("tab", this); // Only direct children of tablist is valid tabs
+		return this.querySelectorAll(':scope > [role="tab"]'); // Only direct children of tablist is valid tabs
 	}
 	get selectedIndex(): number {
 		return getSelectedIndex(this.tabs);

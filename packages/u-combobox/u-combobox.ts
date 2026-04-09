@@ -149,7 +149,10 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		return this._control; // Inspired by https://developer.mozilla.org/en-US/docs/Web/API/HTMLLabelElement/control
 	}
 	get list(): HTMLDataListElement | null {
-		if (!this._list?.isConnected) this._list = this.querySelector(CSS_DATALIST); // Can not use this.control.list as it might not be connected yet
+		if (!this._list?.isConnected) {
+			this._list = this.querySelector(CSS_DATALIST); // Can not use this.control.list as it might not be connected yet
+			this._options = undefined; // Reset options cache as list might be changed
+		}
 		return this._list; // Inspired by https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/list
 	}
 	get clear(): HTMLElement | null {

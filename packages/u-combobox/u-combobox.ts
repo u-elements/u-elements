@@ -39,9 +39,9 @@ export const UHTMLComboboxStyle = `${DISPLAY_BLOCK}
 [role="listbox"] { display: contents }
 ::slotted(button[type="reset"]),::slotted(del) { font: inherit; border: 0; padding: 0; background: none; color: inherit; cursor: pointer; text-decoration: none }
 ::slotted(data) { cursor: pointer; pointer-events: none }
-::slotted(data:focus), ::slotted(del:focus) { ${FOCUS_OUTLINE} }
 ::slotted(data)::after { padding-inline: .5ch; pointer-events: auto }
-::slotted(data)::after,::slotted(button[type="reset"]:empty)::before,::slotted(del:empty)::before { content: '\\00D7'; content: '\\00D7' / '' }`;
+::slotted(data)::after,::slotted(button[type="reset"]:empty)::before,::slotted(del:empty)::before { content: '\\00D7'; content: '\\00D7' / '' }
+::slotted(data:focus),::slotted(del:focus),::slotted(button[type="reset"]:focus) { ${FOCUS_OUTLINE} }`;
 
 export const UHTMLComboboxShadowRoot =
 	declarativeShadowRoot(UHTMLComboboxStyle);

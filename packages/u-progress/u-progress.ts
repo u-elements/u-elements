@@ -82,7 +82,7 @@ const onMutations = (self: UHTMLProgressElement) => {
 	self.style.setProperty("--percentage", `${percentage}%`); // Write style before any read operation to avoid excess animation
 	let label = getLabel(self); // Uses innerText so must be after setting self.style
 
-	if (IS_IOS) label = `${label.replace(/\d+%$/, "").trim()} ${percentage}%`; // Replace removes previously added percentage
+	if (IS_IOS) label = `${label.replace(/\d+%$/, "")} ${percentage}%`.trim(); // Replace removes previously added percentage
 	attr(self, "aria-busy", `${self.position === -1}`); // true if indeterminate
 	attr(self, "aria-label", label); // Must use aria-label to include percentage value
 	attr(self, "aria-labelledby", null); // Since we always want to use aria-label

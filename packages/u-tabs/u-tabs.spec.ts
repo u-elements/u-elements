@@ -428,7 +428,8 @@ test.describe("u-tabs", () => {
 				const uTabs = document.querySelector("u-tabs");
 				const uTab0 = uTabs?.tabs[0] as UHTMLTabElement;
 				const uTab1 = uTabs?.tabs[1] as UHTMLTabElement;
-				return uTab0.panel === uTab1.panel && uTab0.panel === uTab1.panel;
+				const uTab2 = uTabs?.tabs[2] as UHTMLTabElement;
+				return uTab0.panel === uTab1.panel && uTab1.panel === uTab2.panel;
 			}),
 		);
 

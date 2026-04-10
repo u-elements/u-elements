@@ -150,7 +150,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	}
 	get list(): HTMLDataListElement | null {
 		if (!this._list?.isConnected) {
-			this._list = this.querySelector(CSS_DATALIST); // Can not use this.control.list as it might not be connected yet
+			this._list = this.querySelector<HTMLDataListElement>(CSS_DATALIST); // Can not use this.control.list as it might not be connected yet
 			this._options = undefined; // Reset options cache as list might be changed
 		}
 		return this._list; // Inspired by https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/list
@@ -366,7 +366,7 @@ const syncSelectWithItems = (self: UHTMLComboboxElement) => {
 	if (!self._select?.isConnected) self._select = self.querySelector("select");
 	if (!self._select) return;
 	const { _select, items, multiple } = self;
-	const append = [];
+	const append = []; // Speed up by running all appends in one go after the loop
 	let idx = 0;
 
 	attr(_select, "multiple", multiple ? "" : null); // Forward multiselect
@@ -375,8 +375,14 @@ const syncSelectWithItems = (self: UHTMLComboboxElement) => {
 		const text = getText(item);
 		const value = item?.value;
 
-		if (option) Object.assign(option, { text, value });
-		else append.push(new Option(text, value, true, true)); // Speed up by running all appends in one go after the loop
+		if (!option) append.push(new Option(text, value, true, true));
+		else
+			Object.assign(option, {
+				defaultSelected: true,
+				selected: true,
+				text,
+				value,
+			});
 	}
 	if (append.length) _select.append(...append);
 	else for (const opt of [..._select.options].slice(idx)) opt.remove(); // Remove unused options

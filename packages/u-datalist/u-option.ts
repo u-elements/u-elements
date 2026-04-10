@@ -23,7 +23,7 @@ export class UHTMLOptionElement extends UHTMLElement {
 	}
 	connectedCallback() {
 		if (!IS_IOS) this.tabIndex = -1; // Do not set tabIndex on iOS as this causes keyboard to toggle on and off
-		if (!this.hasAttribute("role")) attr(this, "role", "option"); // Only set role if not allready specified, to allow role="none"
+		if (!this.hasAttribute("role")) attr(this, "role", "option"); // Only set role if not already specified, to allow role="none"
 		attr(this, "aria-disabled", `${this.disabled}`);
 		attr(this, "aria-selected", `${this.selected}`); // Setup aria attributes (Firefox defaults to "selected" unless aria-selected="false" is set)
 		useId(this); // Ensure id is present for aria referencing

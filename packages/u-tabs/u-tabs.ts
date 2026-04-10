@@ -22,11 +22,16 @@ declare global {
 	}
 }
 
+const ARIA_CONTROLS = "aria-controls";
+const ARIA_DISABLED = "aria-disabled";
+const ARIA_SELECTED = "aria-selected";
+const SELECTOR_SELECTED = `:scope > [${ARIA_SELECTED}="true"]`;
+const TABINDEX = "tabindex";
+
 export const UHTMLTabsStyle = DISPLAY_BLOCK;
 export const UHTMLTabListStyle = DISPLAY_BLOCK;
 export const UHTMLTabPanelStyle = DISPLAY_BLOCK;
-export const UHTMLTabStyle =
-	':host(:not([hidden])) { display: inline-block; cursor: pointer }:host([aria-disabled="true"]) { cursor: default }';
+export const UHTMLTabStyle = `:host(:not([hidden])) { display: inline-block; cursor: pointer }:host([${ARIA_DISABLED}="true"]) { cursor: default }`;
 
 export const UHTMLTabsShadowRoot = declarativeShadowRoot(UHTMLTabsStyle);
 export const UHTMLTabListShadowRoot = declarativeShadowRoot(UHTMLTabListStyle);
@@ -34,31 +39,14 @@ export const UHTMLTabShadowRoot = declarativeShadowRoot(UHTMLTabStyle);
 export const UHTMLTabPanelShadowRoot =
 	declarativeShadowRoot(UHTMLTabPanelStyle);
 
-const ARIA_CONTROLS = "aria-controls";
-const ARIA_SELECTED = "aria-selected";
-const SELECTOR_SELECTED = `:scope > [${ARIA_SELECTED}="true"]`;
-const TABINDEX = "tabindex";
-
 /**
  * The `<u-tabs>` HTML element is used to group a `<u-tablist>` and several `<u-tabpanel>` elements.
  * No MDN reference available.
  */
 export class UHTMLTabsElement extends UHTMLElement {
-	_unmutate?: ReturnType<typeof onMutation>; // Using underscore instead of private fields for backwards compatibility
-
 	constructor() {
 		super();
 		attachStyle(this, UHTMLTabsStyle);
-	}
-	connectedCallback() {
-		this._unmutate = onMutation(this, onMutations, {
-			childList: true,
-			subtree: true,
-		});
-	}
-	disconnectedCallback() {
-		this._unmutate?.();
-		this._unmutate = undefined;
 	}
 	get tabList(): UHTMLTabListElement | null {
 		return queryWithoutNested<UHTMLTabListElement>("tablist", this)[0] || null;
@@ -92,7 +80,7 @@ export class UHTMLTabListElement extends UHTMLElement {
 		attr(this, "role", "tablist");
 		on(this, "click keydown", this); // Listen for tab events on tablist to minimize amount of listeners
 		this._unmutate = onMutation(this, onMutations, {
-			attributeFilter: ["id", ARIA_CONTROLS, ARIA_SELECTED], // Need to listen for attributes here, so mutation run after all custom elements are connected
+			attributeFilter: ["id", "role", ARIA_CONTROLS, ARIA_SELECTED], // Need to listen for attributes here, so mutation run after all custom elements are connected
 			attributes: true,
 			childList: true,
 			subtree: true, // Needed to catch changes of attributes in children
@@ -149,20 +137,21 @@ export class UHTMLTabListElement extends UHTMLElement {
 }
 
 const onMutations = (
-	self: UHTMLTabsElement | UHTMLTabListElement,
+	self: UHTMLTabListElement,
 	records: MutationRecord[] = [],
 ) => {
 	const root = (self as UHTMLTabListElement).tabsElement || self;
-	const tabs = [...queryWithoutNested("tab", root)];
+	const tabs = queryWithoutNested("tab", root);
 
-	let nextTab: Element = tabs[getSelectedIndex(tabs)]; // Get existing selected tab before mutations
+	let nextTab = tabs[getSelectedIndex(tabs)]; // Get existing selected tab before mutations
 	for (const { target: el } of records) {
 		const isTab = el instanceof Element && attr(el, "role") === "tab";
 		if (isTab && attr(el, ARIA_SELECTED) === "true") nextTab = el; // Pluck the newly selected tab from mutations
 	}
 
 	const panels = queryWithoutNested("tabpanel", root);
-	const nextPanel = nextTab && getPanel(nextTab, panels[tabs.indexOf(nextTab)]);
+	const nextPanel =
+		nextTab && getPanel(nextTab, panels[[...tabs].indexOf(nextTab)]);
 	if (nextPanel) attr(nextPanel, SAFE_LABELLEDBY, useId(nextTab));
 
 	let idx = 0;
@@ -200,7 +189,7 @@ export class UHTMLTabElement extends UHTMLElement {
 			this.selected = true; // Auto-select if first and tablist has no selected elements
 	}
 	get tabsElement(): UHTMLTabsElement | null {
-		return getTabsElement(this.tabList); // Using tabList since getTabsElement uses assignedSlot.getRootNode().host to find UHTMLTabsElement
+		return getTabsElement(this);
 	}
 	get tabList(): UHTMLTabListElement | null {
 		const tablist = this.parentElement as UHTMLTabListElement | null;
@@ -232,8 +221,13 @@ export class UHTMLTabPanelElement extends UHTMLElement {
 		attachStyle(this, UHTMLTabPanelStyle);
 	}
 	connectedCallback() {
-		attr(this, "role", "tabpanel");
-		attr(this, "hidden", ""); // Hide panels by default to prevent flash of unstyled content and ensure proper setup when added to DOM before tabs
+		attr(this, "role", "tabpanel"); // Must register role before checking hidden state
+		attr(this, "hidden", "");
+
+		const { tabs = [], panels = [] } = this.tabsElement || {};
+		const index = getSelectedIndex(tabs);
+		const panel = tabs[index] && getPanel(tabs[index], panels[index]); // Ensures dynamically added panels get correct state
+		if (panel === this) tabs[index].setAttribute(ARIA_SELECTED, "true"); // Using setAttribute to intentionally trigger MutationObserver
 	}
 	get tabsElement(): UHTMLTabsElement | null {
 		return getTabsElement(this);
@@ -262,15 +256,16 @@ const getPanel = (tab: Element, panel?: Element) => {
 const getSelectedIndex = (tabs: Iterable<Element>) =>
 	[...tabs].findIndex((tab) => attr(tab, ARIA_SELECTED) === "true");
 
-const getTabsElement = (self: Element | null) => {
-	const root = self?.assignedSlot?.getRootNode() as ShadowRoot | null;
-	return root?.host instanceof UHTMLTabsElement ? root.host : null;
+const getTabsElement = (self: Node | null) => {
+	for (let el = self; el; el = el.parentNode || (el as ShadowRoot).host)
+		if (el instanceof UHTMLTabsElement) return el;
+	return null;
 };
 
 const setSelected = (tab?: Element | null) =>
 	tab &&
-	attr(tab, "aria-disabled") !== "true" &&
-	attr(tab, "aria-selected", "true");
+	attr(tab, ARIA_DISABLED) !== "true" &&
+	attr(tab, ARIA_SELECTED, "true");
 
 customElements.define("u-tabs", UHTMLTabsElement);
 customElements.define("u-tablist", UHTMLTabListElement);

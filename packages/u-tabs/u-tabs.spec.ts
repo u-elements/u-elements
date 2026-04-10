@@ -335,7 +335,7 @@ test.describe("u-tabs", () => {
 		await page.evaluate(() => {
 			document.body.innerHTML = `<u-tabs>
         <u-tablist>
-          <u-tab aria-selected="true">Tab 1</u-tab>
+          <u-tab>Tab 1</u-tab>
           <u-tab aria-selected="true">Tab 2</u-tab>
         </u-tablist>
         <u-tabpanel>Panel 1</u-tabpanel>
@@ -426,10 +426,9 @@ test.describe("u-tabs", () => {
 		expect(
 			await page.evaluate(() => {
 				const uTabs = document.querySelector("u-tabs");
-				return (
-					uTabs?.tabs[0].panel === uTabs?.tabs[1].panel &&
-					uTabs?.tabs[1].panel === uTabs?.tabs[2].panel
-				);
+				const uTab0 = uTabs?.tabs[0] as UHTMLTabElement;
+				const uTab1 = uTabs?.tabs[1] as UHTMLTabElement;
+				return uTab0.panel === uTab1.panel && uTab0.panel === uTab1.panel;
 			}),
 		);
 
@@ -672,5 +671,25 @@ test.describe("u-tabs", () => {
 		await uTab.nth(1).click();
 		await expect(uTabpanel.nth(0)).toHaveAttribute("hidden");
 		await expect(uTabpanel.nth(1)).not.toHaveAttribute("hidden");
+	});
+
+	test("handles prefilled DOM", async ({ page }) => {
+		await page.evaluate(() => {
+			document.body.innerHTML = `<u-tabs>
+        <u-tablist>
+          <u-tab role="tab" aria-selected="true">Tab 1</u-tab>
+          <u-tab role="tab">Tab 2</u-tab>
+        </u-tablist>
+				<u-tabpanel role="tabpanel">Panel 1</u-tabpanel>
+      </u-tabs>`;
+		});
+		const uTab = page.locator("u-tab");
+		const uTabpanel = page.locator("u-tabpanel");
+		await expect(uTab.nth(0)).toHaveAttribute("tabindex", "0");
+		await expect(uTab.nth(0)).toHaveAttribute("aria-selected", "true");
+		await expect(uTab.nth(1)).toHaveAttribute("tabindex", "-1");
+		await expect(uTab.nth(1)).toHaveAttribute("aria-selected", "false");
+		await expect(uTabpanel.nth(0)).not.toBeHidden();
+		await expect(uTabpanel.nth(1)).toBeHidden();
 	});
 });

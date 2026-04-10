@@ -431,7 +431,7 @@ test.describe("u-tabs", () => {
 				const uTab2 = uTabs?.tabs[2] as UHTMLTabElement;
 				return uTab0.panel === uTab1.panel && uTab1.panel === uTab2.panel;
 			}),
-		);
+		).toBeTruthy();
 
 		await uTab0.evaluate<void, UHTMLTabElement>((el) => {
 			el.selected = true;

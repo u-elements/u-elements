@@ -88,7 +88,7 @@ const onMutations = (self: UHTMLProgressElement) => {
 	attr(self, "aria-labelledby", null); // Since we always want to use aria-label
 	attr(self, "aria-valuemax", "100");
 	attr(self, "aria-valuemin", "0");
-	attr(self, "aria-valuenow", `${percentage}`);
+	attr(self, "aria-valuenow", self.position === -1 ? null : `${percentage}`);
 	attr(self, "role", IS_IOS ? "img" : "progressbar"); // iOS does not announce amount, so we use img and percentage
 
 	self._unmutate?.takeRecords(); // Prevent infinite loop that would be caused by updating aria-label and aria-valuenow

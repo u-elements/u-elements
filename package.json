@@ -34,7 +34,6 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.4.11",
-		"@builder.io/qwik": "^1.19.2",
 		"@custom-elements-manifest/analyzer": "^0.11.0",
 		"@mdn/browser-compat-data": "^7.3.10",
 		"@playwright/test": "^1.59.1",
@@ -62,7 +61,6 @@
 		"typescript": "6.0.2",
 		"vite": "^8.0.8",
 		"vite-plugin-cem": "^0.8.5",
-		"vite-plugin-csp-guard": "^3.0.0",
 		"vite-plugin-solid": "^2.11.12",
 		"vitepress": "^2.0.0-alpha.17",
 		"vue": "^3.5.32",

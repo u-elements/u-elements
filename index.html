@@ -17,16 +17,24 @@
       body { margin: 15vh auto 100vh; max-width: 500px }
       input { font: inherit }
 
+      /* u-combobox::part(item) {
+        background: lightblue;
+        border:1px solid;
+      }
+      u-combobox::part(item)::after {
+        color: red
+      }
+      u-combobox::part(item) b {
+        display: block;
+        border: 1px solid;
+      } */
+
       .hei {
         border: 2px solid rebeccapurple;
       }
       label {
         display: block;
       }
-
-      u-tab { padding: 2px 5px }
-      u-tab[aria-selected="true"] { background: black; color: white }
-      u-tabpanel { padding: 10px; border: 1px solid }
 
       u-option[selected] { color: red; font-weight: bold; }
 
@@ -129,8 +137,9 @@
         <label for="input-1">Velg type iskrem</label>
         <u-combobox
           data-creatable
-          data-multiple
+          data-multiple="true"
           data-sr-added="La til"
+          data-sr-clear="Tøm tekstfelt"
           data-sr-empty="Ingen valgte"
           data-sr-found="Naviger til venstre for å finne %d valgte"
           data-sr-invalid="Ugyldig verdi"
@@ -140,13 +149,12 @@
           data-sr-removed="Fjernet"
         >
           <select name="test" hidden></select>
-          <u-comboboxitems>
-            <data>Jordbær</data>
-            <data>Oslo</data>
-            <data>Lakris</data>
-          </u-comboboxitems>
+          <data>Jordbær</data>
+          <data>Oslo</data>
+          <data>Lakris</data>
           <input id="input-1">
-          <del></del>
+          <button type="reset"></button>
+          <!-- <del>hei</del> -->
           <!-- <datalist>
             <option value="2" label="Kokkos">Kokkos<div>Hei</div></option>
             <option>Jordbær</option>
@@ -203,9 +211,9 @@
           }
         });
 
-        combobox.addEventListener('input', () => {
-          const { list, value } = combobox.control;
-          const query = encodeURIComponent(value.trim());
+        combobox?.addEventListener('input', () => {
+          // const { list, value } = combobox.control;
+          // const query = encodeURIComponent(value.trim());
           // list.innerHTML = query ? '<u-option value="">Loading</u-option>' : '';
           
           // xhr.abort();
@@ -447,7 +455,7 @@
         <u-summary slot="summary">Åpne/lukk</u-summary>
         <div>Innhold</div>
       </u-details> -->
-      <!-- <u-test></u-test> -->
+      <u-test></u-test>
       <script>
         // setTimeout(() => {
         //   let i = 0
@@ -477,9 +485,9 @@
           connectedCallback() {
             const shadowRoot = this.attachShadow({ mode: 'open' })
             attachStyle(this, `
-              u-tab { padding: 2px 5px }
-              u-tab[aria-selected="true"] { background: black; color: white }
-              u-tabpanel { padding: 10px; border: 1px solid }
+              [role="tab"] { display: inline-block; padding: 2px 5px }
+              [role="tab"][aria-selected="true"] { background: black; color: white }
+              [role="tabpanel"] { padding: 10px; border: 1px solid }
               u-option[selected] { color: red }
               input { font-size: inherit }
             `)
@@ -488,9 +496,11 @@
               <u-tabs>
                 <u-tablist>
                   <u-tab>Rosinbolle</u-tab>
+                  <u-tab aria-selected="true">Kanelbolle</u-tab>
+                  <a role="tab" href="javascript:void(0)">NRK</a>
                   <u-tab aria-disabled="true">Skolebolle</u-tab>
                   <u-tab aria-controls="panel-inside">Kanelknute</u-tab>
-                  <u-tab aria-controls="panel-outlier" aria-selected="true">Pistasjbolle</u-tab>
+                  <u-tab aria-controls="panel-outlier">Pistasjbolle</u-tab>
                   <u-tab-close hidden>Lukk</u-tab-close>
                 </u-tablist>
                 <u-tabpanel id="panel-inside">

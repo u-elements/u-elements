@@ -1,5 +1,4 @@
 import {
-	asButton,
 	attachStyle,
 	attr,
 	customElements,
@@ -94,15 +93,19 @@ export class UHTMLDetailsElement extends UHTMLElement {
 		if (prop === "open" && (prev === null) !== (next === null))
 			this.dispatchEvent(new Event("toggle"));
 	}
-	handleEvent(event: Event) {
+	handleEvent(event: Partial<KeyboardEvent>) {
+		const isKeyClick = event.key === " " || event.key === "Enter";
 		const isSummary =
 			event.target instanceof Element &&
 			event.target.closest('[slot="summary"]')?.parentElement === this;
 
 		if (event.defaultPrevented) return; // Allow all events to be canceled
 		if (event.type === "beforematch") this.open = true;
-		if (isSummary && event.type === "keydown") asButton(event);
 		if (isSummary && event.type === "click") this.open = !this.open;
+		if (isSummary && event.type === "keydown" && isKeyClick) {
+			event.preventDefault?.(); // Prevent scroll
+			event.target.dispatchEvent(new MouseEvent("click", event)); // Forward to real click
+		}
 	}
 	get open(): boolean {
 		return this.hasAttribute("open");

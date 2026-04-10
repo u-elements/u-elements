@@ -78,8 +78,6 @@ function getBrowserSupport(feature: CompatStatement, region = {}) {
 			const supportKey = noSupport ? "no" : "yes";
 			const percentage = Number.parseFloat(usage[version]) || 0;
 
-			// 	console.log({ noSupport, supportKey, percentage });
-
 			total[supportKey] += percentage;
 			support[supportKey] += percentage;
 

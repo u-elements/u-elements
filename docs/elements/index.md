@@ -4,11 +4,11 @@ prev: false
 ---
 <script setup>
 import { ref } from 'vue'
-import { VPTeamMembers, useSidebar } from 'vitepress/theme'
+import { VPTeamMembers, useLayout } from 'vitepress/theme'
 import { useRoute } from 'vitepress'
 
 const { data: { title } } = useRoute();
-const { sidebar } = useSidebar()
+const { sidebar } = useLayout()
 const current = sidebar.value.find(({ text, items }) => text === title);
 const members = current?.items.map(({ text, link }) => ({
   org: text.replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>'),

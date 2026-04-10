@@ -41,7 +41,7 @@ watch(code, () => {
   .demo-code, .demo-view { box-sizing: border-box; display: block; max-width: 100%; min-width: 0 }
   .demo-code { font: .875rem/1.5 var(--vp-font-family-mono); field-sizing: content; background: none; padding: .5em; resize: vertical; width: 100%; }
   .demo-view { border-bottom: inherit; min-height: 200px; padding: 1rem; margin: -2px }
-  .demo-view :where(button,input) { all: revert }
+  .demo-view :where(button:not([type="reset"]),input) { all: revert }
 </style>
 <template>
   <pre hidden><slot></slot></pre>

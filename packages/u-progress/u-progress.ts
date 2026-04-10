@@ -2,11 +2,11 @@ import {
 	attachStyle,
 	attr,
 	customElements,
-	debounce,
 	declarativeShadowRoot,
 	getLabel,
 	getRoot,
 	IS_IOS,
+	onMutation,
 	UHTMLElement,
 	useId,
 } from "../utils";
@@ -31,28 +31,24 @@ export const UHTMLProgressShadowRoot =
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/progress)
  */
 export class UHTMLProgressElement extends UHTMLElement {
-	_render?: () => void; // Using underscore instead of private fields for backwards compatibility
+	_unmutate?: ReturnType<typeof onMutation>; // Using underscore instead of private fields for backwards compatibility
 
 	// Prevent Chrome DevTools warning about <label for=""> pointing to <u-progress>
 	static formAssociated = true;
 
-	// Using ES2015 syntax for backwards compatibility
-	static get observedAttributes() {
-		return ["aria-label", "aria-labelledby", "value", "max"]; // Also watch aria labels to sync Firefox/iOS
-	}
 	constructor() {
 		super();
 		attachStyle(this, UHTMLProgressStyle);
 	}
 	connectedCallback() {
-		render(this); // We now know the element is in the DOM, so run a attribute setup before connecting attributeChangedCallback
-		this._render = debounce(() => render(this), 0); // Using debounce to squash multiple mutations into one render
-	}
-	attributeChangedCallback() {
-		this._render?.();
+		this._unmutate = onMutation(this, onMutations, {
+			attributeFilter: ["aria-label", "aria-labelledby", "value", "max"], // Using MutationObserver to merge multiple attribute changes to single callback
+			attributes: true,
+		});
 	}
 	disconnectedCallback() {
-		this._render = undefined;
+		this._unmutate?.();
+		this._unmutate = undefined;
 	}
 	get labels(): NodeListOf<HTMLLabelElement> {
 		const label = this.closest<HTMLLabelElement>("label:not([for])");
@@ -81,19 +77,21 @@ export class UHTMLProgressElement extends UHTMLElement {
 	}
 }
 
-const render = (self: UHTMLProgressElement) => {
+const onMutations = (self: UHTMLProgressElement) => {
 	const percentage = Math.max(0, Math.round(self.position * 100)); // Always use percentage as iOS role="progressbar"
 	self.style.setProperty("--percentage", `${percentage}%`); // Write style before any read operation to avoid excess animation
 	let label = getLabel(self); // Uses innerText so must be after setting self.style
 
-	if (IS_IOS) label = `${label.replace(/\d+%$/, "")} ${percentage}%`; // Replace removes previously added percentage
+	if (IS_IOS) label = `${label.replace(/\d+%$/, "")} ${percentage}%`.trim(); // Replace removes previously added percentage
 	attr(self, "aria-busy", `${self.position === -1}`); // true if indeterminate
-	attr(self, "aria-label", label.trim()); // Must use aria-label to include percentage value
+	attr(self, "aria-label", label); // Must use aria-label to include percentage value
 	attr(self, "aria-labelledby", null); // Since we always want to use aria-label
 	attr(self, "aria-valuemax", "100");
 	attr(self, "aria-valuemin", "0");
-	attr(self, "aria-valuenow", `${percentage}`);
+	attr(self, "aria-valuenow", self.position === -1 ? null : `${percentage}`);
 	attr(self, "role", IS_IOS ? "img" : "progressbar"); // iOS does not announce amount, so we use img and percentage
+
+	self._unmutate?.takeRecords(); // Prevent infinite loop that would be caused by updating aria-label and aria-valuenow
 };
 
 const isNumeric = (value: unknown): value is number | string =>

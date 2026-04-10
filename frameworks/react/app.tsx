@@ -19,16 +19,16 @@ export default function App() {
 
 	const handleBeforeSelect = (event: CustomEvent<HTMLDataElement>) => {
 		const { multiple, values } = event.target as UHTMLComboboxElement;
-		const item = event.detail;
-		console.log("beforeselect", item, values, multiple);
+		const { isConnected, value } = event.detail;
+		console.log("beforeselect", {isConnected, value, values, multiple});
 		event.preventDefault();
 
-		if (!multiple) setSelected(item.isConnected ? [] : [item.value]);
+		if (!multiple) setSelected(isConnected ? [] : [value]);
 		else
 			setSelected(
 				values
-					.concat(item.value)
-					.filter((v) => item.value !== v || !item.isConnected),
+					.concat(value)
+					.filter((v) => value !== v || !isConnected),
 			);
 	};
 
@@ -59,7 +59,7 @@ export default function App() {
 			<br />
 			{/* @ts-expect-error */}
 			<u-combobox ref={ref} data-multiple oncomboboxbeforeselect={handleBeforeSelect}>
-				<select></select>
+				<select hidden></select>
 				{selected.map((opt) => (
 					<data key={opt}>{opt}</data>
 				))}
@@ -94,21 +94,16 @@ export default function App() {
 			</div>
 			<br />
 			<br />
-			<u-tablist>
-				<u-tab id="t1" role="tab" aria-controls="panel1" aria-selected="true">
-					Tab 1
-				</u-tab>
-				<u-tab id="t2" aria-controls="panel2">
-					Tab 2
-				</u-tab>
-				<u-tab id="t3" aria-controls="panel3">
-					Tab 3
-				</u-tab>
-			</u-tablist>
-
-			<u-tabpanel id="panel1">Panel 1</u-tabpanel>
-			<u-tabpanel id="panel2">Panel 2</u-tabpanel>
-			<u-tabpanel id="panel3">Panel 3</u-tabpanel>
+			<u-tabs>
+				<u-tablist>
+					<u-tab>Tab 1</u-tab>
+					<u-tab>Tab 2</u-tab>
+					<u-tab aria-selected="true">Tab 3</u-tab>
+				</u-tablist>
+				<u-tabpanel>Panel 1</u-tabpanel>
+				<u-tabpanel>Panel 2</u-tabpanel>
+				<u-tabpanel>Panel 3</u-tabpanel>
+			</u-tabs>
 		</div>
 	);
 }

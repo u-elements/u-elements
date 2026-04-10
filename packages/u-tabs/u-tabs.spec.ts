@@ -125,23 +125,44 @@ test.describe("u-tabs", () => {
 		});
 
 		expect(
-			await page.evaluate(() => {
-				const uTablist = document.querySelector("u-tablist");
-				return uTablist?.tabsElement === document.querySelector("u-tabs");
-			}),
+			await page.evaluate(
+				() =>
+					document.querySelector("u-tablist")?.tabsElement ===
+					document.querySelector("u-tabs"),
+			),
 		).toBeTruthy();
 
 		expect(
 			await page.evaluate(() => {
-				const uTab = document.querySelector("u-tab");
 				return (
-					uTab?.tabsElement === document.querySelector("u-tabs") &&
-					uTab?.tabList === document.querySelector("u-tablist") &&
-					uTab?.panel === document.querySelector("u-tabpanel") &&
-					uTab?.selected &&
-					uTab?.index === 0
+					document.querySelector("u-tab")?.tabsElement ===
+					document.querySelector("u-tabs")
 				);
 			}),
+		).toBeTruthy();
+
+		expect(
+			await page.evaluate(
+				() =>
+					document.querySelector("u-tab")?.tabList ===
+					document.querySelector("u-tablist"),
+			),
+		).toBeTruthy();
+
+		expect(
+			await page.evaluate(
+				() =>
+					document.querySelector("u-tab")?.panel ===
+					document.querySelector("u-tabpanel"),
+			),
+		).toBeTruthy();
+
+		expect(
+			await page.evaluate(() => document.querySelector("u-tab")?.selected),
+		).toBeTruthy();
+
+		expect(
+			await page.evaluate(() => document.querySelector("u-tab")?.index === 0),
 		).toBeTruthy();
 
 		expect(
@@ -314,7 +335,7 @@ test.describe("u-tabs", () => {
 		await page.evaluate(() => {
 			document.body.innerHTML = `<u-tabs>
         <u-tablist>
-          <u-tab aria-selected="true">Tab 1</u-tab>
+          <u-tab>Tab 1</u-tab>
           <u-tab aria-selected="true">Tab 2</u-tab>
         </u-tablist>
         <u-tabpanel>Panel 1</u-tabpanel>
@@ -405,12 +426,12 @@ test.describe("u-tabs", () => {
 		expect(
 			await page.evaluate(() => {
 				const uTabs = document.querySelector("u-tabs");
-				return (
-					uTabs?.tabs[0].panel === uTabs?.tabs[1].panel &&
-					uTabs?.tabs[1].panel === uTabs?.tabs[2].panel
-				);
+				const uTab0 = uTabs?.tabs[0] as UHTMLTabElement;
+				const uTab1 = uTabs?.tabs[1] as UHTMLTabElement;
+				const uTab2 = uTabs?.tabs[2] as UHTMLTabElement;
+				return uTab0.panel === uTab1.panel && uTab1.panel === uTab2.panel;
 			}),
-		);
+		).toBeTruthy();
 
 		await uTab0.evaluate<void, UHTMLTabElement>((el) => {
 			el.selected = true;
@@ -625,12 +646,14 @@ test.describe("u-tabs", () => {
 		await expect(uTabpanel.nth(1)).toBeHidden();
 
 		await page.evaluate(() => {
-			document.body
-				.querySelector("u-tabs")
-				?.insertAdjacentHTML(
-					"beforeend",
-					'<u-tabpanel id="panel-2">Panel 2</u-tabpanel>',
-				);
+			const uTabs = document.querySelector("u-tabs");
+			const uTab1 = uTabs?.querySelectorAll("u-tab")[1];
+
+			uTab1?.removeAttribute("aria-controls"); // Force u-tabs reconnect
+			uTabs?.insertAdjacentHTML(
+				"beforeend",
+				'<u-tabpanel id="panel-2">Panel 2</u-tabpanel>',
+			);
 		});
 		await expect(uTab.nth(1)).toHaveAttribute("aria-controls", "panel-2");
 		await expect(uTabpanel.nth(1)).toHaveAttribute(attrLabelledby(), "tab-2");
@@ -645,14 +668,29 @@ test.describe("u-tabs", () => {
 
 		await uTab.nth(0).click();
 		await expect(uTabpanel.nth(0)).not.toHaveAttribute("hidden");
+		await expect(uTabpanel.nth(1)).toHaveAttribute("hidden");
 		await uTab.nth(1).click();
 		await expect(uTabpanel.nth(0)).toHaveAttribute("hidden");
+		await expect(uTabpanel.nth(1)).not.toHaveAttribute("hidden");
+	});
 
+	test("handles prefilled DOM", async ({ page }) => {
 		await page.evaluate(() => {
-			document.getElementById("panel-2")?.removeAttribute("id");
+			document.body.innerHTML = `<u-tabs>
+        <u-tablist>
+          <u-tab role="tab" aria-selected="true">Tab 1</u-tab>
+          <u-tab role="tab">Tab 2</u-tab>
+        </u-tablist>
+				<u-tabpanel role="tabpanel">Panel 1</u-tabpanel>
+      </u-tabs>`;
 		});
-
-		await expect(uTabpanel.nth(0)).toHaveAttribute("hidden");
-		await expect(uTabpanel.nth(1)).toHaveAttribute("hidden");
+		const uTab = page.locator("u-tab");
+		const uTabpanel = page.locator("u-tabpanel");
+		await expect(uTab.nth(0)).toHaveAttribute("tabindex", "0");
+		await expect(uTab.nth(0)).toHaveAttribute("aria-selected", "true");
+		await expect(uTab.nth(1)).toHaveAttribute("tabindex", "-1");
+		await expect(uTab.nth(1)).toHaveAttribute("aria-selected", "false");
+		await expect(uTabpanel.nth(0)).not.toBeHidden();
+		await expect(uTabpanel.nth(1)).toBeHidden();
 	});
 });

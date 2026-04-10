@@ -11,12 +11,12 @@ import { data } from '../filesize.data.ts'
 **Quick intro:**
 - Use `<data>` as direct child elements - these are the removable items
 - Use `<input>` and `<u-datalist>` to allow adding and suggesting items
-- Use `<del>` between `input` and `datalist` to create a clear button
+- Use `<button type="reset">` between `input` and `datalist` to create a clear button
 - Use `data-multiple` to allow selecting multiple items
 - Use `data-creatable` to allow creating items not in the list
-- Use `data-*` attributes to translate screen reader announcements
+- Use `data-sr-*` attributes to translate screen reader announcements
 - Use `comboboxbeforeselect`, `comboboxafterselect` and `comboboxbeforematch` events to manipulate state
-- Add `<select>` as child for `FormData` or form submittion compatibility
+- Add `<select>` as child for `FormData` or form submission compatibility
 - Use matching `id` on `<input>` and `for` attribute on `<label>` to connect
 - **MDN Web Docs:** [&lt;data&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/data) ([HTMLDataElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDataElement)) / [&lt;input&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input) ([HTMLInputElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement)) / [&lt;datalist&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist) ([HTMLDatalistElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDatalistElement)) / [&lt;option&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option) ([HTMLOptionElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLOptionElement))
 
@@ -34,8 +34,8 @@ import { data } from '../filesize.data.ts'
   &lt;data&gt;Pineapple&lt;/data&gt;
   &lt;data&gt;Orange&lt;/data&gt;
   &lt;input id="my-input" list="my-list" /&gt;
-  &lt;del aria-label="Clear text"&gt;&times;&lt;/del&gt;
-  &lt;u-datalist id="my-list" data-sr-singular="%d flavor" data-sr-plural="%d flavours"&gt;
+  &lt;button type="reset"&gt;&lt;/button&gt;
+  &lt;u-datalist hidden id="my-list" data-sr-singular="%d flavor" data-sr-plural="%d flavours"&gt;
     &lt;u-option&gt;Coconut&lt;/u-option&gt;
     &lt;u-option&gt;Strawberries&lt;/u-option&gt;
     &lt;u-option&gt;Chocolate&lt;/u-option&gt;
@@ -152,16 +152,18 @@ myCombobox.addEventListener('comboboxbeforematch', (event) => {
 &lt;/label&gt;
 &lt;u-combobox
   data-sr-added="La til"
-  data-sr-remove="Trykk for å fjerne"
-  data-sr-removed="Fjernet"
+  data-sr-clear="Fjern tekst"
   data-sr-empty="Ingen valgte"
   data-sr-found="Naviger til venstre for å finne %d valgte"
+  data-sr-items="Valgte"
   data-sr-of="av"
+  data-sr-remove="Trykk for å fjerne"
+  data-sr-removed="Fjernet"
 &gt;
   &lt;data&gt;Kokkos&lt;/data&gt;
   &lt;input id="my-norwegian-input" list="my-norwegian-list" /&gt;
-  &lt;del aria-label="Fjern tekst"&gt;&times;&lt;/del&gt;
-  &lt;u-datalist id="my-norwegian-list" data-sr-singular="%d smak" data-sr-plural="%d smaker"&gt;
+  &lt;button type="reset"&gt;&lt;/button&gt;
+  &lt;u-datalist hidden id="my-norwegian-list" data-sr-singular="%d smak" data-sr-plural="%d smaker"&gt;
     &lt;u-option&gt;Kokkos&lt;/u-option&gt;
     &lt;u-option&gt;Jordbær&lt;/u-option&gt;
     &lt;u-option&gt;Sjokolade&lt;/u-option&gt;
@@ -191,7 +193,7 @@ myCombobox.addEventListener('comboboxbeforematch', (event) => {
 &lt;small&gt;Try typing "c" and hitting "Enter"&lt;/small&gt;
 &lt;u-combobox id="my-matching-combobox"&gt;
   &lt;input id="my-matching-input" list="my-matching-list" /&gt;
-  &lt;del aria-label="Clear text"&gt;&times;&lt;/del&gt;
+  &lt;button type="reset"&gt;&lt;/button&gt;
   &lt;u-datalist id="my-matching-list"&gt;
     &lt;u-option&gt;Coconut&lt;/u-option&gt;
     &lt;u-option&gt;Strawberries&lt;/u-option&gt;
@@ -232,7 +234,7 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
 &lt;small&gt;Try typing "v" versus "V"&lt;/small&gt;
 &lt;u-combobox id="my-filtering-combobox"&gt;
   &lt;input id="my-matching-input" list="my-filtering-list" /&gt;
-  &lt;u-datalist data-nofilter id="my-filtering-list"&gt;
+  &lt;u-datalist hidden data-nofilter id="my-filtering-list"&gt;
     &lt;u-option&gt;Coconut&lt;/u-option&gt;
     &lt;u-option&gt;Strawberries&lt;/u-option&gt;
     &lt;u-option&gt;Chocolate&lt;/u-option&gt;
@@ -268,8 +270,8 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
 &lt;/label&gt;
 &lt;u-combobox id="my-api-combobox"&gt;
   &lt;input id="my-api-input" list="my-api-list" /&gt;
-  &lt;del aria-label="Clear text"&gt;&times;&lt;/del&gt;
-  &lt;u-datalist id="my-api-list" data-nofilter&gt;
+  &lt;button type="reset"&gt;&lt;/button&gt;
+  &lt;u-datalist hidden id="my-api-list" data-nofilter&gt;
     &lt;u-option value=""&gt;Type to search...&lt;/u-option&gt;
   &lt;/u-datalist&gt;
 &lt;/u-combobox&gt;
@@ -325,8 +327,8 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
 &lt;/label&gt;
 &lt;u-combobox id="my-typing-combobox"&gt;
   &lt;input id="my-typing-input" list="my-typing-list" /&gt;
-  &lt;del aria-label="Clear text"&gt;&times;&lt;/del&gt;
-  &lt;u-datalist id="my-typing-list" data-nofilter&gt;
+  &lt;button type="reset"&gt;&lt;/button&gt;
+  &lt;u-datalist hidden id="my-typing-list" data-nofilter&gt;
     &lt;u-option&gt;Coconut&lt;/u-option&gt;
     &lt;u-option&gt;Strawberries&lt;/u-option&gt;
     &lt;u-option&gt;Chocolate&lt;/u-option&gt;
@@ -358,8 +360,8 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
 &lt;/label&gt;
 &lt;u-combobox id="my-link-combobox"&gt;
   &lt;input id="my-link-input" list="my-link-list" /&gt;
-  &lt;del aria-label="Clear text"&gt;&times;&lt;/del&gt;
-  &lt;u-datalist id="my-link-list"&gt;
+  &lt;button type="reset"&gt;&lt;/button&gt;
+  &lt;u-datalist hidden id="my-link-list"&gt;
     &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-datalist"&gt;u-datalist&lt;/u-option&gt;
     &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-progress"&gt;u-progress&lt;/u-option&gt;
     &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-details"&gt;u-details&lt;/u-option&gt;
@@ -399,11 +401,14 @@ and then manually add or remove `<data>` elements as needed:
 if (typeof window !== 'undefined') {
   window.values = [];
   window.useState = (values) => [window.values, (values) => {
-    const combobox = document.getElementById('my-controlled-combobox');
+    const { items, control } = document.getElementById('my-controlled-combobox');
+    const add = values.find((item) => !window.values.includes(item));
+    const remove = window.values.findIndex((item) => !values.includes(item));
+
+    if (add) control.insertAdjacentElement('beforebegin', Object.assign(document.createElement('data'), { value: add.value, textContent: add.label }))
+    else items[remove]?.remove();
     window.values.length = 0; // Empty
     window.values.push(...values);
-    combobox?.querySelectorAll('data').forEach((el) => el.remove());
-    combobox?.prepend(...values.map(({ value, label }) => Object.assign(document.createElement('data'), { value, textContent: label })))
   }]
 }
 </script>
@@ -422,8 +427,8 @@ if (typeof window !== 'undefined') {
     ))}
   --&gt;
   &lt;input id="my-controlled-input" list="my-controlled-list" /&gt;
-  &lt;del aria-label="Clear text"&gt;&times;&lt;/del&gt;
-  &lt;u-datalist id="my-controlled-list" data-nofilter&gt;
+  &lt;button type="reset"&gt;&lt;/button&gt;
+  &lt;u-datalist hidden id="my-controlled-list" data-nofilter&gt;
     &lt;u-option&gt;Coconut&lt;/u-option&gt;
     &lt;u-option&gt;Strawberries&lt;/u-option&gt;
     &lt;u-option&gt;Chocolate&lt;/u-option&gt;

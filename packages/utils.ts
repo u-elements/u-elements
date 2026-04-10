@@ -1,14 +1,15 @@
-export const IS_BROWSER =
+export const isBrowser = () =>
 	typeof window !== "undefined" &&
 	typeof window.document !== "undefined" &&
-	typeof window.navigator !== "undefined";
+	typeof window.navigator !== "undefined"; // Dynamic since Jest+jsdom tests can unmount document live
 
 // Bad, but needed
-const agent = IS_BROWSER ? navigator.userAgent : "";
-export const IS_ANDROID = /android/i.test(agent);
-export const IS_FIREFOX = /firefox/i.test(agent);
-export const IS_IOS = /iPad|iPhone|iPod/.test(agent);
-export const IS_SAFARI = /^((?!chrome|android).)*safari/i.test(agent);
+const IS_BROWSER = isBrowser(); // Cache this since it's used in many places and can be dynamic in tests
+const AGENT = IS_BROWSER ? navigator.userAgent : "";
+export const IS_ANDROID = /android/i.test(AGENT);
+export const IS_FIREFOX = /firefox/i.test(AGENT);
+export const IS_IOS = /iPad|iPhone|iPod/.test(AGENT);
+export const IS_SAFARI = /^((?!chrome|android).)*safari/i.test(AGENT);
 export const IS_MAC =
 	IS_BROWSER &&
 	// @ts-expect-error Typescript has not implemented userAgentData yet https://stackoverflow.com/a/71392474
@@ -77,71 +78,44 @@ export const off = (
 	for (const type of types.split(" ")) el.removeEventListener(type, ...options);
 };
 
-export function debounce<T extends unknown[]>(
-	callback: (...args: T) => void,
-	delay: number,
-) {
-	let timer: ReturnType<typeof setTimeout>;
-
-	return function (this: unknown, ...args: T) {
-		clearTimeout(timer);
-		timer = setTimeout(() => callback.apply(this, args), delay);
-	};
-}
-
 /**
  * attachStyle
  * @param el The Element to scope styles for
  * @param css The css to inject
  */
 export const attachStyle = (el: Element, css: string) => {
-	if (!el.shadowRoot) el.attachShadow({ mode: "open" }).append(tag("slot"));
-	if (SUPPORTS_CONSTRUCTED_CSS) {
-		const sheet = new CSSStyleSheet();
-		sheet.replaceSync(css);
-		(el.shadowRoot as ShadowRoot).adoptedStyleSheets = [sheet];
-	} else el.shadowRoot?.append(tag("style", undefined, css));
+	const root = el.shadowRoot || el.attachShadow({ mode: "open" }); // Respects Declarative Shadow DOM
+	if (!root.querySelector("slot")) root.append(tag("slot"));
+	if (!root.querySelector("style")) {
+		if (!SUPPORTS_CONSTRUCTED_CSS) root.append(tag("style", null, css));
+		else {
+			const sheet = new CSSStyleSheet();
+			sheet.replaceSync(css);
+			root.adoptedStyleSheets = [sheet];
+		}
+	}
+	return root;
 };
 
 /**
- * Speed up MutationObserver by debouncing and only running when page is visible
+ * MutationObserver wrapper with automatic cleanup
  * @return new MutationObserver
  */
-export const onMutation = (
-	el: Node,
-	callback: (mutations: MutationRecord[], observer: MutationObserver) => void,
+export const onMutation = <T extends Node>(
+	el: T,
+	callback: (el: T, records?: MutationRecord[]) => void,
 	options: MutationObserverInit,
 ) => {
-	const queue: MutationRecord[] = [];
-	const clear = () => (queue.length = 0);
-	const onFrame = () => {
-		if (!el.isConnected) return cleanup(); // If using JSDOM, the document might have been removed
-		callback(queue, observer);
-		cleanup.takeRecords();
-	};
-	const observer = new MutationObserver((mutations) => {
-		if (!queue.length) requestAnimationFrame(onFrame); // requestAnimationFrame only runs when page is visible
-		queue.push(...mutations);
+	const observer = new MutationObserver((records) => {
+		if (!isBrowser() || !el.isConnected) return cleanup(); // Stop observing if element is removed from DOM or document is removed by JSDOM tests
+		callback(el, records);
 	});
-	const cleanup = () => clear() || observer.disconnect();
-	cleanup.takeRecords = () => clear() || observer.takeRecords();
-	observer.observe(el, options);
-	requestAnimationFrame(onFrame); // Initial run when page is visible and rendered
+	const cleanup = Object.assign(() => observer.disconnect(), {
+		takeRecords: () => observer.takeRecords(), // Expose takeRecords - useful if mutating a attribute that is observed
+	});
+	callback(el); // Initial is run instantly to make test markup predictable
+	observer.observe(el, options); // Observe after initial callback to avoid additional triggering
 	return cleanup;
-};
-
-/**
- * asButton
- * @description Helper to forward Enter and Space keyboard events to click events (typically used on role="button")
- * @param event Any event object
- * @return Whether the event should be forwarded to a click
- */
-export const asButton = (event: Partial<KeyboardEvent>): boolean => {
-	const isClick = event.key === " " || event.key === "Enter";
-	if (isClick) event.preventDefault?.(); // Prevent scroll
-	if (isClick && event.target instanceof HTMLElement)
-		event.target.dispatchEvent(new MouseEvent("click", event)); // Forward to real click
-	return isClick;
 };
 
 /**
@@ -158,15 +132,6 @@ export const getRoot = (node: Node): Document | ShadowRoot => {
 };
 
 /**
- * getFocused
- * @description Helper to get focused element within same root
- * @param node The target node
- * @return The root document fragment or shadow root
- */
-export const getFocused = (node: Node): Element | null =>
-	getRoot(node).activeElement;
-
-/**
  * getLabel
  * @description Get the screen reader label or an element from aria-label, aria-labelledby or <label> elements
  * @param element The target element to get accessible label from
@@ -178,17 +143,29 @@ export const getLabel = (el: Element) => {
 	return [
 		...labels.map((id) => document.getElementById(id.trim() || "-")), // Get all labelledby elements
 		...Array.from((el as HTMLInputElement).labels || []), // Get all <label> elements
-	].reduce((acc, el) => acc || el?.innerText?.trim() || "", label);
+	]
+		.reduce((acc, el) => acc || el?.innerText?.trim() || "", label)
+		.trim();
 };
 
 /**
  * useId
  * @return A generated unique ID
  */
-let id = 0;
+declare global {
+	interface Window {
+		uElementsId?: Record<string, number>; // Use a global counter to ensure this works even when loading designsystemet multiple times
+	}
+}
+
 export const useId = (el?: Element | null) => {
-	if (!el) return null;
-	if (!el.id) el.id = `:${el.nodeName.toLowerCase()}${(++id).toString(32)}`;
+	if (!el || !IS_BROWSER) return null;
+	if (!window.uElementsId) window.uElementsId = {}; // In case of multiple instances of utils, ensure global counter
+	if (!el.id) {
+		const node = el.nodeName.toLowerCase();
+		if (!window.uElementsId[node]) window.uElementsId[node] = 1;
+		el.id = `:${node}${window.uElementsId[node]++}`;
+	}
 	return el.id;
 };
 
@@ -201,7 +178,7 @@ export const useId = (el?: Element | null) => {
  */
 export const tag = <TagName extends keyof HTMLElementTagNameMap>(
 	tagName: TagName,
-	attrs?: Record<string, string>,
+	attrs?: Record<string, string> | null,
 	content?: string | null,
 ): HTMLElementTagNameMap[TagName] => {
 	const el = document.createElement(tagName);
@@ -217,7 +194,7 @@ export const tag = <TagName extends keyof HTMLElementTagNameMap>(
  */
 export const customElements = {
 	define: (name: string, instance: CustomElementConstructor) =>
-		!IS_BROWSER ||
+		!isBrowser() ||
 		window.customElements.get(name) ||
 		window.customElements.define(name, instance),
 };
@@ -268,8 +245,10 @@ export const declarativeShadowRoot = (style: string, slot = "<slot></slot>") =>
 export const preventSubmit = (input: HTMLInputElement) => {
 	const form = attr(input, "form");
 	attr(input, "form", "#"); // Temporarily remove form association to prevent submit on enter
-	requestAnimationFrame(() => attr(input, "form", form)); // Restore form association on next frame
+	setTimeout(restoreSubmit, 0, input, form); // Restore form association on next macrotask
 };
+const restoreSubmit = (input: HTMLInputElement, form: string | null) =>
+	attr(input, "form", form);
 
 /**
  * getText

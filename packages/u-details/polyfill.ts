@@ -1,4 +1,4 @@
-import { attr, IS_ANDROID, IS_BROWSER, IS_FIREFOX, onMutation } from "../utils";
+import { attr, IS_ANDROID, IS_FIREFOX, isBrowser, onMutation } from "../utils";
 
 const KEY = "__uDetailsPolyfillSummarys";
 declare global {
@@ -8,9 +8,9 @@ declare global {
 }
 
 // Polyfill for Android Firefox + Talkback which does announce role or state of details/summary
-if (IS_BROWSER && IS_ANDROID && IS_FIREFOX && !window[KEY]) {
+if (isBrowser() && IS_ANDROID && IS_FIREFOX && !window[KEY]) {
 	const summaries = document.getElementsByTagName("summary"); // Ensure single instance on hot reloads
-	const handleMutation = () => {
+	const onMutations = () => {
 		for (const summary of summaries) {
 			const details = summary.parentElement as HTMLDetailsElement | null;
 			attr(summary, "role", "button");
@@ -18,7 +18,7 @@ if (IS_BROWSER && IS_ANDROID && IS_FIREFOX && !window[KEY]) {
 		}
 	};
 
-	window[KEY] = onMutation(document, handleMutation, {
+	window[KEY] = onMutation(document, onMutations, {
 		attributeFilter: ["open"],
 		attributes: true,
 		childList: true,

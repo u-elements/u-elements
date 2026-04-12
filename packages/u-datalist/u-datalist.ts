@@ -31,6 +31,7 @@ declare global {
 
 const DATA_ACTIVE = "data-activedescendant";
 const ARIA_HIDDEN = "aria-hidden";
+const NO_ACTIVE = ":none"; // Used to prevent "Empty string passed to getElementById()" warning in Firefox
 export const UHTMLDataListStyle = `${DISPLAY_BLOCK}
 ::slotted([role="option"]) { display: block; cursor: pointer }
 ::slotted([role="option"][${DATA_ACTIVE}]) { ${FOCUS_OUTLINE} }
@@ -57,7 +58,7 @@ export class UHTMLDataListElement extends UHTMLElement {
 	_options?: HTMLCollectionOf<HTMLOptionElement>; // Caching options to speed up performance
 	_root?: Document | ShadowRoot; // Used to consistently remember root for event delegation
 	_texts = { ...TEXTS };
-	_unmutate?: ReturnType<typeof onMutation>;
+	_umutate?: ReturnType<typeof onMutation>;
 
 	static get observedAttributes() {
 		return ["id", ...Object.keys(TEXTS).map((key) => `data-sr-${key}`)]; // Using ES2015 syntax for backwards compatibility
@@ -75,7 +76,7 @@ export class UHTMLDataListElement extends UHTMLElement {
 		attr(this, "tabindex", "-1"); // Prevent tabstop even if consumer sets overflow: auto (https://issues.chromium.org/issues/40456188)
 		on(this._root, EVENTS_IDLE_CAPTURE, this, true); // Use capture to catch non-bubling focus
 
-		this._unmutate = onMutation(this, onMutations, {
+		this._umutate = onMutation(this, onMutations, {
 			attributeFilter: ["disabled", "hidden", "label", "value"], // Listening to hidden attribute to update on open
 			attributes: true,
 			characterData: true,
@@ -87,8 +88,8 @@ export class UHTMLDataListElement extends UHTMLElement {
 		if (this._root) off(this._root, EVENTS_IDLE_CAPTURE, this, true); // Unbind capture
 		if (this._root) off(this._root, EVENTS_ACTIVE_BUBBLE, this); // Unbind bubble
 		setInputAttributes(this, null); // Reset input
-		this._unmutate?.();
-		this._unmutate = this._root = this._input = undefined;
+		this._umutate?.();
+		this._umutate = this._root = this._input = undefined;
 	}
 	attributeChangedCallback(prop?: string, _prev?: string, next?: string) {
 		const text = prop?.split("data-sr-")[1] as keyof typeof TEXTS;
@@ -132,7 +133,7 @@ const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
 };
 
 const setActive = (self: UHTMLDataListElement, opt?: HTMLOptionElement) => {
-	self._input?.setAttribute("aria-activedescendant", useId(opt) || "-");
+	self._input?.setAttribute("aria-activedescendant", useId(opt) || NO_ACTIVE);
 	for (const o of self.options) attr(o, DATA_ACTIVE, o === opt ? "" : null);
 	opt?.scrollIntoView({ block: "nearest" });
 };
@@ -147,7 +148,7 @@ const setInputAttributes = (
 		attr(self, "popover", "manual"); // Make sure we control popover state
 		attr(input, "popovertarget", setup && useId(self)); // Prepare for Popover API
 	}
-	attr(input, "aria-activedescendant", setup && "-"); // Need to be non-empty to prevent "Empty string passed to getElementById()" warning in Firefox
+	attr(input, "aria-activedescendant", setup && NO_ACTIVE);
 	attr(input, "aria-autocomplete", setup && "list");
 	attr(input, "aria-controls", setup && useId(self));
 	attr(input, "autocomplete", setup && "off");
@@ -253,7 +254,7 @@ const onMutations = (self: UHTMLDataListElement) => {
 			attr(opt, "title", `${index + 1} ${self._texts.of} ${length}`); // Announce count in iOS
 		});
 
-	self._unmutate?.takeRecords(); // Clear mutation records to prevent unwanted MutationObserver triggers when changing attributes in render
+	self._umutate?.takeRecords(); // Clear mutation records to prevent unwanted MutationObserver triggers when changing attributes in render
 };
 
 const speakHits = (self: UHTMLDataListElement, show: HTMLOptionElement[]) =>

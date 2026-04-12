@@ -31,7 +31,7 @@ export const UHTMLProgressShadowRoot =
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/progress)
  */
 export class UHTMLProgressElement extends UHTMLElement {
-	_unmutate?: ReturnType<typeof onMutation>; // Using underscore instead of private fields for backwards compatibility
+	_umutate?: ReturnType<typeof onMutation>; // Using underscore instead of private fields for backwards compatibility
 
 	// Prevent Chrome DevTools warning about <label for=""> pointing to <u-progress>
 	static formAssociated = true;
@@ -41,14 +41,14 @@ export class UHTMLProgressElement extends UHTMLElement {
 		attachStyle(this, UHTMLProgressStyle);
 	}
 	connectedCallback() {
-		this._unmutate = onMutation(this, onMutations, {
+		this._umutate = onMutation(this, onMutations, {
 			attributeFilter: ["aria-label", "aria-labelledby", "value", "max"], // Using MutationObserver to merge multiple attribute changes to single callback
 			attributes: true,
 		});
 	}
 	disconnectedCallback() {
-		this._unmutate?.();
-		this._unmutate = undefined;
+		this._umutate?.();
+		this._umutate = undefined;
 	}
 	get labels(): NodeListOf<HTMLLabelElement> {
 		const label = this.closest<HTMLLabelElement>("label:not([for])");
@@ -91,7 +91,7 @@ const onMutations = (self: UHTMLProgressElement) => {
 	attr(self, "aria-valuenow", self.position === -1 ? null : `${percentage}`);
 	attr(self, "role", IS_IOS ? "img" : "progressbar"); // iOS does not announce amount, so we use img and percentage
 
-	self._unmutate?.takeRecords(); // Prevent infinite loop that would be caused by updating aria-label and aria-valuenow
+	self._umutate?.takeRecords(); // Prevent infinite loop that would be caused by updating aria-label and aria-valuenow
 };
 
 const isNumeric = (value: unknown): value is number | string =>

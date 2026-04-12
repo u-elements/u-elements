@@ -69,7 +69,7 @@ const TEXTS = {
  * No MDN reference available.
  */
 export class UHTMLComboboxElement extends UHTMLElement {
-	_unmutate?: ReturnType<typeof onMutation>; // Using underscore instead of private fields for backwards compatibility
+	_umutate?: ReturnType<typeof onMutation>; // Using underscore instead of private fields for backwards compatibility
 	_listbox: HTMLElement;
 
 	// Speed up by caching elements
@@ -103,7 +103,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	}
 	connectedCallback() {
 		on(this, EVENTS, this, true); // Bind events using capture phase to run before frameworks
-		this._unmutate = onMutation(this, onMutations, {
+		this._umutate = onMutation(this, onMutations, {
 			attributeFilter: ["id", "value", "role"], // Respond to changes in <data> value or id or role of <datalist>
 			attributes: true,
 			characterData: true, // Respond to changes in <data> textContent
@@ -119,8 +119,8 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	}
 	disconnectedCallback() {
 		off(this, EVENTS, this, true);
-		this._unmutate?.();
-		this._unmutate = this._list = this._options = this._match = undefined;
+		this._umutate?.();
+		this._umutate = this._list = this._options = this._match = undefined;
 		this._items = this._clear = this._control = this._select = undefined;
 	}
 	handleEvent(event: Event) {
@@ -338,7 +338,7 @@ const onMutations = (self: UHTMLComboboxElement, edit?: MutationRecord[]) => {
 	attr(control, "list", useId(list)); // Connect datalist and input
 	attr(self._listbox, ARIA_LABEL, _texts.items);
 
-	self._unmutate?.takeRecords(); // Clear mutation records caused by updating control "id"
+	self._umutate?.takeRecords(); // Clear mutation records caused by updating control "id"
 };
 
 const speakReset = (self: UHTMLComboboxElement, label: string | null) => {
@@ -386,7 +386,7 @@ const syncSelectWithItems = (self: UHTMLComboboxElement) => {
 	}
 	if (append.length) _select.append(...append);
 	else for (const opt of [..._select.options].slice(idx)) opt.remove(); // Remove unused options
-	self._unmutate?.takeRecords(); // Clear mutation records caused by adding/removing <option> elements
+	self._umutate?.takeRecords(); // Clear mutation records caused by adding/removing <option> elements
 };
 
 const syncClearWithInput = (self: UHTMLComboboxElement) => {

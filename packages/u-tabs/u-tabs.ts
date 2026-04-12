@@ -70,7 +70,7 @@ export class UHTMLTabsElement extends UHTMLElement {
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/tablist_role)
  */
 export class UHTMLTabListElement extends UHTMLElement {
-	_unmutate?: ReturnType<typeof onMutation>; // Using underscore instead of private fields for backwards compatibility
+	_umutate?: ReturnType<typeof onMutation>; // Using underscore instead of private fields for backwards compatibility
 
 	constructor() {
 		super();
@@ -79,7 +79,7 @@ export class UHTMLTabListElement extends UHTMLElement {
 	connectedCallback() {
 		attr(this, "role", "tablist");
 		on(this, "click keydown", this); // Listen for tab events on tablist to minimize amount of listeners
-		this._unmutate = onMutation(this, onMutations, {
+		this._umutate = onMutation(this, onMutations, {
 			attributeFilter: ["id", "role", ARIA_CONTROLS, ARIA_SELECTED], // Need to listen for attributes here, so mutation run after all custom elements are connected
 			attributes: true,
 			childList: true,
@@ -88,8 +88,8 @@ export class UHTMLTabListElement extends UHTMLElement {
 	}
 	disconnectedCallback() {
 		off(this, "click keydown", this);
-		this._unmutate?.();
-		this._unmutate = undefined;
+		this._umutate?.();
+		this._umutate = undefined;
 	}
 	handleEvent(event: Partial<KeyboardEvent>) {
 		const { key, type, target } = event;
@@ -168,7 +168,7 @@ const onMutations = (
 		}
 	}
 
-	self._unmutate?.takeRecords(); // Prevent infinite loop that would be caused by updating aria-selected
+	self._umutate?.takeRecords(); // Prevent infinite loop that would be caused by updating aria-selected
 };
 
 /**

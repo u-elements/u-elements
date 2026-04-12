@@ -1,4 +1,10 @@
-import { attr, customElements, IS_IOS, UHTMLElement, useId } from "../utils";
+import {
+	attr,
+	customElements,
+	IS_ANDROID,
+	UHTMLElement,
+	useId,
+} from "../utils";
 
 declare global {
 	interface HTMLElementTagNameMap {
@@ -22,7 +28,7 @@ export class UHTMLOptionElement extends UHTMLElement {
 		return ["id", DISABLED, SELECTED] as const;
 	}
 	connectedCallback() {
-		if (!IS_IOS) this.tabIndex = -1; // Do not set tabIndex on iOS as this causes keyboard to toggle on and off
+		if (IS_ANDROID) this.tabIndex = -1; // Android needs tabIndex to navigate between u-options
 		if (!this.hasAttribute("role")) attr(this, "role", "option"); // Only set role if not already specified, to allow role="none"
 		attr(this, "aria-disabled", `${this.disabled}`);
 		attr(this, "aria-selected", `${this.selected}`); // Setup aria attributes (Firefox defaults to "selected" unless aria-selected="false" is set)

@@ -132,7 +132,7 @@ const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
 };
 
 const setActive = (self: UHTMLDataListElement, opt?: HTMLOptionElement) => {
-	self._input?.setAttribute("aria-activedescendant", useId(opt) || "");
+	self._input?.setAttribute("aria-activedescendant", useId(opt) || "-");
 	for (const o of self.options) attr(o, DATA_ACTIVE, o === opt ? "" : null);
 	opt?.scrollIntoView({ block: "nearest" });
 };
@@ -140,7 +140,6 @@ const setActive = (self: UHTMLDataListElement, opt?: HTMLOptionElement) => {
 const setInputAttributes = (
 	self: UHTMLDataListElement,
 	setup: HTMLInputElement | null,
-	open = false,
 ) => {
 	const input = setup || self._input;
 	if (!input) return;
@@ -148,11 +147,11 @@ const setInputAttributes = (
 		attr(self, "popover", "manual"); // Make sure we control popover state
 		attr(input, "popovertarget", setup && useId(self)); // Prepare for Popover API
 	}
-	attr(input, "aria-activedescendant", setup && "");
+	attr(input, "aria-activedescendant", setup && "-"); // Need to be non-empty to prevent "Empty string passed to getElementById()" warning in Firefox
 	attr(input, "aria-autocomplete", setup && "list");
 	attr(input, "aria-controls", setup && useId(self));
-	attr(input, "aria-expanded", setup && `${open}`);
 	attr(input, "autocomplete", setup && "off");
+	attr(input, "enterkeyhint", "done");
 	attr(input, "role", setup && !isDisabled(input) ? "combobox" : null);
 };
 
@@ -223,7 +222,10 @@ const onKeyDown = (self: UHTMLDataListElement, event: KeyboardEvent) => {
 		if (isEnter) next = prev;
 	}
 
-	if (opts[next]) event.preventDefault(); // Prevent scroll when on option
+	if (opts[next]) {
+		event.preventDefault(); // Prevent scroll when on option
+		self._input.focus(); // Force Firefox to keep focus on input
+	}
 	if (isEnter && opts[next]) {
 		event.stopImmediatePropagation(); // Native datalist does not trigger Enter on keydown on item, but instead a input event
 		preventSubmit(self._input); // Prevent form submit on enter if "focus" is inside datalist

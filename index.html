@@ -136,7 +136,7 @@
       <form>
         <label for="input-1">Velg type iskrem</label>
         <u-combobox
-          data-creatable
+          data-creatable="false"
           data-multiple="true"
           data-sr-added="La til"
           data-sr-clear="Tøm tekstfelt"
@@ -152,7 +152,7 @@
           <data>Jordbær</data>
           <data>Oslo</data>
           <data>Lakris</data>
-          <input id="input-1">
+          <input id="input-1" list="my-list">
           <button type="reset"></button>
           <!-- <del>hei</del> -->
           <!-- <datalist>
@@ -167,7 +167,7 @@
             <option>Mango</option>
             <option>Hasselnøtt</option>
           </datalist> -->
-          <u-datalist hidden>
+          <u-datalist hidden id="my-list">
             <u-option value="2" label="Kokkos">Kokkos<div>Hei</div></u-option>
             <u-option>Jordbær</u-option>
             <u-option value="4" label="Sjokolade">Sjokolade (utgått)</u-option>
@@ -455,7 +455,7 @@
         <u-summary slot="summary">Åpne/lukk</u-summary>
         <div>Innhold</div>
       </u-details> -->
-      <u-test></u-test>
+      <!-- <u-test></u-test> -->
       <script>
         // setTimeout(() => {
         //   let i = 0

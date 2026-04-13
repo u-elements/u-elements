@@ -31,7 +31,6 @@ declare global {
 
 const DATA_ACTIVE = "data-activedescendant";
 const ARIA_HIDDEN = "aria-hidden";
-const NO_ACTIVE = ":none"; // Used to prevent "Empty string passed to getElementById()" warning in Firefox
 export const UHTMLDataListStyle = `${DISPLAY_BLOCK}
 ::slotted([role="option"]) { display: block; cursor: pointer }
 ::slotted([role="option"][${DATA_ACTIVE}]) { ${FOCUS_OUTLINE} }
@@ -133,7 +132,7 @@ const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
 };
 
 const setActive = (self: UHTMLDataListElement, opt?: HTMLOptionElement) => {
-	self._input?.setAttribute("aria-activedescendant", useId(opt) || NO_ACTIVE);
+	if (self._input) attr(self._input, "aria-activedescendant", useId(opt));
 	for (const o of self.options) attr(o, DATA_ACTIVE, o === opt ? "" : null);
 	opt?.scrollIntoView({ block: "nearest" });
 };
@@ -148,7 +147,6 @@ const setInputAttributes = (
 		attr(self, "popover", "manual"); // Make sure we control popover state
 		attr(input, "popovertarget", setup && useId(self)); // Prepare for Popover API
 	}
-	attr(input, "aria-activedescendant", setup && NO_ACTIVE);
 	attr(input, "aria-autocomplete", setup && "list");
 	attr(input, "aria-controls", setup && useId(self));
 	attr(input, "autocomplete", setup && "off");

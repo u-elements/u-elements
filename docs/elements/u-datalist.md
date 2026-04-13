@@ -129,10 +129,10 @@ u-option:not([hidden]) {
 `<u-option>` receive real focus on keyboard navigation, and a `selected` attribute on selection, which both can be utilized for styling:
 
 ```css
-u-option:focus {
+u-option[data-activedescendant] {
   /* Focused option styling here */
 }
-u-option:not(:focus) {
+u-option:not([data-activedescendant]) {
   /* Un-focused option styling here */
 }
 u-option[selected] {
@@ -305,6 +305,7 @@ const renderToStaticMarkup = (options: string) =>
 
 ## Changelog
 
+- **2.0.0:** Plays nice with strict CSP, correctly handles foucs-before-mount and click-to-open, and uses `aria-activedecendant` as support is now sufficient
 - **1.1.1:** Speed up popover check
 - **1.1.0:** Allows changing tag name when extending `UHTMLDataListElement` class
 - **1.0.14:** Enable declarative shadow root support and export `UHTMLDataListShadowRoot` for easier server side rendering

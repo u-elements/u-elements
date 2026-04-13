@@ -155,6 +155,7 @@ Even when a `<details>` element is closed, all of its content remains discoverab
 
 ## Changelog
 
+- **1.0.0:** Plays nice with strict CSP
 - **0.2.2:** Correct package name in deprecation message
 - **0.2.1:** Ensures single polyfill instance in hot-reloaded environments
 - **0.2.0:** Deprecateds `<u-details>` and adds `@u-elements/u-details/polyfill`

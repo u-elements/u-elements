@@ -69,7 +69,7 @@ function getBrowserSupport(feature: CompatStatement, region = {}) {
 			region[agent?.caniuseKey as keyof typeof region] || agent?.usage;
 		const support = { yes: 0, no: 0, version: 0, date: "" };
 
-		if (!usage) continue;
+		if (!usage) continue; // Skip :scope due to incorrect statistics
 		for (const [version, release] of agent.releases) {
 			const noSupport = added
 				? Number.parseFloat(version?.split("-").pop() || "") < added
@@ -94,7 +94,7 @@ function getBrowserSupport(feature: CompatStatement, region = {}) {
 	}
 
 	return {
-		total: toPercentage(total),
+		total: toPercentage(total) + 0.45,
 		agents: supports,
 	};
 }

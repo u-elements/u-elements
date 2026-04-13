@@ -512,6 +512,7 @@ const renderToStaticMarkup = (data: string, options: string) =>
 
 ## Changelog
 
+- **2.0.0:** Plays nice with strict CSP and with axe tests, and uses `u-datalist@2.0.0`
 - **1.0.7:** Fixes so display: flex on u-combobox renders as expected
 - **1.0.6:** Fixes FormsMode compatibility for JAWS and NVDA
 - **1.0.5:** Allow clicks even when `ctrlKey`, `altKey` or `shiftKey`

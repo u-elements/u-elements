@@ -81,9 +81,10 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	_select?: HTMLSelectElement | null;
 
 	_focusMoved = false; // Used to determine if we announce through aria-live or aria-label when items are added or removed
+	_itemSingleVale = ""; // Locally store item text to compare change in single mode
 	_match?: HTMLDataElement | { value: string }; // Used to store current match
-	_texts = { ...TEXTS };
 	_speak = "";
+	_texts = { ...TEXTS };
 	_value = ""; // Locally store value to store value before input-click
 
 	static get observedAttributes() {
@@ -221,7 +222,6 @@ const dispatchSelect = (
 		else control?.insertAdjacentElement("beforebegin", add);
 		self.dispatchEvent(new CustomEvent("comboboxafterselect", event));
 	}
-	syncInputWithItemSingleMode(self); // Make sure input value is in sync after change
 };
 
 const onBlur = (self: UHTMLComboboxElement) =>
@@ -327,6 +327,13 @@ const onMutations = (self: UHTMLComboboxElement, edit?: MutationRecord[]) => {
 		attr(control, ARIA_LABEL, `${self._speak}${getLabel(control)}`); // Make sure control also can aria-label-announce
 		if (!self._focusMoved) setTimeout(() => speak(self._speak.slice(0, -2))); // Aria-live when no focus move, remove trailing command, setTimeout to take presence
 		setTimeout(speakReset, 300, self, label); // 300ms delay so screen readers announces new aria-label. Note: Causes short double/hiccup announce in NVDA Firefox
+	}
+
+	// syncInputWithItemSingleMode, but only if item text has actually changed
+	if (!multiple) {
+		const item = getText(items[0]);
+		if (item !== self._itemSingleVale) syncInputWithItemSingleMode(self);
+		self._itemSingleVale = item;
 	}
 
 	syncItems(self);

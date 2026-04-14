@@ -321,3 +321,5 @@ test.describe("u-combobox", () => {
 	// 	await expect(input).toHaveValue("");
 	// });
 });
+
+// TODO: Test single mode syncs value when changing/adding/removing item

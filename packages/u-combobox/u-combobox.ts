@@ -354,7 +354,6 @@ const syncItems = (self: UHTMLComboboxElement) => {
 	for (const item of items) {
 		const text = `${_speak}${getText(item)}, ${_texts.remove}${IS_IOS ? `, ${++idx} ${_texts.of} ${items.length}` : ""}`;
 		attr(item, ARIA_LABEL, text);
-		attr(item, "aria-selected", `${!IS_ANDROID}`); // Prevent TalkBack from alwyas announcing "selected" before aria-label
 		attr(item, "role", "option");
 		attr(item, "slot", "items");
 		attr(item, "tabindex", "-1");

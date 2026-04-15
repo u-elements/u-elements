@@ -412,7 +412,7 @@ test.describe("u-tabs", () => {
         <u-tablist>
           <u-tab id="tab-1" aria-controls="panel-1">Tab 1</u-tab>
           <u-tab id="tab-2" aria-controls="panel-1">Tab 2</u-tab>
-          <u-tab id="tab-2" aria-controls="panel-1">Tab 3</u-tab>
+          <u-tab id="tab-3" aria-controls="panel-1">Tab 3</u-tab>
         </u-tablist>
         <u-tabpanel id="panel-1">Panel 1</u-tabpanel>
       </u-tabs>`;
@@ -464,7 +464,7 @@ test.describe("u-tabs", () => {
         <u-tablist>
           <u-tab id="tab-1" aria-controls="panel-1">Tab 1</u-tab>
           <u-tab id="tab-2" aria-controls="panel-2">Tab 2</u-tab>
-          <u-tab id="tab-2" aria-controls="panel-3">Tab 3</u-tab>
+          <u-tab id="tab-3" aria-controls="panel-3">Tab 3</u-tab>
         </u-tablist>
       </u-tabs>
       <u-tabpanel id="panel-1">Panel 1</u-tabpanel>

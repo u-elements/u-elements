@@ -216,6 +216,7 @@ const renderToStaticMarkup = (tabs: string[], panels[]) =>
 
 ## Changelog
 
+- **1.0.1:** Instant attribute changes for easier testing
 - **1.0.0:** Plays nice with strict CSP, and renders attributes in consistent order
 - **0.1.2:** Enhanced React compatibility by removing `u-tabs` unknown attribute warning
 - **0.1.1:** Enhanced performance by not relying on UTabsElement MutationObserver

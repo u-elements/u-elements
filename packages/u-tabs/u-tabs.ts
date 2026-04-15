@@ -50,7 +50,7 @@ export class UHTMLTabsElement extends UHTMLElement {
 		attachStyle(this, UHTMLTabsStyle);
 	}
 	get tabList(): UHTMLTabListElement | null {
-		return this.querySelector(
+		return this.querySelector<UHTMLTabListElement>(
 			'[role="tablist"]:not(:scope [role="tabpanel"] [role="tablist"])',
 		);
 	}
@@ -222,7 +222,7 @@ const onMutations = (self: Element, records: MutationRecord[] = []) => {
 		if (tab && isSelected(el)) selected = el; // Pluck the newly selected tab from mutations
 	}
 	if (!selected && !getSelected(self.children))
-		selected = getSelected(getTabs(self).filter(isEnabled)); // Fallback to first enabled tab if no selected element exists
+		selected = getTabs(self).find(isEnabled); // Fallback to first enabled tab if no selected element exists
 	setSelected(selected);
 };
 const syncPanel = (panel: Element, tab?: Element, show = false) => {

@@ -22,9 +22,9 @@ declare global {
 	}
 }
 
-const CONTROLS = "aria-controls";
-const DISABLED = "aria-disabled";
-const SELECTED = "aria-selected";
+const ARIA_CONTROLS = "aria-controls";
+const ARIA_DISABLED = "aria-disabled";
+const ARIA_SELECTED = "aria-selected";
 const TABINDEX = "tabindex";
 
 export const UHTMLTabsStyle = DISPLAY_BLOCK;
@@ -32,7 +32,7 @@ export const UHTMLTabPanelStyle = DISPLAY_BLOCK;
 export const UHTMLTabStyle = ""; // Kept for backwards compatibility
 export const UHTMLTabListStyle = `${DISPLAY_BLOCK}
 ::slotted([role="tab"]:not([hidden])) { display: inline-block; cursor: pointer }
-::slotted([role="tab"][${DISABLED}="true"]) { cursor: default }`;
+::slotted([role="tab"][${ARIA_DISABLED}="true"]) { cursor: default }`;
 
 export const UHTMLTabsShadowRoot = declarativeShadowRoot(UHTMLTabsStyle);
 export const UHTMLTabListShadowRoot = declarativeShadowRoot(UHTMLTabListStyle);
@@ -88,7 +88,7 @@ export class UHTMLTabListElement extends UHTMLElement {
 		attr(this, "role", "tablist");
 		on(this, "click keydown", this); // Listen for tab events on tablist to minimize amount of listeners
 		this._umutate = onMutation(this, onMutations, {
-			attributeFilter: ["id", "role", CONTROLS, SELECTED], // Needed if role="tab|tabpanel" and not u-tab|u-tabpanel is used
+			attributeFilter: ["id", "role", ARIA_CONTROLS, ARIA_SELECTED], // Needed if role="tab|tabpanel" and not u-tab|u-tabpanel is used
 			attributes: true,
 			childList: true,
 			subtree: true, // Needed to catch changes of attributes in children
@@ -134,7 +134,7 @@ export class UHTMLTabListElement extends UHTMLElement {
 		return getTabsElement(this);
 	}
 	get tabs(): NodeListOf<Element> {
-		return this.querySelectorAll(':scope > [role="tab"]'); // Using querySeletorAll for backwards compatibility
+		return this.querySelectorAll(':scope > [role="tab"]'); // Using querySelectorAll for backwards compatibility
 	}
 	get selectedIndex(): number {
 		const tabs = getTabs(this);
@@ -152,11 +152,11 @@ export class UHTMLTabListElement extends UHTMLElement {
 let SKIP_TAB_ATTR_CHANGE_CALLBACK = false;
 export class UHTMLTabElement extends UHTMLElement {
 	static get observedAttributes() {
-		return ["id", SELECTED, CONTROLS]; // Using ES2015 syntax for backwards compatibility
+		return ["id", ARIA_SELECTED, ARIA_CONTROLS]; // Using ES2015 syntax for backwards compatibility
 	}
 	connectedCallback() {
 		attr(this, "role", "tab");
-		attr(this, SELECTED, `${this.selected}`); // Setup attributes on connectedCallback since initial onMutation has already run
+		attr(this, ARIA_SELECTED, `${this.selected}`); // Setup attributes on connectedCallback since initial onMutation has already run
 		attr(this, TABINDEX, this.selected ? "0" : "-1");
 		if (!getSelected(this.parentElement?.children)) setSelected(this); // Ensure at least one tab is selected
 	}
@@ -197,18 +197,21 @@ export class UHTMLTabPanelElement extends UHTMLElement {
 		attachStyle(this, UHTMLTabPanelStyle);
 	}
 	connectedCallback() {
+		SKIP_TAB_ATTR_CHANGE_CALLBACK = true;
 		attr(this, "role", "tabpanel"); // Must register role before checking hidden state
 		const root = getTabsElement(this);
 		let tab = root?.tabs[[...root.panels].indexOf(this)];
 		const panel = tab && getPanel(tab, this); // Try finding associated panel based on index, respecting existing aria-controls
 		if (panel !== this) tab = getSelected(this.tabs) || this.tabs[0]; // Fallback to search for elements with aria-controls matching panel id
-		syncPanel(this, tab, isSelected(tab)); // Sync panel with tab to set initial visibility
+		syncPanel(this, tab, !!tab && isSelected(tab)); // Sync panel with tab to set initial visibility
+		(tab?.parentElement as UHTMLTabListElement)?._umutate?.takeRecords(); // Prevent infinite mutation loop that can be caused syncPanel
+		SKIP_TAB_ATTR_CHANGE_CALLBACK = false;
 	}
 	get tabsElement(): UHTMLTabsElement | null {
 		return getTabsElement(this);
 	}
 	get tabs(): NodeListOf<Element> {
-		return getRoot(this).querySelectorAll(`[${CONTROLS}="${this.id}"]`);
+		return getRoot(this).querySelectorAll(`[${ARIA_CONTROLS}="${this.id}"]`);
 	}
 }
 
@@ -218,21 +221,20 @@ const onMutations = (self: Element, records: MutationRecord[] = []) => {
 		const tab = el instanceof Element && attr(el, "role") === "tab";
 		if (tab && isSelected(el)) selected = el; // Pluck the newly selected tab from mutations
 	}
-	setSelected(selected || getSelected(self.children) ? null : getTabs(self)[0]); // Fallback to first tab if no selected element exists
+	if (!selected && !getSelected(self.children))
+		selected = getSelected(getTabs(self).filter(isEnabled)); // Fallback to first enabled tab if no selected element exists
+	setSelected(selected);
 };
-
 const syncPanel = (panel: Element, tab?: Element, show = false) => {
-	SKIP_TAB_ATTR_CHANGE_CALLBACK = true;
 	attr(panel, "aria-hidden", `${!show}`); // Safari 18.6 has a bug where hidden alone is not enough to prevent screen readers focus
 	attr(panel, "hidden", show ? null : "");
 	attr(panel, TABINDEX, show ? "0" : null);
-	if (tab) attr(tab, CONTROLS, useId(panel));
-	if (show && isSelected(tab)) attr(panel, SAFE_LABELLEDBY, useId(tab));
-	(tab?.parentElement as UHTMLTabListElement)?._umutate?.takeRecords(); // Prevent infinite mutation loop that would be caused by updating id / aria-controls
-	SKIP_TAB_ATTR_CHANGE_CALLBACK = false;
+	if (tab) attr(tab, ARIA_CONTROLS, useId(panel));
+	if (tab && show && isSelected(tab)) attr(panel, SAFE_LABELLEDBY, useId(tab));
 };
 
-const isSelected = (tab?: Element) => tab?.getAttribute(SELECTED) === "true";
+const isEnabled = (el: Element) => attr(el, ARIA_DISABLED) !== "true";
+const isSelected = (el: Element) => attr(el, ARIA_SELECTED) === "true";
 const getSelected = (elems: Iterable<Element> = []) => {
 	for (const el of elems) if (isSelected(el)) return el;
 };
@@ -245,7 +247,7 @@ const getTabs = (tablist?: Element | null): Element[] => {
 };
 
 const getPanel = (tab: Element, panel: Element | null = null) => {
-	const id = attr(tab, CONTROLS);
+	const id = attr(tab, ARIA_CONTROLS);
 	const el = id ? getRoot(tab).getElementById(id) : panel;
 	return el as UHTMLTabPanelElement | null;
 };
@@ -257,7 +259,7 @@ const getTabsElement = (self: Node | null): UHTMLTabsElement | null => {
 };
 
 const setSelected = (selected?: Element | null) => {
-	if (!selected || attr(selected, DISABLED) === "true") return;
+	if (!selected || !isEnabled(selected)) return;
 	SKIP_TAB_ATTR_CHANGE_CALLBACK = true;
 	const tabs = getTabs(selected.parentElement);
 	const panels = getTabsElement(selected)?.panels || [];
@@ -266,11 +268,10 @@ const setSelected = (selected?: Element | null) => {
 	let idx = 0;
 	for (const tab of tabs) {
 		const panel = getPanel(tab, panels?.[idx++]);
-		attr(tab, SELECTED, `${tab === selected}`);
+		attr(tab, ARIA_SELECTED, `${tab === selected}`);
 		attr(tab, TABINDEX, tab === selected ? "0" : "-1");
 		if (panel) syncPanel(panel, tab, panel === nextPanel);
 	}
-
 	(selected.parentElement as UHTMLTabListElement)?._umutate?.takeRecords(); // Prevent infinite mutation loop that would be caused by updating aria-selected
 	SKIP_TAB_ATTR_CHANGE_CALLBACK = false;
 };

@@ -117,6 +117,8 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	attributeChangedCallback(prop: string, _: string, val: string) {
 		const text = prop.split("data-sr-")[1] as keyof typeof TEXTS;
 		if (TEXTS[text]) this._texts[text] = val || TEXTS[text]; // Cache text attributes for performance
+		if (text === "clear" && this.clear)
+			attr(this.clear, ARIA_LABEL, this._texts.clear); // Backwards compatbile only update clear aria-label if data-sr-clear is set
 	}
 	disconnectedCallback() {
 		off(this, EVENTS, this, true);
@@ -400,10 +402,10 @@ const syncClearWithInput = (self: UHTMLComboboxElement) => {
 	const { clear, control } = self;
 	const hidden = !control?.value || control?.disabled || control?.readOnly;
 	if (clear.nodeName === "DEL") attr(clear, "role", "button"); // Backwards compatibility for older versions using <del> as clear button
+	if (!attr(clear, ARIA_LABEL)) attr(clear, ARIA_LABEL, self._texts.clear); // Set default aria-label if not set by consumer
 	attr(clear, "aria-hidden", `${IS_IOS || IS_ANDROID}`); // Hide from screen readers to keep datalist open on swipe right navigation
 	attr(clear, "hidden", hidden ? "" : null);
 	attr(clear, "tabindex", "-1");
-	attr(clear, ARIA_LABEL, self._texts.clear);
 };
 
 const syncOptionsWithItems = (self: UHTMLComboboxElement) => {

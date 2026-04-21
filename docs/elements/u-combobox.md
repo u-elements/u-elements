@@ -512,6 +512,7 @@ const renderToStaticMarkup = (data: string, options: string) =>
 
 ## Changelog
 
+- **2.0.2:** Respect existing aria-label on clear button
 - **2.0.1:** Fix single mode value sync for React users
 - **2.0.0:** Plays nice with strict CSP and with axe tests, and uses `u-datalist@2.0.0`
 - **1.0.7:** Fixes so display: flex on u-combobox renders as expected

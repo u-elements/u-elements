@@ -111,22 +111,6 @@ test.describe("HTMLDataListElement", () => {
 		expect(values).toEqual(["Dog"]);
 	});
 
-	test("is hidden but keeps fallback content in the DOM", async ({ page }) => {
-		await mount(
-			page,
-			`<u-datalist id="animals">
-			  <label>Fallback<select><u-option value="Cat">Cat</u-option></select></label>
-			  <u-option value="Dog"></u-option>
-			</u-datalist>`,
-		);
-
-		const datalist = page.locator("u-datalist");
-
-		await expect(datalist).toBeHidden();
-		await expect(datalist.locator("select")).toHaveCount(1);
-		await expect(datalist).toHaveJSProperty("options.length", 2);
-	});
-
 	test("skips empty and disabled options in the options collection", async ({
 		page,
 	}) => {

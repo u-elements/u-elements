@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
-	await page.goto("index.html");
+	await page.goto("test.html");
 	await page.evaluate(() => {
 		// Safari test runnner does falsely support hidden="until-found"
 		document.body.innerHTML = `

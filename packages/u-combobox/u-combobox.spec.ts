@@ -6,7 +6,7 @@ const setCaretStart = (input: HTMLInputElement) => {
 };
 
 test.beforeEach(async ({ page }) => {
-	await page.goto("index.html");
+	await page.goto("test.html");
 	await page.evaluate(() => {
 		document.body.innerHTML = `
 			<label for="my-tags">My label</label>

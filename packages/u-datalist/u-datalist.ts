@@ -124,7 +124,7 @@ const isVisible = (el: Element) =>
 
 const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
 	if (self._input) attr(self._input, "aria-expanded", `${open}`);
-	if (!open === self.hidden || !self.isConnected) return; // No change needed
+	if (!self.isConnected || self.hidden !== open) return; // No change needed
 	if (!open) setActive(self); // Clear activedescendant when closing
 	if (self.popover) self.togglePopover(open); // Mirror Popover API if used
 	if (open) setTimeout(() => clearTimeout(LIVE_TIMER)); // Prevent announcing hits on open
@@ -207,11 +207,15 @@ const onKeyDown = (self: UHTMLDataListElement, event: KeyboardEvent) => {
 	if (key === "Escape" && !self.hidden) event.preventDefault(); // Prevent Safari from minimizing the window and <dialog> from closing
 
 	setExpanded(self, key !== "Escape"); // Close on ESC but show on other keys
-	const active = attr(self._input, "aria-activedescendant");
-	const opts = [...self.options].filter(isVisible);
-	const prev = opts.findIndex((opt) => opt.id === active);
 	const isEnter = key === "Enter";
+	const active = attr(self._input, "aria-activedescendant");
+	const opts = [];
+	let prev = -1;
 	let next = -1;
+	for (const opt of self.options) {
+		if (isVisible(opt)) opts.push(opt); // Performance optimized loop as this runs many times
+		if (opt.id === active) prev = opts.length - 1;
+	}
 
 	if (!alt && key === "ArrowDown") next = (prev + 1) % opts.length;
 	if (!alt && key === "ArrowUp") next = (prev || opts.length) - 1;

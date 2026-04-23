@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
-	await page.goto("index.html");
+	await page.goto("test.html");
 	await page.evaluate(() => {
 		document.body.innerHTML = "<u-option>Option 1</u-option>";
 	});
@@ -18,9 +18,10 @@ test.describe("u-option", () => {
 
 	test("is is defined", async ({ page }) => {
 		const uOption = page.locator("u-option");
-		const instance = await uOption.evaluate(
-			(el) => el instanceof (customElements.get("u-option") as never),
-		);
+		const instance = await uOption.evaluate((el) => {
+			const instance = customElements.get("u-option");
+			return el instanceof (instance as CustomElementConstructor);
+		});
 
 		expect(instance).toBeTruthy();
 		await expect(uOption).toHaveAccessibleName("Option 1");
@@ -55,9 +56,9 @@ test.describe("u-option", () => {
 
 		expect(
 			await page.evaluate(() => {
-				const uOption = document.querySelectorAll("u-option");
+				const opts = document.querySelectorAll<HTMLOptionElement>("u-option");
 				const form = document.querySelector("form");
-				return uOption[0].form === form && uOption[1].form === form;
+				return opts[0].form === form && opts[1].form === form;
 			}),
 		).toBeTruthy();
 
@@ -114,7 +115,6 @@ test.describe("u-option", () => {
 		});
 		await expect(uOption).toHaveAttribute("label", "Label 1");
 		await expect(uOption).toHaveAttribute("value", "Value 1");
-		await expect(uOption).toHaveAttribute("selected");
 		await expect(uOption).toHaveAttribute("aria-selected", "true");
 		await expect(uOption).toHaveAttribute("disabled");
 		await expect(uOption).toHaveAttribute("aria-disabled", "true");

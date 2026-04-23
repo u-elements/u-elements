@@ -18,7 +18,7 @@ const SELECTED = "selected";
 type Observed = (typeof UHTMLOptionElement.observedAttributes)[number];
 
 /**
- * The `<u-option>` HTML element is used to define an item contained in a `<u-datalist>` element. As such, <u-option> can represent lists of items in an HTML document.
+ * The `<u-option>` HTML element is used to define an item contained in a `<u-datalist>` element.
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option)
  */
 let SKIP_ATTR_CHANGED_CALLBACK = false;

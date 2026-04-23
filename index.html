@@ -107,7 +107,7 @@
           <u-option>Mango</u-option>
           <u-option>Hasselnøtt</u-option>
         </u-datalist> -->
-      <!-- <div>
+      <div>
         <label>
           Label 1
           <br aria-hidden="true"><u-progress value="5" max="20">70%</u-progress>
@@ -116,7 +116,7 @@
         <u-progress id="my-for-progress" value="5" max="10">70%</u-progress>
         <br>
         <br>
-      </div> -->
+      </div>
       <form hidden>
         <input type="date" name="dato" value="2025-12-02" />
         <mu-datepicker
@@ -185,6 +185,15 @@
         const combobox = document.querySelector('u-combobox');
         const xhr = new XMLHttpRequest(); // Easy to abort
         let debounceTimer; // Debounce so we do not spam API
+
+        // combobox?.control.click();
+        
+        combobox?.addEventListener('comboboxbeforeselect', console.log);
+
+        combobox?.dispatchEvent(new CustomEvent('comboboxbeforeselect', {
+          detail: Object.assign(document.createElement('data'), { value: 'hei', textContent: 'hei' }),
+          bubbles: true,
+        })); // Trigger initial load
 
         // combobox.addEventListener('comboboxbeforematch', (event) => {
         //   event.preventDefault();

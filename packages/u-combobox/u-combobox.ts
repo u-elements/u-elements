@@ -82,7 +82,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 
 	_focusMoved = false; // Used to determine if we announce through aria-live or aria-label when items are added or removed
 	_itemSingleVale = ""; // Locally store item text to compare change in single mode
-	_match?: HTMLDataElement | { value: string }; // Used to store current match
+	_match?: { value: string; label: string }; // Used to store current match
 	_speak = "";
 	_texts = { ...TEXTS };
 	_value = ""; // Locally store value to store value before input-click
@@ -130,6 +130,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		if (this.control?.disabled || this.control?.readOnly) return;
 		if (event.type === "blur") onBlur(this);
 		if (event.type === "click") onClick(this, event as MouseEvent);
+		if (event.type === "focus") speak(); // Prepare for aria-live announcements
 		if (event.type === "input") onInput(this, event);
 		if (event.type === "keydown") onKeyDown(this, event as KeyboardEvent);
 		if (event.type === "pointerdown") isPointerDown(event); // Prevent unwanted blur when pressing items with tabindex="-1"
@@ -189,8 +190,8 @@ const dispatchMatch = (self: UHTMLComboboxElement) => {
 	if (!multiple) for (const o of options) o.selected = o === match;
 	else syncOptionsWithItems(self); // Sync options with items in multiple mode as consumer can change option.selected in comboboxbeforematch
 
-	if (!match && creatable && value) return { value }; // Return creatable value as match if no match and creatable
-	return match;
+	if (!match && creatable && value) return { value, label: value }; // Return creatable value as match if no match and creatable
+	return match && { value: match.value, label: match.label };
 };
 
 const dispatchSelect = (
@@ -206,11 +207,10 @@ const dispatchSelect = (
 	}
 
 	const index = [...items].findIndex((i) => i.value === item.value);
-	const remove = multiple || !index ? items[index] : null; // In single mode, only accept index 0 as it is the only visible item
+	const remove = items[index];
 	const focus =
-		remove &&
-		items[index]?.matches(":focus") &&
-		(items[index - 1] || items[index + 1] || control);
+		remove?.matches(":focus") &&
+		(multiple ? items[index - 1] || items[index + 1] || control : control);
 
 	if (remove && !canRemove) return syncInputWithItemSingleMode(self); // If item is already present and not removeable
 	if (focus) focus.focus(); // Move focus if item might be removed (can be prevented by comboboxbeforeselect)

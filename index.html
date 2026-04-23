@@ -137,7 +137,7 @@
         <label for="input-1">Velg type iskrem</label>
         <u-combobox
           data-creatable="false"
-          data-multiple="true"
+          data-multiple="false"
           data-sr-added="La til"
           data-sr-clear="Tøm tekstfelt"
           data-sr-empty="Ingen valgte"
@@ -188,12 +188,12 @@
 
         // combobox?.control.click();
         
-        combobox?.addEventListener('comboboxbeforeselect', console.log);
+        // combobox?.addEventListener('comboboxbeforeselect', console.log);
 
-        combobox?.dispatchEvent(new CustomEvent('comboboxbeforeselect', {
-          detail: Object.assign(document.createElement('data'), { value: 'hei', textContent: 'hei' }),
-          bubbles: true,
-        })); // Trigger initial load
+        // combobox?.dispatchEvent(new CustomEvent('comboboxbeforeselect', {
+        //   detail: Object.assign(document.createElement('data'), { value: 'hei', textContent: 'hei' }),
+        //   bubbles: true,
+        // })); // Trigger initial load
 
         // combobox.addEventListener('comboboxbeforematch', (event) => {
         //   event.preventDefault();

@@ -1,10 +1,10 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
 	await page.goto("test.html");
 });
 
-const mount = async (page: import("@playwright/test").Page, html: string) => {
+const mount = async (page: Page, html: string) => {
 	await page.evaluate((markup) => {
 		document.body.innerHTML = markup;
 	}, html);

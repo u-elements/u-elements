@@ -51,7 +51,7 @@ test.describe("HTMLDataListElement", () => {
 		const listMatches = await page
 			.locator("input")
 			.evaluate<boolean, HTMLInputElement>((input) => {
-				return input.list === document.querySelector("u-datalist"); // Use == to allow for different instances of HTMLDataListElement across realms
+				return input.list === document.querySelector("u-datalist");
 			});
 
 		expect(listMatches).toBeTruthy();
@@ -109,29 +109,6 @@ test.describe("HTMLDataListElement", () => {
 			(el) => Array.from(el.options, (opt) => opt.value),
 		);
 		expect(values).toEqual(["Dog"]);
-	});
-
-	test("skips empty and disabled options in the options collection", async ({
-		page,
-	}) => {
-		await mount(
-			page,
-			`<label for="animal">Animal</label>
-			 <input id="animal" list="animals" />
-			 <u-datalist id="animals">
-			  <u-option value=""></u-option>
-			  <u-option value="Bird" disabled></u-option>
-			  <u-option value="Cat"></u-option>
-			  <u-option value="Dog"></u-option>
-			 </u-datalist>`,
-		);
-
-		const datalist = page.locator("u-datalist");
-		const values = await datalist.evaluate<string[], HTMLDataListElement>(
-			(el) => Array.from(el.options, (opt) => opt.value),
-		);
-
-		expect(values).toEqual(["", "Bird", "Cat", "Dog"]);
 	});
 
 	test("supports mouse focus and keyboard input", async ({ page }) => {

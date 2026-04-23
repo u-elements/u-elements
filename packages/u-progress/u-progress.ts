@@ -16,7 +16,6 @@ declare global {
 	}
 }
 
-let SKIP_ATTRIBUTE_CHANGE = false;
 const VALUE = "value";
 const MAX = "max";
 
@@ -34,6 +33,7 @@ export const UHTMLProgressShadowRoot =
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/progress)
  */
 export class UHTMLProgressElement extends UHTMLElement {
+	_skipAttrChange = false;
 	_internals?: ElementInternals;
 
 	// Prevent Chrome DevTools warning about <label for=""> pointing to <u-progress>
@@ -55,8 +55,8 @@ export class UHTMLProgressElement extends UHTMLElement {
 		this.attributeChangedCallback();
 	}
 	attributeChangedCallback() {
-		if (SKIP_ATTRIBUTE_CHANGE || !this.hasAttribute("role")) return; // Prevent infinite loop when updating ARIA attributes
-		SKIP_ATTRIBUTE_CHANGE = true;
+		if (this._skipAttrChange || !this.hasAttribute("role")) return; // Prevent infinite loop when updating ARIA attributes
+		this._skipAttrChange = true;
 		const position = this.position;
 		const percentage = Math.max(0, Math.round(position * 100));
 
@@ -72,16 +72,18 @@ export class UHTMLProgressElement extends UHTMLElement {
 		attr(this, "aria-label", label); // Must use aria-label to include percentage value
 		attr(this, "aria-labelledby", null);
 		attr(this, "aria-valuenow", position === -1 ? null : `${percentage}`);
-		SKIP_ATTRIBUTE_CHANGE = false;
+		this._skipAttrChange = false;
 	}
-	get labels(): NodeList {
+	get labels(): NodeListOf<HTMLLabelElement> {
 		const labels = this._internals?.labels;
-		if (labels) return labels; // Use native labels if supported
+		if (labels) return labels as NodeListOf<HTMLLabelElement>; // Use native labels if supported
 
 		const id = useId(this);
 		const label = this.closest("label:not([for])");
 		if (label) attr(label, "for", id);
-		return getRoot(this).querySelectorAll(`label[for="${id}"]`); // Fallback to manual label association
+		return getRoot(this).querySelectorAll<HTMLLabelElement>(
+			`label[for="${id}"]`,
+		); // Fallback to manual label association
 	}
 	get position(): number {
 		return this.hasAttribute(VALUE) ? Math.min(this.value / this.max, 1) : -1;

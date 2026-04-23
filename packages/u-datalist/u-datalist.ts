@@ -209,7 +209,7 @@ const onKeyDown = (self: UHTMLDataListElement, event: KeyboardEvent) => {
 	setExpanded(self, key !== "Escape"); // Close on ESC but show on other keys
 	const isEnter = key === "Enter";
 	const active = attr(self._input, "aria-activedescendant");
-	const opts = [];
+	const opts: HTMLOptionElement[] = [];
 	let prev = -1;
 	let next = -1;
 	for (const opt of self.options) {

@@ -252,7 +252,6 @@ test.describe("HTMLDataListElement", () => {
 		await expect(input).toHaveValue("1");
 		await expect(option.nth(0)).toBeVisible();
 		await expect(option.nth(1)).toBeHidden();
-		await expect(option.nth(1)).toBeHidden();
 	});
 
 	test("filters items when changing value", async ({ page }) => {
@@ -351,7 +350,7 @@ test.describe("HTMLDataListElement", () => {
 		const input1 = page.locator("input").nth(1);
 		const datalist = page.locator("u-datalist");
 
-		expect(datalist).toBeHidden();
+		await expect(datalist).toBeHidden();
 		await input0.click();
 		await expect(datalist).toBeVisible();
 

@@ -212,10 +212,11 @@ const onKeyDown = (self: UHTMLDataListElement, event: KeyboardEvent) => {
 	const opts: HTMLOptionElement[] = [];
 	let prev = -1;
 	let next = -1;
-	for (const opt of self.options) {
-		if (isVisible(opt)) opts.push(opt); // Performance optimized loop as this runs many times
-		if (opt.id === active) prev = opts.length - 1;
-	}
+	for (const opt of self.options)
+		if (isVisible(opt)) {
+			opts.push(opt); // Performance optimized loop as this runs many times
+			if (opt.id === active) prev = opts.length - 1;
+		}
 
 	if (!alt && key === "ArrowDown") next = (prev + 1) % opts.length;
 	if (!alt && key === "ArrowUp") next = (prev || opts.length) - 1;

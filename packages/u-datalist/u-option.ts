@@ -18,11 +18,12 @@ const SELECTED = "selected";
 type Observed = (typeof UHTMLOptionElement.observedAttributes)[number];
 
 /**
- * The `<u-option>` HTML element is used to define an item contained in a `<u-datalist>` element. As such, <u-option> can represent lists of items in an HTML document.
+ * The `<u-option>` HTML element is used to define an item contained in a `<u-datalist>` element.
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option)
  */
-let SKIP_ATTR_CHANGED_CALLBACK = false;
 export class UHTMLOptionElement extends UHTMLElement {
+	_skipAttrChange = false;
+
 	// Using ES2015 syntax for backwards compatibility
 	static get observedAttributes() {
 		return ["id", DISABLED, SELECTED] as const;
@@ -35,11 +36,11 @@ export class UHTMLOptionElement extends UHTMLElement {
 		useId(this); // Ensure id is present for aria referencing
 	}
 	attributeChangedCallback(name: Observed) {
-		if (SKIP_ATTR_CHANGED_CALLBACK) return; // Prevent infinite loop since we also set attributes in this callback
-		SKIP_ATTR_CHANGED_CALLBACK = true;
+		if (this._skipAttrChange) return; // Prevent infinite loop since we also set attributes in this callback
+		this._skipAttrChange = true;
 		if (name === "id") useId(this);
 		else attr(this, `aria-${name}`, `${this[name]}`);
-		SKIP_ATTR_CHANGED_CALLBACK = false;
+		this._skipAttrChange = false;
 	}
 	/** Sets or retrieves whether the option in the list box is the default item. */
 	get defaultSelected(): boolean {

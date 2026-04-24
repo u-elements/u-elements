@@ -7,7 +7,7 @@ const attrLabelledby = () => {
 };
 
 test.beforeEach(async ({ page }) => {
-	await page.goto("index.html");
+	await page.goto("test.html");
 	await page.evaluate(() => {
 		document.body.innerHTML = `<u-tabs>
       <u-tablist>

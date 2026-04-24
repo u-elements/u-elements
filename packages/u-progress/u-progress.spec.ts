@@ -91,6 +91,17 @@ test.describe("UHTMLProgressElement", () => {
 		await expect(progress).not.toHaveAttribute("aria-valuenow");
 	});
 
+	test("clamps value and max to valid values", async ({ page }) => {
+		await mount(page, `<u-progress value="-30" max=".5"></u-progress>`);
+
+		const progress = page.locator("u-progress");
+
+		await expect(progress).toHaveJSProperty("value", 0);
+		await expect(progress).toHaveJSProperty("max", 1);
+		await expect(progress).toHaveJSProperty("position", 0);
+		await expect(progress).toHaveAttribute("aria-valuenow", "0");
+	});
+
 	test("clamps position when value exceeds max", async ({ page }) => {
 		await mount(page, `<u-progress value="30" max="20"></u-progress>`);
 

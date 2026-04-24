@@ -113,6 +113,8 @@ const setNumber = (el: Element, key: string, value: unknown, min = 0) => {
 	const float = Number(value);
 	if (Number.isFinite(float))
 		return attr(el, key, `${Math.max(min, float) || min}`);
+
+	// The HTML spec does not specify this error message, but major browsers have started to throw when setting invalid max/value
 	throw new Error(
 		`Failed to set the '${key}' property on 'UHTMLProgressElement': The provided double value is non-finite.`,
 	);

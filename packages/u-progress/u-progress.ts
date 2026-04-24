@@ -104,14 +104,15 @@ export class UHTMLProgressElement extends UHTMLElement {
 
 const getNumber = (el: Element, key: string, alt = 0) => {
 	const value = attr(el, key);
-	const float = Math.max(0, Number(value));
+	const float = Number(value);
 	if (value === null) return alt;
-	return (Number.isFinite(float) && float) || alt;
+	return (Number.isFinite(float) && Math.max(0, float)) || alt;
 };
 
 const setNumber = (el: Element, key: string, value: unknown, alt = 0) => {
-	const float = Math.max(0, Number(value));
-	if (Number.isFinite(float)) return attr(el, key, `${float || alt}`);
+	const float = Number(value);
+	if (Number.isFinite(float))
+		return attr(el, key, `${Math.max(0, float) || alt}`);
 	throw new Error(
 		`Failed to set the '${key}' property on 'UHTMLProgressElement': The provided double value is non-finite.`,
 	);

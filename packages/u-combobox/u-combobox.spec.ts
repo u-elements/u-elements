@@ -203,7 +203,7 @@ test.describe("u-combobox", () => {
 		await expect(item2).toBeFocused();
 	});
 
-	test("make announcements when focused, but not when blurred", async ({
+	test("makes announcements when focused, but not when blurred", async ({
 		page,
 	}) => {
 		await mount(page, DEFAULT);

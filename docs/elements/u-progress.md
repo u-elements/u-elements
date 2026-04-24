@@ -142,6 +142,7 @@ const renderToStaticMarkup = (value?: number, max?: number) =>
 
 ## Changelog
 
+- **1.0.1:** Use `attachInternals` when supported by the current browser and speed up attribute assignment
 - **1.0.0:** Plays nice with strict CSP, and renders attributes in consistent order
 - **0.0.7:** Uses `role="progress"` also in Firefox who now has sufficient support
 - **0.0.6:** Enable declarative shadow root support and export `UHTMLProgressShadowRoot` for easier server side rendering

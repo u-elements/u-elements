@@ -162,8 +162,11 @@ test.describe("UHTMLProgressElement", () => {
 		);
 
 		const progress = page.locator("u-progress");
+		const labelsCount = await progress.evaluate<number, HTMLProgressElement>(
+			(el) => el.labels.length,
+		);
 
-		await expect(progress).toHaveJSProperty("labels.length", 3);
+		expect(labelsCount).toBe(3);
 	});
 
 	test("has the expected accessible role and name", async ({ page }) => {

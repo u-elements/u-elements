@@ -91,20 +91,31 @@ test.describe("HTMLDataListElement", () => {
 		);
 
 		const datalist = page.locator("u-datalist");
-
-		await expect(datalist).toHaveJSProperty("options.length", 1);
+		expect(
+			await datalist.evaluate<number, HTMLDataListElement>(
+				(el) => el.options.length,
+			),
+		).toBe(1);
 
 		await datalist.evaluate((el) => {
 			const dog = document.createElement("u-option") as HTMLOptionElement;
 			dog.value = "Dog";
 			el.append(dog);
 		});
-		await expect(datalist).toHaveJSProperty("options.length", 2);
+		expect(
+			await datalist.evaluate<number, HTMLDataListElement>(
+				(el) => el.options.length,
+			),
+		).toBe(2);
 
 		await datalist.evaluate((el) => {
 			el.firstElementChild?.remove();
 		});
-		await expect(datalist).toHaveJSProperty("options.length", 1);
+		expect(
+			await datalist.evaluate<number, HTMLDataListElement>(
+				(el) => el.options.length,
+			),
+		).toBe(1);
 		const values = await datalist.evaluate<string[], HTMLDataListElement>(
 			(el) => Array.from(el.options, (opt) => opt.value),
 		);
@@ -153,7 +164,10 @@ test.describe("HTMLDataListElement", () => {
 		const datalist = page.locator("u-datalist");
 
 		await expect(datalist).toBeHidden();
-		await expect(datalist).toHaveJSProperty("children.length", 3);
+		const optionsCount = await datalist.evaluate<number, HTMLDataListElement>(
+			(el) => el.options.length,
+		);
+		expect(optionsCount).toBe(3);
 	});
 
 	test("sets up attributes", async ({ page }) => {

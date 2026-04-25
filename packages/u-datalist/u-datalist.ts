@@ -7,6 +7,7 @@ import {
 	DISPLAY_BLOCK,
 	declarativeShadowRoot,
 	FOCUS_OUTLINE,
+	getFocusedElement,
 	getRoot,
 	IS_ANDROID,
 	IS_IOS,
@@ -178,7 +179,8 @@ const onBlur = (
 };
 
 const onBlurred = (self: UHTMLDataListElement) => {
-	if (self._input?.matches(":focus") || self.matches(":focus-within")) return; // Ignore if focus is still on input or inside datalist
+	const focus = getFocusedElement(self);
+	if (self._input === focus || self.contains(focus)) return; // Ignore if focus is still on input or inside datalist
 	if (self._root) off(self._root, EVENTS_ACTIVE_BUBBLE, self); // Unbind events relevant to focused state
 	setExpanded(self, false);
 	self._input = undefined;
@@ -262,7 +264,7 @@ const onMutations = (self: UHTMLDataListElement) => {
 
 const speakHits = (self: UHTMLDataListElement, show: HTMLOptionElement[]) =>
 	!self.hidden &&
-	self._input?.matches(":focus") &&
+	self._input === getFocusedElement(self) &&
 	speak(
 		`${show.some(({ value }) => value) ? `${self._texts[show[1] ? "plural" : "singular"]}`.replace("%d", `${show.length}`) : self.innerText}`,
 	);

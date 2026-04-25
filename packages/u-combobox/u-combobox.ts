@@ -6,6 +6,7 @@ import {
 	declarativeShadowRoot,
 	EVENT_ONCE,
 	FOCUS_OUTLINE,
+	getFocusedElement,
 	getLabel,
 	getText,
 	IS_ANDROID,
@@ -209,7 +210,7 @@ const dispatchSelect = (
 	const index = [...items].findIndex((i) => i.value === item.value);
 	const remove = items[index];
 	const focus =
-		remove?.matches(":focus") &&
+		remove === getFocusedElement(self) &&
 		(multiple ? items[index - 1] || items[index + 1] || control : control);
 
 	if (remove && !canRemove) return syncInputWithItemSingleMode(self); // If item is already present and not removeable
@@ -231,7 +232,7 @@ const onBlur = (self: UHTMLComboboxElement) =>
 
 const onBlurred = (self: UHTMLComboboxElement) =>
 	self.multiple ||
-	self.matches(":focus-within") ||
+	self.contains(getFocusedElement(self)) ||
 	dispatchSelect(self, self._match, false); // Use cached match from typing
 
 const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
@@ -244,9 +245,10 @@ const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
 		return control.focus();
 	}
 	for (const item of items) {
-		const { top, right, bottom, left } = item.getBoundingClientRect(); // Use coordinates to inside since pointer-events: none will prevent correct event.target
 		if (item.contains(target as Node)) return dispatchSelect(self, item); // Keyboard and screen reader can set target to element with pointer-events: none
-		if (y >= top && y <= bottom && x >= left && x <= right) return item.focus(); // If clicking inside item, focus it
+		const rect = item.getBoundingClientRect();
+		const { top: t, right: r, bottom: b, left: l, width: w, height: h } = rect; // Use coordinates to inside since pointer-events: none will prevent correct event.target
+		if (w && h && y >= t && y <= b && x >= l && x <= r) return item.focus(); // If item is larger than 0x0 and click is inside inside, focus it
 	}
 	if (target === self) control?.focus(); // Focus input if clicking <u-combobox>
 };
@@ -322,8 +324,9 @@ const onMutations = (self: UHTMLComboboxElement, edit?: MutationRecord[]) => {
 		for (const el of del) if (el instanceof HTMLDataElement) edits.push(el); // Removed nodes to the back
 	}
 
-	const doSpeak = multiple ? edits.length === 1 : edits[0]?.matches(":focus"); // Only speak in single mode if item is visible and focused
-	if (doSpeak && self.matches(":focus-within")) {
+	const focus = getFocusedElement(self);
+	const doSpeak = multiple ? edits.length === 1 : edits[0] === focus; // Only speak in single mode if item is visible and focused
+	if (doSpeak && self.contains(focus)) {
 		const label = control ? attr(control, ARIA_LABEL) : null; // Store so we can revert after announcement
 		self._speak = `${_texts[edits[0].isConnected ? "added" : "removed"]} ${getText(edits[0])}, `; // Updates aria-labels
 		attr(control, ARIA_LABEL, `${self._speak}${getLabel(control)}`); // Make sure control also can aria-label-announce

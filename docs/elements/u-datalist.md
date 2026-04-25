@@ -305,6 +305,7 @@ const renderToStaticMarkup = (options: string) =>
 
 ## Changelog
 
+- **2.0.1:** Use document.activeElement instead of .matches(":focus-within") for JSDOM testing compatibility
 - **2.0.0:** Plays nice with strict CSP, correctly handles foucs-before-mount and click-to-open, and uses `aria-activedecendant` as support is now sufficient
 - **1.1.1:** Speed up popover check
 - **1.1.0:** Allows changing tag name when extending `UHTMLDataListElement` class

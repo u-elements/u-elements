@@ -132,6 +132,14 @@ export const getRoot = (node: Node): Document | ShadowRoot => {
 };
 
 /**
+ * getFocusedElement
+ * @description Helper to get focused element, since testing environments such as jest/jsdom does not support .matches(":focus") or .matches(":focus-within")
+ * @param node The target node
+ * @return The Element with focus in the current root
+ */
+export const getFocusedElement = (node: Node) => getRoot(node).activeElement;
+
+/**
  * getLabel
  * @description Get the screen reader label or an element from aria-label, aria-labelledby or <label> elements
  * @param element The target element to get accessible label from

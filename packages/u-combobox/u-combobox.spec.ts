@@ -275,27 +275,33 @@ test.describe("u-combobox", () => {
 		await expect(input).toBeFocused();
 	});
 
-	// test("handles multiple u-combobox on same page", async ({ page }) => {
-	// 	await mount(
-	// 		page,
-	// 		`${DEFAULT}
-	// 			<u-combobox id="second">
-	// 				<data>Second 1</data>
-	// 				<input />
-	// 				<u-datalist>
-	// 					<u-option>Second 1</u-option>
-	// 					<u-option>Second 2</u-option>
-	// 				</u-datalist>
-	// 			</u-combobox>
-	// 		`,
-	// 	);
-	// 	const firstInput = page.locator("u-combobox").first().locator("input");
-	// 	const secondInput = page.locator("#second input");
-	// 	await firstInput.focus();
-	// 	await expect(firstInput).toBeFocused();
-	// 	await secondInput.focus();
-	// 	await expect(secondInput).toBeFocused();
-	// });
+	test("handles multiple u-combobox on same page", async ({ page }) => {
+		await mount(
+			page,
+			`${DEFAULT}
+				<u-combobox id="second">
+					<data>Second 1</data>
+					<input />
+					<button type="reset">Clear</button>
+					<u-datalist>
+						<u-option>Second 1</u-option>
+						<u-option>Second 2</u-option>
+					</u-datalist>
+				</u-combobox>
+			`,
+		);
+		const firstInput = page.locator("u-combobox").first().locator("input");
+		const secondInput = page.locator("#second input");
+		const secondData = page.locator("#second  data");
+		const buttonReset = page.locator('button[type="reset"]');
+		await secondInput.focus();
+		await expect(secondInput).toBeFocused();
+		await buttonReset.click();
+		await expect(secondData).toBeAttached();
+		await firstInput.focus();
+		await expect(firstInput).toBeFocused();
+		await expect(secondData).not.toBeAttached();
+	});
 
 	// test("handles click on option in datalist", async ({ page }) => {
 	// 	await mount(page, DEFAULT);

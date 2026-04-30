@@ -225,14 +225,13 @@ export const setValue = (input: HTMLInputElement, data: string, type = "") => {
  * @return {boolean} Whether mouse is currently down
  */
 // Prevent loosing focus on mousedown on <data> despite tabIndex -1
-let IS_PRESS = false;
-export const isPointerDown = (e?: Event) => {
-	if (e?.type === "pointerup") IS_PRESS = false;
+const IS_PRESS = new WeakSet<Element>();
+export const isPointerDown = (el: Element, e?: Event) => {
 	if (e?.type === "pointerdown") {
-		IS_PRESS = true;
-		on(document, "pointerup", isPointerDown, EVENT_ONCE); // pointerup is "composed" so it also bubbles from ShadowDOM up to document
+		IS_PRESS.add(el);
+		on(document, "pointerup", () => IS_PRESS.delete(el), EVENT_ONCE); // pointerup is "composed" so it also bubbles from ShadowDOM up to document
 	}
-	return IS_PRESS;
+	return IS_PRESS.has(el);
 };
 
 /**

@@ -173,7 +173,7 @@ const onBlur = (
 	self: UHTMLDataListElement,
 	event: Event & Partial<FocusEvent>,
 ) => {
-	isPointerDown()
+	isPointerDown(self)
 		? event.stopImmediatePropagation() // Native datalist does not move focus out when selecting, so prevent blur events
 		: IS_ANDROID || setTimeout(onBlurred, 0, self, event); // Samsung Internet sets keyboard-focus to <body> when screen reader to <datalist>, so we should not close on blur
 };
@@ -187,7 +187,7 @@ const onBlurred = (self: UHTMLDataListElement) => {
 };
 
 const onPointerDown = (self: UHTMLDataListElement, event: Event) =>
-	self.contains(event.target as Node) && isPointerDown(event); // Prevent unwanted blur when pressing options with tabindex="-1"
+	self.contains(event.target as Node) && isPointerDown(self, event); // Prevent unwanted blur when pressing options with tabindex="-1"
 
 const onClick = (self: UHTMLDataListElement, event: Event) => {
 	if (isInput(event.target)) onFocus(self, event); // Make sure we potentially connect, in case focus happens before u-datalist connectedCallback has run

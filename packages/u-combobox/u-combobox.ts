@@ -134,7 +134,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		if (event.type === "focus") speak(); // Prepare for aria-live announcements
 		if (event.type === "input") onInput(this, event);
 		if (event.type === "keydown") onKeyDown(this, event as KeyboardEvent);
-		if (event.type === "pointerdown") isPointerDown(event); // Prevent unwanted blur when pressing items with tabindex="-1"
+		if (event.type === "pointerdown") isPointerDown(this, event); // Prevent unwanted blur when pressing items with tabindex="-1"
 	}
 	get multiple() {
 		return (attr(this, "data-multiple") ?? FALSE) !== FALSE; // Allow data-multiple="false" to be more React friendly
@@ -228,7 +228,7 @@ const dispatchSelect = (
 };
 
 const onBlur = (self: UHTMLComboboxElement) =>
-	isPointerDown() || setTimeout(onBlurred, 0, self); // Delay to allow focus to be set on new element
+	isPointerDown(self) || setTimeout(onBlurred, 0, self); // Delay to allow focus to be set on new element
 
 const onBlurred = (self: UHTMLComboboxElement) =>
 	self.multiple ||

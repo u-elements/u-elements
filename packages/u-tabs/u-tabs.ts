@@ -55,8 +55,8 @@ export class UHTMLTabsElement extends UHTMLElement {
 		);
 	}
 	get selectedIndex(): number {
-		const tabs = [...this.tabs];
-		return tabs.indexOf(getSelected(tabs) as Element);
+		const tabs = getTabs(this.tabList);
+		return tabs.indexOf(findSelected(tabs) as Element);
 	}
 	set selectedIndex(index: number) {
 		setSelected(this.tabs[index]);
@@ -121,7 +121,7 @@ export class UHTMLTabListElement extends UHTMLElement {
 			else if (key === "End") next = tabs.length - 1;
 			else if (key === "Home") next = 0;
 			else if (key === "Tab" && !isSelected(tabs[prev])) {
-				const selected = getSelected(tabs);
+				const selected = findSelected(tabs);
 				if (selected) attr(selected, TABINDEX, "-1"); // Prevent Tab-key moving to the selected tab
 				return selected && setTimeout(() => attr(selected, TABINDEX, "0")); // Restore tabindex after focus has moved to allow tabbing back to selected tab
 			} else return; // Do not hijack other keys
@@ -138,7 +138,7 @@ export class UHTMLTabListElement extends UHTMLElement {
 	}
 	get selectedIndex(): number {
 		const tabs = getTabs(this);
-		return tabs.indexOf(getSelected(tabs) as Element);
+		return tabs.indexOf(findSelected(tabs) as Element);
 	}
 	set selectedIndex(index: number) {
 		setSelected(this.tabs[index]);
@@ -149,7 +149,6 @@ export class UHTMLTabListElement extends UHTMLElement {
  * The `<u-tab>` HTML element is an interactive element inside a `<u-tablist>` that, when activated, displays its associated `<u-tabpanel>`.
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/tab_role)
  */
-let SKIP_TAB_ATTR_CHANGE_CALLBACK = false;
 export class UHTMLTabElement extends UHTMLElement {
 	static get observedAttributes() {
 		return ["id", ARIA_SELECTED, ARIA_CONTROLS]; // Using ES2015 syntax for backwards compatibility
@@ -158,17 +157,18 @@ export class UHTMLTabElement extends UHTMLElement {
 		attr(this, "role", "tab");
 		attr(this, ARIA_SELECTED, `${this.selected}`); // Setup attributes on connectedCallback since initial onMutation has already run
 		attr(this, TABINDEX, this.selected ? "0" : "-1");
-		if (!getSelected(this.parentElement?.children)) setSelected(this); // Ensure at least one tab is selected
+		if (!findSelected(this.parentElement?.children)) setSelected(this); // Ensure at least one tab is selected, but checking findSelected onall children since u-tab might not have been connected
 	}
 	attributeChangedCallback() {
-		if (!SKIP_TAB_ATTR_CHANGE_CALLBACK && this.selected) setSelected(this);
+		if (!SKIP_TABS_UPDATE.has(this.parentElement as Element) && this.selected)
+			setSelected(this);
 	}
 	get tabsElement(): UHTMLTabsElement | null {
 		return getTabsElement(this);
 	}
 	get tabList(): UHTMLTabListElement | null {
-		const list = this.parentElement;
-		return list instanceof UHTMLTabListElement ? list : null;
+		const tablist = this.parentElement;
+		return tablist instanceof UHTMLTabListElement ? tablist : null;
 	}
 	get selected(): boolean {
 		return isSelected(this);
@@ -197,32 +197,35 @@ export class UHTMLTabPanelElement extends UHTMLElement {
 		attachStyle(this, UHTMLTabPanelStyle);
 	}
 	connectedCallback() {
-		SKIP_TAB_ATTR_CHANGE_CALLBACK = true;
 		attr(this, "role", "tabpanel"); // Must register role before checking hidden state
 		const root = getTabsElement(this);
-		let tab = root?.tabs[[...root.panels].indexOf(this)];
+		let tab = root?.tabs[Array.prototype.indexOf.call(root?.panels, this)];
 		const panel = tab && getPanel(tab, this); // Try finding associated panel based on index, respecting existing aria-controls
-		if (panel !== this) tab = getSelected(this.tabs) || this.tabs[0]; // Fallback to search for elements with aria-controls matching panel id
-		syncPanel(this, tab, !!tab && isSelected(tab)); // Sync panel with tab to set initial visibility
-		(tab?.parentElement as UHTMLTabListElement)?._umutate?.takeRecords(); // Prevent infinite mutation loop that can be caused syncPanel
-		SKIP_TAB_ATTR_CHANGE_CALLBACK = false;
+		if (panel !== this) tab = findSelected(this.tabs) || this.tabs[0]; // Fallback to search for elements with aria-controls matching panel id
+		skipTabsUpdate(tab, () => syncPanel(this, tab, !!tab && isSelected(tab))); // Sync panel with tab to set initial visibility
 	}
 	get tabsElement(): UHTMLTabsElement | null {
 		return getTabsElement(this);
 	}
 	get tabs(): NodeListOf<Element> {
-		return getRoot(this).querySelectorAll(`[${ARIA_CONTROLS}="${this.id}"]`);
+		return getRoot(this).querySelectorAll(
+			`[${ARIA_CONTROLS}="${useId(this)}"]`,
+		);
 	}
 }
 
-const onMutations = (self: Element, records: MutationRecord[] = []) => {
+const onMutations = (
+	self: UHTMLTabListElement,
+	records: MutationRecord[] = [],
+) => {
 	let selected: Element | undefined;
+	const tabs = getTabs(self);
 	for (const { target: el } of records) {
 		const tab = el instanceof Element && attr(el, "role") === "tab";
 		if (tab && isSelected(el)) selected = el; // Pluck the newly selected tab from mutations
 	}
-	if (!selected && !getSelected(self.children))
-		selected = getTabs(self).find(isEnabled); // Fallback to first enabled tab if no selected element exists
+	// Checking findSelected on all children since u-tab might not have been connected
+	if (!selected && !findSelected(tabs)) selected = tabs.find(isEnabled); // Fallback to first enabled tab if no selected element exists
 	setSelected(selected);
 };
 const syncPanel = (panel: Element, tab?: Element, show = false) => {
@@ -233,9 +236,18 @@ const syncPanel = (panel: Element, tab?: Element, show = false) => {
 	if (tab && show && isSelected(tab)) attr(panel, SAFE_LABELLEDBY, useId(tab));
 };
 
+const SKIP_TABS_UPDATE = new Set<Element>(); // Instance-scoped via Set to avoid cross-instance suppression
+const skipTabsUpdate = (tab: Element | undefined, fn: () => void) => {
+	const tablist = tab?.parentElement as UHTMLTabListElement | null;
+	if (tablist) SKIP_TABS_UPDATE.add(tablist);
+	fn();
+	if (tablist) SKIP_TABS_UPDATE.delete(tablist);
+	tablist?._umutate?.takeRecords(); // Prevent infinite mutation loop that would be caused by updating aria-selected
+};
+
 const isEnabled = (el: Element) => attr(el, ARIA_DISABLED) !== "true";
 const isSelected = (el: Element) => attr(el, ARIA_SELECTED) === "true";
-const getSelected = (elems: Iterable<Element> = []) => {
+const findSelected = (elems: Iterable<Element> = []) => {
 	for (const el of elems) if (isSelected(el)) return el;
 };
 
@@ -258,23 +270,24 @@ const getTabsElement = (self: Node | null): UHTMLTabsElement | null => {
 	return null;
 };
 
-const setSelected = (selected?: Element | null) => {
-	if (!selected || !isEnabled(selected)) return;
-	SKIP_TAB_ATTR_CHANGE_CALLBACK = true;
-	const tabs = getTabs(selected.parentElement);
-	const panels = getTabsElement(selected)?.panels || [];
-	const nextPanel = getPanel(selected, panels?.[tabs.indexOf(selected)]);
-
-	let idx = 0;
-	for (const tab of tabs) {
-		const panel = getPanel(tab, panels?.[idx++]);
-		attr(tab, ARIA_SELECTED, `${tab === selected}`);
-		attr(tab, TABINDEX, tab === selected ? "0" : "-1");
-		if (panel) syncPanel(panel, tab, panel === nextPanel);
-	}
-	(selected.parentElement as UHTMLTabListElement)?._umutate?.takeRecords(); // Prevent infinite mutation loop that would be caused by updating aria-selected
-	SKIP_TAB_ATTR_CHANGE_CALLBACK = false;
-};
+const setSelected = (selected?: Element | null) =>
+	selected &&
+	isEnabled(selected) &&
+	skipTabsUpdate(selected, () => {
+		const tabs = getTabs(selected.parentElement);
+		const panels = getTabsElement(selected)?.panels || [];
+		const nextPanel = getPanel(selected, panels?.[tabs.indexOf(selected)]);
+		let idx = 0;
+		for (const tab of tabs) {
+			const positionalPanel = panels[idx];
+			const panel = getPanel(tab, positionalPanel);
+			// Only skip positional index if this tab's aria-controls points to a non-positional panel
+			if (!panel || panel === positionalPanel) idx++;
+			attr(tab, ARIA_SELECTED, `${tab === selected}`);
+			attr(tab, TABINDEX, tab === selected ? "0" : "-1");
+			if (panel) syncPanel(panel, tab, panel === nextPanel);
+		}
+	});
 
 customElements.define("u-tabs", UHTMLTabsElement);
 customElements.define("u-tablist", UHTMLTabListElement);

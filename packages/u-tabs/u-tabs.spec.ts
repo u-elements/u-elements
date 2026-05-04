@@ -416,12 +416,38 @@ test.describe("u-tabs", () => {
 		await expect(uTabpanel1).toHaveAttribute(attrLabelledby(), "tab-1");
 	});
 
+	test("respects aria-controls and aria-seleceted attributes", async ({
+		page,
+	}) => {
+		await page.evaluate(() => {
+			document.body.innerHTML = `<u-tabs>
+        <u-tablist>
+          <u-tab id="tab-1" aria-controls="panel-2" aria-seleceted="false">Tab 1</u-tab>
+          <u-tab id="tab-2" aria-controls="panel-1" aria-seleceted="true">Tab 2</u-tab>
+        </u-tablist>
+        <u-tabpanel id="panel-1">Panel 1</u-tabpanel>
+        <u-tabpanel id="panel-2">Panel 2</u-tabpanel>
+      </u-tabs>`;
+		});
+
+		const uTab0 = page.locator("u-tab").nth(0);
+		const uTab1 = page.locator("u-tab").nth(1);
+		const uTabpanel0 = page.locator("u-tabpanel").nth(0);
+		const uTabpanel1 = page.locator("u-tabpanel").nth(1);
+
+		await expect(uTab0).toHaveAttribute("aria-controls", "panel-2");
+		await expect(uTab1).toHaveAttribute("aria-controls", "panel-1");
+		await expect(uTabpanel0).not.toHaveAttribute(attrLabelledby(), "tab-2");
+		await expect(uTabpanel0).toHaveAttribute("hidden");
+		await expect(uTabpanel1).not.toHaveAttribute("hidden");
+	});
+
 	test("respects multiple tabs for same panel", async ({ page }) => {
 		await page.evaluate(() => {
 			document.body.innerHTML = `<u-tabs>
         <u-tablist>
           <u-tab id="tab-1" aria-controls="panel-1">Tab 1</u-tab>
-          <u-tab id="tab-2" aria-controls="panel-1">Tab 2</u-tab>
+          <u-tab id="tab-2" aria-controls="panel-1" aria-selected="true">Tab 2</u-tab>
           <u-tab id="tab-3" aria-controls="panel-1">Tab 3</u-tab>
         </u-tablist>
         <u-tabpanel id="panel-1">Panel 1</u-tabpanel>
@@ -443,6 +469,11 @@ test.describe("u-tabs", () => {
 			}),
 		).toBeTruthy();
 
+		await expect(uTab0).toHaveAttribute("aria-selected", "false");
+		await expect(uTab1).toHaveAttribute("aria-selected", "true");
+		await expect(uTab2).toHaveAttribute("aria-selected", "false");
+		await expect(uTabpanel0).toBeVisible();
+
 		await uTab0.evaluate<void, UHTMLTabElement>((el) => {
 			el.selected = true;
 		});
@@ -451,11 +482,11 @@ test.describe("u-tabs", () => {
 		await expect(uTab2).toHaveAttribute("aria-selected", "false");
 		await expect(uTabpanel0).toBeVisible();
 
-		await uTab1.evaluate<void, UHTMLTabElement>((el) => {
+		await uTab0.evaluate<void, UHTMLTabElement>((el) => {
 			el.selected = true;
 		});
-		await expect(uTab0).toHaveAttribute("aria-selected", "false");
-		await expect(uTab1).toHaveAttribute("aria-selected", "true");
+		await expect(uTab0).toHaveAttribute("aria-selected", "true");
+		await expect(uTab1).toHaveAttribute("aria-selected", "false");
 		await expect(uTab2).toHaveAttribute("aria-selected", "false");
 		await expect(uTabpanel0).toBeVisible();
 

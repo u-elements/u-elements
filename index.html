@@ -17,6 +17,10 @@
       body { margin: 15vh auto 100vh; max-width: 500px }
       input { font: inherit }
 
+      [role="tab"] { display: inline-block; padding: 2px 5px }
+      [role="tab"][aria-selected="true"] { background: black; color: white }
+      [role="tabpanel"] { padding: 10px; border: 1px solid }
+
       /* u-combobox::part(item) {
         background: lightblue;
         border:1px solid;
@@ -85,6 +89,16 @@
     <script type="module" src="/packages/u-tabs/u-tabs.ts"></script>
   </head>
   <body>
+    <u-tabs>
+      <u-tablist>
+        <u-tab aria-controls="hei">1</u-tab>
+        <u-tab aria-controls="hei" aria-selected="true">2</u-tab>
+        <u-tab aria-controls="hei">3</u-tab>
+      </u-tablist>
+      <u-tabpanel id="hei">1</u-tabpanel>
+      <u-tabpanel>2</u-tabpanel>
+      <u-tabpanel>3</u-tabpanel>
+    </u-tabs>
     <main>
       <br>
       <button type="button" name="before">Før</button>

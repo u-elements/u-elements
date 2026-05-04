@@ -216,6 +216,7 @@ const renderToStaticMarkup = (tabs: string[], panels[]) =>
 
 ## Changelog
 
+- **1.0.3:** Fix issue where aria-controls combined with aria-selected was not repspected on initial mount
 - **1.0.2:** Performance optimizations
 - **1.0.1:** Instant attribute changes for easier testing
 - **1.0.0:** Plays nice with strict CSP, and renders attributes in consistent order

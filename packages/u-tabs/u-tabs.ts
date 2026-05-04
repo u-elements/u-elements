@@ -198,10 +198,12 @@ export class UHTMLTabPanelElement extends UHTMLElement {
 	}
 	connectedCallback() {
 		attr(this, "role", "tabpanel"); // Must register role before checking hidden state
+		const tabs = new Set(this.tabs);
 		const root = getTabsElement(this);
-		let tab = root?.tabs[Array.prototype.indexOf.call(root?.panels, this)];
-		const panel = tab && getPanel(tab, this); // Try finding associated panel based on index, respecting existing aria-controls
-		if (panel !== this) tab = findSelected(this.tabs) || this.tabs[0]; // Fallback to search for elements with aria-controls matching panel id
+		const idx = root?.tabs[Array.prototype.indexOf.call(root?.panels, this)]; // Try to find associated tab via index
+		if (idx && !idx.hasAttribute(ARIA_CONTROLS)) tabs.add(idx); // Only add index based tab if not already owning other panel
+
+		const tab = findSelected(tabs) || tabs.values().next().value;
 		skipTabsUpdate(tab, () => syncPanel(this, tab, !!tab && isSelected(tab))); // Sync panel with tab to set initial visibility
 	}
 	get tabsElement(): UHTMLTabsElement | null {
@@ -279,10 +281,7 @@ const setSelected = (selected?: Element | null) =>
 		const nextPanel = getPanel(selected, panels?.[tabs.indexOf(selected)]);
 		let idx = 0;
 		for (const tab of tabs) {
-			const positionalPanel = panels[idx];
-			const panel = getPanel(tab, positionalPanel);
-			// Only skip positional index if this tab's aria-controls points to a non-positional panel
-			if (!panel || panel === positionalPanel) idx++;
+			const panel = getPanel(tab, panels[idx++]);
 			attr(tab, ARIA_SELECTED, `${tab === selected}`);
 			attr(tab, TABINDEX, tab === selected ? "0" : "-1");
 			if (panel) syncPanel(panel, tab, panel === nextPanel);

@@ -3,9 +3,7 @@ import path from "node:path";
 import type { CompatStatement } from "@mdn/browser-compat-data";
 import bcd from "@mdn/browser-compat-data/forLegacyNode";
 import caniuse from "caniuse-lite";
-// @ts-expect-error no types available
 import no from "caniuse-lite/data/regions/NO";
-// @ts-expect-error no types available
 import { JSHINT } from "jshint";
 
 const usageNorway = caniuse.region(no);
@@ -162,6 +160,7 @@ const miniBCD = flattenBCD({
 // Features we _know_ are not strictly needed
 const skip = [
 	"array.entries",
+	"array.values",
 	"attr.name",
 	"attr.value",
 	"cssstylesheet.replacesync", // Ignored because support is optional
@@ -176,6 +175,7 @@ const skip = [
 	"element.checkvisibility", // Ignored because support is optional
 	"element.part",
 	"function.name",
+	"htmlelement.attachinternals", // Ignored because support is optional
 	"htmlelement.popovertargetelement", // Ignored because support is optional
 	"htmlelement.popover", // Ignored because support is optional
 	"htmlelement.togglepopover", // Ignored because support is optional
@@ -220,7 +220,7 @@ export default {
 			.filter((pkgDistFile) => fs.existsSync(pkgDistFile))
 			.forEach((pkgDistFile) => {
 				JSHINT(String(fs.readFileSync(pkgDistFile)), { esversion: 11 });
-				const { _functions, _options, _errors, ...rest } = JSHINT.data();
+				const { functions, options, ...rest } = JSHINT.data();
 				mergeDeep(jshint, rest);
 			});
 

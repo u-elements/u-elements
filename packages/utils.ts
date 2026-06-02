@@ -140,12 +140,12 @@ export const getRoot = (node: Node): Document | ShadowRoot => {
 export const getFocusedElement = (node: Node) => getRoot(node).activeElement;
 
 /**
- * getLabel
+ * getInputLabel
  * @description Get the screen reader label or an element from aria-label, aria-labelledby or <label> elements
  * @param element The target element to get accessible label from
  * @return string
  */
-export const getLabel = (el: Element) => {
+export const getInputLabel = (el: Element) => {
 	const label = attr(el, "aria-label") || "";
 	const labels = attr(el, "aria-labelledby")?.split(" ") || [];
 	return [

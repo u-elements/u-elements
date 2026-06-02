@@ -3,7 +3,7 @@ import {
 	attr,
 	customElements,
 	declarativeShadowRoot,
-	getLabel,
+	getInputLabel,
 	getRoot,
 	IS_IOS,
 	UHTMLElement,
@@ -63,7 +63,7 @@ export class UHTMLProgressElement extends UHTMLElement {
 		// Write CSS variable before getLabel (innerText triggers style recalc)
 		this.style.setProperty("--percentage", `${percentage}%`);
 
-		let label = getLabel(this);
+		let label = getInputLabel(this);
 		if (IS_IOS)
 			label = `${label.replace(/\(\d+%\)$/, "")} (${percentage}%)`.trim(); // Always use percentage as iOS role="img"
 

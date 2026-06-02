@@ -7,7 +7,7 @@ import {
 	EVENT_ONCE,
 	FOCUS_OUTLINE,
 	getFocusedElement,
-	getLabel,
+	getInputLabel,
 	getText,
 	IS_ANDROID,
 	IS_IOS,
@@ -47,10 +47,11 @@ export const UHTMLComboboxStyle = `${DISPLAY_BLOCK}
 export const UHTMLComboboxShadowRoot =
 	declarativeShadowRoot(UHTMLComboboxStyle);
 
+let IS_LIST_HIDDEN = false;
 const ARIA_LABEL = "aria-label";
 const CSS_CLEAR = `button[type="reset"],del`;
-const CSS_DATALIST = `datalist,[role="listbox"]`;
-const CSS_OPTION = `option,[role="option"]`;
+const CSS_DATALIST = `datalist,u-datalist,[role="listbox"]`;
+const CSS_OPTION = `option,u-option,[role="option"]`;
 const EVENTS = "blur focus click input keydown pointerdown";
 const FALSE = "false";
 const TEXTS = {
@@ -134,7 +135,10 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		if (event.type === "focus") speak(); // Prepare for aria-live announcements
 		if (event.type === "input") onInput(this, event);
 		if (event.type === "keydown") onKeyDown(this, event as KeyboardEvent);
-		if (event.type === "pointerdown") isPointerDown(this, event); // Prevent unwanted blur when pressing items with tabindex="-1"
+		if (event.type === "pointerdown") {
+			IS_LIST_HIDDEN = !!this.list?.hidden; // Used to check if clear button should open list again
+			isPointerDown(this, event); // Prevent unwanted blur when pressing items with tabindex="-1"
+		}
 	}
 	get multiple() {
 		return (attr(this, "data-multiple") ?? FALSE) !== FALSE; // Allow data-multiple="false" to be more React friendly
@@ -182,17 +186,19 @@ const dispatchMatch = (self: UHTMLComboboxElement) => {
 	const { creatable, control, options, multiple } = self;
 	const value = control?.value?.trim() || "";
 	const query = value.toLowerCase() || null; // Fallback to null to prevent matching empty values
-	let match = [...options].find((o) => o.label.trim().toLowerCase() === query);
+	let match = [...options].find(
+		(o) => getLabel(o).trim().toLowerCase() === query,
+	);
 	const event = { bubbles: true, cancelable: true, detail: match };
 
 	if (!self.dispatchEvent(new CustomEvent("comboboxbeforematch", event)))
-		match = [...options].find((o) => o.selected); // Only match first selected option if custom matching
+		match = [...options].find(getSelected); // Only match first selected option if custom matching
 
-	if (!multiple) for (const o of options) o.selected = o === match;
+	if (!multiple) for (const o of options) setSelected(o, o === match);
 	else syncOptionsWithItems(self); // Sync options with items in multiple mode as consumer can change option.selected in comboboxbeforematch
 
 	if (!match && creatable && value) return { value, label: value }; // Return creatable value as match if no match and creatable
-	return match && { value: match.value, label: match.label };
+	return match && { value: getValue(match), label: getLabel(match) };
 };
 
 const dispatchSelect = (
@@ -242,7 +248,8 @@ const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
 	if (control && clear?.contains(target as Node)) {
 		event.preventDefault(); // Prevent button[type="reset"]
 		setValue(control, "", "deleteContentBackward"); // Support clear button
-		return control.focus();
+		control.focus();
+		return IS_LIST_HIDDEN || control.click(); // Open list if it was open before clicking clear
 	}
 	for (const item of items) {
 		if (item.contains(target as Node)) return dispatchSelect(self, item); // Keyboard and screen reader can set target to element with pointer-events: none
@@ -264,7 +271,7 @@ const onInput = (self: UHTMLComboboxElement, event: Partial<InputEvent>) => {
 	if (!isDatalistClick) self._value = control?.value || ""; // Store value so we can revert if clicking in <datalist>
 	if (isDatalistClick) {
 		event.stopImmediatePropagation?.(); // Prevent input event when reverting value anyway
-		const clicked = [...options].find((o) => o.value === value);
+		const clicked = [...options].find((o) => getValue(o) === value);
 		if (control) control.value = self._value; // Revert value as it will be changed by dispatchChange if needed
 		if (clicked) return dispatchSelect(self, clicked, multiple);
 	} else if (!multiple) self._match = dispatchMatch(self); // Match while typing in single mode
@@ -329,7 +336,7 @@ const onMutations = (self: UHTMLComboboxElement, edit?: MutationRecord[]) => {
 	if (doSpeak && self.contains(focus)) {
 		const label = control ? attr(control, ARIA_LABEL) : null; // Store so we can revert after announcement
 		self._speak = `${_texts[edits[0].isConnected ? "added" : "removed"]} ${getText(edits[0])}, `; // Updates aria-labels
-		attr(control, ARIA_LABEL, `${self._speak}${getLabel(control)}`); // Make sure control also can aria-label-announce
+		attr(control, ARIA_LABEL, `${self._speak}${getInputLabel(control)}`); // Make sure control also can aria-label-announce
 		if (!self._focusMoved) setTimeout(() => speak(self._speak.slice(0, -2))); // Aria-live when no focus move, remove trailing command, setTimeout to take presence
 		setTimeout(speakReset, 300, self, label); // 300ms delay so screen readers announces new aria-label. Note: Causes short double/hiccup announce in NVDA Firefox
 	}
@@ -369,7 +376,7 @@ const syncItems = (self: UHTMLComboboxElement) => {
 		attr(item, "role", "option");
 		attr(item, "slot", "items");
 		attr(item, "tabindex", "-1");
-		attr(item, "value", item.value || getText(item));
+		attr(item, "value", getValue(item)); // u-option might not be initialized yet
 	}
 };
 
@@ -384,7 +391,7 @@ const syncSelectWithItems = (self: UHTMLComboboxElement) => {
 	for (const item of items) {
 		const option = _select?.options[idx++]; // Use existing option if available
 		const text = getText(item);
-		const value = item?.value;
+		const value = getValue(item); // u-option might not be initialized yet
 
 		if (!option) append.push(new Option(text, value, true, true));
 		else
@@ -416,7 +423,7 @@ const syncOptionsWithItems = (self: UHTMLComboboxElement) => {
 	const { _texts, list, multiple, options, values } = self;
 	attr(list, "data-sr-of", _texts.of); // Forward of text
 	attr(list, SAFE_MULTISELECTABLE, `${multiple}`); // Forward multiselect
-	for (const opt of options) opt.selected = values.includes(opt.value);
+	for (const opt of options) setSelected(opt, values.includes(getValue(opt))); // u-option might not be initialized yet
 };
 
 // TODO: aria-required="true" => setCustomValidity
@@ -427,5 +434,13 @@ const syncInputWithItemSingleMode = (self: UHTMLComboboxElement) => {
 	const action = value ? "insertText" : "deleteContentBackward";
 	if (value !== control.value) setValue(control, value, action); // Prevent input event being handled as "click" on option
 };
+
+// Helpers since u-option might not be initialized yet
+const getLabel = (el: Element) => attr(el, "label") ?? getText(el);
+const getValue = (el: Element) => attr(el, "value") ?? getText(el);
+const setSelected = (el: Element, selected: boolean) =>
+	attr(el, "selected", selected ? "" : null);
+const getSelected = (el: HTMLOptionElement) =>
+	el.selected ?? el.hasAttribute("selected");
 
 customElements.define("u-combobox", UHTMLComboboxElement);

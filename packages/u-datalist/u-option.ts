@@ -1,6 +1,7 @@
 import {
 	attr,
 	customElements,
+	getText,
 	IS_ANDROID,
 	UHTMLElement,
 	useId,
@@ -80,7 +81,7 @@ export class UHTMLOptionElement extends UHTMLElement {
 	}
 	/** Sets or retrieves the text string specified by the option tag. */
 	get text(): string {
-		return this.textContent?.trim() || "";
+		return getText(this);
 	}
 	set text(text: string) {
 		this.textContent = text;

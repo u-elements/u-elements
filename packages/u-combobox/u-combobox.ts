@@ -37,7 +37,7 @@ declare global {
 
 export const UHTMLComboboxStyle = `${DISPLAY_BLOCK}
 :is(:host(:not([data-multiple])), :host([data-multiple="false"])) [part="items"] { display: none }
-[role="listbox"] { display: contents }
+[role="listbox"] { display: inline-flex } /* Can not be "contents" as this confuses VoiceOver */
 ::slotted(button[type="reset"]),::slotted(del) { font: inherit; border: 0; padding: 0; background: none; color: inherit; cursor: pointer; text-decoration: none }
 ::slotted(data) { cursor: pointer; pointer-events: none }
 ::slotted(data)::after { padding-inline: .5ch; pointer-events: auto }

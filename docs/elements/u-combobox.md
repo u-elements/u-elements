@@ -512,6 +512,7 @@ const renderToStaticMarkup = (data: string, options: string) =>
 
 ## Changelog
 
+- **2.0.5:** Fix issue where VoiceOver is confused by display: contents on selected listbox
 - **2.0.4:** Fix issue when moving focus between multiple u-combobox inputs
 - **2.0.3:** Use document.activeElement instead of .matches(":focus-within") for JSDOM testing compatibility
 - **2.0.2:** Respect existing aria-label on clear button

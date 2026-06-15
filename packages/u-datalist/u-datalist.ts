@@ -1,4 +1,5 @@
 export type { UHTMLOptionElement } from "./u-option";
+
 import "./u-option"; // Import to register u-option
 import {
 	attachStyle,

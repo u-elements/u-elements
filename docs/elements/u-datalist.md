@@ -305,6 +305,7 @@ const renderToStaticMarkup = (options: string) =>
 
 ## Changelog
 
+- **2.0.3:** Allow `Shift` key events combined with a letter to open datalist
 - **2.0.2:** Instant setup `aria-expanded` attribute to make AXE tests happy
 - **2.0.1:** Use document.activeElement instead of .matches(":focus-within") for JSDOM testing compatibility
 - **2.0.0:** Plays nice with strict CSP, correctly handles foucs-before-mount and click-to-open, and uses `aria-activedecendant` as support is now sufficient

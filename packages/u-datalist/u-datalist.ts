@@ -207,8 +207,9 @@ const onClick = (self: UHTMLDataListElement, event: Event) => {
 const onKeyDown = (self: UHTMLDataListElement, event: KeyboardEvent) => {
 	if (isInput(event.target)) onFocus(self, event); // Make sure we potentially connect, in case focus happens before u-datalist connectedCallback has run
 	if (self._input !== event.target) return; // Only handle events from connected input
-	const { key, ctrlKey: c, metaKey: m, shiftKey: s, altKey: alt } = event;
-	if (c || m || s || key === "Tab" || (alt && !key.startsWith("Arrow"))) return; // Skip if modifier keys or tab or non-arrow with alt
+	const { key, ctrlKey, metaKey, altKey } = event;
+	const skip = ctrlKey || metaKey || key === "Shift" || key === "Tab";
+	if (skip || (altKey && !key.startsWith("Arrow"))) return; // Skip if modifier keys or tab or non-arrow with alt
 	if (key === "Escape" && !self.hidden) event.preventDefault(); // Prevent Safari from minimizing the window and <dialog> from closing
 
 	setExpanded(self, key !== "Escape"); // Close on ESC but show on other keys
@@ -223,8 +224,8 @@ const onKeyDown = (self: UHTMLDataListElement, event: KeyboardEvent) => {
 			if (opt.id === active) prev = opts.length - 1;
 		}
 
-	if (!alt && key === "ArrowDown") next = (prev + 1) % opts.length;
-	if (!alt && key === "ArrowUp") next = (prev || opts.length) - 1;
+	if (!altKey && key === "ArrowDown") next = (prev + 1) % opts.length;
+	if (!altKey && key === "ArrowUp") next = (prev || opts.length) - 1;
 	if (~prev) {
 		if (key === "Home" || key === "PageUp") next = 0;
 		if (key === "End" || key === "PageDown") next = opts.length - 1;

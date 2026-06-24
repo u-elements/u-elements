@@ -11,13 +11,14 @@ import { data } from '../filesize.data.ts'
 **Quick intro:**
 - Use `<data>` as direct child elements - these are the removable items
 - Use `<input>` and `<u-datalist>` to allow adding and suggesting items
-- Use `<button type="reset">` between `input` and `datalist` to create a clear button
 - Use `data-multiple` to allow selecting multiple items
 - Use `data-creatable` to allow creating items not in the list
 - Use `data-sr-*` attributes to translate screen reader announcements
-- Use `comboboxbeforeselect`, `comboboxafterselect` and `comboboxbeforematch` events to manipulate state
-- Add `<select>` as child for `FormData` or form submission compatibility
 - Use matching `id` on `<input>` and `for` attribute on `<label>` to connect
+- Optionally use `<select>` as child for `FormData` or form submission compatibility
+- Optionally use `<button type="reset">` after `input` to create a clear button
+- Optionally use `<button aria-expanded="false">` after `input` to create a toggle button
+- Use `comboboxbeforeselect`, `comboboxafterselect` and `comboboxbeforematch` events to manipulate state
 - **MDN Web Docs:** [&lt;data&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/data) ([HTMLDataElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDataElement)) / [&lt;input&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input) ([HTMLInputElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement)) / [&lt;datalist&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist) ([HTMLDatalistElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDatalistElement)) / [&lt;option&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option) ([HTMLOptionElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLOptionElement))
 
 
@@ -34,6 +35,7 @@ import { data } from '../filesize.data.ts'
   &lt;data&gt;Pineapple&lt;/data&gt;
   &lt;data&gt;Orange&lt;/data&gt;
   &lt;input id="my-input" list="my-list" /&gt;
+  &lt;button type="button" aria-expanded="false"&gt;&lt;/button&gt;
   &lt;button type="reset"&gt;&lt;/button&gt;
   &lt;u-datalist hidden id="my-list" data-sr-singular="%d flavor" data-sr-plural="%d flavours"&gt;
     &lt;u-option&gt;Coconut&lt;/u-option&gt;
@@ -92,6 +94,8 @@ bun add -S @u-elements/u-combobox
   - `data-sr-invalid` announces if trying to select invalid value. Defaults to `"Invalid value""`
   - `data-sr-of` separates "number _of_ total" in announcements. Defaults to `"of"`
   - `data-sr-items` aria-label for listbox containing selected items. Defaults to `"Selected"`
+  - `data-sr-clear` aria-label of clear button. Defaults to `"Clear input"`
+  - `data-sr-toggle` aria-label of toggle list button. Defaults to `"Options"`
 - **DOM interface:** `UHTMLComboboxElement` extends [`HTMLElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement)
   - `UHTMLComboboxElement.control` returns `HTMLInputElement | null`
   - `UHTMLComboboxElement.items` returns `HTMLCollectionOf<HTMLDataElement>`
@@ -142,6 +146,8 @@ myCombobox.addEventListener('comboboxbeforematch', (event) => {
 ## Styling
 
 `<u-combobox>` renders as `display: block`, while `<data>` renders as `display: inline-block` with a `::after` element to render the removal `×`.
+If the `<button type="reset">` is empty, a `×` icon is automaticallay rendered as `::before` pseudo-element.
+If the `<button aria-expanded="false"></button>` is empty, a `▼` icon is automaticallay rendered as `::before` pseudo-element.
 
 ## Example: Norwegian
 
@@ -159,9 +165,11 @@ myCombobox.addEventListener('comboboxbeforematch', (event) => {
   data-sr-of="av"
   data-sr-remove="Trykk for å fjerne"
   data-sr-removed="Fjernet"
+  data-sr-toggle="Valg"
 &gt;
   &lt;data&gt;Kokkos&lt;/data&gt;
   &lt;input id="my-norwegian-input" list="my-norwegian-list" /&gt;
+  &lt;button type="button" aria-expanded="false"&gt;&lt;/button&gt;
   &lt;button type="reset"&gt;&lt;/button&gt;
   &lt;u-datalist hidden id="my-norwegian-list" data-sr-singular="%d smak" data-sr-plural="%d smaker"&gt;
     &lt;u-option&gt;Kokkos&lt;/u-option&gt;
@@ -193,6 +201,7 @@ myCombobox.addEventListener('comboboxbeforematch', (event) => {
 &lt;small&gt;Try typing "c" and hitting "Enter"&lt;/small&gt;
 &lt;u-combobox id="my-matching-combobox"&gt;
   &lt;input id="my-matching-input" list="my-matching-list" /&gt;
+  &lt;button type="button" aria-expanded="false"&gt;&lt;/button&gt;
   &lt;button type="reset"&gt;&lt;/button&gt;
   &lt;u-datalist id="my-matching-list"&gt;
     &lt;u-option&gt;Coconut&lt;/u-option&gt;
@@ -234,6 +243,8 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
 &lt;small&gt;Try typing "v" versus "V"&lt;/small&gt;
 &lt;u-combobox id="my-filtering-combobox"&gt;
   &lt;input id="my-matching-input" list="my-filtering-list" /&gt;
+  &lt;button type="button" aria-expanded="false"&gt;&lt;/button&gt;
+  &lt;button type="reset"&gt;&lt;/button&gt;
   &lt;u-datalist hidden data-nofilter id="my-filtering-list"&gt;
     &lt;u-option&gt;Coconut&lt;/u-option&gt;
     &lt;u-option&gt;Strawberries&lt;/u-option&gt;
@@ -270,6 +281,7 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
 &lt;/label&gt;
 &lt;u-combobox id="my-api-combobox"&gt;
   &lt;input id="my-api-input" list="my-api-list" /&gt;
+  &lt;button type="button" aria-expanded="false"&gt;&lt;/button&gt;
   &lt;button type="reset"&gt;&lt;/button&gt;
   &lt;u-datalist hidden id="my-api-list" data-nofilter&gt;
     &lt;u-option value=""&gt;Type to search...&lt;/u-option&gt;
@@ -327,6 +339,7 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
 &lt;/label&gt;
 &lt;u-combobox id="my-typing-combobox"&gt;
   &lt;input id="my-typing-input" list="my-typing-list" /&gt;
+  &lt;button type="button" aria-expanded="false"&gt;&lt;/button&gt;
   &lt;button type="reset"&gt;&lt;/button&gt;
   &lt;u-datalist hidden id="my-typing-list" data-nofilter&gt;
     &lt;u-option&gt;Coconut&lt;/u-option&gt;
@@ -351,6 +364,49 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
 &lt;/style&gt;
 </pre>
 
+## Example: Creatable
+
+<Sandbox label="u-details creatable example" lang="no" />
+<pre hidden>
+&lt;label for="my-creatable-input"&gt;
+  Type a new item:
+&lt;/label&gt;
+&lt;u-combobox id="my-creatable-combobox" data-creatable data-multiple&gt;
+  &lt;input id="my-creatable-input" list="my-creatable-list" /&gt;
+  &lt;button type="button" aria-expanded="false"&gt;&lt;/button&gt;
+  &lt;button type="reset"&gt;&lt;/button&gt;
+  &lt;u-datalist hidden id="my-creatable-list"&gt;
+    &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-datalist"&gt;u-datalist&lt;/u-option&gt;
+    &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-progress"&gt;u-progress&lt;/u-option&gt;
+    &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-details"&gt;u-details&lt;/u-option&gt;
+    &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-combobox"&gt;u-combobox&lt;/u-option&gt;
+    &lt;u-option value=""&gt;&lt;/u-option&gt;
+  &lt;/u-datalist&gt;
+&lt;/u-combobox&gt;
+&lt;script type="module"&gt;
+  const combobox = document.getElementById('my-creatable-combobox');
+  const handleAddButton = () =&gt; {
+    const value = combobox.control.value.trim();
+    const options = combobox.list.options;
+    const add = options[options.length - 1];
+    add.hidden = !value || combobox.values.includes(value);
+    console.log(combobox.values)
+    add.value = value;
+    add.label = value;
+    add.textContent = `Add "${value}"`
+  };
+
+  combobox.addEventListener('comboboxafterselect', handleAddButton);
+  combobox.addEventListener('input', handleAddButton);
+&lt;/script&gt;
+&lt;style&gt;
+  /* Styling just for example: */
+  u-combobox { border: 1px solid; display: flex; flex-wrap: wrap; gap: .5em; padding: .5em; position: relative }
+  u-option[selected] { font-weight: bold }
+  u-datalist { position: absolute; z-index: 9; inset: 100% -1px auto; border: 1px solid; background: white; padding: .5em }
+&lt;/style&gt;
+</pre>
+
 ## Example: Links
 
 <Sandbox label="u-details link example" lang="no" />
@@ -360,6 +416,7 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
 &lt;/label&gt;
 &lt;u-combobox id="my-link-combobox"&gt;
   &lt;input id="my-link-input" list="my-link-list" /&gt;
+  &lt;button type="button" aria-expanded="false"&gt;&lt;/button&gt;
   &lt;button type="reset"&gt;&lt;/button&gt;
   &lt;u-datalist hidden id="my-link-list"&gt;
     &lt;u-option value="https://u-elements.github.io/u-elements/elements/u-datalist"&gt;u-datalist&lt;/u-option&gt;
@@ -427,6 +484,7 @@ if (typeof window !== 'undefined') {
     ))}
   --&gt;
   &lt;input id="my-controlled-input" list="my-controlled-list" /&gt;
+  &lt;button type="button" aria-expanded="false"&gt;&lt;/button&gt;
   &lt;button type="reset"&gt;&lt;/button&gt;
   &lt;u-datalist hidden id="my-controlled-list" data-nofilter&gt;
     &lt;u-option&gt;Coconut&lt;/u-option&gt;
@@ -512,6 +570,7 @@ const renderToStaticMarkup = (data: string, options: string) =>
 
 ## Changelog
 
+- **2.1.0:** Add support for toggle button and prevent horizontal scroll on items
 - **2.0.5:** Fix issue where VoiceOver is confused by display: contents on selected listbox
 - **2.0.4:** Fix issue when moving focus between multiple u-combobox inputs
 - **2.0.3:** Use document.activeElement instead of .matches(":focus-within") for JSDOM testing compatibility

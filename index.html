@@ -132,6 +132,20 @@
         <br>
         <br>
       </div>
+      <!-- <form>
+        <u-combobox class="ds-suggestion">
+          <data value="option-1">
+            <div>Same text</div>
+          </data>
+          <input list=":u-datalist1">
+          <del></del>
+          <u-datalist data-nofilter>
+            <u-option label="option-1 - Same text" value="option-1" selected>option-1 - Same text</u-option>
+            <u-option label="option-2 - Same text" value="option-2">option-2 - Same text</u-option>
+            <u-option label="option-3 - Different text" value="option-3">option-3 - Different text</u-option>
+          </u-datalist>
+        </u-combobox>
+      </form> -->
       <form hidden>
         <input type="date" name="dato" value="2025-12-02" />
         <mu-datepicker
@@ -168,7 +182,8 @@
           <data>Oslo</data>
           <data>Lakris</data>
           <input id="input-1" list="my-list">
-          <button type="reset" data-toggle></button>
+          <button type="button" aria-expanded="false" aria-label="Valg"></button>
+          <button type="reset"></button>
           <!-- <del>hei</del> -->
           <!-- <datalist>
             <option value="2" label="Kokkos">Kokkos<div>Hei</div></option>

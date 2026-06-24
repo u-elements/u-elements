@@ -38,18 +38,25 @@ declare global {
 export const UHTMLComboboxStyle = `${DISPLAY_BLOCK}
 :is(:host(:not([data-multiple])), :host([data-multiple="false"])) [part="items"] { display: none }
 [role="listbox"] { display: inline-flex } /* Can not be "contents" as this confuses VoiceOver */
-::slotted(button[type="reset"]),::slotted(del) { font: inherit; border: 0; padding: 0; background: none; color: inherit; cursor: pointer; text-decoration: none }
+::slotted(button[type="reset"]),
+::slotted(button[aria-expanded]),
+::slotted(del) { font: inherit; border: 0; padding: 0; background: none; color: inherit; cursor: pointer; text-decoration: none }
 ::slotted(data) { cursor: pointer; pointer-events: none }
 ::slotted(data)::after { padding-inline: .5ch; pointer-events: auto }
-::slotted(data)::after,::slotted(button[type="reset"]:empty)::before,::slotted(del:empty)::before { content: '\\00D7'; content: '\\00D7' / '' }
+::slotted(data)::after,
+::slotted(del:empty)::before,
+::slotted(button[type="reset"]:empty)::before { content: '\\00D7'; content: '\\00D7' / '' }
+::slotted(button[aria-expanded="false"]:empty)::before { content: '\\25BC'; content: '\\25BC' / '' }
+::slotted(button[aria-expanded="true"]:empty)::before { content: '\\25B2'; content: '\\25B2' / '' }
 ::slotted(data:focus),::slotted(del:focus),::slotted(button[type="reset"]:focus) { ${FOCUS_OUTLINE} }`;
 
 export const UHTMLComboboxShadowRoot =
 	declarativeShadowRoot(UHTMLComboboxStyle);
 
-let IS_LIST_HIDDEN = false;
+let IS_LIST_HIDDEN = false; // Used to keep track of list visibility before pointerdown
 const ARIA_LABEL = "aria-label";
 const CSS_CLEAR = `button[type="reset"],del`;
+const CSS_TOGGLE = `button[aria-expanded]`;
 const CSS_DATALIST = `datalist,u-datalist,[role="listbox"]`;
 const CSS_OPTION = `option,u-option,[role="option"]`;
 const EVENTS = "blur focus click input keydown pointerdown";
@@ -64,6 +71,7 @@ const TEXTS = {
 	of: "of",
 	remove: "Press to remove",
 	removed: "Removed",
+	toggle: "Options",
 };
 
 /**
@@ -81,6 +89,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	_list?: HTMLDataListElement | null;
 	_options?: HTMLCollectionOf<HTMLOptionElement>;
 	_select?: HTMLSelectElement | null;
+	_toggle?: HTMLElement | null;
 
 	_focusMoved = false; // Used to determine if we announce through aria-live or aria-label when items are added or removed
 	_itemSingleVale = ""; // Locally store item text to compare change in single mode
@@ -107,14 +116,14 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	connectedCallback() {
 		on(this, EVENTS, this, true); // Bind events using capture phase to run before frameworks
 		this._umutate = onMutation(this, onMutations, {
-			attributeFilter: ["id", "value", "role"], // Respond to changes in <data> value or id or role of <datalist>
+			attributeFilter: ["id", "value", "role", "aria-expanded"], // Respond to changes in <data> value or id or role of <datalist>
 			attributes: true,
 			characterData: true, // Respond to changes in <data> textContent
 			childList: true,
 			subtree: true,
 		});
 		syncInputWithItemSingleMode(this); // Initial render value of <input> in single mode
-		syncClearWithInput(this); // Initial render of clear button state
+		syncButtonsWithInput(this); // Initial render of clear button state
 	}
 	attributeChangedCallback(prop: string, _: string, val: string) {
 		const text = prop.split("data-sr-")[1] as keyof typeof TEXTS;
@@ -125,8 +134,9 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	disconnectedCallback() {
 		off(this, EVENTS, this, true);
 		this._umutate?.();
-		this._umutate = this._list = this._options = this._match = undefined;
-		this._items = this._clear = this._control = this._select = undefined;
+		this._umutate = this._clear = this._toggle = undefined;
+		this._control = this._match = this._select = undefined;
+		this._options = this._items = this._list = undefined;
 	}
 	handleEvent(event: Event) {
 		if (this.control?.disabled || this.control?.readOnly) return;
@@ -136,7 +146,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		if (event.type === "input") onInput(this, event);
 		if (event.type === "keydown") onKeyDown(this, event as KeyboardEvent);
 		if (event.type === "pointerdown") {
-			IS_LIST_HIDDEN = !!this.list?.hidden; // Used to check if clear button should open list again
+			IS_LIST_HIDDEN = !!this.list?.hidden;
 			isPointerDown(this, event); // Prevent unwanted blur when pressing items with tabindex="-1"
 		}
 	}
@@ -167,6 +177,11 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	get clear(): HTMLElement | null {
 		if (!this._clear?.isConnected) this._clear = this.querySelector(CSS_CLEAR);
 		return this._clear;
+	}
+	get toggle(): HTMLElement | null {
+		if (!this._toggle?.isConnected)
+			this._toggle = this.querySelector(CSS_TOGGLE);
+		return this._toggle;
 	}
 	get items(): HTMLCollectionOf<HTMLDataElement> {
 		if (!this._items) this._items = this.getElementsByTagName("data");
@@ -243,7 +258,12 @@ const onBlurred = (self: UHTMLComboboxElement) =>
 
 const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
 	const { clientX: x, clientY: y, target } = event;
-	const { clear, control, items } = self;
+	const { clear, control, items, toggle } = self;
+
+	if (toggle?.contains(target as Node)) {
+		control?.focus();
+		IS_LIST_HIDDEN && control?.click();
+	}
 
 	if (control && clear?.contains(target as Node)) {
 		event.preventDefault(); // Prevent button[type="reset"]
@@ -275,7 +295,7 @@ const onInput = (self: UHTMLComboboxElement, event: Partial<InputEvent>) => {
 		if (control) control.value = self._value; // Revert value as it will be changed by dispatchChange if needed
 		if (clicked) return dispatchSelect(self, clicked, multiple);
 	} else if (!multiple) self._match = dispatchMatch(self); // Match while typing in single mode
-	syncClearWithInput(self);
+	syncButtonsWithInput(self);
 };
 
 const onKeyDown = (self: UHTMLComboboxElement, e: KeyboardEvent) => {
@@ -303,7 +323,7 @@ const onKeyDownControl = (self: UHTMLComboboxElement, e: KeyboardEvent) => {
 		attr(clear, "aria-hidden", "false"); // Allow screen readers to announce clear button as we are focusing it
 		attr(clear, "tabindex", "0"); // Needed to prevent Safari from looping focus back to input on text Tab-press
 		clear.focus(); // Focus element
-		on(clear, "blur", () => syncClearWithInput(self), EVENT_ONCE); // Revert on next blur
+		on(clear, "blur", () => syncButtonsWithInput(self), EVENT_ONCE); // Revert on next blur
 	}
 };
 
@@ -330,7 +350,7 @@ const onKeyDownItems = (self: UHTMLComboboxElement, event: KeyboardEvent) => {
 
 const onMutations = (self: UHTMLComboboxElement, edit?: MutationRecord[]) => {
 	if (!self.control) return;
-	const { _texts, control, items, list, multiple } = self;
+	const { _texts, control, items, list, multiple, toggle } = self;
 	const edits: HTMLDataElement[] = [];
 	for (const { addedNodes: add, removedNodes: del } of edit || []) {
 		for (const el of add) if (el instanceof HTMLDataElement) edits.unshift(el); // Added nodes to the front
@@ -357,6 +377,9 @@ const onMutations = (self: UHTMLComboboxElement, edit?: MutationRecord[]) => {
 	syncItems(self);
 	syncOptionsWithItems(self);
 	syncSelectWithItems(self);
+
+	// Forward aria-expanded to toggle button
+	if (toggle) attr(toggle, "aria-expanded", `${!list?.hidden}`);
 
 	const hint = `${items.length ? _texts.found.replace("%d", `${items.length}`) : _texts.empty}`;
 	attr(control, "aria-description", multiple ? hint : null);
@@ -413,15 +436,23 @@ const syncSelectWithItems = (self: UHTMLComboboxElement) => {
 	self._umutate?.takeRecords(); // Clear mutation records caused by adding/removing <option> elements
 };
 
-const syncClearWithInput = (self: UHTMLComboboxElement) => {
-	if (!self.clear) return;
-	const { clear, control } = self;
+const syncButtonsWithInput = (self: UHTMLComboboxElement) => {
+	const { clear, control, toggle } = self;
 	const hidden = !control?.value || control?.disabled || control?.readOnly;
-	if (clear.nodeName === "DEL") attr(clear, "role", "button"); // Backwards compatibility for older versions using <del> as clear button
-	if (!attr(clear, ARIA_LABEL)) attr(clear, ARIA_LABEL, self._texts.clear); // Set default aria-label if not set by consumer
-	attr(clear, "aria-hidden", `${IS_IOS || IS_ANDROID}`); // Hide from screen readers to keep datalist open on swipe right navigation
-	attr(clear, "hidden", hidden ? "" : null);
-	attr(clear, "tabindex", "-1");
+	if (clear?.nodeName === "DEL") attr(clear, "role", "button"); // Backwards compatibility for older versions using <del> as clear button
+	if (clear) {
+		attr(clear, ARIA_LABEL) || attr(clear, ARIA_LABEL, self._texts.clear); // Set default aria-label if not set by consumer
+		attr(clear, "aria-hidden", `${IS_IOS || IS_ANDROID}`); // Hide from screen readers to keep datalist open on swipe right navigation
+		attr(clear, "hidden", hidden ? "" : null);
+		attr(clear, "tabindex", "-1");
+	}
+	if (toggle) {
+		attr(toggle, ARIA_LABEL) || attr(toggle, ARIA_LABEL, self._texts.toggle); // Set default aria-label if not set by consumer
+		attr(toggle, "aria-hidden", `${IS_IOS || IS_ANDROID}`); // Hide from screen readers to keep datalist open on swipe right navigation
+		attr(toggle, "hidden", hidden ? null : "");
+		attr(toggle, "tabindex", "-1");
+		attr(toggle, "type", "button"); // Prevent submit
+	}
 };
 
 const syncOptionsWithItems = (self: UHTMLComboboxElement) => {

@@ -263,10 +263,10 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
 
 ## Example: API results
 
-<Sandbox label="u-details language example" lang="no" />
+<Sandbox label="u-details api example" lang="no" />
 <pre hidden>
 &lt;label for="my-api-input"&gt;
-  Search for a country
+  Search for a recipe
 &lt;/label&gt;
 &lt;u-combobox id="my-api-combobox"&gt;
   &lt;input id="my-api-input" list="my-api-list" /&gt;
@@ -284,9 +284,9 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
   xhr.addEventListener('load', () => {
     const list = combobox.control.list;
     try {
-      list.replaceChildren(...JSON.parse(xhr.responseText).map((country) => {
+      list.replaceChildren(...JSON.parse(xhr.responseText).recipes.map((recipe) => {
         const option = document.createElement('u-option');
-        option.text = country.name;
+        option.text = recipe.name;
         return option;
       }));
     } catch (err) {
@@ -304,7 +304,7 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
 
     if (query) {
       debounceTimer = setTimeout(() => {
-        xhr.open('GET', `https://restcountries.com/v2/name/${query}?fields=name`, true);
+        xhr.open('GET', `https://dummyjson.com/recipes/search?q=${query}`, true);
         xhr.send();
       }, 600);
     } 

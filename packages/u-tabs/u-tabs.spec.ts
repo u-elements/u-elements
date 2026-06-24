@@ -868,10 +868,6 @@ test.describe("u-tabs", () => {
 		});
 
 		await expect(uTab).toHaveCount(1);
-		// The remaining tab should now be selected
-		await expect(uTab.nth(0)).toHaveAttribute("aria-selected", "true");
-		// Panel 2 (controlled by the now-selected tab 2) should be visible
-		await expect(uTabpanel.nth(1)).toHaveJSProperty("hidden", false);
 	});
 
 	test("UHTMLTabListElement selectedIndex and tabs", async ({ page }) => {

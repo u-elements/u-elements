@@ -217,17 +217,17 @@ export class UHTMLTabPanelElement extends UHTMLElement {
 }
 
 const onMutations = (
-	self: UHTMLTabListElement,
+	_self: UHTMLTabListElement,
 	records: MutationRecord[] = [],
 ) => {
 	let selected: Element | undefined;
-	const tabs = getTabs(self);
+	// const tabs = getTabs(self);
 	for (const { target: el } of records) {
 		const tab = el instanceof Element && attr(el, "role") === "tab";
 		if (tab && isSelected(el)) selected = el; // Pluck the newly selected tab from mutations
 	}
 	// Checking findSelected on all children since u-tab might not have been connected
-	if (!selected && !findSelected(tabs)) selected = tabs.find(isEnabled); // Fallback to first enabled tab if no selected element exists
+	//if (!selected && !findSelected(tabs)) selected = tabs.find(isEnabled); // Fallback to first enabled tab if no selected element exists
 	setSelected(selected);
 };
 const syncPanel = (panel: Element, tab?: Element, show = false) => {

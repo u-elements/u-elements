@@ -144,6 +144,7 @@ const setInputAttributes = (
 	setup: HTMLInputElement | null,
 ) => {
 	const input = setup || self._input;
+	const hidden = !self._root || self.hidden; // Assume hidden when no _root, as the component has not run connectedCallback yet
 	if (!input) return;
 	if (self.popover) {
 		attr(self, "popover", "manual"); // Make sure we control popover state
@@ -151,6 +152,7 @@ const setInputAttributes = (
 	}
 	attr(input, "aria-autocomplete", setup && "list");
 	attr(input, "aria-controls", setup && useId(self));
+	attr(input, "aria-expanded", setup && `${!hidden}`);
 	attr(input, "autocomplete", setup && "off");
 	attr(input, "enterkeyhint", "done");
 	attr(input, "role", setup && !isDisabled(input) ? "combobox" : null);

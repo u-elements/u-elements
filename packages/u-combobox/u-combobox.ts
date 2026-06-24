@@ -287,8 +287,13 @@ const onKeyDown = (self: UHTMLComboboxElement, e: KeyboardEvent) => {
 const onKeyDownControl = (self: UHTMLComboboxElement, e: KeyboardEvent) => {
 	const { _match, clear, control: input, items, multiple } = self;
 
-	if ((e.key === "ArrowLeft" || e.key === "Backspace") && !input?.selectionEnd)
+	if (
+		(e.key === "ArrowLeft" || e.key === "Backspace") &&
+		!input?.selectionEnd
+	) {
 		items[items.length - 1]?.focus(); // Focus last item if pressing left or backspace at start of input
+		e.preventDefault(); // Prevent sideways scroll
+	}
 	if (e.key === "Enter" && input) {
 		preventSubmit(input); // Prevent submitting form as we want to preform a match instead
 		dispatchSelect(self, multiple ? dispatchMatch(self) : _match, multiple);
@@ -313,6 +318,7 @@ const onKeyDownItems = (self: UHTMLComboboxElement, event: KeyboardEvent) => {
 		return event.preventDefault(); // Prevent scrolling or submitting
 	}
 	if (!items[index]) return;
+	if (key.startsWith("Arrow")) event.preventDefault(); // Prevent sideways scroll
 	if (key === "ArrowLeft") return items[index - 1]?.focus();
 	if (key === "ArrowRight") return (items[index + 1] || control)?.focus();
 	if (key === "Backspace") {

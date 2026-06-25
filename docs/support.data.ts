@@ -68,13 +68,15 @@ function getBrowserSupport(feature: CompatStatement, region = {}) {
 		const support = { yes: 0, no: 0, version: 0, date: "" };
 
 		if (!usage) continue; // Skip :scope due to incorrect statistics
+
 		for (const [version, release] of agent.releases) {
 			const noSupport = added
 				? Number.parseFloat(version?.split("-").pop() || "") < added
 				: versions[version as keyof typeof versions] === "n";
 
 			const supportKey = noSupport ? "no" : "yes";
-			const percentage = Number.parseFloat(usage[version]) || 0;
+			let percentage = Number.parseFloat(usage[version]) || 0;
+			if (noSupport && percentage < 0.09) percentage = 0; // Ignore very small numbers for no support, as they are likely statistical noise
 
 			total[supportKey] += percentage;
 			support[supportKey] += percentage;
@@ -92,7 +94,7 @@ function getBrowserSupport(feature: CompatStatement, region = {}) {
 	}
 
 	return {
-		total: toPercentage(total) + 0.45,
+		total: toPercentage(total),
 		agents: supports,
 	};
 }
@@ -216,9 +218,11 @@ export default {
 		const jshint: Record<string, object> = {};
 		const pkgsPath = path.resolve(__dirname, "../packages");
 		fs.readdirSync(pkgsPath)
-			.map((pkgName) => path.resolve(pkgsPath, pkgName, `dist/${pkgName}.js`))
-			.filter((pkgDistFile) => fs.existsSync(pkgDistFile))
-			.forEach((pkgDistFile) => {
+			.map((pkgName: string) =>
+				path.resolve(pkgsPath, pkgName, `dist/${pkgName}.js`),
+			)
+			.filter((pkgDistFile: string) => fs.existsSync(pkgDistFile))
+			.forEach((pkgDistFile: string) => {
 				JSHINT(String(fs.readFileSync(pkgDistFile)), { esversion: 11 });
 				const { functions, options, ...rest } = JSHINT.data();
 				mergeDeep(jshint, rest);

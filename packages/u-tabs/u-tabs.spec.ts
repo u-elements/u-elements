@@ -84,7 +84,7 @@ test.describe("u-tabs", () => {
 		);
 
 		await uTabs.evaluate<void, UHTMLTabsElement>((el) => {
-			el.selectedIndex = 1;
+			(el as UHTMLTabsElement).selectedIndex = 1;
 		});
 
 		await expect(uTab0).toHaveAttribute("tabindex", "-1");
@@ -198,7 +198,7 @@ test.describe("u-tabs", () => {
 		await expect(uTab1).toHaveAttribute("aria-selected", "false");
 
 		await uTab1.evaluate<void, UHTMLTabElement>((el) => {
-			el.selected = true;
+			(el as UHTMLTabElement).selected = true;
 		});
 
 		await expect(uTab0).toHaveJSProperty("tabIndex", -1);
@@ -475,7 +475,7 @@ test.describe("u-tabs", () => {
 		await expect(uTabpanel0).toBeVisible();
 
 		await uTab0.evaluate<void, UHTMLTabElement>((el) => {
-			el.selected = true;
+			(el as UHTMLTabElement).selected = true;
 		});
 		await expect(uTab0).toHaveAttribute("aria-selected", "true");
 		await expect(uTab1).toHaveAttribute("aria-selected", "false");
@@ -483,7 +483,7 @@ test.describe("u-tabs", () => {
 		await expect(uTabpanel0).toBeVisible();
 
 		await uTab0.evaluate<void, UHTMLTabElement>((el) => {
-			el.selected = true;
+			(el as UHTMLTabElement).selected = true;
 		});
 		await expect(uTab0).toHaveAttribute("aria-selected", "true");
 		await expect(uTab1).toHaveAttribute("aria-selected", "false");
@@ -491,7 +491,7 @@ test.describe("u-tabs", () => {
 		await expect(uTabpanel0).toBeVisible();
 
 		await uTab2.evaluate<void, UHTMLTabElement>((el) => {
-			el.selected = true;
+			(el as UHTMLTabElement).selected = true;
 		});
 		await expect(uTab0).toHaveAttribute("aria-selected", "false");
 		await expect(uTab1).toHaveAttribute("aria-selected", "false");
@@ -764,7 +764,7 @@ test.describe("u-tabs", () => {
 
 		// Setting selected=true on a disabled tab should also be ignored
 		await uTab1.evaluate<void, UHTMLTabElement>((el) => {
-			el.selected = true;
+			(el as UHTMLTabElement).selected = true;
 		});
 		await expect(uTab0).toHaveAttribute("aria-selected", "true");
 		await expect(uTab1).toHaveAttribute("aria-selected", "false");
@@ -835,7 +835,7 @@ test.describe("u-tabs", () => {
 
 		// Setting selected=false on the currently selected tab should be a no-op
 		await uTab0.evaluate<void, UHTMLTabElement>((el) => {
-			el.selected = false;
+			(el as UHTMLTabElement).selected = false;
 		});
 
 		await expect(uTab0).toHaveAttribute("aria-selected", "true");

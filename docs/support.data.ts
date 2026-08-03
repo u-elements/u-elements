@@ -23,6 +23,39 @@ const agents: Record<
 	}
 > = {};
 
+function calculateFeatureSupport(featureName: string) {
+	console.log({ featureName });
+	const featureData = caniuse.feature(caniuse.features[featureName]);
+	if (!featureData) {
+		throw new Error(`Feature "${featureName}" not found.`);
+	}
+
+	const agents = caniuse.agents;
+	let totalSupportedGlobalUsage = 0;
+
+	// 3. Loop through every browser (e.g., chrome, safari, firefox)
+	Object.keys(featureData.stats).forEach((browserName) => {
+		const browserVersionsSupport = featureData.stats[browserName];
+		const agentInfo = agents[browserName];
+
+		if (!agentInfo?.usage_global) return;
+
+		// 4. Check each version's support status against global usage
+		Object.keys(browserVersionsSupport).forEach((version) => {
+			const supportStatus = browserVersionsSupport[version];
+			const globalUsagePercentage = agentInfo.usage_global[version] || 0;
+
+			// 'y' means fully supported, 'a' means partially supported
+			// You can adjust this condition based on your definition of "supported"
+			if (supportStatus.startsWith("y") || supportStatus.startsWith("a")) {
+				totalSupportedGlobalUsage += globalUsagePercentage;
+			}
+		});
+	});
+
+	return totalSupportedGlobalUsage;
+}
+
 for (const [agent, data] of Object.entries(caniuse.agents)) {
 	if (!data) continue;
 	const { browser, release_date = [], usage_global } = data;
@@ -76,7 +109,7 @@ function getBrowserSupport(feature: CompatStatement, region = {}) {
 
 			const supportKey = noSupport ? "no" : "yes";
 			let percentage = Number.parseFloat(usage[version]) || 0;
-			if (noSupport && percentage < 0.09) percentage = 0; // Ignore very small numbers for no support, as they are likely statistical noise
+			if (noSupport && percentage < 0.085) percentage = 0; // Ignore very small numbers for no support, as they are likely statistical noise
 
 			total[supportKey] += percentage;
 			support[supportKey] += percentage;
@@ -250,6 +283,12 @@ export default {
 			.filter((val, idx, all) => all.indexOf(val) === idx) // Make unique
 			.sort();
 
+		console.log(
+			Object.keys(caniuse.features)
+				.filter((n) => n.includes("defineProperty"))
+				.slice(0, 100),
+		);
+
 		const found: [string, CompatStatement][] = [];
 		Object.keys(jshint.member).forEach((key) => {
 			for (const global of globals) {
@@ -261,14 +300,14 @@ export default {
 		const features = found
 			.filter(([path]) => !skip.includes(path))
 			.filter(([path]) => path.split(".")[0] !== path.split(".")[1]) // Remove document.document, array.array etc
-			.map(([, feature]) => feature)
-			.concat(
-				bcd.css.selectors.host.__compat as CompatStatement,
-				bcd.css.selectors.hostfunction.__compat as CompatStatement,
-				bcd.css.selectors.scope.__compat as CompatStatement,
-			)
-			.map((feature) => ({
-				world: getBrowserSupport(feature),
+			// .map(([, feature]) => feature)
+			// .concat(
+			// 	bcd.css.selectors.host.__compat as CompatStatement,
+			// 	bcd.css.selectors.hostfunction.__compat as CompatStatement,
+			// 	bcd.css.selectors.scope.__compat as CompatStatement,
+			// )
+			.map(([name, feature]) => ({
+				world: calculateFeatureSupport(name.replaceAll(".", "-")),
 				norway: getBrowserSupport(feature, usageNorway),
 				name: getFeatureName(feature),
 			}));

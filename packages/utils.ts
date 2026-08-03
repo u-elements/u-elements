@@ -85,9 +85,9 @@ export const off = (
  */
 export const attachStyle = (el: Element, css: string) => {
 	const root = el.shadowRoot || el.attachShadow({ mode: "open" }); // Respects Declarative Shadow DOM
-	if (!root.querySelector("slot")) root.append(tag("slot"));
+	if (!root.querySelector("slot")) root.appendChild(tag("slot"));
 	if (!root.querySelector("style")) {
-		if (!SUPPORTS_CONSTRUCTED_CSS) root.append(tag("style", null, css));
+		if (!SUPPORTS_CONSTRUCTED_CSS) root.appendChild(tag("style", null, css));
 		else {
 			const sheet = new CSSStyleSheet();
 			sheet.replaceSync(css);
@@ -184,6 +184,7 @@ export const useId = (el?: Element | null) => {
  * @param props Optional properties to add to the element
  * @return HTMLElement with props
  */
+const hasOwn = IS_BROWSER ? Object.prototype.hasOwnProperty : () => false;
 export const tag = <TagName extends keyof HTMLElementTagNameMap>(
 	tagName: TagName,
 	attrs?: Record<string, string> | null,
@@ -191,7 +192,9 @@ export const tag = <TagName extends keyof HTMLElementTagNameMap>(
 ): HTMLElementTagNameMap[TagName] => {
 	const el = document.createElement(tagName);
 	if (content) el.textContent = content;
-	if (attrs) for (const [key, val] of Object.entries(attrs)) attr(el, key, val);
+	if (attrs)
+		for (const key in attrs)
+			if (hasOwn.call(attrs, key)) attr(el, key, attrs[key]);
 	return el;
 };
 
@@ -282,7 +285,7 @@ export const speak = (text?: string) => {
 		LIVE.style.whiteSpace = "nowrap";
 		LIVE.style.width = "1px";
 	}
-	if (!LIVE.isConnected) document.body.append(LIVE);
+	if (!LIVE.isConnected) document.body.appendChild(LIVE);
 	if (text === "") LIVE.textContent = ""; // Clear announcement immediately if empty string
 	if (text) {
 		LIVE.textContent = `${text}${LIVE_SR_FIX++ % 2 ? "\u{A0}" : ""}`; // Non-breaking space to ensure screen reader announces

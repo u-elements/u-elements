@@ -2,31 +2,28 @@
 title: Browser support
 ---
 <script setup>
-import { data } from '../support.data.ts'
+import { data } from '../features.data.ts'
 
 const percent = (num) => `${Number(num).toFixed(2)}%`
-</script>
+const browsers = Object.entries(data.features?.[0].requiredBrowsers || {}).map(([name, data]) => [
+  name.replace(/_/g, ' ')
+    .replace(/\b./g, (m) => m.toUpperCase())
+    .replace('Samsunginternet', 'Samsung Internett')
+    .replace('Safari Ios', 'iOS browsers')
+    .trim(),
+  data
+]);
 
-# Browser support
-
-`u-elements` is committed to provide great support for all users and technologies, including older browser versions. 
-
-Based on up-to-date statistics from [caniuse.com](https://caniuse.com/), `u-elements` currently support <strong>{{percent(data.features[0].world.total)}}</strong> of all users on {{new Intl.ListFormat('en', {style: 'long',type: 'conjunction',}).format(Object.keys(data.browsers))}}.
-
-## Minimum requirements
-
+const withReleaseDate = browsers.filter(([, data]) => !!data.releaseDate);
+const withLessThan100 = data.features.filter(({globalSupportScore}) => globalSupportScore < 100);
+/* percent(data.features[0]?.world.total)
+new Intl.ListFormat('en', {style: 'long',type: 'conjunction',}).format(Object.names(data.browsers))
 <table>
   <thead><tr><th>Browser version</th><th>Release date</th></tr></thead>
   <tbody>
     <tr v-for="({version, date}, name) in data.browsers"><td>{{name}} {{version}}+</td><td>{{date}}</td></tr>
   </tbody>
 </table>
-
-## Web features in use
-
-`u-elements` tracks browser support by monitoring the web features it uses. This is done by analyzing source code with [JSHint](https://github.com/jshint/jshint/) and cross-referencing the identified features against [MDN Browser Compatibility Data](https://github.com/mdn/browser-compat-data) and [caniuse.com usage statistics](https://caniuse.com/). 
-Here are the web features used by `u-elements` that are not yet fully supported by all browsers:
-
 <table>
   <thead><tr><th>Feature</th><th>Browser support</th></tr></thead>
   <tbody>
@@ -35,22 +32,44 @@ Here are the web features used by `u-elements` that are not yet fully supported 
         <td>{{name}}</td>
         <td>{{percent(world.total)}}</td>
       </tr>
-      <!-- <tr>
-        <td colspan="2">
-          <table>
-            <thead><tr><th>Browser version</th><th>Release date</th></tr></thead>
-            <tbody>
-              <tr v-for="({ percentage, version, date }, name) in world.agents">
-                <td>{{name}} {{version}}+</td><td>Released {{date}}</td>
-              </tr>
-              <tr><td>Norway</td><td>{{percent(norway.total)}}</td></tr>
-            </tbody>
-          </table>
-        </td>
-      </tr> -->
+    </template>
+  </tbody>
+</table>*/
+</script>
+
+# Browser support
+
+`u-elements` is committed to provide great support for all users and technologies, including older browser versions. 
+
+Based on up-to-date statistics from [caniuse.com](https://caniuse.com/), `u-elements` currently support <strong>{{percent(data.features?.[0].globalSupportScore || 100)}}</strong> of all users on
+{{new Intl.ListFormat('en', {style: 'long',type: 'conjunction',}).format(browsers.map(([name]) => name))}}.
+
+## Minimum requirements
+
+<table>
+  <thead><tr><th>Browser version</th><th>Release date</th></tr></thead>
+  <tbody>
+    <tr v-for="([name, {version, releaseDate}]) in withReleaseDate"><td>{{name}} {{version}}+</td><td>{{releaseDate.split('-').reverse().join('.')}}</td></tr>
+  </tbody>
+</table>
+
+## Web features in use
+
+<table>
+  <thead><tr><th>Feature</th><th>Browser support</th></tr></thead>
+  <tbody>
+    <template v-for="{feature, globalSupportScore} in withLessThan100">
+      <tr>
+        <td>{{feature}}</td>
+        <td>{{percent(globalSupportScore)}}</td>
+      </tr>
     </template>
   </tbody>
 </table>
+
+`u-elements` tracks browser support by monitoring the web features it uses. This is done by analyzing source code with [JSHint](https://github.com/jshint/jshint/) and cross-referencing the identified features against [MDN Browser Compatibility Data](https://github.com/mdn/browser-compat-data) and [caniuse.com usage statistics](https://caniuse.com/). 
+Here are the web features used by `u-elements` that are not yet fully supported by all browsers:
+
 
 ## Content Security Policy (CSP)
 

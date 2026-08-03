@@ -36,8 +36,9 @@ declare global {
 }
 
 export const UHTMLComboboxStyle = `${DISPLAY_BLOCK}
-:is(:host(:not([data-multiple])), :host([data-multiple="false"])) [part="items"] { display: none }
-[role="listbox"] { display: inline-flex } /* Can not be "contents" as this confuses VoiceOver */
+[part="items"] { display: inline-flex; flex-wrap: wrap } /* Can not be "contents" as this confuses VoiceOver */
+:host(:not([data-multiple])) [part="items"],
+:host([data-multiple="false"]) [part="items"] { display: none }
 ::slotted(button[type="reset"]),
 ::slotted(button[aria-expanded]),
 ::slotted(del) { font: inherit; border: 0; padding: 0; background: none; color: inherit; cursor: pointer; text-decoration: none }
@@ -111,7 +112,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		attr(this._listbox, "role", "listbox");
 		attr(this._listbox, "part", "items");
 		attr(this._listbox, "tabindex", "-1"); // Prevent tabstop even if consumer sets overflow: auto (https://issues.chromium.org/issues/40456188)
-		root.prepend(this._listbox); // Make sure listbox is first
+		root.insertBefore(this._listbox, root.firstChild); // Make sure listbox is first
 	}
 	connectedCallback() {
 		on(this, EVENTS, this, true); // Bind events using capture phase to run before frameworks
@@ -413,7 +414,7 @@ const syncSelectWithItems = (self: UHTMLComboboxElement) => {
 	if (!self._select?.isConnected) self._select = self.querySelector("select");
 	if (!self._select) return;
 	const { _select, items, multiple } = self;
-	const append = []; // Speed up by running all appends in one go after the loop
+	let append: DocumentFragment | undefined; // Speed up by running all appends in one go after the loop
 	let idx = 0;
 
 	attr(_select, "multiple", multiple ? "" : null); // Forward multiselect
@@ -422,8 +423,10 @@ const syncSelectWithItems = (self: UHTMLComboboxElement) => {
 		const text = getText(item);
 		const value = getValue(item); // u-option might not be initialized yet
 
-		if (!option) append.push(new Option(text, value, true, true));
-		else
+		if (!option) {
+			if (!append) append = document.createDocumentFragment();
+			append.appendChild(new Option(text, value, true, true));
+		} else
 			Object.assign(option, {
 				defaultSelected: true,
 				selected: true,
@@ -431,7 +434,7 @@ const syncSelectWithItems = (self: UHTMLComboboxElement) => {
 				value,
 			});
 	}
-	if (append.length) _select.append(...append);
+	if (append) _select.appendChild(append);
 	else for (const opt of [..._select.options].slice(idx)) opt.remove(); // Remove unused options
 	self._umutate?.takeRecords(); // Clear mutation records caused by adding/removing <option> elements
 };

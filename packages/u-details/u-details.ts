@@ -43,10 +43,8 @@ export class UHTMLDetailsElement extends UHTMLElement {
 	constructor() {
 		super();
 		attachStyle(this, UHTMLDetailsStyle);
-		this.shadowRoot?.prepend(
-			tag("slot", { name: "summary" }),
-			tag("slot", { part: "details-content" }),
-		);
+		this.shadowRoot?.appendChild(tag("slot", { name: "summary" }));
+		this.shadowRoot?.appendChild(tag("slot", { part: "details-content" }));
 		console.warn(
 			"\x1B[1m<u-details> is deprecated as <details> now has sufficient screen reader support 🎉\x1B[0m\nPlease use <details> and <summary>, but import '@u-elements/u-details/polyfill' to polyfill support for Talkback screen reader when used with Firefox on Android.",
 			this,

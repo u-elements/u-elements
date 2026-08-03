@@ -37,6 +37,8 @@ declare global {
 
 export const UHTMLComboboxStyle = `${DISPLAY_BLOCK}
 [part="items"] { display: inline-flex; flex-wrap: wrap } /* Can not be "contents" as this confuses VoiceOver */
+:host([data-summary]) [part="items"]::before { content: attr(data-summary) }
+:host([data-summary]) ::slotted(data),
 :host(:not([data-multiple])) [part="items"],
 :host([data-multiple="false"]) [part="items"] { display: none }
 ::slotted(button[type="reset"]),
@@ -160,6 +162,12 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	get creatable() {
 		return (attr(this, "data-creatable") ?? FALSE) !== FALSE; // Allow data-creatable="false" to be more React friendly
 	}
+	get summary() {
+		return attr(this, "data-summary"); // Allow data-creatable="false" to be more React friendly
+	}
+	set summary(value: string | false | null) {
+		attr(this, "data-summary", value || null);
+	}
 	set creatable(value: boolean) {
 		attr(this, "data-creatable", value ? "" : null);
 	}
@@ -258,8 +266,8 @@ const onBlurred = (self: UHTMLComboboxElement) =>
 	dispatchSelect(self, self._match, false); // Use cached match from typing
 
 const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
+	const { clear, control, items, toggle, summary } = self;
 	const { clientX: x, clientY: y, target } = event;
-	const { clear, control, items, toggle } = self;
 
 	if (toggle?.contains(target as Node)) {
 		control?.focus();
@@ -274,9 +282,11 @@ const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
 	}
 	for (const item of items) {
 		if (item.contains(target as Node)) return dispatchSelect(self, item); // Keyboard and screen reader can set target to element with pointer-events: none
-		const rect = item.getBoundingClientRect();
-		const { top: t, right: r, bottom: b, left: l, width: w, height: h } = rect; // Use coordinates to inside since pointer-events: none will prevent correct event.target
-		if (w && h && y >= t && y <= b && x >= l && x <= r) return item.focus(); // If item is larger than 0x0 and click is inside inside, focus it
+		if (!summary) {
+			const rect = item.getBoundingClientRect();
+			const { y: t, right: r, bottom: b, x: l, width: w, height: h } = rect; // Use coordinates to inside since pointer-events: none will prevent correct event.target
+			if (w && h && y >= t && y <= b && x >= l && x <= r) return item.focus(); // If item is larger than 0x0 and click is inside inside, focus it
+		}
 	}
 	if (target === self) control?.focus(); // Focus input if clicking <u-combobox>
 };
@@ -351,7 +361,7 @@ const onKeyDownItems = (self: UHTMLComboboxElement, event: KeyboardEvent) => {
 
 const onMutations = (self: UHTMLComboboxElement, edit?: MutationRecord[]) => {
 	if (!self.control) return;
-	const { _texts, control, items, list, multiple, toggle } = self;
+	const { _texts, control, items, list, multiple, toggle, summary } = self;
 	const edits: HTMLDataElement[] = [];
 	for (const { addedNodes: add, removedNodes: del } of edit || []) {
 		for (const el of add) if (el instanceof HTMLDataElement) edits.unshift(el); // Added nodes to the front
@@ -379,10 +389,15 @@ const onMutations = (self: UHTMLComboboxElement, edit?: MutationRecord[]) => {
 	syncOptionsWithItems(self);
 	syncSelectWithItems(self);
 
-	// Forward aria-expanded to toggle button
-	if (toggle) attr(toggle, "aria-expanded", `${!list?.hidden}`);
+	if (toggle) attr(toggle, "aria-expanded", `${!list?.hidden}`); // Forward aria-expanded to toggle button
+	if (summary)
+		attr(
+			self._listbox,
+			"data-summary",
+			summary.replace("%d", `${items.length}`),
+		); // Forward grouped state to host element
 
-	const hint = `${items.length ? _texts.found.replace("%d", `${items.length}`) : _texts.empty}`;
+	const hint = `${items.length ? (summary || _texts.found).replace("%d", `${items.length}`) : _texts.empty}`;
 	attr(control, "aria-description", multiple ? hint : null);
 	attr(control, "list", useId(list)); // Connect datalist and input
 	attr(self._listbox, ARIA_LABEL, _texts.items);

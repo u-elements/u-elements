@@ -2,7 +2,7 @@ import type { UserConfig } from "vite";
 // import csp from "vite-plugin-csp-guard";
 
 export default {
-	root: __dirname,
+	root: import.meta.dirname,
 	// plugins: [
 	// 	csp({
 	// 		algorithm: "sha256",

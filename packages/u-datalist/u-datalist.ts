@@ -36,9 +36,9 @@ const ARIA_HIDDEN = "aria-hidden";
 export const UHTMLDataListStyle = `${DISPLAY_BLOCK}
 ::slotted([role="option"]) { display: block; cursor: pointer }
 ::slotted([role="option"][${DATA_ACTIVE}]) { ${FOCUS_OUTLINE} }
-::slotted([role="option"][${ARIA_HIDDEN}="true"],
-::slotted([role="option"][disabled],
-::slotted([role="option"][hidden] { display: none !important }`;
+::slotted([role="option"][${ARIA_HIDDEN}="true"]),
+::slotted([role="option"][disabled]),
+::slotted([role="option"][hidden]) { display: none !important }`;
 
 export const UHTMLDataListShadowRoot =
 	declarativeShadowRoot(UHTMLDataListStyle);

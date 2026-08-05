@@ -199,19 +199,21 @@ export class UHTMLComboboxElement extends UHTMLElement {
 }
 
 const dispatchMatch = (self: UHTMLComboboxElement) => {
-	const { creatable, control, options, multiple } = self;
+	const { creatable, control, options, multiple, list } = self;
 	const value = control?.value?.trim() || "";
-	const query = value.toLowerCase() || null; // Fallback to null to prevent matching empty values
-	let match = [...options].find(
-		(o) => getLabel(o).trim().toLowerCase() === query,
-	);
-	const event = { bubbles: true, cancelable: true, detail: match };
+	const find = value.toLowerCase() || null; // Fallback to null to prevent matching empty values
+	let match: HTMLOptionElement | undefined;
 
-	if (!self.dispatchEvent(new CustomEvent("comboboxbeforematch", event)))
-		match = [...options].find(getSelected); // Only match first selected option if custom matching
+	if (list) {
+		match = [...options].find((o) => getLabel(o).trim().toLowerCase() === find);
+		const event = { bubbles: true, cancelable: true, detail: match };
 
-	if (!multiple) for (const o of options) setSelected(o, o === match);
-	else syncOptionsWithItems(self); // Sync options with items in multiple mode as consumer can change option.selected in comboboxbeforematch
+		if (!self.dispatchEvent(new CustomEvent("comboboxbeforematch", event)))
+			match = [...options].find(getSelected); // Only match first selected option if custom matching
+
+		if (!multiple) for (const o of options) setSelected(o, o === match);
+		else syncOptionsWithItems(self); // Sync options with items in multiple mode as consumer can change option.selected in comboboxbeforematch
+	}
 
 	if (!match && creatable && value) return { value, label: value }; // Return creatable value as match if no match and creatable
 	return match && { value: getValue(match), label: getLabel(match) };
@@ -306,17 +308,17 @@ const onKeyDown = (self: UHTMLComboboxElement, e: KeyboardEvent) => {
 };
 
 const onKeyDownControl = (self: UHTMLComboboxElement, e: KeyboardEvent) => {
-	const { _match, clear, control: input, items, multiple } = self;
+	const { _match, clear, control, creatable, items, list, multiple } = self;
 
 	if (
 		(e.key === "ArrowLeft" || e.key === "Backspace") &&
-		!input?.selectionEnd
+		!control?.selectionEnd
 	) {
 		items[items.length - 1]?.focus(); // Focus last item if pressing left or backspace at start of input
 		e.preventDefault(); // Prevent sideways scroll
 	}
-	if (e.key === "Enter" && input) {
-		preventSubmit(input); // Prevent submitting form as we want to preform a match instead
+	if (e.key === "Enter" && control && (list || creatable)) {
+		preventSubmit(control); // Prevent submitting form as we want to preform a match instead
 		dispatchSelect(self, multiple ? dispatchMatch(self) : _match, multiple);
 	}
 	if (e.key === "Tab" && !e.shiftKey && clear && !clear.hidden) {
@@ -379,8 +381,8 @@ const onMutations = (self: UHTMLComboboxElement, edit?: MutationRecord[]) => {
 	syncOptionsWithItems(self);
 	syncSelectWithItems(self);
 
-	// Forward aria-expanded to toggle button
-	if (toggle) attr(toggle, "aria-expanded", `${!list?.hidden}`);
+	// Forward aria-expanded to toggle button, and keep aria-expanded="false" if no list to make it CSS selectable
+	if (toggle) attr(toggle, "aria-expanded", list ? `${!list.hidden}` : FALSE);
 
 	const hint = `${items.length ? _texts.found.replace("%d", `${items.length}`) : _texts.empty}`;
 	attr(control, "aria-description", multiple ? hint : null);
@@ -440,19 +442,19 @@ const syncSelectWithItems = (self: UHTMLComboboxElement) => {
 };
 
 const syncButtonsWithInput = (self: UHTMLComboboxElement) => {
-	const { clear, control, toggle } = self;
-	const hidden = !control?.value || control?.disabled || control?.readOnly;
+	const { clear, control, toggle, list } = self;
+	const isIdle = !control?.value || control?.disabled || control?.readOnly;
 	if (clear?.nodeName === "DEL") attr(clear, "role", "button"); // Backwards compatibility for older versions using <del> as clear button
 	if (clear) {
 		attr(clear, ARIA_LABEL) || attr(clear, ARIA_LABEL, self._texts.clear); // Set default aria-label if not set by consumer
 		attr(clear, "aria-hidden", `${IS_IOS || IS_ANDROID}`); // Hide from screen readers to keep datalist open on swipe right navigation
-		attr(clear, "hidden", hidden ? "" : null);
+		attr(clear, "hidden", isIdle ? "" : null);
 		attr(clear, "tabindex", "-1");
 	}
 	if (toggle) {
 		attr(toggle, ARIA_LABEL) || attr(toggle, ARIA_LABEL, self._texts.toggle); // Set default aria-label if not set by consumer
 		attr(toggle, "aria-hidden", `${IS_IOS || IS_ANDROID}`); // Hide from screen readers to keep datalist open on swipe right navigation
-		attr(toggle, "hidden", hidden ? null : "");
+		attr(toggle, "hidden", isIdle && list ? null : ""); // Hide toggle if idle and datalist is present
 		attr(toggle, "tabindex", "-1");
 		attr(toggle, "type", "button"); // Prevent submit
 	}
@@ -468,7 +470,7 @@ const syncOptionsWithItems = (self: UHTMLComboboxElement) => {
 
 // TODO: aria-required="true" => setCustomValidity
 const syncInputWithItemSingleMode = (self: UHTMLComboboxElement) => {
-	if (!self.control || self.multiple) return; // No need to sync input value if multiple
+	if (!self.control || !self.list || self.multiple) return; // No need to sync input value if multiple or no datalist
 	const { control, items } = self;
 	const value = getText(items[0]);
 	const action = value ? "insertText" : "deleteContentBackward";

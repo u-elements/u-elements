@@ -6,9 +6,11 @@ import {
 	attachStyle,
 	attr,
 	customElements,
+	getComposedPath,
 	getFocusedElement,
 	off,
 	on,
+	tag,
 	UHTMLElement,
 } from "../utils";
 
@@ -30,22 +32,23 @@ declare global {
 // TODO: copy -item and -head elements - replacing <slot> for text
 // TODO: Remove trailing dot in short days?
 
+type IsDateDisabled = ((date: Date) => boolean) | undefined;
 type DateValue = Date | number | string;
 const EVENTS = "click input focusin keydown pointerdown pointerup";
 const ENGLISH_DAYS = "sun mon tues wednes thurs fri satur"
 	.replace(/( |$)/g, "day$1")
 	.split(" ");
 
-export const createEl = <TagName extends keyof HTMLElementTagNameMap>(
-	tagName: TagName,
-	attrs?: Record<string, string>,
-	html?: string | null,
-): HTMLElementTagNameMap[TagName] => {
-	const el = document.createElement(tagName);
-	if (html) el.innerHTML = html;
-	if (attrs) for (const [key, val] of Object.entries(attrs)) attr(el, key, val);
-	return el;
-};
+// export const createEl = <TagName extends keyof HTMLElementTagNameMap>(
+// 	tagName: TagName,
+// 	attrs?: Record<string, string>,
+// 	html?: string | null,
+// ): HTMLElementTagNameMap[TagName] => {
+// 	const el = document.createElement(tagName);
+// 	if (html) el.innerHTML = html;
+// 	if (attrs) for (const [key, val] of Object.entries(attrs)) attr(el, key, val);
+// 	return el;
+// };
 
 /**
  * The `<u-datepicker>` HTML element contains lets you pick a date from a grid.
@@ -53,13 +56,15 @@ export const createEl = <TagName extends keyof HTMLElementTagNameMap>(
  */
 export class UHTMLDatePickerElement extends UHTMLElement {
 	// Using underscore instead of private fields for backwards compatibility
-	_focusedDate = new Date();
-	_lang?: string;
-	_week?: string;
 	_firstDayOfWeek = 0;
+	_focusedDate = new Date();
 	_input?: HTMLInputElement;
+	_internalSlotChange = false;
+	_isDateDisabled: IsDateDisabled;
+	_lang?: string;
 	_select?: HTMLSelectElement;
 	_table?: HTMLTableElement;
+	_week: string | null = null;
 
 	// Using ES2015 syntax for backwards compatibility
 	static get observedAttributes() {
@@ -67,42 +72,33 @@ export class UHTMLDatePickerElement extends UHTMLElement {
 	}
 	constructor() {
 		super();
-		if (!this.shadowRoot)
-			this.attachShadow({ mode: "open" }).append(
-				createEl(
-					"slot",
-					{ part: "controls", name: "controls" },
-					`<slot name="month"><select name="month" part="month">${Array.from({ length: 12 }, (_, i) => `<option value="${i}"></option>`).join("")}</select></slot>
-				<slot name="year"><input name="year" part="year" type="number" /></slot>
-				<slot name="prev"><button name="prev" part="prev" type="button"><slot name="prev-icon">&larr;</slot></button></slot>
-				<slot name="next"><button name="next" part="next" type="button"><slot name="next-icon">&rarr;</slot></button></slot>`,
-				),
-				createEl(
-					"table",
-					{ part: "table" },
-					`<thead part="thead" aria-hidden="true"><tr part="tr days"><th scope="col"><slot name="week"></slot></th>${`<th scope="col"><slot name="-"></slot></th>`.repeat(7)}</tr></thead>
-				<tbody part="tbody">${`<tr role="row"><th scope="row" part="weeknumber"><slot name="-"></slot></th>${`<td part="td"><button type="button" part="date"><slot name="-before"></slot><slot name="-"></slot><slot name="-after"></slot></button></td>`.repeat(7)}</tr>`.repeat(6)}</tbody>
-			`,
-				),
-				createEl(
-					"table",
-					{ part: "table" },
-					`<thead part="thead" aria-hidden="true"><tr part="tr days"><th scope="col"><slot name="week"></slot></th>${`<th scope="col"><slot name="-"></slot></th>`.repeat(7)}</tr></thead>
-				<tbody part="tbody">${`<tr role="row"><th scope="row" part="weeknumber"><slot name="-"></slot></th>${`<td part="td"><button type="button" part="date"><slot name="-before"></slot><slot name="-"></slot><slot name="-after"></slot></button></td>`.repeat(7)}</tr>`.repeat(6)}</tbody>
-			`,
-				),
-			);
+		const shadow = this.shadowRoot || this.attachShadow({ mode: "open" });
+
+		shadow.appendChild(
+			tag("slot", { part: "controls", name: "controls" }),
+		).innerHTML =
+			`<slot name="month"><select name="month" part="month">${Array.from({ length: 12 }, (_, i) => `<option value="${i}"></option>`).join("")}</select></slot>
+		<slot name="year"><input name="year" part="year" type="number" /></slot>
+		<slot name="prev"><button name="prev" part="prev" type="button"><slot name="prev-icon">&larr;</slot></button></slot>
+		<slot name="today"><button name="today" part="today" type="button"><slot name="today-icon">&#9675;</slot></button></slot>
+		<slot name="next"><button name="next" part="next" type="button"><slot name="next-icon">&rarr;</slot></button></slot>`;
+
+		shadow.appendChild(tag("table", { part: "table" })).innerHTML =
+			`<thead part="thead" aria-hidden="true"><tr part="tr days"><th scope="col"><slot name="week"></slot></th>${`<th scope="col"><slot name="-"></slot></th>`.repeat(7)}</tr></thead>
+		<tbody part="tbody">${`<tr role="row"><th scope="row" part="weeknumber"><slot name="-"></slot></th>${`<td part="td"><button type="button" part="date"><slot name="-before"></slot><slot name="-"></slot><slot name="-after"></slot></button></td>`.repeat(7)}</tr>`.repeat(6)}</tbody>`;
+
 		attachStyle(
 			this,
-			`:host(:not([hidden])) { display: flex; flex-wrap: wrap; gap: 1em; background: Canvas; color: CanvasText }
+			`:host(:not([hidden])) { display: block; gap: 1em; text-align: center }
 			:host(:not([data-week])) th:first-child { display: none }
-			slot[name="controls"] { display: flex; align-items: center; gap: inherit; width: 100% }
+			slot[name="controls"] { display: flex; align-items: center; gap: inherit; margin-bottom: 1em }
 			slot[name="year"] { display: block; margin-right: auto }
 			button, input, select, th, td { box-sizing: border-box; field-sizing: content; font: inherit; background: none; color: inherit; padding: 0; margin: 0; border: 0; text-align: inherit }
+			
 			th { font-weight: bold }
-
-			table { border-collapse: collapse; border-spacing: 0; table-layout: fixed; flex: 1 1 auto; text-align: center }
-			th::before, button::before { content: attr(data-text) / attr(data-aria) }
+			th, select { text-transform: capitalize }
+			table { border-collapse: collapse; border-spacing: 0; table-layout: fixed; width: 100% }
+			th::before, button::before { content: attr(data-weeknumber) / attr(data-aria) }
 			td button { width: 100% }
 			button[data-month="outside"] { color: GrayText }
 			button[aria-disabled="true"] { color: GrayText; text-decoration: line-through }
@@ -112,39 +108,58 @@ export class UHTMLDatePickerElement extends UHTMLElement {
 	}
 	connectedCallback() {
 		on(this, EVENTS, this);
-		this._input = get(this, "input");
-		this._select = get(this, "select");
-		this._table = get(this, "table");
+		on(this.shadowRoot as ShadowRoot, "slotchange", this);
+		onSlotChange(this);
 		this.attributeChangedCallback(); // Ensure attributeChangedCallback is called on connect
 	}
 	disconnectedCallback() {
 		off(this, EVENTS, this);
+		off(this.shadowRoot as ShadowRoot, "slotchange", this);
 		this._input = this._table = this._select = undefined;
 	}
 	attributeChangedCallback() {
-		const lang = this.closest("[lang]")?.getAttribute("lang") || "en";
-		const week = attr(this, "data-week") || "";
+		const week = attr(this, "data-week");
+		let lang = "en";
+
+		for (const el of getComposedPath(this)) {
+			const l = el.nodeType === 1 && (el as HTMLElement).lang;
+			if (l) {
+				lang = l;
+				break;
+			}
+		}
 
 		// Only render if ready and have a change in config
-		if (!this._table || (lang === this._lang && week === this._week)) return;
+		if (lang === this._lang && week === this._week) return;
+		this._internalSlotChange = true;
 		const locale = new Intl.Locale(lang);
-		const monthName = new Intl.DateTimeFormat(locale, { month: "long" }).format;
-		const dayName = new Intl.DateTimeFormat(locale, { weekday: "long" }).format;
 
 		this._lang = lang;
 		this._week = week;
 		this._firstDayOfWeek = getWeekStartByRegion(locale.region || "GB");
-		this.getMonthName = (d) => toCapitalized(monthName(d));
-		this.getDayName = (d) => toCapitalized(dayName(d));
+		this.getMonthName = new Intl.DateTimeFormat(locale, {
+			month: "long",
+		}).format;
+		this.getDayName = new Intl.DateTimeFormat(locale, {
+			weekday: "long",
+		}).format;
 
 		// Update month names
 		for (const option of this._select?.options || [])
 			option.label = this.getMonthName(new Date(0, option.index));
 
-		this.shadowRoot?.querySelectorAll("table").forEach((table) => {
-			renderTHead(this, table);
-			renderTbody(this, table);
-		});
+		const weekday = new Date(2023, 0, this._firstDayOfWeek % 7); // 2023-01-01 is a Sunday
+		for (const cell of this._table?.tHead?.rows[0].cells || []) {
+			const isDay = cell.previousElementSibling;
+			const slot = cell.firstElementChild as HTMLSlotElement; // Using <div> for headers as VoiceOver skips aria-label on <slot>
+			slot.name = isDay ? ENGLISH_DAYS[weekday.getDay()] : "week";
+			slot.textContent = `${isDay ? this.getDayName(weekday)[0] : this._week}`;
+			attr(cell, "part", `th ${isDay ? `day ${slot.name}` : slot.name}`);
+			weekday.setDate(weekday.getDate() + 1);
+		}
+
+		renderTbody(this);
+		setTimeout(() => (this._internalSlotChange = false), 0); // Reset after slotchange event has run
 	}
 	getDayName(date: number | Date) {
 		return `${new Date(date).getDay()}`; // Placeholder function before attributeChangedCallback has run
@@ -156,6 +171,7 @@ export class UHTMLDatePickerElement extends UHTMLElement {
 		if (event.type === "click") onClick(this, event);
 		if (event.type === "input") onInput(this, event);
 		if (event.type === "keydown") onKeyDown(this, event as KeyboardEvent);
+		if (event.type === "slotchange") onSlotChange(this);
 	}
 	// Focused is the date rendered in monthpicker - not using activeElement as we need to persist it when changing month/year
 	get focusedDate(): Date {
@@ -167,7 +183,7 @@ export class UHTMLDatePickerElement extends UHTMLElement {
 
 		if (+prev === +next) return; // Skip if same date, preventing infinite loop
 		this._focusedDate = next;
-		if (this._table) renderTbody(this, this._table);
+		renderTbody(this);
 	}
 	get values(): Date[] {
 		const values = attr(this, "data-value")?.split(",") || [];
@@ -177,27 +193,26 @@ export class UHTMLDatePickerElement extends UHTMLElement {
 		const dates = Array.from([value].flat(), (val) => new Date(val));
 		attr(this, "data-value", dates.map(Number).join(", "));
 	}
-	get disabled(): Date[] {
-		const values = attr(this, "data-disabled")?.split(",") || [];
-		return values.map((val) => new Date(val.trim()));
+	get isDateDisabled(): IsDateDisabled {
+		return this._isDateDisabled;
 	}
-	set disabled(value: DateValue | DateValue[]) {
-		const dates = Array.from([value].flat(), (val) => new Date(val));
-		attr(this, "data-disabled", dates.map(Number).join(", "));
+	set isDateDisabled(callback: IsDateDisabled) {
+		this._isDateDisabled = callback;
 	}
 	get firstDayOfWeek() {
 		return this._firstDayOfWeek;
 	}
 }
 
-const toCapitalized = (s: string) =>
-	`${s.slice(0, 1).toUpperCase()}${s.slice(1)}`;
-
 const getYMD = (d: Date) =>
 	`${d.getFullYear()}-${`0${d.getMonth() + 1}`.slice(-2)}-${`0${d.getDate()}`.slice(-2)}`;
 
-const get = <K extends keyof HTMLElementTagNameMap>(el: HTMLElement, tag: K) =>
-	el.shadowRoot?.querySelector(tag) as HTMLElementTagNameMap[K];
+const queryEl = <K extends keyof HTMLElementTagNameMap>(
+	el: HTMLElement,
+	tag: K,
+) =>
+	(el.querySelector(tag) ||
+		el.shadowRoot?.querySelector(tag)) as HTMLElementTagNameMap[K];
 
 // Source: https://stackoverflow.com/a/6117889
 const getWeek = (d: Date) => {
@@ -207,19 +222,9 @@ const getWeek = (d: Date) => {
 	return Math.ceil(((+date - +yearStart) / 86400000 + 1) / 7);
 };
 
-const renderTHead = (self: UHTMLDatePickerElement, table: HTMLTableElement) => {
-	const weekday = new Date(2023, 0, self._firstDayOfWeek % 7); // 2023-01-01 is a Sunday
-	for (const cell of table?.tHead?.rows[0].cells || []) {
-		const isDay = cell.previousElementSibling;
-		const slot = cell.firstElementChild as HTMLSlotElement; // Using <div> for headers as VoiceOver skips aria-label on <slot>
-		slot.name = isDay ? ENGLISH_DAYS[weekday.getDay()] : "week";
-		slot.textContent = `${isDay ? self.getDayName(weekday)[0] : self._week}`;
-		attr(cell, "part", `th ${isDay ? `day ${slot.name}` : slot.name}`);
-		weekday.setDate(weekday.getDate() + 1);
-	}
-};
-
-const renderTbody = (self: UHTMLDatePickerElement, table: HTMLTableElement) => {
+const renderTbody = (self: UHTMLDatePickerElement) => {
+	if (!self._table) return;
+	const table = self._table;
 	const hasFocus = table.contains(getFocusedElement(self));
 	const date = self.focusedDate;
 	const today = new Date();
@@ -228,7 +233,6 @@ const renderTbody = (self: UHTMLDatePickerElement, table: HTMLTableElement) => {
 	const todayYMD = getYMD(today);
 	const focusedYMD = getYMD(date);
 	const selectedYMD = self.values.map(getYMD);
-	const disabledYMD = self.disabled.map(getYMD);
 
 	// Update caption and announce
 	// const prev = attr(table, "aria-label");
@@ -237,8 +241,8 @@ const renderTbody = (self: UHTMLDatePickerElement, table: HTMLTableElement) => {
 	// if (prev !== next) speak(next); // TODO EIRIK
 
 	// Update select/input
-	const select = get(self, "select");
-	const input = self.querySelector("input") || get(self, "input");
+	const select = queryEl(self, "select");
+	const input = queryEl(self, "input");
 	if (select) select.value = `${month}`;
 	if (input) input.value = `${date.getFullYear()}`;
 
@@ -253,7 +257,7 @@ const renderTbody = (self: UHTMLDatePickerElement, table: HTMLTableElement) => {
 			if (!(index % 8)) {
 				const slot = cell.firstElementChild as HTMLSlotElement;
 				attr(slot, "name", `weeknumber weeknumber-${weekNumber}`);
-				attr(cell, "data-text", `${weekNumber}`);
+				attr(cell, "data-weeknumber", `${weekNumber}`);
 				attr(cell, "data-aria", `${week} ${weekNumber}`);
 			} else {
 				const btn = cell.firstElementChild as HTMLButtonElement;
@@ -269,7 +273,7 @@ const renderTbody = (self: UHTMLDatePickerElement, table: HTMLTableElement) => {
 
 				attr(btn.firstElementChild as HTMLSlotElement, "name", dateYMD);
 				attr(btn, "aria-current", `${isToday && "date"}`);
-				attr(btn, "aria-disabled", `${disabledYMD.includes(dateYMD)}`);
+				attr(btn, "aria-disabled", `${self.isDateDisabled?.(date) || false}`);
 				attr(btn, "aria-pressed", `${isSelected}`);
 				attr(btn, "aria-description", aria);
 				attr(btn, "data-month", isSameMonth);
@@ -289,25 +293,33 @@ const renderTbody = (self: UHTMLDatePickerElement, table: HTMLTableElement) => {
 	}
 };
 
-function onInput(self: UHTMLDatePickerElement, e: Event) {
+const onSlotChange = (self: UHTMLDatePickerElement) => {
+	if (!self._internalSlotChange) {
+		self._input = queryEl(self, "input");
+		self._select = queryEl(self, "select");
+		self._table = queryEl(self, "table");
+	}
+};
+
+const onInput = (self: UHTMLDatePickerElement, e: Event) => {
 	const el = e.composedPath()[0] as HTMLInputElement | null;
 	const name = el?.slot || el?.name;
 	const value = Number(el?.value);
 	if (name === "month") self.focusedDate = self.focusedDate.setMonth(value);
 	if (name === "year") self.focusedDate = self.focusedDate.setFullYear(value);
-}
+};
 
-function onClick(self: UHTMLDatePickerElement, e: Event) {
+const onClick = (self: UHTMLDatePickerElement, e: Event) => {
 	const btn = e.composedPath().find((el) => el instanceof HTMLButtonElement);
 	const month = self.focusedDate.getMonth();
 	const name = btn?.slot || btn?.name;
 
-	// if (btn && self.contains(btn)) self.focusedDate = btn.value;
+	if (btn && self.contains(btn)) self.focusedDate = btn.value;
 	if (name === "prev") self.focusedDate = self.focusedDate.setMonth(month - 1);
 	if (name === "next") self.focusedDate = self.focusedDate.setMonth(month + 1);
-}
+};
 
-function onKeyDown(self: UHTMLDatePickerElement, event: KeyboardEvent) {
+const onKeyDown = (self: UHTMLDatePickerElement, event: KeyboardEvent) => {
 	const { key, shiftKey: shift } = event;
 	const d = self.focusedDate;
 	const firstDayOfWeek = d.getDate() - d.getDay() + self.firstDayOfWeek;
@@ -329,8 +341,9 @@ function onKeyDown(self: UHTMLDatePickerElement, event: KeyboardEvent) {
 	if (typeof next === "number") {
 		event.preventDefault();
 		self.focusedDate = next;
+		// TODO SET FOCUS
 	}
-}
+};
 
 customElements.define("u-datepicker", UHTMLDatePickerElement);
 

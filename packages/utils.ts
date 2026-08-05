@@ -294,3 +294,19 @@ export const speak = (text?: string) => {
 	// Note: Narrator has a minor "hiccup" when using aria-live, as it starts announcing native commands first
 	// Note: Firefox with NVDA needs 2000ms to fully announce
 };
+
+/**
+ * getComposedPath
+ * @description Helper to get the full composed path even if listener is bound to a ShadowRoot (unlike event.composedPath())
+ * @param el The element to start traversing from
+ * @return Set of nodes in the path
+ */
+export const getComposedPath = (el: Node | null) => {
+	const path = [];
+	while (el) {
+		path.push(el);
+		if (el.nodeType === 11) el = (el as ShadowRoot).host;
+		else el = (el as Element).assignedSlot || el.parentNode;
+	}
+	return path;
+};

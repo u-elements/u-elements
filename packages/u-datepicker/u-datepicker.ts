@@ -21,7 +21,7 @@ declare global {
 }
 // TODO: Announce button change also on year
 // TODO: Add year to label if changing year
-// TODO: Disabled
+// TODO: Disabled - create function on attributeChanged, and support weekdays
 // TODO: Find focus from selected (if not provided), and fallback to today if none provided
 // TODO: change month when screen reader focusing a date outside month (buggy now)
 // TODO: u-datepicker.value/.ymd? readOnly
@@ -33,20 +33,21 @@ declare global {
 
 type DateValue = Date | number | string;
 type DisabledFn = (date: Date) => boolean;
-type WeekFormat = (typeof WEEK_FORMAT)[number];
 type Weekday = (typeof WEEKDAYS)[number];
-const ATTR_DISABLED = "data-disabled";
-const ATTR_FOCUSED = "data-focused";
-const ATTR_MULTIPLE = "data-multiple";
-const ATTR_SELECTED = "data-selected";
-const ATTR_WEEK_FORMAT = "data-week-format";
-const ATTR_WEEK_NUMBERS = "data-week-numbers";
-const ATTR_WEEK_START = "data-week-start";
 const EVENTS = "click input keydown";
 const EVENTS_SHADOW = "slotchange";
 const FALSE = "false";
 const WEEKDAYS = ["sun", "mon", "tue", "wed", "tue", "fri", "sat"] as const;
-const WEEK_FORMAT = ["narrow", "long", "short"] as const;
+
+const ATTRS = {
+	disabled: "data-disabled",
+	focused: "data-focused",
+	multiple: "data-multiple",
+	selected: "data-selected",
+	locale: "data-locale",
+	weeknumbers: "data-week-numbers",
+	weekstart: "data-week-start",
+} as const;
 
 const TEXTS = {
 	month: "Month",
@@ -63,7 +64,8 @@ const TEXTS = {
  */
 export class UHTMLDatePickerElement extends UHTMLElement {
 	// Using underscore instead of private fields for backwards compatibility
-	_dayNameFn?: (d: Date) => string;
+	_disabled = () => false;
+	_dayNameLong?: (d: Date) => string;
 	_focused = new Date();
 	_input?: HTMLInputElement;
 	_isInternalSlotChange = false;
@@ -80,10 +82,7 @@ export class UHTMLDatePickerElement extends UHTMLElement {
 	static get observedAttributes() {
 		return [
 			"lang",
-			ATTR_FOCUSED,
-			ATTR_SELECTED,
-			ATTR_WEEK_FORMAT,
-			ATTR_WEEK_START,
+			...Object.values(ATTRS),
 			...Object.keys(TEXTS).map((key) => `data-sr-${key}`),
 		];
 	}
@@ -107,7 +106,7 @@ export class UHTMLDatePickerElement extends UHTMLElement {
 		attachStyle(
 			this,
 			`:host(:not([hidden])) { display: block; gap: 1em; text-align: center }
-			:host(:not([${ATTR_WEEK_NUMBERS}])) th:first-child { display: none }
+			:host(:not([${ATTRS.weeknumbers}])) th:first-child { display: none }
 			slot[name="controls"] { display: flex; align-items: center; gap: inherit; margin-bottom: 1em }
 			slot[name="year"] { display: block; margin-right: auto }
 			button, input, select, th, td { box-sizing: border-box; field-sizing: content; font: inherit; background: none; color: inherit; padding: 0; margin: 0; border: 0; text-align: inherit }
@@ -138,9 +137,9 @@ export class UHTMLDatePickerElement extends UHTMLElement {
 		if (TEXTS[text]) this._texts[text] = val || TEXTS[text]; // Cache text attributes for performance
 		if (!this._table) return; // Wait rendering until contected
 
-		// const week = attr(this, ATTR_WEEK);
-		const lang = getComposedPath(this, getLang) || "en";
-		const locale = new Intl.Locale(lang);
+		const locale = new Intl.Locale(
+			attr(this, ATTRS.locale) || getComposedPath(this, getLang) || "en",
+		);
 
 		this._isInternalSlotChange = true; // Prevent onSlotChange events doe to render
 		this._weekStart = getWeekStartByRegion(locale.region || "GB");
@@ -148,9 +147,9 @@ export class UHTMLDatePickerElement extends UHTMLElement {
 			month: "long",
 		}).format;
 		this.getDayName = new Intl.DateTimeFormat(locale, {
-			weekday: this.weekFormat,
+			weekday: "short",
 		}).format;
-		this._dayNameFn = new Intl.DateTimeFormat(locale, {
+		this._dayNameLong = new Intl.DateTimeFormat(locale, {
 			weekday: "long",
 		}).format;
 
@@ -172,11 +171,11 @@ export class UHTMLDatePickerElement extends UHTMLElement {
 		renderTbody(this);
 		setTimeout(() => (this._isInternalSlotChange = false), 0); // Reset after slotchange event has run
 	}
-	getDayName(date: number | Date) {
-		return `${new Date(date).getDay()}`; // Placeholder function before attributeChangedCallback has run
+	getDayName(value: number | Date): string {
+		return WEEKDAYS[toDate(value).getDay()]; // Placeholder function before attributeChangedCallback has run
 	}
-	getMonthName(date: number | Date) {
-		return `${new Date(date).getMonth()}`; // Placeholder function before attributeChangedCallback has run
+	getMonthName(value: number | Date) {
+		return `${toDate(value).getMonth()}`; // Placeholder function before attributeChangedCallback has run
 	}
 	handleEvent(event: Event) {
 		if (event.type === "click") onClick(this, event);
@@ -190,23 +189,22 @@ export class UHTMLDatePickerElement extends UHTMLElement {
 	}
 	set focused(value: DateValue) {
 		const prev = this.focused;
-		const next = new Date(Number.isFinite(+value) ? +value : value); // Allow timestamps as string as well
+		const next = toDate(value); // Allow timestamps as string as well
 
 		if (+prev === +next) return; // Skip if same date, preventing infinite loop
 		this._focused = next;
 		renderTbody(this);
 	}
 	get selected(): Date[] {
-		return parseDateAttributes(this, ATTR_SELECTED);
+		return parseDateAttributes(this, ATTRS.selected);
 	}
 	set selected(value: DateValue | DateValue[]) {
-		const dates = Array.from([value].flat(), (val) => new Date(val));
-		attr(this, ATTR_SELECTED, dates.map(Number).join(" "));
+		attr(this, ATTRS.selected, toDates(value).map(getYMD).join(" "));
 	}
 	// TODO: Support days, and both isDateDisabled, future, past, date-, date+ and attribute
 	get disabled(): DisabledFn {
 		if (this.isDateDisabled) return this.isDateDisabled;
-		const dates = parseDateAttributes(this, ATTR_DISABLED);
+		const dates = parseDateAttributes(this, ATTRS.disabled);
 		const ymds = new Set(...dates.map(getYMD)); // Fast way to check if same day
 
 		return dates?.length ? (date: Date) => ymds.has(getYMD(date)) : () => false;
@@ -214,35 +212,35 @@ export class UHTMLDatePickerElement extends UHTMLElement {
 	set disabled(value: DisabledFn | string | false | undefined | null) {
 		const isFn = typeof value === "function";
 		this.isDateDisabled = isFn ? value : undefined;
-		attr(this, ATTR_DISABLED, (!isFn && value) || null);
+		attr(this, ATTRS.disabled, (!isFn && value) || null);
 	}
 	get weekStartIndex(): number {
-		const day = attr(this, ATTR_WEEK_START) as Weekday;
-		const index = day ? WEEKDAYS.indexOf(day) : -1;
+		const day = attr(this, ATTRS.weekstart);
+		const index = day ? WEEKDAYS.indexOf(day as Weekday) : -1;
 		return index < 0 || index > 6 ? this._weekStart : index;
 	}
 	get weekStart(): Weekday {
 		return WEEKDAYS[this.weekStartIndex];
 	}
 	set weekStart(value: Weekday | null) {
-		attr(this, ATTR_WEEK_START, value);
-	}
-	get weekFormat(): WeekFormat {
-		const format = attr(this, ATTR_WEEK_FORMAT) as WeekFormat;
-		return WEEK_FORMAT.includes(format) ? format : "short";
-	}
-	set weekFormat(value: WeekFormat | null) {
-		attr(this, ATTR_WEEK_FORMAT, value);
+		attr(this, ATTRS.weekstart, value);
 	}
 	get weekNumbers(): boolean {
-		return (attr(this, ATTR_WEEK_NUMBERS) ?? FALSE) !== FALSE; // Allow data-multiple="false" to be more React friendly
+		return (attr(this, ATTRS.weeknumbers) ?? FALSE) !== FALSE; // Allow data-multiple="false" to be more React friendly
 	}
 	set weekNumbers(value: boolean) {
-		attr(this, ATTR_WEEK_NUMBERS, value ? "" : null);
+		attr(this, ATTRS.weeknumbers, value ? "" : null);
 	}
 }
 
 const getLang = (el: Node) => el.nodeType === 1 && (el as HTMLElement).lang;
+const toDates = (val: DateValue | DateValue[]) => [val].flat().map(toDate);
+const toDate = (val: DateValue): Date => {
+	if (val instanceof Date) return val;
+	if (typeof val === "number") return new Date(val);
+	const num = +val;
+	return new Date(Number.isFinite(num) ? num : val);
+};
 
 const getYMD = (d: Date) =>
 	`${d.getFullYear()}-${`0${d.getMonth() + 1}`.slice(-2)}-${`0${d.getDate()}`.slice(-2)}`;
@@ -265,7 +263,7 @@ const getWeek = (d: Date) => {
 const parseDateAttributes = (self: Element, name: string): Date[] => {
 	const dates: Date[] = [];
 	for (const d of attr(self, name)?.split(/\s+/) || [])
-		if (d) dates.push(new Date(d));
+		if (d) dates.push(toDate(d));
 	return dates;
 };
 
@@ -280,7 +278,7 @@ const renderTbody = (self: UHTMLDatePickerElement) => {
 	const todayYMD = getYMD(today);
 	const focusedYMD = getYMD(date);
 	const selectedYMD = self.selected.map(getYMD);
-	const getDayName = self._dayNameFn || self.getDayName;
+	const getDayName = self._dayNameLong || self.getDayName;
 
 	// Update caption and announce
 	// const prev = attr(table, "aria-label");
@@ -359,7 +357,7 @@ const onClick = (self: UHTMLDatePickerElement, e: Event) => {
 	const month = self.focused.getMonth();
 	const name = btn?.slot || btn?.name;
 
-	console.log(ATTR_MULTIPLE); // TODO
+	console.log(ATTRS.multiple); // TODO
 
 	if (name === "date") self.focused = btn?.value || self.focused; // TODO Move focus AND set selected?
 	if (name === "prev") self.focused = self.focused.setMonth(month - 1);

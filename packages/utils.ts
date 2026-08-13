@@ -301,12 +301,22 @@ export const speak = (text?: string) => {
  * @param el The element to start traversing from
  * @return Set of nodes in the path
  */
-export const getComposedPath = (el: Node | null) => {
+export function getComposedPath(el: Node | null): Node[];
+export function getComposedPath<T>(
+	el: Node | null,
+	find: (el: Node) => T,
+): T | null;
+export function getComposedPath<T>(
+	el: Node | null,
+	find?: (el: Node) => T,
+): Node[] | T | undefined {
 	const path = [];
 	while (el) {
 		path.push(el);
 		if (el.nodeType === 11) el = (el as ShadowRoot).host;
 		else el = (el as Element).assignedSlot || el.parentNode;
+		const found = el && find?.(el);
+		if (found) return found;
 	}
-	return path;
-};
+	return find ? undefined : path;
+}

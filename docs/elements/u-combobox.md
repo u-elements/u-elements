@@ -570,6 +570,7 @@ const renderToStaticMarkup = (data: string, options: string) =>
 
 ## Changelog
 
+- **2.1.1:** Fix support for rendering without datalist
 - **2.1.0:** Add support for toggle button and prevent horizontal scroll on items
 - **2.0.5:** Fix issue where VoiceOver is confused by display: contents on selected listbox
 - **2.0.4:** Fix issue when moving focus between multiple u-combobox inputs

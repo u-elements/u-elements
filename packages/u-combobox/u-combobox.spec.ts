@@ -1,8 +1,10 @@
 import { expect, type Page, test } from "@playwright/test";
 import type { UHTMLComboboxElement } from "./u-combobox";
 
-const setCaretStart = (input: HTMLInputElement) => {
-	input.selectionStart = input.selectionEnd = 0; // Set caret to start of text
+const setCaretStart = (input: Node) => {
+	(input as HTMLInputElement).selectionStart = (
+		input as HTMLInputElement
+	).selectionEnd = 0; // Set caret to start of text
 };
 
 const DEFAULT = `
@@ -19,6 +21,24 @@ const DEFAULT = `
 					<u-option value="tag-4">Tag 4</u-option>
 					<u-option>Tag 5</u-option>
 				</u-datalist>
+			</u-combobox>
+		`;
+
+const NO_LIST_SINGLE = `
+			<label for="single">My label</label>
+			<u-combobox data-creatable>
+				<input id="single" />
+				<button type="reset">Clear</button>
+				<button type="button" aria-expanded="false">Toggle</button>
+			</u-combobox>
+		`;
+
+const NO_LIST_MULTIPLE = `
+			<label for="multi">My label</label>
+			<u-combobox data-multiple data-creatable>
+				<data>Tag 1</data>
+				<input id="multi" />
+				<button type="reset">Clear</button>
 			</u-combobox>
 		`;
 
@@ -54,7 +74,7 @@ test.describe("u-combobox", () => {
 	test("sets up properties", async ({ page }) => {
 		await mount(page, DEFAULT);
 		expect(
-			await page.evaluate<boolean>(() => {
+			await page.evaluate(() => {
 				const uCombobox =
 					document.querySelector<UHTMLComboboxElement>("u-combobox");
 				const input = document.querySelector("input");
@@ -124,7 +144,7 @@ test.describe("u-combobox", () => {
 		await input.pressSequentially("Test");
 		await expect(input).toBeFocused();
 		await expect(input).toHaveValue("Test");
-		await input.evaluate<void, HTMLInputElement>(setCaretStart);
+		await input.evaluate(setCaretStart);
 
 		await input.press("ArrowRight"); // Move caret into text
 		await input.press("ArrowLeft"); // Move caret back to start of text
@@ -167,7 +187,7 @@ test.describe("u-combobox", () => {
 		await input.press("ArrowRight");
 		await expect(input).toBeFocused(); // Should not cycle, so staying on input is correct
 
-		await input.evaluate<void, HTMLInputElement>(setCaretStart);
+		await input.evaluate(setCaretStart);
 		await input.press("Backspace");
 		await expect(items.nth(2)).toBeFocused();
 
@@ -196,7 +216,7 @@ test.describe("u-combobox", () => {
 		await expect(item3).toHaveText("Tag 4");
 		await expect(input).toBeFocused();
 
-		await input.evaluate<void, HTMLInputElement>(setCaretStart);
+		await input.evaluate(setCaretStart);
 		await input.press("ArrowLeft");
 		await item3.press("Enter");
 		await expect(item3).not.toBeAttached();
@@ -254,7 +274,7 @@ test.describe("u-combobox", () => {
 		await item0.press("Enter");
 		expect(await items.count()).toBe(1);
 		await expect(item0).toBeFocused();
-		await item0.evaluate<void, HTMLElement>((el) => el.click());
+		await item0.evaluate((el) => (el as HTMLElement).click());
 		expect(await items.count()).toBe(0);
 		await expect(input).toBeFocused();
 	});
@@ -338,6 +358,153 @@ test.describe("u-combobox", () => {
 	// 	await del.click();
 	// 	await expect(input).toHaveValue("");
 	// });
+});
+
+test.describe("u-combobox without <u-datalist>", () => {
+	test("hides toggle button regardless of input value", async ({ page }) => {
+		await mount(page, NO_LIST_SINGLE);
+		const input = page.locator("input");
+		const toggle = page.locator("button[aria-expanded]");
+
+		await expect(toggle).toHaveAttribute("hidden", "");
+		await input.fill("Hello");
+		await expect(toggle).toHaveAttribute("hidden", ""); // Still hidden, no datalist to toggle
+	});
+
+	test("does not forward list attribute to input", async ({ page }) => {
+		await mount(page, NO_LIST_SINGLE);
+		const input = page.locator("input");
+		await expect(input).not.toHaveAttribute("list");
+	});
+
+	test("shows and hides clear button based on input value", async ({
+		page,
+	}) => {
+		await mount(page, NO_LIST_SINGLE);
+		const input = page.locator("input");
+		const clear = page.locator('button[type="reset"]');
+
+		await expect(clear).toHaveAttribute("hidden", "");
+		await input.focus();
+		await input.fill("Hello");
+		await expect(clear).not.toHaveAttribute("hidden");
+		await clear.click();
+		await expect(input).toHaveValue("");
+		await expect(clear).toHaveAttribute("hidden", "");
+	});
+
+	test("creates data item on Enter in single mode when creatable", async ({
+		page,
+	}) => {
+		await mount(page, NO_LIST_SINGLE);
+		const input = page.locator("input");
+		const items = page.locator("data");
+
+		await input.focus();
+		await input.fill("Hello");
+		await input.press("Enter");
+		await expect(items).toHaveCount(1);
+		await expect(items.nth(0)).toHaveText("Hello");
+		await expect(items.nth(0)).toHaveAttribute("value", "Hello");
+	});
+
+	test("creates data item on blur in single mode when creatable", async ({
+		page,
+	}) => {
+		await mount(page, NO_LIST_SINGLE);
+		const input = page.locator("input");
+		const items = page.locator("data");
+
+		await input.focus();
+		await input.fill("Hello");
+		await input.blur();
+		await expect(items).toHaveCount(1);
+		await expect(items.nth(0)).toHaveText("Hello");
+	});
+
+	test("does not create data item when not creatable", async ({ page }) => {
+		await mount(
+			page,
+			`<label for="single">My label</label>
+			<u-combobox>
+				<input id="single" />
+			</u-combobox>`,
+		);
+		const input = page.locator("input");
+		const items = page.locator("data");
+
+		await input.focus();
+		await input.fill("Hello");
+		await input.press("Enter");
+		await expect(items).toHaveCount(0);
+	});
+
+	test("creates tag on Enter in multiple mode when creatable", async ({
+		page,
+	}) => {
+		await mount(page, NO_LIST_MULTIPLE);
+		const input = page.locator("input");
+		const items = page.locator("data");
+
+		await expect(items).toHaveCount(1);
+		await input.focus();
+		await input.fill("Tag 2");
+		await input.press("Enter");
+		await expect(items).toHaveCount(2);
+		await expect(items.nth(1)).toHaveText("Tag 2");
+	});
+
+	test("does not create tag in multiple mode when not creatable", async ({
+		page,
+	}) => {
+		await mount(
+			page,
+			`<label for="multi">My label</label>
+			<u-combobox data-multiple>
+				<data>Tag 1</data>
+				<input id="multi" />
+			</u-combobox>`,
+		);
+		const input = page.locator("input");
+		const items = page.locator("data");
+
+		await input.focus();
+		await input.fill("Tag 2");
+		await input.press("Enter");
+		await expect(items).toHaveCount(1); // Unchanged, since not creatable and no datalist to match against
+	});
+
+	test("focuses last tag on Backspace at start of input in multiple mode", async ({
+		page,
+	}) => {
+		await mount(page, NO_LIST_MULTIPLE);
+		const input = page.locator("input");
+		const items = page.locator("data");
+
+		await input.focus();
+		await input.evaluate(setCaretStart);
+		await input.press("Backspace");
+		await expect(items.nth(0)).toBeFocused();
+	});
+
+	test("removes tag on Backspace and space/enter/click", async ({ page }) => {
+		await mount(
+			page,
+			`<label for="multi">My label</label>
+			<u-combobox data-multiple data-creatable>
+				<data>Tag 1</data>
+				<data>Tag 2</data>
+				<input id="multi" />
+				<button type="reset">Clear</button>
+			</u-combobox>`,
+		);
+		const items = page.locator("data");
+
+		await items.nth(1).focus();
+		await items.nth(1).press("Backspace");
+		await expect(items).toHaveCount(1);
+		await expect(items.nth(0)).toBeFocused();
+	});
 });
 
 // TODO: Test single mode syncs value when changing/adding/removing item

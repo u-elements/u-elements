@@ -125,19 +125,13 @@ const SCAN_GLOBS = ["packages/*/dist/*.js"];
  * Case-insensitive. Add strings here to silence known/accepted features.
  */
 const EXCLUDE_FEATURES = [
-	"HTMLDataElement",
-	"userAgentData",
-	"popover",
-	"togglePopover",
+	"adoptedStyleSheets",
 	"attachInternals",
 	"part",
+	"popover",
 	"replaceSync",
-	"adoptedStyleSheets",
-	"includes",
-	"getRootNode",
-	// "export",
-	// "Object.entries",
-	// "Arrow function syntax (=>)",
+	"togglePopover",
+	"userAgentData",
 ];
 
 /** ESversion JSHint parses at — set low so it reports every modern feature via W119. */

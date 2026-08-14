@@ -354,10 +354,10 @@ const onKeyDownItems = (self: UHTMLComboboxElement, event: KeyboardEvent) => {
 const onMutations = (self: UHTMLComboboxElement, edit?: MutationRecord[]) => {
 	if (!self.control) return;
 	const { _texts, control, items, list, multiple, toggle } = self;
-	const edits: HTMLDataElement[] = [];
+	const edits: Node[] = [];
 	for (const { addedNodes: add, removedNodes: del } of edit || []) {
-		for (const el of add) if (el instanceof HTMLDataElement) edits.unshift(el); // Added nodes to the front
-		for (const el of del) if (el instanceof HTMLDataElement) edits.push(el); // Removed nodes to the back
+		for (const el of add) if (el.nodeName === "DATA") edits.unshift(el); // Added nodes to the front
+		for (const el of del) if (el.nodeName === "DATA") edits.push(el); // Removed nodes to the back
 	}
 
 	const focus = getFocusedElement(self);

@@ -205,9 +205,7 @@ const dispatchMatch = (self: UHTMLComboboxElement) => {
 	let match: HTMLOptionElement | undefined;
 
 	if (list) {
-		match ||= [...options].find(
-			(o) => getLabel(o).trim().toLowerCase() === find,
-		);
+		match = [...options].find((o) => getLabel(o).trim().toLowerCase() === find);
 		const event = { bubbles: true, cancelable: true, detail: match };
 
 		if (!self.dispatchEvent(new CustomEvent("comboboxbeforematch", event)))

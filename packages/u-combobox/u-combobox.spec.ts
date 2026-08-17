@@ -323,6 +323,74 @@ test.describe("u-combobox", () => {
 		await expect(secondData).not.toBeAttached();
 	});
 
+	test("keeps the selected datalist option match when blurred in single mode", async ({
+		page,
+	}) => {
+		await mount(
+			page,
+			`<u-combobox>
+			<data value="option-1">Same text</data>
+			<input id="input-1" list="my-list" value="">
+			<button type="button" aria-expanded="false" aria-label="Valg"></button>
+			<button type="reset"></button>
+			<u-datalist hidden id="my-list">
+				<u-option label="Same text" value="option-1">option-1 - Same text</u-option>
+				<u-option label="Same text" value="option-2">option-2 - Same text</u-option>
+			</u-datalist>
+		</u-combobox>`,
+		);
+		const input = page.locator("#input-1");
+		const opts = page.locator("u-option");
+		const item = page.locator("u-combobox data");
+
+		await page.evaluate(() => {
+			const combobox = document.querySelector("u-combobox");
+			const matches: string[] = [];
+			const selections: string[] = [];
+			combobox?.addEventListener("comboboxbeforematch", (event) =>
+				matches.push(event.detail?.value || ""),
+			);
+			combobox?.addEventListener("comboboxbeforeselect", (event) =>
+				selections.push(event.detail.value),
+			);
+			Object.assign(combobox || {}, { matches, selections });
+		});
+
+		await input.click();
+		await expect(opts.nth(1)).toBeVisible();
+		await opts.nth(1).click();
+		await expect(item).toHaveText("Same text");
+		await expect(item).toHaveAttribute("value", "option-2");
+
+		await input.blur();
+		await expect(item).toHaveText("Same text");
+		await expect(item).toHaveAttribute("value", "option-2");
+	});
+
+	test("selects a typed option match on blur in single mode", async ({
+		page,
+	}) => {
+		await mount(
+			page,
+			`<u-combobox>
+			<input id="single-input" list="single-list">
+			<u-datalist id="single-list">
+				<u-option label="Same text" value="option-1">option-1 - Same text</u-option>
+				<u-option label="Same text" value="option-2">option-2 - Same text</u-option>
+			</u-datalist>
+		</u-combobox>
+	`,
+		);
+		const input = page.locator("#single-input");
+		const item = page.locator("u-combobox data");
+
+		await input.fill("Same text");
+		await input.blur();
+
+		await expect(item).toHaveAttribute("value", "option-1");
+		await expect(item).toHaveText("Same text");
+	});
+
 	// test("handles click on option in datalist", async ({ page }) => {
 	// 	await mount(page, DEFAULT);
 	// 	const input = page.locator("input");

@@ -50,7 +50,7 @@ test.describe("HTMLDataListElement", () => {
 		await expect(datalist).toBeAttached();
 		const listMatches = await page
 			.locator("input")
-			.evaluate<boolean, HTMLInputElement>((input) => {
+			.evaluate((input: HTMLInputElement) => {
 				return input.list === document.querySelector("u-datalist");
 			});
 
@@ -68,10 +68,7 @@ test.describe("HTMLDataListElement", () => {
 		);
 
 		const datalist = page.locator("u-datalist");
-		const data = await datalist.evaluate<
-			{ length: number; values: string[]; texts: string[] },
-			HTMLDataListElement
-		>((el) => ({
+		const data = await datalist.evaluate((el: HTMLDataListElement) => ({
 			length: el.options.length,
 			values: Array.from(el.options, (opt) => opt.value),
 			texts: Array.from(el.options, (opt) => opt.text),
@@ -92,9 +89,7 @@ test.describe("HTMLDataListElement", () => {
 
 		const datalist = page.locator("u-datalist");
 		expect(
-			await datalist.evaluate<number, HTMLDataListElement>(
-				(el) => el.options.length,
-			),
+			await datalist.evaluate((el: HTMLDataListElement) => el.options.length),
 		).toBe(1);
 
 		await datalist.evaluate((el) => {
@@ -103,21 +98,17 @@ test.describe("HTMLDataListElement", () => {
 			el.append(dog);
 		});
 		expect(
-			await datalist.evaluate<number, HTMLDataListElement>(
-				(el) => el.options.length,
-			),
+			await datalist.evaluate((el: HTMLDataListElement) => el.options.length),
 		).toBe(2);
 
 		await datalist.evaluate((el) => {
 			el.firstElementChild?.remove();
 		});
 		expect(
-			await datalist.evaluate<number, HTMLDataListElement>(
-				(el) => el.options.length,
-			),
+			await datalist.evaluate((el: HTMLDataListElement) => el.options.length),
 		).toBe(1);
-		const values = await datalist.evaluate<string[], HTMLDataListElement>(
-			(el) => Array.from(el.options, (opt) => opt.value),
+		const values = await datalist.evaluate((el: HTMLDataListElement) =>
+			Array.from(el.options, (opt) => opt.value),
 		);
 		expect(values).toEqual(["Dog"]);
 	});
@@ -164,8 +155,8 @@ test.describe("HTMLDataListElement", () => {
 		const datalist = page.locator("u-datalist");
 
 		await expect(datalist).toBeHidden();
-		const optionsCount = await datalist.evaluate<number, HTMLDataListElement>(
-			(el) => el.options.length,
+		const optionsCount = await datalist.evaluate(
+			(el: HTMLDataListElement) => el.options.length,
 		);
 		expect(optionsCount).toBe(3);
 	});
@@ -289,7 +280,7 @@ test.describe("HTMLDataListElement", () => {
 		await mount(page, DEFAULT);
 		const input = page.locator("input");
 
-		await input.evaluate<void, HTMLInputElement>((el) =>
+		await input.evaluate((el: HTMLDataListElement) =>
 			el.addEventListener("keydown", (event) => event.preventDefault()),
 		);
 		await input.press("ArrowDown");
@@ -377,7 +368,7 @@ test.describe("HTMLDataListElement", () => {
 		const input = page.locator("input");
 		const option0 = page.locator("u-option").nth(0);
 
-		await input.evaluate<void, HTMLInputElement>((el) => {
+		await input.evaluate((el: HTMLInputElement) => {
 			el.addEventListener("input", () => el.setAttribute("data-input", ""));
 			el.addEventListener("change", () => el.setAttribute("data-change", ""));
 		});

@@ -200,12 +200,14 @@ export class UHTMLComboboxElement extends UHTMLElement {
 
 const dispatchMatch = (self: UHTMLComboboxElement) => {
 	const { creatable, control, options, multiple, list } = self;
-	const value = control?.value?.trim() || "";
-	const find = value.toLowerCase() || null; // Fallback to null to prevent matching empty values
+	const label = control?.value?.trim() || "";
+	const find = label.toLowerCase() || null; // Fallback to null to prevent matching empty values
 	let match: HTMLOptionElement | undefined;
 
 	if (list) {
-		match = [...options].find((o) => getLabel(o).trim().toLowerCase() === find);
+		match ||= [...options].find(
+			(o) => getLabel(o).trim().toLowerCase() === find,
+		);
 		const event = { bubbles: true, cancelable: true, detail: match };
 
 		if (!self.dispatchEvent(new CustomEvent("comboboxbeforematch", event)))
@@ -215,7 +217,7 @@ const dispatchMatch = (self: UHTMLComboboxElement) => {
 		else syncOptionsWithItems(self); // Sync options with items in multiple mode as consumer can change option.selected in comboboxbeforematch
 	}
 
-	if (!match && creatable && value) return { value, label: value }; // Return creatable value as match if no match and creatable
+	if (!match && creatable && label) return { value: label, label }; // Return creatable value as match if no match and creatable
 	return match && { value: getValue(match), label: getLabel(match) };
 };
 
@@ -291,13 +293,15 @@ const onInput = (self: UHTMLComboboxElement, event: Partial<InputEvent>) => {
 			? !event.inputType || event.inputType === "insertReplacementText" // Firefox when clicking on <datalist>
 			: !!control?.value; // WebKit uses Event (not InputEvent) both on <datalist> click and clear when type="search" so we need to check value
 
-	if (!isDatalistClick) self._value = control?.value || ""; // Store value so we can revert if clicking in <datalist>
-	if (isDatalistClick) {
+	if (!isDatalistClick) {
+		self._value = control?.value || ""; // Store value so we can revert if clicking in <datalist>
+		if (!multiple) self._match = dispatchMatch(self); // Match while typing in single mode
+	} else {
 		event.stopImmediatePropagation?.(); // Prevent input event when reverting value anyway
-		const clicked = [...options].find((o) => getValue(o) === value);
+		self._match = [...options].find((o) => getValue(o) === value);
 		if (control) control.value = self._value; // Revert value as it will be changed by dispatchChange if needed
-		if (clicked) return dispatchSelect(self, clicked, multiple);
-	} else if (!multiple) self._match = dispatchMatch(self); // Match while typing in single mode
+		if (self._match) return dispatchSelect(self, self._match, multiple);
+	}
 	syncButtonsWithInput(self);
 };
 

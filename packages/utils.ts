@@ -263,7 +263,7 @@ const restoreSubmit = (input: HTMLInputElement, form: string | null) =>
 /**
  * getText
  * @description Get text content of a node, trimmed and with fallback to empty string
- * @param {Node} el Element to get text from
+ * @param {Node | null | undefined} el Element to get text from
  * @return {string} Trimmed text content or empty string
  */
 export const getText = (el?: Node | null) => el?.textContent?.trim() || "";

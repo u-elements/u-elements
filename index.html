@@ -181,7 +181,7 @@
           <!-- <data>Jordbær</data>
           <data>Oslo</data>
           <data>Lakris</data> -->
-          <input id="input-1" list="my-list" value="Jordbær">
+          <input id="input-1" list="my-list" value="Same text">
           <button type="button" aria-expanded="false" aria-label="Valg"></button>
           <button type="reset"></button>
           <!-- <del>hei</del> -->
@@ -197,8 +197,10 @@
             <option>Mango</option>
             <option>Hasselnøtt</option>
           </datalist> -->
-          <!-- <u-datalist hidden id="my-list">
-            <u-option value="2" label="Kokkos">Kokkos<div>Hei</div></u-option>
+          <u-datalist hidden id="my-list">
+            <u-option label="Same text" value="option-1">option-1 - Same text</u-option>
+            <u-option label="Same text" value="option-2">option-2 - Same text</u-option>
+            <!-- <u-option value="2" label="Kokkos">Kokkos<div>Hei</div></u-option>
             <u-option>Jordbær</u-option>
             <u-option value="4" label="Sjokolade">Sjokolade (utgått)</u-option>
             <u-option>Vanilje</u-option>
@@ -207,8 +209,8 @@
             <u-option>Lakris</u-option>
             <u-option>Pistasj</u-option>
             <u-option>Mango</u-option>
-            <u-option>Hasselnøtt</u-option>
-          </u-datalist> -->
+            <u-option>Hasselnøtt</u-option> -->
+          </u-datalist>
         </u-combobox>
       </form>
       <script type="module">
@@ -218,7 +220,7 @@
 
         // combobox?.control.click();
         
-        // combobox?.addEventListener('comboboxbeforeselect', console.log);
+        combobox?.addEventListener('comboboxbeforeselect', (e) => console.log(e.detail));
 
         // combobox?.dispatchEvent(new CustomEvent('comboboxbeforeselect', {
         //   detail: Object.assign(document.createElement('data'), { value: 'hei', textContent: 'hei' }),

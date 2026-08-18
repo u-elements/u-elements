@@ -570,6 +570,7 @@ const renderToStaticMarkup = (data: string, options: string) =>
 
 ## Changelog
 
+- **2.1.3:** Fix issue where item behind datalist could receive focus
 - **2.1.2:** Prevent unnecessary matching after option `click` in single mode
 - **2.1.1:** Fix support for rendering without datalist
 - **2.1.0:** Add support for toggle button and prevent horizontal scroll on items

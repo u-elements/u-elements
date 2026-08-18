@@ -5,7 +5,7 @@ import esbuild from "esbuild";
 
 export default {
 	load() {
-		const pkgsPath = path.resolve(__dirname, "../packages");
+		const pkgsPath = path.resolve(import.meta.dirname, "../packages");
 		const pkgsDistFiles = fs
 			.readdirSync(pkgsPath)
 			.flatMap((pkgName) => [

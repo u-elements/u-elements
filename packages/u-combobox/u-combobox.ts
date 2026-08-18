@@ -262,6 +262,7 @@ const onBlurred = (self: UHTMLComboboxElement) =>
 const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
 	const { clientX: x, clientY: y, target } = event;
 	const { clear, control, items, toggle } = self;
+	const isSelf = target === self;
 
 	if (toggle?.contains(target as Node)) {
 		control?.focus();
@@ -274,13 +275,15 @@ const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
 		control.focus();
 		return IS_LIST_HIDDEN || control.click(); // Open list if it was open before clicking clear
 	}
+
 	for (const item of items) {
 		if (item.contains(target as Node)) return dispatchSelect(self, item); // Keyboard and screen reader can set target to element with pointer-events: none
+		if (!isSelf) continue; // Click must be on u-combobox if we should re-route it to a chip
 		const rect = item.getBoundingClientRect();
 		const { top: t, right: r, bottom: b, left: l, width: w, height: h } = rect; // Use coordinates to inside since pointer-events: none will prevent correct event.target
 		if (w && h && y >= t && y <= b && x >= l && x <= r) return item.focus(); // If item is larger than 0x0 and click is inside inside, focus it
 	}
-	if (target === self) control?.focus(); // Focus input if clicking <u-combobox>
+	if (isSelf) control?.focus(); // Focus input if clicking <u-combobox>
 };
 
 const onInput = (self: UHTMLComboboxElement, event: Partial<InputEvent>) => {

@@ -166,7 +166,7 @@
         <label for="input-1">Velg type iskrem</label>
         <u-combobox
           data-creatable="true"
-          data-multiple="false"
+          data-multiple="true"
           data-sr-added="La til"
           data-sr-clear="Tøm tekstfelt"
           data-sr-empty="Ingen valgte"
@@ -178,10 +178,10 @@
           data-sr-removed="Fjernet"
         >
           <select name="test" hidden></select>
-          <!-- <data>Jordbær</data>
+          <data>Jordbær</data>
           <data>Oslo</data>
-          <data>Lakris</data> -->
-          <input id="input-1" list="my-list" value="Same text">
+          <data>Lakris</data>
+          <input id="input-1" list="my-list">
           <button type="button" aria-expanded="false" aria-label="Valg"></button>
           <button type="reset"></button>
           <!-- <del>hei</del> -->
@@ -197,10 +197,8 @@
             <option>Mango</option>
             <option>Hasselnøtt</option>
           </datalist> -->
-          <u-datalist hidden id="my-list">
-            <u-option label="Same text" value="option-1">option-1 - Same text</u-option>
-            <u-option label="Same text" value="option-2">option-2 - Same text</u-option>
-            <!-- <u-option value="2" label="Kokkos">Kokkos<div>Hei</div></u-option>
+          <u-datalist hidden id="my-list" style="translate: 0 -100%;background: white">
+            <u-option value="2" label="Kokkos">Kokkos<div>Hei</div></u-option>
             <u-option>Jordbær</u-option>
             <u-option value="4" label="Sjokolade">Sjokolade (utgått)</u-option>
             <u-option>Vanilje</u-option>
@@ -209,7 +207,7 @@
             <u-option>Lakris</u-option>
             <u-option>Pistasj</u-option>
             <u-option>Mango</u-option>
-            <u-option>Hasselnøtt</u-option> -->
+            <u-option>Hasselnøtt</u-option>
           </u-datalist>
         </u-combobox>
       </form>

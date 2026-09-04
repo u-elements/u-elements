@@ -142,6 +142,14 @@ myCombobox.addEventListener('comboboxbeforematch', (event) => {
 })
 ```
 
+### `comboboxprogramaticinput`
+Triggers if `input.value` is programatically set. Usefull when extending `u-combobox` with custom functionailty.
+```js
+myCombobox.addEventListener('comboboxprogramaticinput', (event) => {
+  event.target // HTMLInputElement
+})
+```
+
 
 ## Styling
 
@@ -242,7 +250,7 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
 &lt;br&gt;
 &lt;small&gt;Try typing "v" versus "V"&lt;/small&gt;
 &lt;u-combobox id="my-filtering-combobox"&gt;
-  &lt;input id="my-matching-input" list="my-filtering-list" /&gt;
+  &lt;input id="my-filtering-input" list="my-filtering-list" /&gt;
   &lt;button type="button" aria-expanded="false"&gt;&lt;/button&gt;
   &lt;button type="reset"&gt;&lt;/button&gt;
   &lt;u-datalist hidden data-nofilter id="my-filtering-list"&gt;

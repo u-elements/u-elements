@@ -6,10 +6,9 @@ const { label, lang } = defineProps<{ label: string; lang?: string }>();
 
 // Import all uElements
 Promise.all(
-	Object.values(
-		// @ts-expect-error
-		import.meta.glob("../../../packages/*/u-!(*.spec).ts"),
-	).map((module) => (module as () => void)()),
+	Object.entries(import.meta.glob("../../../packages/*/u-*.ts"))
+	.filter(([file]) => file.match(/u-[^.]+\.ts/)) // Skip .spec.ts
+	.map(([, module]) =>(module as () => void)()),
 );
 
 let timer: ReturnType<typeof setTimeout> | number = 0;
@@ -41,7 +40,8 @@ watch(code, () => {
   .demo-code, .demo-view { box-sizing: border-box; display: block; max-width: 100%; min-width: 0 }
   .demo-code { font: .875rem/1.5 var(--vp-font-family-mono); field-sizing: content; background: none; padding: .5em; resize: vertical; width: 100%; }
   .demo-view { border-bottom: inherit; min-height: 200px; padding: 1rem; margin: -2px }
-  .demo-view :where(button:not([type="reset"]):not([aria-expanded]),input) { all: revert }
+  .demo-view :where(button:not([type="reset"]):not([aria-expanded]),input) { all: revert } /* Fix Vitepress styling overwrite */
+	.demo-view data::after { padding-inline: .5ch } /* Fix Vitepress styling overwrite */
 </style>
 <template>
   <pre hidden><slot></slot></pre>

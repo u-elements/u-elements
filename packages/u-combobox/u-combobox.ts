@@ -31,8 +31,9 @@ declare global {
 	}
 	interface GlobalEventHandlersEventMap {
 		comboboxafterselect: CustomEvent<HTMLDataElement>;
-		comboboxbeforeselect: CustomEvent<HTMLDataElement>;
 		comboboxbeforematch: CustomEvent<HTMLOptionElement | undefined>;
+		comboboxbeforeselect: CustomEvent<HTMLDataElement>;
+		comboboxprogrammaticinput: CustomEvent<undefined>;
 	}
 }
 
@@ -62,7 +63,7 @@ const CSS_TOGGLE = `button[aria-expanded]`;
 const CSS_DATALIST = `datalist,u-datalist,[role="listbox"]`;
 const CSS_OPTION = `option,u-option,[role="option"]`;
 const FOCUS_VISIBLE = { focusVisible: true };
-const PROGRAMMATIC = "comboboxprogramaticinput";
+const PROGRAMMATIC = "comboboxprogrammaticinput";
 const EVENTS = `blur focus click input keydown pointerdown ${PROGRAMMATIC}`;
 const FALSE = "false";
 const TEXTS = {
@@ -143,7 +144,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		if (this.control?.disabled || this.control?.readOnly) return;
 		if (event.type === "blur") onBlur(this);
 		if (event.type === "click") onClick(this, event as MouseEvent);
-		if (event.type === PROGRAMMATIC) onProgramaticInput(this);
+		if (event.type === PROGRAMMATIC) onProgrammaticInput(this);
 		if (event.type === "focus") speak(); // Prepare for aria-live announcements
 		if (event.type === "input") onInput(this, event);
 		if (event.type === "keydown") onKeyDown(this, event as KeyboardEvent);
@@ -311,8 +312,9 @@ const onInput = (self: UHTMLComboboxElement, event: Partial<InputEvent>) => {
 	syncButtonsWithInput(self);
 };
 
-const onProgramaticInput = (self: UHTMLComboboxElement) => {
+const onProgrammaticInput = (self: UHTMLComboboxElement) => {
 	self._singleTypingMatch = undefined; // Clear cache, so we can match on blur
+	self._value = self.control?.value || ""; // Update cached value
 	syncButtonsWithInput(self);
 };
 
@@ -505,18 +507,19 @@ const setSelected = (el: Element, selected: boolean) =>
 const getSelected = (el: HTMLOptionElement) =>
 	el.selected ?? el.hasAttribute("selected");
 
-// Respond to programatic input.value changes, but only register once
+// Respond to programmatic input.value changes, but only register once
 if (isBrowser() && !window.customElements.get("u-combobox")) {
 	const proto = HTMLInputElement.prototype;
 	const descriptor = Object.getOwnPropertyDescriptor(proto, "value");
 
 	Object.defineProperty(proto, "value", {
 		...descriptor,
-		set(next) {
-			const prev = this.value;
-			descriptor?.set?.call(this, next); // Call the original native setter to actually update the DOM
+		set(this: HTMLInputElement, nextValue) {
+			const parent = this.parentElement as UHTMLComboboxElement | null;
+			const prevValue = this.value;
+			descriptor?.set?.call(this, nextValue); // Call the original native setter to actually update the DOM
 
-			if (prev !== next && this.hasAttribute("list"))
+			if (prevValue !== nextValue && parent?._control === this)
 				this.dispatchEvent(new CustomEvent(PROGRAMMATIC, { bubbles: true }));
 		},
 	});

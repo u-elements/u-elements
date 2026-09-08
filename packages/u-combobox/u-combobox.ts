@@ -289,10 +289,12 @@ const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
 
 const onInput = (self: UHTMLComboboxElement, event: Partial<InputEvent>) => {
 	const { control, options, multiple } = self;
+	const { isTrusted, inputType } = event;
 	const isDatalistClick =
 		// WebKit uses Event (not InputEvent) both on <datalist> click and clear when type="search" so we need to check value
-		(event.isTrusted && !event.inputType && control?.value) || // Native datalist click fingerprint in Safari, Chrome etc
-		event.inputType === "insertReplacementText"; // Used by Firefox and <u-datalist>
+		(isTrusted && !inputType && control?.value) || // Native datalist click fingerprint in Safari, Chrome etc
+		(!isTrusted && event instanceof InputEvent && inputType === "") || // Old <u-datalist> implementation for click
+		inputType === "insertReplacementText"; // Used by Firefox and <u-datalist>
 
 	if (isDatalistClick) {
 		event.stopImmediatePropagation?.(); // Prevent input event when reverting value anyway
@@ -302,8 +304,7 @@ const onInput = (self: UHTMLComboboxElement, event: Partial<InputEvent>) => {
 		if (match) return dispatchSelect(self, match, multiple);
 	} else {
 		self._value = control?.value || ""; // Store value so we can revert if clicking in <datalist>
-		if (!multiple && event.isTrusted)
-			self._singleTypingMatch = dispatchMatch(self); // Only perpare matches if value is changed by user typing
+		if (!multiple && isTrusted) self._singleTypingMatch = dispatchMatch(self); // Only perpare matches if value is changed by user typing
 	}
 
 	// Match while typing in single mode

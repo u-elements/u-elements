@@ -153,9 +153,10 @@ myCombobox.addEventListener('comboboxprogramaticinput', (event) => {
 
 ## Styling
 
-`<u-combobox>` renders as `display: block`, while `<data>` renders as `display: inline-block` with a `::after` element to render the removal `×`.
-If the `<button type="reset">` is empty, a `×` icon is automaticallay rendered as `::before` pseudo-element.
-If the `<button aria-expanded="false"></button>` is empty, a `▼` icon is automaticallay rendered as `::before` pseudo-element.
+- `<u-combobox>` renders as `display: block`, while `<data>` renders as `display: inline-block` with a `::after` element to render the removal `×`.
+- Style the wrapper around `<data>`-elements can be styled using `::part(items)`.
+- If the `<button type="reset">` is empty, a `×` icon is automaticallay rendered as `::before` pseudo-element.
+- If the `<button aria-expanded="false"></button>` is empty, a `▼` icon is automaticallay rendered as `::before` pseudo-element.
 
 ## Example: Norwegian
 

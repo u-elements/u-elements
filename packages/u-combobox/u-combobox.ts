@@ -62,8 +62,8 @@ const CSS_TOGGLE = `button[aria-expanded]`;
 const CSS_DATALIST = `datalist,u-datalist,[role="listbox"]`;
 const CSS_OPTION = `option,u-option,[role="option"]`;
 const FOCUS_VISIBLE = { focusVisible: true };
-const PROGRAMATIC = "comboboxprogramaticinput";
-const EVENTS = `blur focus click input keydown pointerdown ${PROGRAMATIC}`;
+const PROGRAMMATIC = "comboboxprogramaticinput";
+const EVENTS = `blur focus click input keydown pointerdown ${PROGRAMMATIC}`;
 const FALSE = "false";
 const TEXTS = {
 	added: "Added",
@@ -143,7 +143,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		if (this.control?.disabled || this.control?.readOnly) return;
 		if (event.type === "blur") onBlur(this);
 		if (event.type === "click") onClick(this, event as MouseEvent);
-		if (event.type === PROGRAMATIC) onProgramaticInput(this);
+		if (event.type === PROGRAMMATIC) onProgramaticInput(this);
 		if (event.type === "focus") speak(); // Prepare for aria-live announcements
 		if (event.type === "input") onInput(this, event);
 		if (event.type === "keydown") onKeyDown(this, event as KeyboardEvent);
@@ -517,7 +517,7 @@ if (isBrowser() && !window.customElements.get("u-combobox")) {
 			descriptor?.set?.call(this, next); // Call the original native setter to actually update the DOM
 
 			if (prev !== next && this.hasAttribute("list"))
-				this.dispatchEvent(new CustomEvent(PROGRAMATIC, { bubbles: true }));
+				this.dispatchEvent(new CustomEvent(PROGRAMMATIC, { bubbles: true }));
 		},
 	});
 }

@@ -143,7 +143,7 @@ myCombobox.addEventListener('comboboxbeforematch', (event) => {
 ```
 
 ### `comboboxprogramaticinput`
-Triggers if `input.value` is programatically set. Usefull when extending `u-combobox` with custom functionailty.
+Triggers if `input.value` is programmatically set. Useful when extending `u-combobox` with custom functionality.
 ```js
 myCombobox.addEventListener('comboboxprogramaticinput', (event) => {
   event.target // HTMLInputElement

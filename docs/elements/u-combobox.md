@@ -576,6 +576,11 @@ const renderToStaticMarkup = (data: string, options: string) =>
   </u-combobox>`
 ```
 
+## Notes
+- ARC Toolkit incorectly reports `aria-description` as an invalid ARIA-attribute
+- ARC Toolkit does not correcly read the relation between items with `role="option"` and the ShadowDoom wrapping container `role="listbox"`
+
+
 ## Changelog
 
 - **2.1.3:** Fix issue where item behind datalist could receive focus

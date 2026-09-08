@@ -37,7 +37,7 @@ declare global {
 }
 
 export const UHTMLComboboxStyle = `${DISPLAY_BLOCK}
-[part="items"] { display: inline-flex; flex-wrap: wrap } /* Can not be "contents" as this confuses VoiceOver */
+[part="items"]:not([hidden]) { display: inline-flex; flex-wrap: wrap } /* Can not be "contents" as this confuses VoiceOver */
 :host(:not([data-multiple])) [part="items"],
 :host([data-multiple="false"]) [part="items"] { display: none }
 ::slotted(button[type="reset"]),
@@ -97,7 +97,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 
 	_focusMoved = false; // Used to determine if we announce through aria-live or aria-label when items are added or removed
 	_itemSingleVale = ""; // Locally store item text to compare change in single mode
-	_match?: { value: string; label: string }; // Used to store current match
+	_singleTypingMatch?: { value: string; label: string }; // Used to store current match in single mode
 	_speak = "";
 	_texts = { ...TEXTS };
 	_value = ""; // Locally store value to store value before input-click
@@ -137,13 +137,13 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		off(this, EVENTS, this, true);
 		this._umutate?.();
 		// biome-ignore format: next-line
-		this._umutate = this._clear = this._toggle = this._control = this._match = this._select = this._options = this._items = this._list = undefined;
+		this._umutate = this._clear = this._toggle = this._control = this._singleTypingMatch = this._select = this._options = this._items = this._list = undefined;
 	}
 	handleEvent(event: Event) {
 		if (this.control?.disabled || this.control?.readOnly) return;
 		if (event.type === "blur") onBlur(this);
 		if (event.type === "click") onClick(this, event as MouseEvent);
-		if (event.type === PROGRAMATIC) syncButtonsWithInput(this);
+		if (event.type === PROGRAMATIC) onProgramaticInput(this);
 		if (event.type === "focus") speak(); // Prepare for aria-live announcements
 		if (event.type === "input") onInput(this, event);
 		if (event.type === "keydown") onKeyDown(this, event as KeyboardEvent);
@@ -249,7 +249,7 @@ const dispatchSelect = (
 		if (remove) remove.remove();
 		else control?.insertAdjacentElement("beforebegin", add);
 		self.dispatchEvent(new CustomEvent("comboboxafterselect", event));
-	}
+	} else syncInputWithItemSingleMode(self); // Restore value if beforeselect was canceled, and <data> was not removed
 };
 
 const onBlur = (self: UHTMLComboboxElement) =>
@@ -258,7 +258,7 @@ const onBlur = (self: UHTMLComboboxElement) =>
 const onBlurred = (self: UHTMLComboboxElement) =>
 	self.multiple ||
 	self.contains(getFocusedElement(self)) ||
-	dispatchSelect(self, self._match, false); // Use cached match from typing
+	dispatchSelect(self, self._singleTypingMatch, false); // Use cached match from typing
 
 const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
 	const { clientX: x, clientY: y, target } = event;
@@ -289,21 +289,29 @@ const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
 
 const onInput = (self: UHTMLComboboxElement, event: Partial<InputEvent>) => {
 	const { control, options, multiple } = self;
-	const value = control?.value || null; // Fallback to null to prevent matching empty values
 	const isDatalistClick =
 		// WebKit uses Event (not InputEvent) both on <datalist> click and clear when type="search" so we need to check value
 		(event.isTrusted && !event.inputType && control?.value) || // Native datalist click fingerprint in Safari, Chrome etc
 		event.inputType === "insertReplacementText"; // Used by Firefox and <u-datalist>
 
-	if (!isDatalistClick) {
-		self._value = control?.value || ""; // Store value so we can revert if clicking in <datalist>
-		if (!multiple) self._match = dispatchMatch(self); // Match while typing in single mode
-	} else {
+	if (isDatalistClick) {
 		event.stopImmediatePropagation?.(); // Prevent input event when reverting value anyway
-		self._match = [...options].find((o) => getValue(o) === value);
+		const value = control?.value || null; // Fallback to null to prevent matching empty values
+		const match = [...options].find((o) => getValue(o) === value);
 		if (control) control.value = self._value; // Revert value as it will be changed by dispatchChange if needed
-		if (self._match) return dispatchSelect(self, self._match, multiple);
+		if (match) return dispatchSelect(self, match, multiple);
+	} else {
+		self._value = control?.value || ""; // Store value so we can revert if clicking in <datalist>
+		if (!multiple && event.isTrusted)
+			self._singleTypingMatch = dispatchMatch(self); // Only perpare matches if value is changed by user typing
 	}
+
+	// Match while typing in single mode
+	syncButtonsWithInput(self);
+};
+
+const onProgramaticInput = (self: UHTMLComboboxElement) => {
+	self._singleTypingMatch = undefined; // Clear cache, so we can match on blur
 	syncButtonsWithInput(self);
 };
 
@@ -314,7 +322,7 @@ const onKeyDown = (self: UHTMLComboboxElement, e: KeyboardEvent) => {
 };
 
 const onKeyDownControl = (self: UHTMLComboboxElement, e: KeyboardEvent) => {
-	const { _match, clear, control, creatable, items, list, multiple } = self;
+	const { clear, control, creatable, items, list, multiple } = self;
 
 	if (
 		(e.key === "ArrowLeft" || e.key === "Backspace") &&
@@ -324,8 +332,9 @@ const onKeyDownControl = (self: UHTMLComboboxElement, e: KeyboardEvent) => {
 		e.preventDefault(); // Prevent sideways scroll
 	}
 	if (e.key === "Enter" && control && (list || creatable)) {
+		const match = self._singleTypingMatch || dispatchMatch(self);
 		preventSubmit(control); // Prevent submitting form as we want to preform a match instead
-		dispatchSelect(self, multiple ? dispatchMatch(self) : _match, multiple);
+		dispatchSelect(self, match, multiple);
 	}
 	if (e.key === "Tab" && !e.shiftKey && clear && control?.value) {
 		e.preventDefault(); // Prevent default tab as we are moving into clear
@@ -407,17 +416,19 @@ const speakReset = (self: UHTMLComboboxElement, label: string | null) => {
 };
 
 const syncItems = (self: UHTMLComboboxElement) => {
-	const { _texts, _speak, items } = self;
+	const { _listbox, _texts, _speak, items, multiple } = self;
 
 	let idx = 0;
 	for (const item of items) {
 		const text = `${_speak}${getText(item)}, ${_texts.remove}${IS_IOS ? `, ${++idx} ${_texts.of} ${items.length}` : ""}`;
 		attr(item, ARIA_LABEL, text);
+		attr(item, "hidden", multiple ? null : ""); // Avoid ARC Toolkit warning in single mode
 		attr(item, "role", "option");
 		attr(item, "slot", "items");
 		attr(item, "tabindex", "-1");
 		attr(item, "value", getValue(item)); // u-option might not be initialized yet
 	}
+	attr(_listbox, "hidden", items.length ? null : ""); // Hide when empty to avoid Siteimprove warning about empty role="listbox"
 };
 
 const syncSelectWithItems = (self: UHTMLComboboxElement) => {
@@ -504,7 +515,7 @@ if (isBrowser() && !window.customElements.get("u-combobox")) {
 			const prev = this.value;
 			descriptor?.set?.call(this, next); // Call the original native setter to actually update the DOM
 
-			if (prev !== next && attr(this, "role") === "combobox")
+			if (prev !== next && this.hasAttribute("list"))
 				this.dispatchEvent(new CustomEvent(PROGRAMATIC, { bubbles: true }));
 		},
 	});

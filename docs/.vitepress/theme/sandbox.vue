@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/// <reference types="vite/client" />
 import { ref, watch } from "vue";
 import "../../../packages/u-details/polyfill";
 
@@ -6,8 +7,10 @@ const { label, lang } = defineProps<{ label: string; lang?: string }>();
 
 // Import all uElements
 Promise.all(
-	Object.entries(import.meta.glob("../../../packages/*/u-*.ts"))
-	.filter(([file]) => file.match(/u-[^.]+\.ts/)) // Skip .spec.ts
+	Object.entries(import.meta.glob([
+		"../../../packages/*/u-*.ts",
+		"!../../../packages/**/*.spec.ts",
+	]))
 	.map(([, module]) =>(module as () => void)()),
 );
 

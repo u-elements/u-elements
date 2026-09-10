@@ -8,14 +8,14 @@ export default {
 		const pkgsPath = path.resolve(import.meta.dirname, "../packages");
 		const pkgsDistFiles = fs
 			.readdirSync(pkgsPath)
-			.flatMap((pkgName) => [
+			.flatMap((pkgName: string) => [
 				path.resolve(pkgsPath, pkgName, `dist/${pkgName}.js`),
 				path.resolve(pkgsPath, pkgName, `dist/polyfill.js`),
 			])
-			.filter((pkgDistFile) => fs.existsSync(pkgDistFile));
+			.filter((pkgDistFile: string) => fs.existsSync(pkgDistFile));
 
 		return Object.fromEntries(
-			pkgsDistFiles.map((file) => {
+			pkgsDistFiles.map((file: string) => {
 				const options = { minify: true };
 				const { code } = esbuild.transformSync(fs.readFileSync(file), options);
 				const gzip = zlib.gzipSync(code, { level: 9 }).length;

@@ -142,12 +142,21 @@ myCombobox.addEventListener('comboboxbeforematch', (event) => {
 })
 ```
 
+### `comboboxprogrammaticinput`
+Triggers if `input.value` is programmatically set. Useful when extending `u-combobox` with custom functionality.
+```js
+myCombobox.addEventListener('comboboxprogrammaticinput', (event) => {
+  event.target // HTMLInputElement
+})
+```
+
 
 ## Styling
 
-`<u-combobox>` renders as `display: block`, while `<data>` renders as `display: inline-block` with a `::after` element to render the removal `×`.
-If the `<button type="reset">` is empty, a `×` icon is automaticallay rendered as `::before` pseudo-element.
-If the `<button aria-expanded="false"></button>` is empty, a `▼` icon is automaticallay rendered as `::before` pseudo-element.
+- `<u-combobox>` renders as `display: block`, while `<data>` renders as `display: inline-block` with a `::after` element to render the removal `×`.
+- Style the wrapper around `<data>`-elements can be styled using `::part(items)`.
+- If the `<button type="reset">` is empty, a `×` icon is automaticallay rendered as `::before` pseudo-element.
+- If the `<button aria-expanded="false"></button>` is empty, a `▼` icon is automaticallay rendered as `::before` pseudo-element.
 
 ## Example: Norwegian
 
@@ -242,7 +251,7 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
 &lt;br&gt;
 &lt;small&gt;Try typing "v" versus "V"&lt;/small&gt;
 &lt;u-combobox id="my-filtering-combobox"&gt;
-  &lt;input id="my-matching-input" list="my-filtering-list" /&gt;
+  &lt;input id="my-filtering-input" list="my-filtering-list" /&gt;
   &lt;button type="button" aria-expanded="false"&gt;&lt;/button&gt;
   &lt;button type="reset"&gt;&lt;/button&gt;
   &lt;u-datalist hidden data-nofilter id="my-filtering-list"&gt;
@@ -567,6 +576,11 @@ const renderToStaticMarkup = (data: string, options: string) =>
     </u-datalist>
   </u-combobox>`
 ```
+
+## Notes
+- ARC Toolkit incorectly reports `aria-description` as an invalid ARIA-attribute
+- ARC Toolkit does not correcly read the relation between items with `role="option"` and the ShadowDoom wrapping container `role="listbox"`
+
 
 ## Changelog
 

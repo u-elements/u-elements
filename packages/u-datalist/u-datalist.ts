@@ -201,7 +201,8 @@ const onClick = (self: UHTMLDataListElement, event: Event) => {
 	for (const opt of self.options)
 		if (opt.contains(event.target as Node)) {
 			self._input?.focus(); // Ensure input has focus to keep datalist open, also on pointerup
-			if (self._input) setValue(self._input, opt.value);
+			if (self._input)
+				setValue(self._input, opt.value, "insertReplacementText");
 			return setExpanded(self, attr(self, SAFE_MULTISELECTABLE) === "true");
 		}
 };

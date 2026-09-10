@@ -125,6 +125,76 @@ test.describe("u-combobox", () => {
 		}
 	});
 
+	test("shows and hides clear button when input value changes programmatically", async ({
+		page,
+	}) => {
+		await mount(
+			page,
+			`<label for="programmatic-input">My label</label>
+			<u-combobox>
+				<input id="programmatic-input" list="programmatic-list" />
+				<button type="reset">Clear</button>
+				<u-datalist id="programmatic-list">
+					<u-option>Tag 1</u-option>
+				</u-datalist>
+			</u-combobox>`,
+		);
+		const input = page.locator("input");
+		const clear = page.locator('button[type="reset"]');
+
+		await expect(clear).toHaveAttribute("hidden", "");
+		await input.evaluate((el) => {
+			(el as HTMLInputElement).value = "Programmatic";
+		});
+		await expect(input).toHaveValue("Programmatic");
+		await expect(clear).not.toHaveAttribute("hidden");
+
+		await input.evaluate((el) => {
+			(el as HTMLInputElement).value = "";
+		});
+		await expect(input).toHaveValue("");
+		await expect(clear).toHaveAttribute("hidden", "");
+	});
+
+	test("sets up attributes on clear and toggle buttons added dynamically", async ({
+		page,
+	}) => {
+		await mount(
+			page,
+			`<label for="dynamic-buttons-input">My label</label>
+			<u-combobox>
+				<input id="dynamic-buttons-input" list="dynamic-buttons-list" />
+				<u-datalist id="dynamic-buttons-list">
+					<u-option>Tag 1</u-option>
+				</u-datalist>
+			</u-combobox>`,
+		);
+		const browser = test.info().project.name;
+		const ariaHidden = `${browser === "Mobile Safari" || browser === "Mobile Chrome"}`;
+		const clear = page.locator('button[type="reset"]');
+		const toggle = page.locator("button[aria-expanded]");
+
+		await page.locator("u-combobox").evaluate((combobox) => {
+			const toggle = document.createElement("button");
+			toggle.setAttribute("aria-expanded", "false");
+			const clear = document.createElement("button");
+			clear.type = "reset";
+			combobox.append(toggle, clear);
+		});
+
+		await expect(clear).toHaveAttribute("aria-label", "Clear input");
+		await expect(clear).toHaveAttribute("aria-hidden", ariaHidden);
+		await expect(clear).toHaveAttribute("hidden", "");
+		await expect(clear).toHaveAttribute("tabindex", "-1");
+
+		await expect(toggle).toHaveAttribute("aria-label", "Options");
+		await expect(toggle).toHaveAttribute("aria-hidden", ariaHidden);
+		await expect(toggle).toHaveAttribute("aria-expanded", "false");
+		await expect(toggle).not.toHaveAttribute("hidden");
+		await expect(toggle).toHaveAttribute("tabindex", "-1");
+		await expect(toggle).toHaveAttribute("type", "button");
+	});
+
 	test("responds on focus and blur", async ({ page }) => {
 		await mount(page, DEFAULT);
 		const input = page.locator("input");
@@ -343,19 +413,6 @@ test.describe("u-combobox", () => {
 		const opts = page.locator("u-option");
 		const item = page.locator("u-combobox data");
 
-		await page.evaluate(() => {
-			const combobox = document.querySelector("u-combobox");
-			const matches: string[] = [];
-			const selections: string[] = [];
-			combobox?.addEventListener("comboboxbeforematch", (event) =>
-				matches.push(event.detail?.value || ""),
-			);
-			combobox?.addEventListener("comboboxbeforeselect", (event) =>
-				selections.push(event.detail.value),
-			);
-			Object.assign(combobox || {}, { matches, selections });
-		});
-
 		await input.click();
 		await expect(opts.nth(1)).toBeVisible();
 		await opts.nth(1).click();
@@ -389,6 +446,78 @@ test.describe("u-combobox", () => {
 
 		await expect(item).toHaveAttribute("value", "option-1");
 		await expect(item).toHaveText("Same text");
+	});
+
+	test("supports preventing selection, and without triggering new matching", async ({
+		page,
+	}) => {
+		await mount(
+			page,
+			`<u-combobox data-multiple="false">
+				<data value="option-1">Option 1</data>
+				<input id="confirm-input" list="confirm-list">
+				<u-datalist id="confirm-list" data-nofilter>
+					<u-option value="option-1">Option 1</u-option>
+					<u-option value="option-2">Option 2</u-option>
+				</u-datalist>
+			</u-combobox>
+			<button id="confirm" type="button">Confirm</button>
+			<button id="reject" type="button">Reject</button>`,
+		);
+		await page.evaluate(() => {
+			const combobox = document.querySelector("u-combobox");
+			let pending: HTMLDataElement | undefined;
+
+			combobox?.addEventListener("comboboxbeforematch", () => {
+				// @ts-expect-error
+				combobox._beforematch = (combobox._beforematch || 0) + 1;
+			});
+
+			combobox?.addEventListener("comboboxbeforeselect", (event) => {
+				event.preventDefault();
+				pending = (event as CustomEvent<Node>).detail.cloneNode(
+					true,
+				) as HTMLDataElement;
+			});
+
+			document.getElementById("confirm")?.addEventListener("click", () => {
+				if (!pending) return;
+				for (const item of combobox?.items || []) item.remove();
+				combobox?.control?.insertAdjacentElement("beforebegin", pending);
+				pending = undefined;
+			});
+
+			document.getElementById("reject")?.addEventListener("click", () => {
+				pending = undefined;
+			});
+		});
+		const input = page.locator("#confirm-input");
+		const opts = page.locator("u-option");
+		const item = page.locator("u-combobox data");
+		const confirm = page.locator("#confirm");
+		const reject = page.locator("#reject");
+
+		await expect(item).toHaveAttribute("value", "option-1");
+		await input.click();
+		await expect(opts.nth(1)).toBeVisible();
+		await opts.nth(1).click();
+		await expect(item).toHaveAttribute("value", "option-1");
+		await confirm.click();
+		await expect(item).toHaveAttribute("value", "option-2");
+
+		await input.click();
+		await opts.nth(0).click();
+		await expect(item).toHaveAttribute("value", "option-2");
+		await reject.click();
+		await input.blur();
+		await expect(item).toHaveAttribute("value", "option-2");
+
+		await expect(
+			await page.evaluate(
+				// @ts-expect-error
+				() => document.querySelector("u-combobox")._beforematch,
+			),
+		).toBeFalsy();
 	});
 
 	// test("handles click on option in datalist", async ({ page }) => {

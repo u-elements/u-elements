@@ -393,6 +393,45 @@ test.describe("u-combobox", () => {
 		await expect(secondData).not.toBeAttached();
 	});
 
+	for (const controlled of [false, true]) {
+		test(`restores the search text after selecting multiple datalist options (${controlled ? "controlled" : "uncontrolled"})`, async ({
+			page,
+		}) => {
+			await mount(
+				page,
+				`<u-combobox data-multiple>
+			<input list="multiple-options">
+			<u-datalist id="multiple-options">
+				<u-option label="Blue" value="blue-id">Blue</u-option>
+				<u-option label="Green" value="green-id">Green</u-option>
+			</u-datalist>
+		</u-combobox>`,
+			);
+			const input = page.locator("input");
+			const items = page.locator("u-combobox data");
+
+			if (controlled) {
+				await page.locator("u-combobox").evaluate((el) => {
+					el.addEventListener("comboboxbeforeselect", (event) => {
+						event.preventDefault();
+						const item = (event as CustomEvent<HTMLDataElement>).detail;
+						el.insertBefore(item, el.querySelector("input"));
+					});
+				});
+			}
+
+			await input.click();
+			await page.locator('u-option[value="blue-id"]').click();
+			await expect(items).toHaveText(["Blue"]);
+			await expect(input).toHaveValue("");
+
+			await input.fill("Gre");
+			await page.locator('u-option[value="green-id"]').click();
+			await expect(items).toHaveText(["Blue", "Green"]);
+			await expect(input).toHaveValue("Gre");
+		});
+	}
+
 	test("keeps the selected datalist option match when blurred in single mode", async ({
 		page,
 	}) => {

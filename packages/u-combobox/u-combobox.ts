@@ -520,7 +520,11 @@ if (isBrowser() && !window.customElements.get("u-combobox")) {
 			descriptor?.set?.call(this, nextValue); // Call the original native setter to actually update the DOM
 
 			if (prevValue !== nextValue && parent?._control === this)
-				this.dispatchEvent(new CustomEvent(PROGRAMMATIC, { bubbles: true }));
+				// Datalist selection writes its option value before emitting input. Notify after
+				// that handler restores the search text so we cache the final value.
+				queueMicrotask(() =>
+					this.dispatchEvent(new CustomEvent(PROGRAMMATIC, { bubbles: true })),
+				);
 		},
 	});
 }

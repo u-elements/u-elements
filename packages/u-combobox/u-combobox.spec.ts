@@ -8,6 +8,10 @@ const setCaretStart = (input: Node) => {
 	).selectionEnd = 0; // Set caret to start of text
 };
 
+test.beforeEach(async ({ page }) => {
+	await page.goto("test.html");
+});
+
 // Run all tests with both native <datalist> and <u-datalist>
 for (const [LIST_TAG, OPT_TAG] of [
 	["u-datalist", "u-option"],
@@ -73,10 +77,6 @@ for (const [LIST_TAG, OPT_TAG] of [
 			document.body.innerHTML = markup;
 		}, html);
 	};
-
-	test.beforeEach(async ({ page }) => {
-		await page.goto("test.html");
-	});
 
 	test.describe(`u-combobox (${LIST_TAG})`, () => {
 		test("matches snapshot", async ({ page }) => {

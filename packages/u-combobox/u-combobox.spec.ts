@@ -10,14 +10,14 @@ const setCaretStart = (input: Node) => {
 
 // Run all tests with both native <datalist> and <u-datalist>
 for (const [LIST_TAG, OPT_TAG] of [
-	// ["u-datalist", "u-option"],
+	["u-datalist", "u-option"],
 	["datalist", "option"],
 ]) {
 	const fillOption = async (input: Locator, opt: Locator) => {
 		if (LIST_TAG === "datalist") {
 			const optValue = (await opt.getAttribute("value")) || "";
 
-			input.evaluate((input: HTMLInputElement, data) => {
+			await input.evaluate((input: HTMLInputElement, data) => {
 				// setValue from utils.ts
 				const type = "insertReplacementText";
 				const event = { bubbles: true, composed: true, data, inputType: type };

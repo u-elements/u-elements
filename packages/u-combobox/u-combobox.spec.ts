@@ -1,3 +1,4 @@
+import type { Locator } from "@playwright/test";
 import { expect, type Page, test } from "@playwright/test";
 import type { UHTMLComboboxElement } from "./u-combobox";
 
@@ -7,701 +8,789 @@ const setCaretStart = (input: Node) => {
 	).selectionEnd = 0; // Set caret to start of text
 };
 
-const DEFAULT = `
-			<label for="my-tags">My label</label>
-			<u-combobox data-multiple>
-				<data>Tag 1</data>
-				<data>Tag 2</data>
-				<data value="tag-3">Tag 3</data>
-				<input id="my-tags" list="my-list" />
-				<u-datalist id="my-list">
-					<u-option>Tag 1</u-option>
-					<u-option>Tag 2</u-option>
-					<u-option value="tag-3">Tag 3</u-option>
-					<u-option value="tag-4">Tag 4</u-option>
-					<u-option>Tag 5</u-option>
-				</u-datalist>
-			</u-combobox>
-		`;
+// Run all tests with both native <datalist> and <u-datalist>
+for (const [LIST_TAG, OPT_TAG] of [
+	// ["u-datalist", "u-option"],
+	["datalist", "option"],
+]) {
+	const fillOption = async (input: Locator, opt: Locator) => {
+		if (LIST_TAG === "datalist") {
+			const optValue = (await opt.getAttribute("value")) || "";
 
-const NO_LIST_SINGLE = `
-			<label for="single">My label</label>
-			<u-combobox data-creatable>
-				<input id="single" />
-				<button type="reset">Clear</button>
-				<button type="button" aria-expanded="false">Toggle</button>
-			</u-combobox>
-		`;
+			input.evaluate((input: HTMLInputElement, data) => {
+				// setValue from utils.ts
+				const type = "insertReplacementText";
+				const event = { bubbles: true, composed: true, data, inputType: type };
+				const proto = HTMLInputElement.prototype;
 
-const NO_LIST_MULTIPLE = `
-			<label for="multi">My label</label>
-			<u-combobox data-multiple data-creatable>
-				<data>Tag 1</data>
-				<input id="multi" />
-				<button type="reset">Clear</button>
-			</u-combobox>
-		`;
-
-const mount = async (page: Page, html: string) => {
-	await page.evaluate((markup) => {
-		document.body.innerHTML = markup;
-	}, html);
-};
-
-test.beforeEach(async ({ page }) => {
-	await page.goto("test.html");
-});
-
-test.describe("u-combobox", () => {
-	test("matches snapshot", async ({ page }) => {
-		await mount(page, "<u-combobox></u-combobox>");
-		expect(await page.locator("body").innerHTML()).toMatchSnapshot(
-			"u-combobox",
-		);
-	});
-
-	test("is is defined", async ({ page }) => {
-		await mount(page, DEFAULT);
-		const uCombobox = page.locator("u-combobox");
-		const instance = await uCombobox.evaluate(
-			(el) => el instanceof (customElements.get("u-combobox") as never),
-		);
-
-		expect(instance).toBeTruthy();
-		await expect(uCombobox).toBeAttached();
-	});
-
-	test("sets up properties", async ({ page }) => {
-		await mount(page, DEFAULT);
-		expect(
-			await page.evaluate(() => {
-				const uCombobox =
-					document.querySelector<UHTMLComboboxElement>("u-combobox");
-				const input = document.querySelector("input");
-				const items = document.querySelectorAll("u-combobox data");
-
-				return (
-					uCombobox?.control === input &&
-					[...uCombobox.items].every((item, index) => item === items[index])
-				);
-			}),
-		).toBe(true);
-	});
-
-	test("sets up attributes", async ({ page }) => {
-		await mount(page, DEFAULT);
-		const browser = test.info().project.name;
-		const IS_IOS = browser === "Mobile Safari";
-		const IS_ANDROID = browser === "Mobile Chrome";
-
-		const uDatalist = page.locator("u-datalist");
-		const uOption = page.locator("u-option");
-		const input = page.locator("input");
-		const items = page.locator("data");
-		const itemsCount = await items.count();
-		const inputDesctipion = `Navigate left to find ${itemsCount} selected`;
-
-		await expect(input).toHaveAttribute("aria-description", inputDesctipion);
-		await expect(uDatalist).toHaveAttribute(
-			`${IS_ANDROID ? "data" : "aria"}-multiselectable`,
-			"true",
-		);
-
-		await expect(uOption.nth(0)).toHaveAttribute("selected");
-		await expect(uOption.nth(1)).toHaveAttribute("selected");
-		await expect(uOption.nth(2)).toHaveAttribute("selected");
-		await expect(uOption.nth(3)).not.toHaveAttribute("selected");
-		await expect(items.nth(0)).toHaveAttribute("value", "Tag 1");
-		await expect(items.nth(1)).toHaveAttribute("value", "Tag 2");
-		await expect(items.nth(2)).toHaveAttribute("value", "tag-3");
-
-		for (let i = 0; i < itemsCount; i++) {
-			const item = items.nth(i);
-			const label = `Tag ${i + 1}, Press to remove${IS_IOS ? `, ${i + 1} of ${itemsCount}` : ""}`;
-
-			await expect(item).toHaveAttribute("role", "option");
-			await expect(item).toHaveAttribute("tabindex", "-1");
-			await expect(item).toHaveAttribute("aria-label", label);
+				input.dispatchEvent(new InputEvent("beforeinput", event));
+				Object.getOwnPropertyDescriptor(proto, "value")?.set?.call(input, data);
+				input.dispatchEvent(new InputEvent("input", event));
+				input.dispatchEvent(new Event("change", { bubbles: true }));
+			}, optValue);
+		} else {
+			await expect(opt).toBeVisible();
+			await opt.click();
 		}
-	});
-
-	test("shows and hides clear button when input value changes programmatically", async ({
-		page,
-	}) => {
-		await mount(
-			page,
-			`<label for="programmatic-input">My label</label>
-			<u-combobox>
-				<input id="programmatic-input" list="programmatic-list" />
-				<button type="reset">Clear</button>
-				<u-datalist id="programmatic-list">
-					<u-option>Tag 1</u-option>
-				</u-datalist>
-			</u-combobox>`,
-		);
-		const input = page.locator("input");
-		const clear = page.locator('button[type="reset"]');
-
-		await expect(clear).toHaveAttribute("hidden", "");
-		await input.evaluate((el) => {
-			(el as HTMLInputElement).value = "Programmatic";
-		});
-		await expect(input).toHaveValue("Programmatic");
-		await expect(clear).not.toHaveAttribute("hidden");
-
-		await input.evaluate((el) => {
-			(el as HTMLInputElement).value = "";
-		});
-		await expect(input).toHaveValue("");
-		await expect(clear).toHaveAttribute("hidden", "");
-	});
-
-	test("sets up attributes on clear and toggle buttons added dynamically", async ({
-		page,
-	}) => {
-		await mount(
-			page,
-			`<label for="dynamic-buttons-input">My label</label>
-			<u-combobox>
-				<input id="dynamic-buttons-input" list="dynamic-buttons-list" />
-				<u-datalist id="dynamic-buttons-list">
-					<u-option>Tag 1</u-option>
-				</u-datalist>
-			</u-combobox>`,
-		);
-		const browser = test.info().project.name;
-		const ariaHidden = `${browser === "Mobile Safari" || browser === "Mobile Chrome"}`;
-		const clear = page.locator('button[type="reset"]');
-		const toggle = page.locator("button[aria-expanded]");
-
-		await page.locator("u-combobox").evaluate((combobox) => {
-			const toggle = document.createElement("button");
-			toggle.setAttribute("aria-expanded", "false");
-			const clear = document.createElement("button");
-			clear.type = "reset";
-			combobox.append(toggle, clear);
-		});
-
-		await expect(clear).toHaveAttribute("aria-label", "Clear input");
-		await expect(clear).toHaveAttribute("aria-hidden", ariaHidden);
-		await expect(clear).toHaveAttribute("hidden", "");
-		await expect(clear).toHaveAttribute("tabindex", "-1");
-
-		await expect(toggle).toHaveAttribute("aria-label", "Options");
-		await expect(toggle).toHaveAttribute("aria-hidden", ariaHidden);
-		await expect(toggle).toHaveAttribute("aria-expanded", "false");
-		await expect(toggle).not.toHaveAttribute("hidden");
-		await expect(toggle).toHaveAttribute("tabindex", "-1");
-		await expect(toggle).toHaveAttribute("type", "button");
-	});
-
-	test("responds on focus and blur", async ({ page }) => {
-		await mount(page, DEFAULT);
-		const input = page.locator("input");
-		const live = page.locator("[aria-live]");
-
-		await expect(live).not.toBeAttached();
-		await input.focus();
-		await expect(live).toBeAttached();
-	});
-
-	test("handles keyboard arrow navigation", async ({ page }) => {
-		await mount(page, DEFAULT);
-		const input = page.locator("input");
-		const items = page.locator("data");
-
-		await input.focus();
-		await input.pressSequentially("Test");
-		await expect(input).toBeFocused();
-		await expect(input).toHaveValue("Test");
-		await input.evaluate(setCaretStart);
-
-		await input.press("ArrowRight"); // Move caret into text
-		await input.press("ArrowLeft"); // Move caret back to start of text
-		await expect(input).toBeFocused(); // Input should therefore still be focused
-
-		await input.press("ArrowLeft");
-		await expect(items.nth(2)).toBeFocused();
-
-		await items.nth(2).press("ArrowLeft");
-		await expect(items.nth(1)).toBeFocused();
-
-		await items.nth(1).press("ArrowLeft");
-		await expect(items.nth(0)).toBeFocused();
-
-		await items.nth(0).press("ArrowLeft");
-		await expect(items.nth(0)).toBeFocused(); // Should not cycle, so staying on 0 is correct
-
-		await items.nth(0).press("ArrowRight");
-		await expect(items.nth(1)).toBeFocused();
-
-		await items.nth(1).press("ArrowRight");
-		await expect(items.nth(2)).toBeFocused();
-
-		await items.nth(2).press("ArrowRight");
-		await expect(input).toBeFocused();
-	});
-
-	test("handles keyboard typing", async ({ page }) => {
-		await mount(page, DEFAULT);
-		const input = page.locator("input");
-		const items = page.locator("data");
-
-		await input.focus();
-		await input.pressSequentially("Test");
-		await input.selectText();
-		await input.press("Backspace");
-		await expect(input).toHaveValue("");
-		await expect(input).toBeFocused(); // Should move focus as all backspaces should delete value "Test"
-
-		await input.press("ArrowRight");
-		await expect(input).toBeFocused(); // Should not cycle, so staying on input is correct
-
-		await input.evaluate(setCaretStart);
-		await input.press("Backspace");
-		await expect(items.nth(2)).toBeFocused();
-
-		await items.nth(2).press("Backspace");
-		await expect(items.nth(2)).not.toBeAttached();
-		await expect(items.nth(1)).toBeFocused();
-	});
-
-	test("handles keyboard creation and removal", async ({ page }) => {
-		await mount(page, DEFAULT);
-		const input = page.locator("input");
-		const live = page.locator("[aria-live='assertive']");
-		const item2 = page.locator("data").nth(2);
-		const item3 = page.locator("data").nth(3);
-
-		await input.focus();
-		await expect(live).toBeAttached();
-
-		await input.focus();
-		await input.fill("Tag 4");
-		await input.press("Enter");
-		await expect(item3).toBeAttached();
-		await expect(item3).toHaveAttribute("value", "tag-4");
-		await expect(item3).toHaveAttribute("role", "option");
-		await expect(item3).toHaveAttribute("tabindex", "-1");
-		await expect(item3).toHaveText("Tag 4");
-		await expect(input).toBeFocused();
-
-		await input.evaluate(setCaretStart);
-		await input.press("ArrowLeft");
-		await item3.press("Enter");
-		await expect(item3).not.toBeAttached();
-		await expect(item2).toBeFocused();
-	});
-
-	test("makes announcements when focused, but not when blurred", async ({
-		page,
-	}) => {
-		await mount(page, DEFAULT);
-		const input = page.locator("input");
-		await input.focus();
-
-		const live = page.locator("[aria-live='assertive']");
-		await expect(live).toBeAttached();
-
-		await input.press("Enter");
-		await expect(live).toHaveText("Invalid value");
-
-		await input.blur();
-		await input.press("Enter");
-		await expect(live).toHaveText("");
-	});
-
-	test("does not obstruct datalist keyboard navigation", async ({ page }) => {
-		await mount(page, DEFAULT);
-		const input = page.locator("input");
-		const option0 = page.locator("u-option").nth(0);
-		await input.focus();
-		await input.press("ArrowDown");
-		// Should not throw or lose focus, and datalist should be accessible
-		await expect(input).toBeFocused();
-		await expect(option0).toHaveAttribute("data-activedescendant");
-	});
-
-	test("focuses item on click", async ({ page }) => {
-		await mount(page, DEFAULT);
-		const item0 = page.locator("data").nth(0);
-		const box = (await item0.boundingBox()) as Record<string, number>;
-		await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
-		await expect(item0).toBeFocused();
-	});
-
-	test("removes item space / enter and x-click", async ({ page }) => {
-		await mount(page, DEFAULT);
-		const input = page.locator("input");
-		const items = page.locator("data");
-		const item0 = items.nth(0);
-
-		expect(await items.count()).toBe(3);
-		await items.nth(1).focus();
-		await items.nth(1).press(" ");
-		await expect(item0).toBeFocused();
-		expect(await items.count()).toBe(2);
-		await item0.press("Enter");
-		expect(await items.count()).toBe(1);
-		await expect(item0).toBeFocused();
-		await item0.evaluate((el) => (el as HTMLElement).click());
-		expect(await items.count()).toBe(0);
-		await expect(input).toBeFocused();
-	});
-
-	test("focuses input when clicking u-combobox", async ({ page }) => {
-		await mount(page, DEFAULT);
-		const combobox = page.locator("u-combobox");
-		const input = page.locator("input");
-		await combobox.click();
-		await expect(input).toBeFocused();
-	});
-
-	test("focuses input when clicking related label", async ({ page }) => {
-		await mount(page, DEFAULT);
-		const label = page.locator("label[for='my-tags']");
-		const input = page.locator("input");
-		await label.click();
-		await expect(input).toBeFocused();
-	});
-
-	test("handles multiple u-combobox on same page", async ({ page }) => {
-		await mount(
-			page,
-			`${DEFAULT}
-				<u-combobox id="second">
-					<data>Second 1</data>
-					<input />
-					<button type="reset">Clear</button>
-					<u-datalist>
-						<u-option>Second 1</u-option>
-						<u-option>Second 2</u-option>
-					</u-datalist>
+	};
+	const DEFAULT = `
+				<label for="my-tags">My label</label>
+				<u-combobox data-multiple>
+					<data>Tag 1</data>
+					<data>Tag 2</data>
+					<data value="tag-3">Tag 3</data>
+					<input id="my-tags" list="my-list" />
+					<${LIST_TAG} id="my-list">
+						<${OPT_TAG}>Tag 1</${OPT_TAG}>
+						<${OPT_TAG}>Tag 2</${OPT_TAG}>
+						<${OPT_TAG} value="tag-3">Tag 3</${OPT_TAG}>
+						<${OPT_TAG} value="tag-4">Tag 4</${OPT_TAG}>
+						<${OPT_TAG}>Tag 5</${OPT_TAG}>
+					</${LIST_TAG}>
 				</u-combobox>
-			`,
-		);
-		const firstInput = page.locator("u-combobox").first().locator("input");
-		const secondInput = page.locator("#second input");
-		const secondData = page.locator("#second  data");
-		const buttonReset = page.locator('button[type="reset"]');
-		await secondInput.focus();
-		await expect(secondInput).toBeFocused();
-		await buttonReset.click();
-		await expect(secondData).toBeAttached();
-		await firstInput.focus();
-		await expect(firstInput).toBeFocused();
-		await expect(secondData).not.toBeAttached();
+			`;
+
+	const NO_LIST_SINGLE = `
+				<label for="single">My label</label>
+				<u-combobox data-creatable>
+					<input id="single" />
+					<button type="reset">Clear</button>
+					<button type="button" aria-expanded="false">Toggle</button>
+				</u-combobox>
+			`;
+
+	const NO_LIST_MULTIPLE = `
+				<label for="multi">My label</label>
+				<u-combobox data-multiple data-creatable>
+					<data>Tag 1</data>
+					<input id="multi" />
+					<button type="reset">Clear</button>
+				</u-combobox>
+			`;
+
+	const mount = async (page: Page, html: string) => {
+		await page.evaluate((markup) => {
+			document.body.innerHTML = markup;
+		}, html);
+	};
+
+	test.beforeEach(async ({ page }) => {
+		await page.goto("test.html");
 	});
 
-	test("keeps the selected datalist option match when blurred in single mode", async ({
-		page,
-	}) => {
-		await mount(
-			page,
-			`<u-combobox>
-			<data value="option-1">Same text</data>
-			<input id="input-1" list="my-list" value="">
-			<button type="button" aria-expanded="false" aria-label="Valg"></button>
-			<button type="reset"></button>
-			<u-datalist hidden id="my-list">
-				<u-option label="Same text" value="option-1">option-1 - Same text</u-option>
-				<u-option label="Same text" value="option-2">option-2 - Same text</u-option>
-			</u-datalist>
-		</u-combobox>`,
-		);
-		const input = page.locator("#input-1");
-		const opts = page.locator("u-option");
-		const item = page.locator("u-combobox data");
-
-		await input.click();
-		await expect(opts.nth(1)).toBeVisible();
-		await opts.nth(1).click();
-		await expect(item).toHaveText("Same text");
-		await expect(item).toHaveAttribute("value", "option-2");
-
-		await input.blur();
-		await expect(item).toHaveText("Same text");
-		await expect(item).toHaveAttribute("value", "option-2");
-	});
-
-	test("selects a typed option match on blur in single mode", async ({
-		page,
-	}) => {
-		await mount(
-			page,
-			`<u-combobox>
-			<input id="single-input" list="single-list">
-			<u-datalist id="single-list">
-				<u-option label="Same text" value="option-1">option-1 - Same text</u-option>
-				<u-option label="Same text" value="option-2">option-2 - Same text</u-option>
-			</u-datalist>
-		</u-combobox>
-	`,
-		);
-		const input = page.locator("#single-input");
-		const item = page.locator("u-combobox data");
-
-		await input.fill("Same text");
-		await input.blur();
-
-		await expect(item).toHaveAttribute("value", "option-1");
-		await expect(item).toHaveText("Same text");
-	});
-
-	test("supports preventing selection, and without triggering new matching", async ({
-		page,
-	}) => {
-		await mount(
-			page,
-			`<u-combobox data-multiple="false">
-				<data value="option-1">Option 1</data>
-				<input id="confirm-input" list="confirm-list">
-				<u-datalist id="confirm-list" data-nofilter>
-					<u-option value="option-1">Option 1</u-option>
-					<u-option value="option-2">Option 2</u-option>
-				</u-datalist>
-			</u-combobox>
-			<button id="confirm" type="button">Confirm</button>
-			<button id="reject" type="button">Reject</button>`,
-		);
-		await page.evaluate(() => {
-			const combobox = document.querySelector("u-combobox");
-			let pending: HTMLDataElement | undefined;
-
-			combobox?.addEventListener("comboboxbeforematch", () => {
-				// @ts-expect-error
-				combobox._beforematch = (combobox._beforematch || 0) + 1;
-			});
-
-			combobox?.addEventListener("comboboxbeforeselect", (event) => {
-				event.preventDefault();
-				pending = (event as CustomEvent<Node>).detail.cloneNode(
-					true,
-				) as HTMLDataElement;
-			});
-
-			document.getElementById("confirm")?.addEventListener("click", () => {
-				if (!pending) return;
-				for (const item of combobox?.items || []) item.remove();
-				combobox?.control?.insertAdjacentElement("beforebegin", pending);
-				pending = undefined;
-			});
-
-			document.getElementById("reject")?.addEventListener("click", () => {
-				pending = undefined;
-			});
+	test.describe(`u-combobox (${LIST_TAG})`, () => {
+		test("matches snapshot", async ({ page }) => {
+			await mount(page, "<u-combobox></u-combobox>");
+			expect(await page.locator("body").innerHTML()).toMatchSnapshot(
+				"u-combobox",
+			);
 		});
-		const input = page.locator("#confirm-input");
-		const opts = page.locator("u-option");
-		const item = page.locator("u-combobox data");
-		const confirm = page.locator("#confirm");
-		const reject = page.locator("#reject");
 
-		await expect(item).toHaveAttribute("value", "option-1");
-		await input.click();
-		await expect(opts.nth(1)).toBeVisible();
-		await opts.nth(1).click();
-		await expect(item).toHaveAttribute("value", "option-1");
-		await confirm.click();
-		await expect(item).toHaveAttribute("value", "option-2");
+		test(`is is defined (${LIST_TAG})`, async ({ page }) => {
+			await mount(page, DEFAULT);
+			const uCombobox = page.locator("u-combobox");
+			const instance = await uCombobox.evaluate(
+				(el) => el instanceof (customElements.get("u-combobox") as never),
+			);
 
-		await input.click();
-		await opts.nth(0).click();
-		await expect(item).toHaveAttribute("value", "option-2");
-		await reject.click();
-		await input.blur();
-		await expect(item).toHaveAttribute("value", "option-2");
+			expect(instance).toBeTruthy();
+			await expect(uCombobox).toBeAttached();
+		});
 
-		await expect(
-			await page.evaluate(
-				// @ts-expect-error
-				() => document.querySelector("u-combobox")._beforematch,
-			),
-		).toBeFalsy();
-	});
+		test(`sets up properties (${LIST_TAG})`, async ({ page }) => {
+			await mount(page, DEFAULT);
+			expect(
+				await page.evaluate(() => {
+					const uCombobox =
+						document.querySelector<UHTMLComboboxElement>("u-combobox");
+					const input = document.querySelector("input");
+					const items = document.querySelectorAll("u-combobox data");
 
-	// test("handles click on option in datalist", async ({ page }) => {
-	// 	await mount(page, DEFAULT);
-	// 	const input = page.locator("input");
-	// 	const datalist = page.locator("u-datalist");
-	// 	const option = datalist.locator("u-option").nth(3);
+					return (
+						uCombobox?.control === input &&
+						[...uCombobox.items].every((item, index) => item === items[index])
+					);
+				}),
+			).toBe(true);
+		});
 
-	// 	await input.focus();
-	// 	await input.fill("Tag 4");
-	// 	await option.click();
-	// 	const items = page.locator("data");
-	// 	await expect(items.nth(3)).toHaveText("Tag 4");
-	// });
+		test(`sets up attributes (${LIST_TAG})`, async ({ page }) => {
+			await mount(page, DEFAULT);
+			const browser = test.info().project.name;
+			const IS_IOS = browser === "Mobile Safari";
+			const IS_ANDROID = browser === "Mobile Chrome";
 
-	// test("handles clear button, and does not reset form", async ({ page }) => {
-	// 	await mount(page, DEFAULT);
-	// 	const input = page.locator("input");
-	// 	const clear = page.locator('button[type="reset"], del');
-	// 	await input.fill("Tag 5");
-	// 	await clear.click();
-	// 	await expect(input).toHaveValue("");
-	// });
+			const uDatalist = page.locator(LIST_TAG);
+			const uOption = page.locator(OPT_TAG);
+			const input = page.locator("input");
+			const items = page.locator("data");
+			const itemsCount = await items.count();
+			const inputDesctipion = `Navigate left to find ${itemsCount} selected`;
 
-	// test("handles clear button with <del> element", async ({ page }) => {
-	// 	await mount(page, DEFAULT);
-	// 	await page.evaluate(() => {
-	// 		const combobox = document.querySelector("u-combobox");
-	// 		const del = document.createElement("del");
-	// 		combobox?.appendChild(del);
-	// 	});
-	// 	const input = page.locator("input");
-	// 	const del = page.locator("u-combobox del");
-	// 	await input.fill("Tag 5");
-	// 	await del.click();
-	// 	await expect(input).toHaveValue("");
-	// });
-});
+			await expect(input).toHaveAttribute("aria-description", inputDesctipion);
+			await expect(uDatalist).toHaveAttribute(
+				`${IS_ANDROID ? "data" : "aria"}-multiselectable`,
+				"true",
+			);
 
-test.describe("u-combobox without <u-datalist>", () => {
-	test("hides toggle button regardless of input value", async ({ page }) => {
-		await mount(page, NO_LIST_SINGLE);
-		const input = page.locator("input");
-		const toggle = page.locator("button[aria-expanded]");
+			await expect(uOption.nth(0)).toHaveAttribute("selected");
+			await expect(uOption.nth(1)).toHaveAttribute("selected");
+			await expect(uOption.nth(2)).toHaveAttribute("selected");
+			await expect(uOption.nth(3)).not.toHaveAttribute("selected");
+			await expect(items.nth(0)).toHaveAttribute("value", "Tag 1");
+			await expect(items.nth(1)).toHaveAttribute("value", "Tag 2");
+			await expect(items.nth(2)).toHaveAttribute("value", "tag-3");
 
-		await expect(toggle).toHaveAttribute("hidden", "");
-		await input.fill("Hello");
-		await expect(toggle).toHaveAttribute("hidden", ""); // Still hidden, no datalist to toggle
-	});
+			for (let i = 0; i < itemsCount; i++) {
+				const item = items.nth(i);
+				const label = `Tag ${i + 1}, Press to remove${IS_IOS ? `, ${i + 1} of ${itemsCount}` : ""}`;
 
-	test("does not forward list attribute to input", async ({ page }) => {
-		await mount(page, NO_LIST_SINGLE);
-		const input = page.locator("input");
-		await expect(input).not.toHaveAttribute("list");
-	});
+				await expect(item).toHaveAttribute("role", "option");
+				await expect(item).toHaveAttribute("tabindex", "-1");
+				await expect(item).toHaveAttribute("aria-label", label);
+			}
+		});
 
-	test("shows and hides clear button based on input value", async ({
-		page,
-	}) => {
-		await mount(page, NO_LIST_SINGLE);
-		const input = page.locator("input");
-		const clear = page.locator('button[type="reset"]');
-
-		await expect(clear).toHaveAttribute("hidden", "");
-		await input.focus();
-		await input.fill("Hello");
-		await expect(clear).not.toHaveAttribute("hidden");
-		await clear.click();
-		await expect(input).toHaveValue("");
-		await expect(clear).toHaveAttribute("hidden", "");
-	});
-
-	test("creates data item on Enter in single mode when creatable", async ({
-		page,
-	}) => {
-		await mount(page, NO_LIST_SINGLE);
-		const input = page.locator("input");
-		const items = page.locator("data");
-
-		await input.focus();
-		await input.fill("Hello");
-		await input.press("Enter");
-		await expect(items).toHaveCount(1);
-		await expect(items.nth(0)).toHaveText("Hello");
-		await expect(items.nth(0)).toHaveAttribute("value", "Hello");
-	});
-
-	test("creates data item on blur in single mode when creatable", async ({
-		page,
-	}) => {
-		await mount(page, NO_LIST_SINGLE);
-		const input = page.locator("input");
-		const items = page.locator("data");
-
-		await input.focus();
-		await input.fill("Hello");
-		await input.blur();
-		await expect(items).toHaveCount(1);
-		await expect(items.nth(0)).toHaveText("Hello");
-	});
-
-	test("does not create data item when not creatable", async ({ page }) => {
-		await mount(
+		test(`shows and hides clear button when input value changes programmatically (${LIST_TAG})`, async ({
 			page,
-			`<label for="single">My label</label>
-			<u-combobox>
-				<input id="single" />
-			</u-combobox>`,
-		);
-		const input = page.locator("input");
-		const items = page.locator("data");
+		}) => {
+			await mount(
+				page,
+				`<label for="programmatic-input">My label</label>
+				<u-combobox>
+					<input id="programmatic-input" list="programmatic-list" />
+					<button type="reset">Clear</button>
+					<${LIST_TAG} id="programmatic-list">
+						<${OPT_TAG}>Tag 1</${OPT_TAG}>
+					</${LIST_TAG}>
+				</u-combobox>`,
+			);
+			const input = page.locator("input");
+			const clear = page.locator('button[type="reset"]');
 
-		await input.focus();
-		await input.fill("Hello");
-		await input.press("Enter");
-		await expect(items).toHaveCount(0);
-	});
+			await expect(clear).toHaveAttribute("hidden", "");
+			await input.evaluate((el) => {
+				(el as HTMLInputElement).value = "Programmatic";
+			});
+			await expect(input).toHaveValue("Programmatic");
+			await expect(clear).not.toHaveAttribute("hidden");
 
-	test("creates tag on Enter in multiple mode when creatable", async ({
-		page,
-	}) => {
-		await mount(page, NO_LIST_MULTIPLE);
-		const input = page.locator("input");
-		const items = page.locator("data");
+			await input.evaluate((el) => {
+				(el as HTMLInputElement).value = "";
+			});
+			await expect(input).toHaveValue("");
+			await expect(clear).toHaveAttribute("hidden", "");
+		});
 
-		await expect(items).toHaveCount(1);
-		await input.focus();
-		await input.fill("Tag 2");
-		await input.press("Enter");
-		await expect(items).toHaveCount(2);
-		await expect(items.nth(1)).toHaveText("Tag 2");
-	});
-
-	test("does not create tag in multiple mode when not creatable", async ({
-		page,
-	}) => {
-		await mount(
+		test(`sets up attributes on clear and toggle buttons added dynamically (${LIST_TAG})`, async ({
 			page,
-			`<label for="multi">My label</label>
-			<u-combobox data-multiple>
-				<data>Tag 1</data>
-				<input id="multi" />
-			</u-combobox>`,
-		);
-		const input = page.locator("input");
-		const items = page.locator("data");
+		}) => {
+			await mount(
+				page,
+				`<label for="dynamic-buttons-input">My label</label>
+				<u-combobox>
+					<input id="dynamic-buttons-input" list="dynamic-buttons-list" />
+					<${LIST_TAG} id="dynamic-buttons-list">
+						<${OPT_TAG}>Tag 1</${OPT_TAG}>
+					</${LIST_TAG}>
+				</u-combobox>`,
+			);
+			const browser = test.info().project.name;
+			const ariaHidden = `${browser === "Mobile Safari" || browser === "Mobile Chrome"}`;
+			const clear = page.locator('button[type="reset"]');
+			const toggle = page.locator("button[aria-expanded]");
 
-		await input.focus();
-		await input.fill("Tag 2");
-		await input.press("Enter");
-		await expect(items).toHaveCount(1); // Unchanged, since not creatable and no datalist to match against
-	});
+			await page.locator("u-combobox").evaluate((combobox) => {
+				const toggle = document.createElement("button");
+				toggle.setAttribute("aria-expanded", "false");
+				const clear = document.createElement("button");
+				clear.type = "reset";
+				combobox.append(toggle, clear);
+			});
 
-	test("focuses last tag on Backspace at start of input in multiple mode", async ({
-		page,
-	}) => {
-		await mount(page, NO_LIST_MULTIPLE);
-		const input = page.locator("input");
-		const items = page.locator("data");
+			await expect(clear).toHaveAttribute("aria-label", "Clear input");
+			await expect(clear).toHaveAttribute("aria-hidden", ariaHidden);
+			await expect(clear).toHaveAttribute("hidden", "");
+			await expect(clear).toHaveAttribute("tabindex", "-1");
 
-		await input.focus();
-		await input.evaluate(setCaretStart);
-		await input.press("Backspace");
-		await expect(items.nth(0)).toBeFocused();
-	});
+			await expect(toggle).toHaveAttribute("aria-label", "Options");
+			await expect(toggle).toHaveAttribute("aria-hidden", ariaHidden);
+			if (LIST_TAG === "u-datalist")
+				await expect(toggle).toHaveAttribute("aria-expanded", "false");
+			await expect(toggle).not.toHaveAttribute("hidden");
+			await expect(toggle).toHaveAttribute("tabindex", "-1");
+			await expect(toggle).toHaveAttribute("type", "button");
+		});
 
-	test("removes tag on Backspace and space/enter/click", async ({ page }) => {
-		await mount(
+		test(`responds on focus and blur (${LIST_TAG})`, async ({ page }) => {
+			await mount(page, DEFAULT);
+			const input = page.locator("input");
+			const live = page.locator("[aria-live]");
+
+			await expect(live).not.toBeAttached();
+			await input.click();
+			await input.focus();
+			await expect(live).toBeAttached();
+		});
+
+		test(`handles keyboard arrow navigation (${LIST_TAG})`, async ({
 			page,
-			`<label for="multi">My label</label>
-			<u-combobox data-multiple data-creatable>
-				<data>Tag 1</data>
-				<data>Tag 2</data>
-				<input id="multi" />
-				<button type="reset">Clear</button>
-			</u-combobox>`,
-		);
-		const items = page.locator("data");
+		}) => {
+			await mount(page, DEFAULT);
+			const input = page.locator("input");
+			const items = page.locator("data");
 
-		await items.nth(1).focus();
-		await items.nth(1).press("Backspace");
-		await expect(items).toHaveCount(1);
-		await expect(items.nth(0)).toBeFocused();
+			await input.focus();
+			await input.pressSequentially("Test");
+			await expect(input).toBeFocused();
+			await expect(input).toHaveValue("Test");
+			await input.evaluate(setCaretStart);
+
+			await input.press("ArrowRight"); // Move caret into text
+			await input.press("ArrowLeft"); // Move caret back to start of text
+			await expect(input).toBeFocused(); // Input should therefore still be focused
+
+			await input.press("ArrowLeft");
+			await expect(items.nth(2)).toBeFocused();
+
+			await items.nth(2).press("ArrowLeft");
+			await expect(items.nth(1)).toBeFocused();
+
+			await items.nth(1).press("ArrowLeft");
+			await expect(items.nth(0)).toBeFocused();
+
+			await items.nth(0).press("ArrowLeft");
+			await expect(items.nth(0)).toBeFocused(); // Should not cycle, so staying on 0 is correct
+
+			await items.nth(0).press("ArrowRight");
+			await expect(items.nth(1)).toBeFocused();
+
+			await items.nth(1).press("ArrowRight");
+			await expect(items.nth(2)).toBeFocused();
+
+			await items.nth(2).press("ArrowRight");
+			await expect(input).toBeFocused();
+		});
+
+		test(`handles keyboard typing (${LIST_TAG})`, async ({ page }) => {
+			await mount(page, DEFAULT);
+			const input = page.locator("input");
+			const items = page.locator("data");
+
+			await input.focus();
+			await input.pressSequentially("Test");
+			await input.selectText();
+			await input.press("Backspace");
+			await expect(input).toHaveValue("");
+			await expect(input).toBeFocused(); // Should move focus as all backspaces should delete value "Test"
+
+			await input.press("ArrowRight");
+			await expect(input).toBeFocused(); // Should not cycle, so staying on input is correct
+
+			await input.evaluate(setCaretStart);
+			await input.press("Backspace");
+			await expect(items.nth(2)).toBeFocused();
+
+			await items.nth(2).press("Backspace");
+			await expect(items.nth(2)).not.toBeAttached();
+			await expect(items.nth(1)).toBeFocused();
+		});
+
+		test(`handles keyboard creation and removal (${LIST_TAG})`, async ({
+			page,
+		}) => {
+			await mount(page, DEFAULT);
+			const input = page.locator("input");
+			const live = page.locator("[aria-live='assertive']");
+			const item2 = page.locator("data").nth(2);
+			const item3 = page.locator("data").nth(3);
+
+			await input.focus();
+			await expect(live).toBeAttached();
+
+			await input.focus();
+			await input.fill("Tag 4");
+			await input.press("Enter");
+			await expect(item3).toBeAttached();
+			await expect(item3).toHaveAttribute("value", "tag-4");
+			await expect(item3).toHaveAttribute("role", "option");
+			await expect(item3).toHaveAttribute("tabindex", "-1");
+			await expect(item3).toHaveText("Tag 4");
+			await expect(input).toBeFocused();
+
+			await input.evaluate(setCaretStart);
+			await input.press("ArrowLeft");
+			await item3.press("Enter");
+			await expect(item3).not.toBeAttached();
+			await expect(item2).toBeFocused();
+		});
+
+		test(`makes announcements when focused, but not when blurred (${LIST_TAG})`, async ({
+			page,
+		}) => {
+			await mount(page, DEFAULT);
+			const input = page.locator("input");
+			await input.focus();
+
+			const live = page.locator("[aria-live='assertive']");
+			await expect(live).toBeAttached();
+
+			await input.press("Enter");
+			await expect(live).toHaveText("Invalid value");
+
+			await input.blur();
+			await input.press("Enter");
+			await expect(live).toHaveText("");
+		});
+
+		test(`does not obstruct datalist keyboard navigation (${LIST_TAG})`, async ({
+			page,
+		}) => {
+			await mount(page, DEFAULT);
+			const input = page.locator("input");
+			const option0 = page.locator(OPT_TAG).nth(0);
+			await input.focus();
+			await input.press("ArrowDown");
+			// Should not throw or lose focus, and datalist should be accessible
+			await expect(input).toBeFocused();
+			if (LIST_TAG === "u-datalist")
+				await expect(option0).toHaveAttribute("data-activedescendant");
+		});
+
+		test(`focuses item on click (${LIST_TAG})`, async ({ page }) => {
+			await mount(page, DEFAULT);
+			const item0 = page.locator("data").nth(0);
+			const box = (await item0.boundingBox()) as Record<string, number>;
+			await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+			await expect(item0).toBeFocused();
+		});
+
+		test(`removes item space / enter and x-click (${LIST_TAG})`, async ({
+			page,
+		}) => {
+			await mount(page, DEFAULT);
+			const input = page.locator("input");
+			const items = page.locator("data");
+			const item0 = items.nth(0);
+
+			expect(await items.count()).toBe(3);
+			await items.nth(1).focus();
+			await items.nth(1).press(" ");
+			await expect(item0).toBeFocused();
+			expect(await items.count()).toBe(2);
+			await item0.press("Enter");
+			expect(await items.count()).toBe(1);
+			await expect(item0).toBeFocused();
+			await item0.evaluate((el) => (el as HTMLElement).click());
+			expect(await items.count()).toBe(0);
+			await expect(input).toBeFocused();
+		});
+
+		test(`focuses input when clicking u-combobox (${LIST_TAG})`, async ({
+			page,
+		}) => {
+			await mount(page, DEFAULT);
+			const combobox = page.locator("u-combobox");
+			const input = page.locator("input");
+			await combobox.click();
+			await expect(input).toBeFocused();
+		});
+
+		test(`focuses input when clicking related label (${LIST_TAG})`, async ({
+			page,
+		}) => {
+			await mount(page, DEFAULT);
+			const label = page.locator("label[for='my-tags']");
+			const input = page.locator("input");
+			await label.click();
+			await expect(input).toBeFocused();
+		});
+
+		test(`handles multiple u-combobox on same page (${LIST_TAG})`, async ({
+			page,
+		}) => {
+			await mount(
+				page,
+				`${DEFAULT}
+					<u-combobox id="second">
+						<data>Second 1</data>
+						<input />
+						<button type="reset">Clear</button>
+						<${LIST_TAG}>
+							<${OPT_TAG}>Second 1</${OPT_TAG}>
+							<${OPT_TAG}>Second 2</${OPT_TAG}>
+						</${LIST_TAG}>
+					</u-combobox>
+				`,
+			);
+			const firstInput = page.locator("u-combobox").first().locator("input");
+			const secondInput = page.locator("#second input");
+			const firstData = page.locator("data").nth(0);
+			const secondData = page.locator("#second data");
+			const buttonReset = page.locator('button[type="reset"]');
+			await secondInput.focus();
+			await expect(secondInput).toBeFocused();
+			await buttonReset.click();
+			await expect(secondData).not.toBeAttached();
+			await firstInput.focus();
+			await expect(firstInput).toBeFocused();
+			await expect(firstData).toBeAttached();
+		});
+
+		test(`keeps the selected datalist option match when blurred in single mode (${LIST_TAG})`, async ({
+			page,
+		}) => {
+			await mount(
+				page,
+				`<u-combobox>
+				<data value="option-1">Same text</data>
+				<input id="input-1" list="my-list" value="">
+				<button type="button" aria-expanded="false" aria-label="Valg"></button>
+				<button type="reset"></button>
+				<${LIST_TAG} hidden id="my-list">
+					<${OPT_TAG} label="Same text" value="option-1">option-1 - Same text</${OPT_TAG}>
+					<${OPT_TAG} label="Same text" value="option-2">option-2 - Same text</${OPT_TAG}>
+				</${LIST_TAG}>
+			</u-combobox>`,
+			);
+			const input = page.locator("#input-1");
+			const opts = page.locator(OPT_TAG);
+			const item = page.locator("u-combobox data");
+
+			await input.click();
+			await fillOption(input, opts.nth(1));
+			await expect(item).toHaveText("Same text");
+			await expect(item).toHaveAttribute("value", "option-2");
+
+			await input.blur();
+			await expect(item).toHaveText("Same text");
+			await expect(item).toHaveAttribute("value", "option-2");
+		});
+
+		test(`selects a typed option match on blur in single mode (${LIST_TAG})`, async ({
+			page,
+		}) => {
+			await mount(
+				page,
+				`<u-combobox>
+				<input id="single-input" list="single-list">
+				<${LIST_TAG} id="single-list">
+					<${OPT_TAG} label="Same text" value="option-1">option-1 - Same text</${OPT_TAG}>
+					<${OPT_TAG} label="Same text" value="option-2">option-2 - Same text</${OPT_TAG}>
+				</${LIST_TAG}>
+			</u-combobox>
+		`,
+			);
+			const input = page.locator("#single-input");
+			const item = page.locator("u-combobox data");
+
+			await input.fill("Same text");
+			await input.blur();
+
+			await expect(item).toHaveAttribute("value", "option-1");
+			await expect(item).toHaveText("Same text");
+		});
+
+		test(`supports preventing selection, and without triggering new matching (${LIST_TAG})`, async ({
+			page,
+		}) => {
+			await mount(
+				page,
+				`<u-combobox data-multiple="false">
+					<data value="option-1">Option 1</data>
+					<input id="confirm-input" list="confirm-list">
+					<${LIST_TAG} id="confirm-list" data-nofilter>
+						<${OPT_TAG} value="option-1">Option 1</${OPT_TAG}>
+						<${OPT_TAG} value="option-2">Option 2</${OPT_TAG}>
+					</${LIST_TAG}>
+				</u-combobox>
+				<button id="confirm" type="button">Confirm</button>
+				<button id="reject" type="button">Reject</button>`,
+			);
+			await page.evaluate(() => {
+				const combobox = document.querySelector("u-combobox");
+				let pending: HTMLDataElement | undefined;
+
+				combobox?.addEventListener("comboboxbeforematch", () => {
+					// @ts-expect-error
+					combobox._beforematch = (combobox._beforematch || 0) + 1;
+				});
+
+				combobox?.addEventListener("comboboxbeforeselect", (event) => {
+					event.preventDefault();
+					pending = (event as CustomEvent<Node>).detail.cloneNode(
+						true,
+					) as HTMLDataElement;
+				});
+
+				document.getElementById("confirm")?.addEventListener("click", () => {
+					if (!pending) return;
+					for (const item of combobox?.items || []) item.remove();
+					combobox?.control?.insertAdjacentElement("beforebegin", pending);
+					pending = undefined;
+				});
+
+				document.getElementById("reject")?.addEventListener("click", () => {
+					pending = undefined;
+				});
+			});
+			const input = page.locator("#confirm-input");
+			const opts = page.locator(OPT_TAG);
+			const item = page.locator("u-combobox data");
+			const confirm = page.locator("#confirm");
+			const reject = page.locator("#reject");
+
+			await expect(item).toHaveAttribute("value", "option-1");
+			await input.click();
+			await fillOption(input, opts.nth(1));
+			await expect(item).toHaveAttribute("value", "option-1");
+			await confirm.click();
+			await expect(item).toHaveAttribute("value", "option-2");
+
+			await input.click();
+			await fillOption(input, opts.nth(0));
+			await expect(item).toHaveAttribute("value", "option-2");
+			await reject.click();
+			await input.blur();
+			await expect(item).toHaveAttribute("value", "option-2");
+
+			await expect(
+				await page.evaluate(
+					// @ts-expect-error
+					() => document.querySelector("u-combobox")._beforematch,
+				),
+			).toBeFalsy();
+		});
+
+		// test("handles click on option in datalist", async ({ page }) => {
+		// 	await mount(page, DEFAULT);
+		// 	const input = page.locator("input");
+		// 	const datalist = page.locator("u-datalist");
+		// 	const option = datalist.locator("u-option").nth(3);
+
+		// 	await input.focus();
+		// 	await input.fill("Tag 4");
+		// 	await option.click();
+		// 	const items = page.locator("data");
+		// 	await expect(items.nth(3)).toHaveText("Tag 4");
+		// });
+
+		// test("handles clear button, and does not reset form", async ({ page }) => {
+		// 	await mount(page, DEFAULT);
+		// 	const input = page.locator("input");
+		// 	const clear = page.locator('button[type="reset"], del');
+		// 	await input.fill("Tag 5");
+		// 	await clear.click();
+		// 	await expect(input).toHaveValue("");
+		// });
+
+		// test("handles clear button with <del> element", async ({ page }) => {
+		// 	await mount(page, DEFAULT);
+		// 	await page.evaluate(() => {
+		// 		const combobox = document.querySelector("u-combobox");
+		// 		const del = document.createElement("del");
+		// 		combobox?.appendChild(del);
+		// 	});
+		// 	const input = page.locator("input");
+		// 	const del = page.locator("u-combobox del");
+		// 	await input.fill("Tag 5");
+		// 	await del.click();
+		// 	await expect(input).toHaveValue("");
+		// });
 	});
-});
+
+	test.describe(`u-combobox without <${LIST_TAG}> (${LIST_TAG})`, () => {
+		test("hides toggle button regardless of input value", async ({ page }) => {
+			await mount(page, NO_LIST_SINGLE);
+			const input = page.locator("input");
+			const toggle = page.locator("button[aria-expanded]");
+
+			await expect(toggle).toHaveAttribute("hidden", "");
+			await input.fill("Hello");
+			await expect(toggle).toHaveAttribute("hidden", ""); // Still hidden, no datalist to toggle
+		});
+
+		test(`does not forward list attribute to input (${LIST_TAG})`, async ({
+			page,
+		}) => {
+			await mount(page, NO_LIST_SINGLE);
+			const input = page.locator("input");
+			await expect(input).not.toHaveAttribute("list");
+		});
+
+		test(`shows and hides clear button based on input value (${LIST_TAG})`, async ({
+			page,
+		}) => {
+			await mount(page, NO_LIST_SINGLE);
+			const input = page.locator("input");
+			const clear = page.locator('button[type="reset"]');
+
+			await expect(clear).toHaveAttribute("hidden", "");
+			await input.focus();
+			await input.fill("Hello");
+			await expect(clear).not.toHaveAttribute("hidden");
+			await clear.click();
+			await expect(input).toHaveValue("");
+			await expect(clear).toHaveAttribute("hidden", "");
+		});
+
+		test(`creates data item on Enter in single mode when creatable (${LIST_TAG})`, async ({
+			page,
+		}) => {
+			await mount(page, NO_LIST_SINGLE);
+			const input = page.locator("input");
+			const items = page.locator("data");
+
+			await input.focus();
+			await input.fill("Hello");
+			await input.press("Enter");
+			await expect(items).toHaveCount(1);
+			await expect(items.nth(0)).toHaveText("Hello");
+			await expect(items.nth(0)).toHaveAttribute("value", "Hello");
+		});
+
+		test(`does not create data item on blur in single mode when creatable (${LIST_TAG})`, async ({
+			page,
+		}) => {
+			await mount(page, NO_LIST_SINGLE);
+			const input = page.locator("input");
+			const items = page.locator("data");
+
+			await input.focus();
+			await input.fill("Hello");
+			await input.blur();
+			await expect(items).toHaveCount(0);
+		});
+
+		test(`does not create data item when not creatable (${LIST_TAG})`, async ({
+			page,
+		}) => {
+			await mount(
+				page,
+				`<label for="single">My label</label>
+				<u-combobox>
+					<input id="single" />
+				</u-combobox>`,
+			);
+			const input = page.locator("input");
+			const items = page.locator("data");
+
+			await input.focus();
+			await input.fill("Hello");
+			await input.press("Enter");
+			await expect(items).toHaveCount(0);
+		});
+
+		test(`creates tag on Enter in multiple mode when creatable (${LIST_TAG})`, async ({
+			page,
+		}) => {
+			await mount(page, NO_LIST_MULTIPLE);
+			const input = page.locator("input");
+			const items = page.locator("data");
+
+			await expect(items).toHaveCount(1);
+			await input.focus();
+			await input.fill("Tag 2");
+			await input.press("Enter");
+			await expect(items).toHaveCount(2);
+			await expect(items.nth(1)).toHaveText("Tag 2");
+		});
+
+		test(`does not create tag in multiple mode when not creatable (${LIST_TAG})`, async ({
+			page,
+		}) => {
+			await mount(
+				page,
+				`<label for="multi">My label</label>
+				<u-combobox data-multiple>
+					<data>Tag 1</data>
+					<input id="multi" />
+				</u-combobox>`,
+			);
+			const input = page.locator("input");
+			const items = page.locator("data");
+
+			await input.focus();
+			await input.fill("Tag 2");
+			await input.press("Enter");
+			await expect(items).toHaveCount(1); // Unchanged, since not creatable and no datalist to match against
+		});
+
+		test(`focuses last tag on Backspace at start of input in multiple mode (${LIST_TAG})`, async ({
+			page,
+		}) => {
+			await mount(page, NO_LIST_MULTIPLE);
+			const input = page.locator("input");
+			const items = page.locator("data");
+
+			await input.focus();
+			await input.evaluate(setCaretStart);
+			await input.press("Backspace");
+			await expect(items.nth(0)).toBeFocused();
+		});
+
+		test(`removes tag on Backspace and space/enter/click (${LIST_TAG})`, async ({
+			page,
+		}) => {
+			await mount(
+				page,
+				`<label for="multi">My label</label>
+				<u-combobox data-multiple data-creatable>
+					<data>Tag 1</data>
+					<data>Tag 2</data>
+					<input id="multi" />
+					<button type="reset">Clear</button>
+				</u-combobox>`,
+			);
+			const items = page.locator("data");
+
+			await items.nth(1).focus();
+			await items.nth(1).press("Backspace");
+			await expect(items).toHaveCount(1);
+			await expect(items.nth(0)).toBeFocused();
+		});
+	});
+
+	for (const controlled of [false, true]) {
+		test(`restores the search text after selecting multiple datalist options (${controlled ? "controlled" : "uncontrolled"}) (${LIST_TAG})`, async ({
+			page,
+		}) => {
+			await mount(
+				page,
+				`<u-combobox data-multiple>
+				<input list="multiple-options">
+				<${LIST_TAG} id="multiple-options">
+					<${OPT_TAG} label="Blue" value="blue-id">Blue</${OPT_TAG}>
+					<${OPT_TAG} label="Green" value="green-id">Green</${OPT_TAG}>
+				</${LIST_TAG}>
+			</u-combobox>`,
+			);
+			const input = page.locator("input");
+			const items = page.locator("u-combobox data");
+
+			if (controlled) {
+				await page
+					.locator("u-combobox")
+					.evaluate((el: UHTMLComboboxElement) => {
+						el.addEventListener("comboboxbeforeselect", (event) => {
+							event.preventDefault();
+							const item = (event as CustomEvent<HTMLDataElement>).detail;
+							el.insertBefore(item, el.control);
+						});
+					});
+			}
+
+			await input.click();
+			await fillOption(input, page.locator(`${OPT_TAG}[value="blue-id"]`));
+			await expect(items).toHaveText(["Blue"]);
+			await expect(input).toHaveValue("");
+
+			await input.fill("Gre");
+			await fillOption(input, page.locator(`${OPT_TAG}[value="green-id"]`));
+			await expect(items).toHaveText(["Blue", "Green"]);
+			await expect(input).toHaveValue("Gre");
+		});
+	}
+}
 
 // TODO: Test single mode syncs value when changing/adding/removing item

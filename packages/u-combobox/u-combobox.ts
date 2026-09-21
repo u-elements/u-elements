@@ -98,10 +98,13 @@ export class UHTMLComboboxElement extends UHTMLElement {
 
 	_focusMoved = false; // Used to determine if we announce through aria-live or aria-label when items are added or removed
 	_itemSingleVale = ""; // Locally store item text to compare change in single mode
-	_singleTypingMatch?: { value: string; label: string }; // Used to store current match in single mode
+	_singleTypingMatch?: { value: string; label: string; creatable?: boolean }; // Used to store current match in single mode
 	_speak = "";
 	_texts = { ...TEXTS };
 	_value = ""; // Locally store value to store value before input-click
+
+	// Since we do not know if a value change is initiated by datalist, we use a timer to defer handling
+	_valueTimer?: ReturnType<typeof setTimeout> | undefined;
 
 	static get observedAttributes() {
 		return Object.keys(TEXTS).map((key) => `data-sr-${key}`); // Using ES2015 syntax for backwards compatibility
@@ -217,7 +220,7 @@ const dispatchMatch = (self: UHTMLComboboxElement) => {
 		else syncOptionsWithItems(self); // Sync options with items in multiple mode as consumer can change option.selected in comboboxbeforematch
 	}
 
-	if (!match && creatable && label) return { value: label, label }; // Return creatable value as match if no match and creatable
+	if (!match && creatable && label) return { value: label, label, creatable }; // Return creatable value as match if no match and creatable
 	return match && { value: getValue(match), label: getLabel(match) };
 };
 
@@ -259,11 +262,15 @@ const onBlur = (self: UHTMLComboboxElement) =>
 const onBlurred = (self: UHTMLComboboxElement) =>
 	self.multiple ||
 	self.contains(getFocusedElement(self)) ||
-	dispatchSelect(self, self._singleTypingMatch, false); // Use cached match from typing
+	dispatchSelect(
+		self,
+		self._singleTypingMatch?.creatable ? undefined : self._singleTypingMatch, // Prevent creating match automatically on blur
+		false,
+	); // Use cached match from typing
 
 const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
 	const { clientX: x, clientY: y, target } = event;
-	const { clear, control, items, toggle } = self;
+	const { clear, control, items, toggle, multiple } = self;
 	const isSelf = target === self;
 
 	if (toggle?.contains(target as Node)) {
@@ -274,6 +281,7 @@ const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
 	if (control && clear?.contains(target as Node)) {
 		event.preventDefault(); // Prevent button[type="reset"]
 		setValue(control, "", "deleteContentBackward"); // Support clear button
+		if (!multiple) dispatchSelect(self); // Instantly trigger removal if single mode
 		control.focus();
 		return IS_LIST_HIDDEN || control.click(); // Open list if it was open before clicking clear
 	}
@@ -301,10 +309,10 @@ const onInput = (self: UHTMLComboboxElement, event: Partial<InputEvent>) => {
 		event.stopImmediatePropagation?.(); // Prevent input event when reverting value anyway
 		const value = control?.value || null; // Fallback to null to prevent matching empty values
 		const match = [...options].find((o) => getValue(o) === value);
-		if (control) control.value = self._value; // Revert value as it will be changed by dispatchChange if needed
+		syncCachedValue(self, true); // Revert value as it will be changed by dispatchChange if needed
 		if (match) return dispatchSelect(self, match, multiple);
 	} else {
-		self._value = control?.value || ""; // Store value so we can revert if clicking in <datalist>
+		syncCachedValue(self); // Store value so we can revert if clicking in <datalist>
 		if (!multiple && isTrusted) self._singleTypingMatch = dispatchMatch(self); // Only perpare matches if value is changed by user typing
 	}
 
@@ -314,7 +322,7 @@ const onInput = (self: UHTMLComboboxElement, event: Partial<InputEvent>) => {
 
 const onProgrammaticInput = (self: UHTMLComboboxElement) => {
 	self._singleTypingMatch = undefined; // Clear cache, so we can match on blur
-	self._value = self.control?.value || ""; // Update cached value
+	syncCachedValue(self);
 	syncButtonsWithInput(self);
 };
 
@@ -416,6 +424,17 @@ const speakReset = (self: UHTMLComboboxElement, label: string | null) => {
 	self._speak = "";
 	if (self.control) attr(self.control, ARIA_LABEL, label); // Revert aria-label to original value after announcement
 	syncItems(self);
+};
+
+// Since we do not know if a value change is initiated by datalist, we use a timer to defer handling
+const syncCachedValue = (self: UHTMLComboboxElement, restore = false) => {
+	const control = self.control;
+	const value = control?.value || "";
+	clearTimeout(self._valueTimer);
+
+	// Store _value after delay, so we can check if isDatalistClick first
+	if (!restore) self._valueTimer = setTimeout(() => (self._value = value));
+	else if (control) control.value = self._value || "";
 };
 
 const syncItems = (self: UHTMLComboboxElement) => {

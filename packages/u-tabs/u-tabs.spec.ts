@@ -365,6 +365,32 @@ test.describe("u-tabs", () => {
 		}
 	});
 
+	test("respects all aria-selected=false attributes", async ({ page }) => {
+		await page.evaluate(() => {
+			document.body.innerHTML = `<u-tabs>
+        <u-tablist>
+          <u-tab aria-selected="false">Tab 1</u-tab>
+          <u-tab aria-selected="false">Tab 2</u-tab>
+        </u-tablist>
+        <u-tabpanel>Panel 1</u-tabpanel>
+        <u-tabpanel>Panel 2</u-tabpanel>
+      </u-tabs>`;
+		});
+		const uTab0 = page.locator("u-tab").nth(0);
+		const uTab1 = page.locator("u-tab").nth(1);
+		const uTabpanel0 = page.locator("u-tabpanel").nth(0);
+		const uTabpanel1 = page.locator("u-tabpanel").nth(1);
+
+		// When both tabs have aria-selected="false", none should be selected
+		const tab0Selected = await uTab0.getAttribute("aria-selected");
+		const tab1Selected = await uTab1.getAttribute("aria-selected");
+		expect(tab0Selected).toBe("false");
+		expect(tab1Selected).toBe("false");
+
+		await expect(uTabpanel0).toHaveJSProperty("hidden", true);
+		await expect(uTabpanel1).toHaveJSProperty("hidden", true);
+	});
+
 	test("respects id attributes", async ({ page }) => {
 		await page.evaluate(() => {
 			document.body.innerHTML = `<u-tabs>

@@ -155,9 +155,12 @@ export class UHTMLTabElement extends UHTMLElement {
 	}
 	connectedCallback() {
 		attr(this, "role", "tab");
+		const hasAriaSelected = this.hasAttribute(ARIA_SELECTED);
 		attr(this, ARIA_SELECTED, `${this.selected}`); // Setup attributes on connectedCallback since initial onMutation has already run
 		attr(this, TABINDEX, this.selected ? "0" : "-1");
-		if (!findSelected(this.parentElement?.children)) setSelected(this); // Ensure at least one tab is selected, but checking findSelected onall children since u-tab might not have been connected
+		// Ensure at least one tab is selected, but checking findSelected onall children since u-tab might not have been connected
+		// If the user provides aria-selected then skip this check
+		if (!hasAriaSelected && !findSelected(this.parentElement?.children)) setSelected(this);
 	}
 	attributeChangedCallback() {
 		if (!SKIP_TABS_UPDATE.has(this.parentElement as Element) && this.selected)

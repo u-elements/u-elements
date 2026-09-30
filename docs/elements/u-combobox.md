@@ -146,7 +146,7 @@ myCombobox.addEventListener('comboboxbeforematch', (event) => {
 Triggers if `input.value` is programmatically set. Useful when extending `u-combobox` with custom functionality.
 ```js
 myCombobox.addEventListener('comboboxprogrammaticinput', (event) => {
-  event.target // HTMLInputElement
+  event.target // UHTMLComboboxElement
 })
 ```
 
@@ -584,7 +584,8 @@ const renderToStaticMarkup = (data: string, options: string) =>
 
 ## Changelog
 
-- **2.1.5:** Fix starte handling when multiple mode and controlled mode (i.e. React)
+- **2.1.6:** Fix value sync after option `click` and prevent Firefox form submit on `Enter`
+- **2.1.5:** Fix state handling when mode is multiple and controlled (i.e. React)
 - **2.1.4:** Fix internal state when preventing a selection or setting value programmatically
 - **2.1.3:** Fix issue where item behind datalist could receive focus
 - **2.1.2:** Prevent unnecessary matching after option `click` in single mode

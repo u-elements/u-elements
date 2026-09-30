@@ -18,20 +18,20 @@ for (const [LIST_TAG, OPT_TAG] of [
 	["datalist", "option"],
 ]) {
 	const fillOption = async (input: Locator, opt: Locator) => {
+		// A real native <datalist> pick updates the value inside the browser without
+		// going through the (patched) HTMLInputElement.prototype.value setter.
+		// mimic the browser with setRangeText instead.
 		if (LIST_TAG === "datalist") {
-			const optValue = (await opt.getAttribute("value")) || "";
+			const optElement = await opt.elementHandle();
+			await input.evaluate((input: HTMLInputElement, opt: Element) => {
+				const inputType = "insertReplacementText";
+				const data = (opt as HTMLOptionElement).value;
+				const event = { bubbles: true, composed: true, data, inputType };
 
-			await input.evaluate((input: HTMLInputElement, data) => {
-				// setValue from utils.ts
-				const type = "insertReplacementText";
-				const event = { bubbles: true, composed: true, data, inputType: type };
-				const proto = HTMLInputElement.prototype;
-
-				input.dispatchEvent(new InputEvent("beforeinput", event));
-				Object.getOwnPropertyDescriptor(proto, "value")?.set?.call(input, data);
+				input.setRangeText(data, 0, input.value.length);
 				input.dispatchEvent(new InputEvent("input", event));
 				input.dispatchEvent(new Event("change", { bubbles: true }));
-			}, optValue);
+			}, optElement);
 		} else {
 			await expect(opt).toBeVisible();
 			await opt.click();
@@ -467,6 +467,78 @@ for (const [LIST_TAG, OPT_TAG] of [
 			await expect(item).toHaveAttribute("value", "option-2");
 		});
 
+		test(`caches value set by consumer in comboboxafterselect when multiple mode (${LIST_TAG})`, async ({
+			page,
+		}) => {
+			await mount(page, `${DEFAULT}<span>0</span>`);
+			const input = page.locator("input");
+			const items = page.locator("u-combobox data");
+			const count = page.locator("span");
+
+			await page.evaluate(() => {
+				const combobox =
+					document.querySelector<UHTMLComboboxElement>("u-combobox");
+				const span = document.querySelector("span") as HTMLSpanElement;
+
+				combobox?.addEventListener("comboboxafterselect", (event) => {
+					if (event.detail.value === "tag-4" && combobox.control)
+						combobox.control.value = ""; // Clear filter after first pick only, so second pick reveals what was cached
+				});
+				combobox?.addEventListener(
+					"comboboxprogrammaticinput",
+					() => (span.textContent = `${Number(span.textContent) + 1}`),
+				);
+			});
+
+			await input.click();
+			await input.fill("Tag");
+			await fillOption(input, page.locator(`${OPT_TAG}[value="tag-4"]`));
+			await expect(items).toHaveText(["Tag 1", "Tag 2", "Tag 3", "Tag 4"]);
+			await expect(input).toHaveValue(""); // Cleared by consumer in comboboxafterselect
+			await expect(count).toHaveText("1"); // Consumer write must trigger comboboxprogrammaticinput
+
+			await fillOption(input, page.locator(OPT_TAG).last());
+			await expect(items).toHaveText([
+				"Tag 1",
+				"Tag 2",
+				"Tag 3",
+				"Tag 4",
+				"Tag 5",
+			]);
+			await expect(input).toHaveValue(""); // Must revert to cached "" and not to stale "Tag" typed before first pick
+			await expect(count).toHaveText("1"); // Revert is internal and must not trigger comboboxprogrammaticinput
+		});
+
+		test(`keeps the picked option on blur in single mode after typing a shorter exact match (${LIST_TAG})`, async ({
+			page,
+		}) => {
+			await mount(
+				page,
+				`<u-combobox>
+				<input id="single-input" list="single-list">
+				<${LIST_TAG} id="single-list">
+					<${OPT_TAG} value="Oslo">Oslo</${OPT_TAG}>
+					<${OPT_TAG} value="Oslo Lufthavn">Oslo Lufthavn</${OPT_TAG}>
+				</${LIST_TAG}>
+			</u-combobox>`,
+			);
+			const input = page.locator("#single-input");
+			const item = page.locator("u-combobox data");
+
+			await input.click();
+			await input.fill("Oslo"); // Exact match of the shorter option is cached as typing match
+			await fillOption(
+				input,
+				page.locator(`${OPT_TAG}[value="Oslo Lufthavn"]`),
+			);
+			await expect(item).toHaveText("Oslo Lufthavn");
+			await expect(input).toHaveValue("Oslo Lufthavn");
+
+			await input.blur();
+			await expect(item).toHaveText("Oslo Lufthavn"); // Must not revert to the earlier typed match "Oslo"
+			await expect(input).toHaveValue("Oslo Lufthavn");
+		});
+
 		test(`selects a typed option match on blur in single mode (${LIST_TAG})`, async ({
 			page,
 		}) => {
@@ -791,6 +863,60 @@ for (const [LIST_TAG, OPT_TAG] of [
 			await expect(input).toHaveValue("Gre");
 		});
 	}
+
+	test(`keeps the clicked option on blur after a substring search (${LIST_TAG})`, async ({
+		page,
+	}) => {
+		await mount(
+			page,
+			`<label for="multi">My label</label>
+				<u-combobox data-creatable>
+					<data>Tag 1</data>
+					<input id="multi" />
+					<${LIST_TAG}>
+						<${OPT_TAG}></${OPT_TAG}>
+						<${OPT_TAG} value="Oslo">Oslo</${OPT_TAG}>
+					</${LIST_TAG}>
+					<span>0</span>
+				</u-combobox>`,
+		);
+		const input = page.locator("input");
+		const options = page.locator(OPT_TAG);
+
+		await page.evaluate(() => {
+			const combobox =
+				document.querySelector<UHTMLComboboxElement>("u-combobox");
+			const span = combobox?.lastElementChild as HTMLSpanElement;
+
+			const handleBeforeSelect = () =>
+				(span.textContent = `${Number(span.textContent) + 1}`);
+
+			const handleAddOption = () => {
+				const value = combobox?.control?.value.trim() || "";
+				const add = combobox?.list?.options?.[0] as HTMLOptionElement;
+				add.hidden = !value || combobox?.values.includes(value) || false;
+				add.value = value;
+				add.label = value;
+				add.textContent = `Add "${value}"`;
+			};
+
+			combobox?.addEventListener("comboboxbeforeselect", handleBeforeSelect);
+			combobox?.addEventListener("comboboxafterselect", handleAddOption);
+			combobox?.addEventListener("input", handleAddOption);
+		});
+
+		await input.click();
+		await input.fill("slo");
+		await expect(options.first()).toHaveAttribute("value", "slo");
+		await fillOption(input, options.last());
+		await expect(input).toHaveValue("Oslo"); // Fills oslo as it is clicked, even though "slo" was typed
+		await expect(page.locator("span")).toHaveText("1");
+
+		/* In 2.0.0 and earlier the input was reset to the typed query on blur. */
+		await page.locator("body").click();
+		await expect(input).toHaveValue("Oslo"); // Value should remain unchanged
+		await expect(page.locator("span")).toHaveText("1"); // comboboxbeforeselect should not be triggered again on blur
+	});
 }
 
 // TODO: Test single mode syncs value when changing/adding/removing item

@@ -254,8 +254,9 @@ export const declarativeShadowRoot = (style: string, slot = "<slot></slot>") =>
  */
 export const preventSubmit = (input: HTMLInputElement) => {
 	const form = attr(input, "form");
+	if (form === "#") return; // If holding Enter, avoid restoring # value
 	attr(input, "form", "#"); // Temporarily remove form association to prevent submit on enter
-	setTimeout(restoreSubmit, 0, input, form); // Restore form association on next macrotask
+	setTimeout(restoreSubmit, 16, input, form); // Restore form association on after 16ms (Firefox needs the delay)
 };
 const restoreSubmit = (input: HTMLInputElement, form: string | null) =>
 	attr(input, "form", form);

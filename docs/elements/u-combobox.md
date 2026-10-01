@@ -589,7 +589,7 @@ const renderToStaticMarkup = (data: string, options: string) =>
 ## Changelog
 
 - **2.2.0:** Fix framework compatibility issues:
-  - Multiple mode input value noe syncs correctly in all browsers after `click` on option
+  - Multiple mode input value now syncs correctly in all browsers after `click` on option
   - Single mode correctly dispatches `input` after option `click`
   - Single mode blur matches against API loaded options after typing
   - Single mode with datalist always syncs `input.value` to the `<data>`. On mount the sync runs in a microtask, so inputs bound by React, Vue or Angular receive it

@@ -14,7 +14,7 @@ And if you like the project, but just don't have time to contribute, that's fine
 ## Code of Conduct
 
 This project and everyone participating in it is governed by the
-[u-elements Code of Conduct](https://github.com/u-elements/u-elements/blob/master/CODE_OF_CONDUCT.md).
+[u-elements Code of Conduct](https://github.com/u-elements/u-elements/blob/main/CODE_OF_CONDUCT.md).
 By participating, you are expected to uphold this code.
 
 

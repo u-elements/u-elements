@@ -578,13 +578,24 @@ const renderToStaticMarkup = (data: string, options: string) =>
 ```
 
 ## Notes
+- `<input>` must be a direct child of `<u-combobox>` for programmatic `input.value` changes to be detected
+- `<datalist>` or `<u-datalist>` must be a child of `<u-combobox>`. The `list` attribute on `<input>` is managed automatically
+- Without a datalist, single mode is free text: the input is never overwritten by the `<data>` item
+- The toggle button is hidden when using native `<datalist>`, as the native suggestion popup can not be detected programmatically
 - ARC Toolkit incorectly reports `aria-description` as an invalid ARIA-attribute
 - ARC Toolkit does not correcly read the relation between items with `role="option"` and the ShadowDoom wrapping container `role="listbox"`
 
 
 ## Changelog
 
-- **2.1.6:** Fix value sync after option `click` and prevent Firefox form submit on `Enter`
+- **2.2.0:** Closed multiple framework compatibility issues
+  - Multiple mode input value syncs correctly in all browsers after `click` on option
+  - Single mode correctly dispatches `input` after option `click`
+  - Single mode blur matches against API loaded options after typing
+  - Single mode with datalist always syncs `input.value` to the `<data>`
+  - Runtime toggle `data-multiple` and `data-creatable` syncs correctly
+  - Firefox consistently prevent form submit on `Enter`.
+  - Synthetic `InputEvent` without `inputType` (i.e. testing-library) does not cause incorrect option click
 - **2.1.5:** Fix state handling when mode is multiple and controlled (i.e. React)
 - **2.1.4:** Fix internal state when preventing a selection or setting value programmatically
 - **2.1.3:** Fix issue where item behind datalist could receive focus

@@ -1,8 +1,9 @@
 <script lang="ts">
-  import "../../packages/u-tabs/u-tabs.ts";
-  import selectedTabStore, { tabs } from "./store";
-  const selected = $selectedTabStore.name;
-  let showtada = false;
+import "../../packages/u-tabs/u-tabs.ts";
+import selectedTabStore, { tabs } from "./store";
+
+const selected = $selectedTabStore.name;
+let showtada = false;
 </script>
 
 <u-tabs>

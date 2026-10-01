@@ -146,7 +146,7 @@ myCombobox.addEventListener('comboboxbeforematch', (event) => {
 Triggers if `input.value` is programmatically set. Useful when extending `u-combobox` with custom functionality.
 ```js
 myCombobox.addEventListener('comboboxprogrammaticinput', (event) => {
-  event.target // HTMLInputElement
+  event.target // UHTMLComboboxElement
 })
 ```
 
@@ -578,13 +578,27 @@ const renderToStaticMarkup = (data: string, options: string) =>
 ```
 
 ## Notes
+- `<input>` must be a direct child of `<u-combobox>` for programmatic `input.value` changes to be detected
+- `<datalist>` or `<u-datalist>` must be a child of `<u-combobox>`. The `list` attribute on `<input>` is managed automatically
+- Without a datalist, single mode is free text: the input is never overwritten by the `<data>` item
+- The toggle button is hidden when using native `<datalist>`, as the native suggestion popup can not be detected programmatically
 - ARC Toolkit incorectly reports `aria-description` as an invalid ARIA-attribute
 - ARC Toolkit does not correcly read the relation between items with `role="option"` and the ShadowDoom wrapping container `role="listbox"`
 
 
 ## Changelog
 
-- **2.1.5:** Fix starte handling when multiple mode and controlled mode (i.e. React)
+- **2.2.0:** Fix framework compatibility issues:
+  - Multiple mode input value now syncs correctly in all browsers after `click` on option
+  - Single mode correctly dispatches `input` after option `click`
+  - Single mode blur matches against API loaded options after typing
+  - Single mode with datalist always syncs `input.value` to the `<data>`. On mount the sync runs in a microtask, so inputs bound by React, Vue or Angular receive it
+  - Runtime toggle `data-multiple` and `data-creatable` syncs correctly
+  - Firefox consistently prevent form submit on `Enter`
+  - Synthetic `InputEvent` without `inputType` (i.e. testing-library) does not cause incorrect option click
+  - Attribute writes that do not change a value (i.e. Vue re-setting option `value`, React syncing input `value`) do not trigger a state sync
+  - Input restore after a prevented `comboboxbeforeselect` is deferred, so frameworks rendering `<data>` asynchronously do not see the previous value flash
+- **2.1.5:** Fix state handling when mode is multiple and controlled (i.e. React)
 - **2.1.4:** Fix internal state when preventing a selection or setting value programmatically
 - **2.1.3:** Fix issue where item behind datalist could receive focus
 - **2.1.2:** Prevent unnecessary matching after option `click` in single mode

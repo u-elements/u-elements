@@ -1,6 +1,7 @@
 <script lang="ts">
-import "../../packages/u-datalist";
-import "../../packages/u-combobox";
+import "../../packages/u-datalist/u-datalist";
+import "../../packages/u-combobox/u-combobox";
+
 // import Tabs from './Tabs.svelte'
 
 function handleBeforeSelect(event: CustomEvent) {

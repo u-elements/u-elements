@@ -121,7 +121,11 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	}
 
 	static get observedAttributes() {
-		return Object.keys(TEXTS).map((key) => `data-sr-${key}`); // Using ES2015 syntax for backwards compatibility
+		return [
+			"data-creatable",
+			"data-multiple",
+			...Object.keys(TEXTS).map((key) => `data-sr-${key}`),
+		]; // Using ES2015 syntax for backwards compatibility
 	}
 
 	constructor() {
@@ -141,8 +145,6 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		this._umutate = onMutation(this, onMutations, {
 			attributeFilter: [
 				"aria-expanded",
-				"data-creatable",
-				"data-multiple",
 				"id", // Respond to change or <datalist> id
 				"role", // Respond to change or <u-datalist> role
 				"value", // Respond to changes in <data> value
@@ -154,11 +156,15 @@ export class UHTMLComboboxElement extends UHTMLElement {
 			subtree: true,
 		});
 	}
-	attributeChangedCallback(prop: string, _: string, val: string) {
+	attributeChangedCallback(prop: string, prev?: string, next?: string) {
 		const text = prop.split("data-sr-")[1] as keyof typeof TEXTS;
-		if (TEXTS[text]) this._texts[text] = val || TEXTS[text]; // Cache text attributes for performance
+		if (TEXTS[text]) this._texts[text] = next || TEXTS[text]; // Cache text attributes for performance
 		if (text === "clear" && this.clear)
 			attr(this.clear, ARIA_LABEL, this._texts.clear); // Backwards compatbile only update clear aria-label if data-sr-clear is set
+		if (!text && prev !== next && this._umutate) {
+			onMutations(this); // Re-sync on data-multiple/data-creatable change, ignoring no-op writes from frameworks and changes before connect
+			syncInputWithItemSingleMode(this); // Input may hold filter text from multiple mode while cached item text is unchanged, so onMutations skips the sync
+		}
 	}
 	disconnectedCallback() {
 		clearTimeout(this._restoreBeforeSelect);

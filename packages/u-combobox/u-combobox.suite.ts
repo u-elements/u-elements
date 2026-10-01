@@ -904,6 +904,21 @@ export const comboboxSuite = (
 					await expect(item).toHaveAttribute("hidden", "");
 					await expect(select).not.toHaveAttribute("multiple");
 				});
+
+				test("restores item text in input when switching from multiple to single mode", async ({
+					page,
+				}) => {
+					await render(page, { items: [BERGEN] });
+					const input = page.locator("input");
+					await expect(input).toHaveValue("Bergen");
+
+					await update(page, { multiple: true });
+					await input.fill("ber"); // Filter text is kept in multiple mode
+					await expect(input).toHaveValue("ber");
+
+					await update(page, { multiple: false }); // Item text is unchanged, but input must still sync
+					await expect(input).toHaveValue("Bergen");
+				});
 			});
 
 			test.describe(name("toggle button"), () => {

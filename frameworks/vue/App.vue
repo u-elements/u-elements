@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-import "../../packages/u-progress";
-import "../../packages/u-datalist";
-import "../../packages/u-combobox";
+import "../../packages/u-progress/u-progress";
+import "../../packages/u-datalist/u-datalist";
+import "../../packages/u-combobox/u-combobox";
 import type { UHTMLComboboxElement } from "../../packages/u-combobox";
 
 const count = ref(0);

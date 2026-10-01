@@ -41,12 +41,14 @@ test.describe("u-option", () => {
 		const uOption0 = page.locator("u-option").nth(0);
 		const uOption1 = page.locator("u-option").nth(1);
 
-		uOption0.evaluate<void, HTMLOptionElement>((uOption0) => {
+		uOption0.evaluate((node) => {
+			const uOption0 = node as HTMLOptionElement;
 			uOption0.defaultSelected = true;
 			uOption0.disabled = true;
 			uOption0.selected = true;
 		});
-		uOption1.evaluate<void, HTMLOptionElement>((uOption1) => {
+		uOption1.evaluate((node) => {
+			const uOption1 = node as HTMLOptionElement;
 			uOption1.label = "Option 2";
 			uOption1.text = "Text 2";
 			uOption1.value = "Value 2";
@@ -107,7 +109,8 @@ test.describe("u-option", () => {
 		await expect(uOption).toHaveAttribute("aria-selected", "false");
 		await expect(uOption).toHaveAttribute("aria-disabled", "false");
 
-		await uOption.evaluate<void, HTMLOptionElement>((el) => {
+		await uOption.evaluate((node) => {
+			const el = node as HTMLOptionElement;
 			el.label = "Label 1";
 			el.value = "Value 1";
 			el.selected = true;
@@ -119,7 +122,8 @@ test.describe("u-option", () => {
 		await expect(uOption).toHaveAttribute("disabled");
 		await expect(uOption).toHaveAttribute("aria-disabled", "true");
 
-		await uOption.evaluate<void, HTMLOptionElement>((el) => {
+		await uOption.evaluate((node) => {
+			const el = node as HTMLOptionElement;
 			el.selected = false;
 			el.disabled = false;
 		});

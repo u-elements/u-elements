@@ -592,10 +592,13 @@ const renderToStaticMarkup = (data: string, options: string) =>
   - Multiple mode input value syncs correctly in all browsers after `click` on option
   - Single mode correctly dispatches `input` after option `click`
   - Single mode blur matches against API loaded options after typing
-  - Single mode with datalist always syncs `input.value` to the `<data>`
+  - Single mode with datalist always syncs `input.value` to the `<data>`. On mount the sync runs in a microtask, so inputs bound by React, Vue or Angular receive it
   - Runtime toggle `data-multiple` and `data-creatable` syncs correctly
   - Firefox consistently prevent form submit on `Enter`.
   - Synthetic `InputEvent` without `inputType` (i.e. testing-library) does not cause incorrect option click
+  - Attribute writes that do not change a value (i.e. Vue re-setting option `value`, React syncing input `value`) do not trigger a state sync
+  - Input restore after a prevented `comboboxbeforeselect` is deferred, so frameworks rendering `<data>` asynchronously do not see the previous value flash
+  - Added framework test suites for React, Vue, Svelte and Angular (`npm run test:frameworks`)
 - **2.1.5:** Fix state handling when mode is multiple and controlled (i.e. React)
 - **2.1.4:** Fix internal state when preventing a selection or setting value programmatically
 - **2.1.3:** Fix issue where item behind datalist could receive focus

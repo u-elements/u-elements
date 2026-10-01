@@ -113,6 +113,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	_speak = "";
 	_texts = { ...TEXTS };
 
+	_restoreBeforeSelect?: ReturnType<typeof setTimeout>; // Pending input restore after a prevented comboboxbeforeselect
 	_value = ""; // Cache value to be able to revert on datalist click in multiple mode
 	_valueSkipProgrammatic = false; // If a programmatic input.value change happens directly after a "beforeinput" event, there is no need to cache as the value comes from a datalist
 	_onComboboxProgrammaticInput(input: HTMLInputElement) {
@@ -146,6 +147,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 				"role", // Respond to change or <u-datalist> role
 				"value", // Respond to changes in <data> value
 			],
+			attributeOldValue: true, // Needed to ignore no-op attribute writes from frameworks
 			attributes: true,
 			characterData: true, // Respond to changes in <data> textContent
 			childList: true,
@@ -159,6 +161,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 			attr(this.clear, ARIA_LABEL, this._texts.clear); // Backwards compatbile only update clear aria-label if data-sr-clear is set
 	}
 	disconnectedCallback() {
+		clearTimeout(this._restoreBeforeSelect);
 		off(this, EVENTS, this, true);
 		this._umutate?.();
 		// biome-ignore format: next-line
@@ -277,7 +280,16 @@ const dispatchSelect = (
 		if (remove) remove.remove();
 		else control?.insertAdjacentElement("beforebegin", add);
 		self.dispatchEvent(new CustomEvent("comboboxafterselect", event));
-	} else syncInputWithItemSingleMode(self); // Restore value if beforeselect was canceled, and <data> was not removed
+	} else {
+		clearTimeout(self._restoreBeforeSelect);
+		self._restoreBeforeSelect = setTimeout(onBeforeSelectRestore, 0, self); // Restore value if beforeselect was canceled. Deferred, as frameworks render the <data> they control asynchronously, and syncing right away would briefly restore the previous value
+	}
+};
+
+const onBeforeSelectRestore = (self: UHTMLComboboxElement) => {
+	clearTimeout(self._restoreBeforeSelect);
+	self._restoreBeforeSelect = undefined;
+	syncInputWithItemSingleMode(self);
 };
 
 const onBlur = (self: UHTMLComboboxElement) =>
@@ -287,6 +299,7 @@ const onBlurred = (self: UHTMLComboboxElement) => {
 	const { control, items, multiple, _singleTypingMatch: cached } = self;
 	if (multiple || !control || !self.isConnected) return; // Nothing to do in multiple mode, or if unmounted before the blur timeout
 	if (self.contains(getFocusedElement(self))) return; // Focus is still inside
+	if (self._restoreBeforeSelect) onBeforeSelectRestore(self); // Finish pending restore first, so a prevented pick is not treated as typed text
 	const changed = control.value !== getText(items[0]); // Only match if value differs from current item, to avoid re-matching after option click
 	const match = cached || (changed ? dispatchMatch(self) : undefined); // Prefer match cached while typing, but fall back as options might have changed since
 	dispatchSelect(self, match?.creatable ? undefined : match, false); // Prevent creating match automatically on blur
@@ -383,6 +396,7 @@ const onKeyDownControl = (self: UHTMLComboboxElement, e: KeyboardEvent) => {
 		e.preventDefault(); // Prevent sideways scroll
 	}
 	if (e.key === "Enter" && control && (list || creatable)) {
+		if (self._restoreBeforeSelect) onBeforeSelectRestore(self); // Finish pending restore first, so a prevented pick is not treated as typed text
 		const match = self._singleTypingMatch || dispatchMatch(self);
 		preventSubmit(control); // Prevent submitting form as we want to preform a match instead
 		dispatchSelect(self, match, multiple);
@@ -421,6 +435,10 @@ const onKeyDownItems = (self: UHTMLComboboxElement, event: KeyboardEvent) => {
 const onMutations = (self: UHTMLComboboxElement, edit?: MutationRecord[]) => {
 	if (!self.control) return;
 	const { _texts, control, items, list, multiple, toggle } = self;
+
+	// Frameworks re-write attributes on render (i.e. Vue sets option value, React syncs input value), which is not a state change
+	if (edit?.every((r) => isNoopAttribute(r, control))) return;
+
 	const edits: Node[] = [];
 	for (const { addedNodes: add, removedNodes: del } of edit || []) {
 		for (const el of add) if (el.nodeName === "DATA") edits.unshift(el); // Added nodes to the front
@@ -460,7 +478,13 @@ const onMutations = (self: UHTMLComboboxElement, edit?: MutationRecord[]) => {
 		const next = getText(items[0]);
 		self._itemSingleValue = next;
 
-		if (next !== prev) syncInputWithItemSingleMode(self); // Also on mount, so frameworks receive input/change for the initial value
+		if (next === prev) return;
+		if (prev !== undefined) return syncInputWithItemSingleMode(self);
+
+		// First sync is deferred, as frameworks write their bound input value after insertion (Vue v-model mounted, Angular ngModel) or ignore events during render (React commit)
+		Promise.resolve().then(() => {
+			if (self.isConnected) syncInputWithItemSingleMode(self);
+		});
 	}
 };
 
@@ -553,6 +577,11 @@ const syncInputWithItemSingleMode = (self: UHTMLComboboxElement) => {
 	const action = value ? "insertText" : "deleteContentBackward";
 	if (value !== control.value) setValue(control, value, action); // Prevent input event being handled as "click" on option
 };
+
+const isNoopAttribute = (r: MutationRecord, control: Element) =>
+	r.type === "attributes" &&
+	((r.target === control && r.attributeName === "value") || // Controlled inputs sync the value attribute on every keystroke
+		r.oldValue === (r.target as Element).getAttribute(r.attributeName || "")); // Same value written again
 
 // Helpers (some since u-option might not be initialized yet)
 const getLabel = (el: Element) => attr(el, "label") ?? getText(el);

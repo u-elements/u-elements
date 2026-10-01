@@ -1,6 +1,6 @@
 import { mount } from "svelte";
-import App from "./App.svelte";
+import Test from "./test.u-combobox.svelte";
 
-export default mount(App, {
+export default mount(Test, {
 	target: document.getElementById("app") as HTMLElement,
 });

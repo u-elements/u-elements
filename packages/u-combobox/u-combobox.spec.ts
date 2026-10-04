@@ -77,15 +77,14 @@ test.describe("DOM", () => {
 			</u-combobox>`;
 
 		test.describe(`DOM (${LIST_TAG})`, () => {
-			test("keeps typing match when frameworks re-write attributes", async ({
+			test("keeps typed text when frameworks re-write attributes", async ({
 				page,
 			}) => {
 				await mount(page, combobox());
 				const input = page.locator("#input");
-				const match = page.locator(OPT_TAG).nth(1);
 
 				await input.pressSequentially("bergen");
-				await expect(match).toHaveAttribute("selected");
+				await expect(input).toHaveValue("bergen");
 
 				// Controlled inputs (i.e. React) sync the value attribute on every keystroke
 				await input.evaluate((el) => el.setAttribute("value", "bergen"));
@@ -97,8 +96,7 @@ test.describe("DOM", () => {
 						el.setAttribute("value", el.getAttribute("value") || "");
 					});
 				await page.waitForTimeout(100); // Give a wrongly triggered sync time to run
-				await expect(match).toHaveAttribute("selected"); // Neither write is a state change, so the match must survive
-				await expect(input).toHaveValue("bergen");
+				await expect(input).toHaveValue("bergen"); // Neither write is a state change, so a sync must not revert the typed text
 			});
 
 			test("works after being moved in the DOM", async ({ page }) => {

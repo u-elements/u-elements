@@ -7,10 +7,8 @@ const { label, lang } = defineProps<{ label: string; lang?: string }>();
 
 // Import all uElements
 Promise.all(
-	Object.entries(import.meta.glob([
-		"../../../packages/*/u-*.ts",
-		"!../../../packages/**/*.spec.ts",
-	]))
+	Object.entries(import.meta.glob("../../../packages/*/u-*.ts"))
+	.filter(([name]) => name.match(/\/u-\w+\.ts/)) // Only files matching u-WORDS.ts
 	.map(([, module]) =>(module as () => void)()),
 );
 

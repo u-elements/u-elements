@@ -399,7 +399,6 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
     const options = combobox.list.options;
     const add = options[options.length - 1];
     add.hidden = !value || combobox.values.includes(value);
-    console.log(combobox.values)
     add.value = value;
     add.label = value;
     add.textContent = `Add "${value}"`
@@ -495,7 +494,7 @@ if (typeof window !== 'undefined') {
   &lt;input id="my-controlled-input" list="my-controlled-list" /&gt;
   &lt;button type="button" aria-expanded="false"&gt;&lt;/button&gt;
   &lt;button type="reset"&gt;&lt;/button&gt;
-  &lt;u-datalist hidden id="my-controlled-list" data-nofilter&gt;
+  &lt;u-datalist hidden id="my-controlled-list"&gt;
     &lt;u-option&gt;Coconut&lt;/u-option&gt;
     &lt;u-option&gt;Strawberries&lt;/u-option&gt;
     &lt;u-option&gt;Chocolate&lt;/u-option&gt;
@@ -588,11 +587,12 @@ const renderToStaticMarkup = (data: string, options: string) =>
 
 ## Changelog
 
-- **2.2.0:** Fix framework compatibility issues:
-  - Multiple mode input value now syncs correctly in all browsers after `click` on option
-  - Single mode correctly dispatches `input` after option `click`
-  - Single mode blur matches against API loaded options after typing
+- **3.0.0:** Framework compatibility and matching changes:
+  - Single mode only matches against present options on `Enter`, never while typing or on blur.
+  - Single mode blur reverts to the current item, while an empty input still removes the item through `comboboxbeforeselect`
   - Single mode with datalist always syncs `input.value` to the `<data>`. On mount the sync runs in a microtask, so inputs bound by React, Vue or Angular receive it
+  - Single mode correctly dispatches `input` after option `click`
+  - Multiple mode input value now syncs correctly in all browsers after `click` on option
   - Runtime toggle `data-multiple` and `data-creatable` syncs correctly
   - Firefox consistently prevent form submit on `Enter`
   - Synthetic `InputEvent` without `inputType` (i.e. testing-library) does not cause incorrect option click

@@ -23,6 +23,11 @@ import {
  * | Enter          | Clear/Match -> Select/Restore | Clear/Match -> Select/Create | Match -> Select/Clear + Revert input | Match -> Select/Create + Revert input |
  * | Blur           | Restore, clear on empty       | Restore, clear on empty      | Nothing                              | Nothing                               |
  *
+ * Revert input = restore the text that was typed before the action.
+ * Multiple mode never clears the input on its own.
+ * Blur never matches in single mode: typed text reverts to the current item, and an empty input removes the item (can be prevented).
+ * Single mode without a datalist is free text: the input is never overwritten by the item.
+ *
  * Every test runs with both native <datalist> and <u-datalist>.
  * Native <datalist> picks are simulated with setRangeText + InputEvent("insertReplacementText"),
  * as Playwright can not interact with the native suggestion popup.
@@ -441,16 +446,12 @@ export const comboboxSuite = (
 					page,
 				}) => {
 					await render(page);
-					await resetLog(page, "comboboxprogrammaticinput");
 					const input = page.locator("#input");
 					const items = page.locator("u-combobox data");
 
 					await input.focus();
 					await update(page, { value: "Bergen" }); // Bound value write is programmatic
 					await expect(input).toHaveValue("Bergen");
-					expect(await logged(page, "comboboxprogrammaticinput")).toHaveLength(
-						1,
-					);
 					await input.press("Enter");
 					await expect(items).toHaveCount(1);
 					await expect(items.first()).toHaveText("Bergen");
@@ -626,6 +627,55 @@ export const comboboxSuite = (
 					expect(await logged(page, "input")).toEqual(["Tr"]); // Reverted pick does not dispatch input
 				});
 
+				test("datalist click reverts to value attribute present on mount", async ({
+					page,
+				}) => {
+					test.skip(
+						framework !== "Vanilla",
+						"Frameworks write the bound value through the property setter, which is cached by u-combobox",
+					);
+					await render(page, {
+						multiple: true,
+						value: "Tr",
+						inputAttrs: { value: "Tr" },
+					}); // Harness skips the property write as attribute and bound value match, so the input stays pristine
+					const input = page.locator("#input");
+					const items = page.locator("u-combobox data");
+
+					await expect(input).toHaveValue("Tr");
+					await input.click();
+					await selectOption(
+						input,
+						page.locator(`${OPT_TAG}[value="Trondheim"]`),
+					);
+					await expect(items).toHaveText(["Trondheim"]);
+					await expect(input).toHaveValue("Tr"); // Seeded from the attribute, not cleared
+				});
+
+				test("datalist click reverts to value attribute set on a pristine input", async ({
+					page,
+				}) => {
+					test.skip(
+						framework !== "Vanilla",
+						"Frameworks write the bound value through the property setter, so the input is never pristine",
+					);
+					await render(page, { multiple: true });
+					const input = page.locator("#input");
+					const items = page.locator("u-combobox data");
+
+					await input.evaluate((el: HTMLInputElement) =>
+						el.setAttribute("value", "Tr"),
+					); // Changes input.value without hitting the prototype setter
+					await expect(input).toHaveValue("Tr");
+					await input.click();
+					await selectOption(
+						input,
+						page.locator(`${OPT_TAG}[value="Trondheim"]`),
+					);
+					await expect(items).toHaveText(["Trondheim"]);
+					await expect(input).toHaveValue("Tr");
+				});
+
 				test("typing does not match", async ({ page }) => {
 					await render(page, { multiple: true });
 					await resetLog(page, "comboboxbeforematch");
@@ -734,7 +784,6 @@ export const comboboxSuite = (
 					page,
 				}) => {
 					await render(page, { multiple: true, controlled: false }); // comboboxafterselect only fires when comboboxbeforeselect is not prevented
-					await resetLog(page, "comboboxprogrammaticinput");
 					await page
 						.locator("u-combobox")
 						.evaluate((el: UHTMLComboboxElement) => {
@@ -755,12 +804,10 @@ export const comboboxSuite = (
 					);
 					await expect(items).toHaveText(["Trondheim"]);
 					await expect(input).toHaveValue(""); // Cleared by consumer
-					expect(await logged(page, "comboboxprogrammaticinput")).toEqual([""]); // Consumer write is programmatic
 
 					await selectOption(input, page.locator(OPT_TAG).nth(1));
 					await expect(items).toHaveText(["Trondheim", "Bergen"]);
 					await expect(input).toHaveValue(""); // Reverts to cached "", not to stale "T"
-					expect(await logged(page, "comboboxprogrammaticinput")).toEqual([""]); // Revert is internal
 				});
 
 				test("supports preventing selection, and without triggering new matching", async ({
@@ -876,74 +923,6 @@ export const comboboxSuite = (
 					await expect(input).toHaveValue("Ber"); // Not reverted
 					await expect(page.locator("u-combobox data")).toHaveCount(0);
 					expect(await logged(page, "input")).toEqual(["Ber"]); // Propagated to consumer
-				});
-
-				// <u-datalist> before 2.0.3 dispatched beforeinput, set value through the prototype setter, then dispatched input, all without inputType
-				const legacyClick = (input: Locator, value: string) =>
-					input.evaluate((el, value) => {
-						const input = el as HTMLInputElement;
-						const init = {
-							bubbles: true,
-							composed: true,
-							data: value,
-							inputType: "",
-						};
-						input.dispatchEvent(new InputEvent("beforeinput", init));
-						Object.getOwnPropertyDescriptor(
-							HTMLInputElement.prototype,
-							"value",
-						)?.set?.call(input, value);
-						input.dispatchEvent(new InputEvent("input", init));
-						input.dispatchEvent(new Event("change", { bubbles: true }));
-					}, value);
-
-				test("supports click from u-datalist before 2.0.3 in multiple mode", async ({
-					page,
-				}) => {
-					await render(page, { multiple: true });
-					await resetLog(page, "input");
-					await resetLog(page, "comboboxprogrammaticinput");
-					const input = page.locator("#input");
-
-					await input.fill("Ber");
-					await legacyClick(input, "Bergen");
-					await expect(page.locator("u-combobox data")).toHaveText(["Bergen"]);
-					await expect(input).toHaveValue("Ber"); // Reverted to typed text
-					await expect(page.locator(OPT_TAG).nth(1)).toHaveAttribute(
-						"selected",
-					);
-					expect(await logged(page, "input")).toEqual(["Ber"]); // Pick is swallowed like any other datalist click
-					expect(await logged(page, "comboboxprogrammaticinput")).toEqual([]); // Value write from the datalist is not programmatic
-				});
-
-				test("supports click from u-datalist before 2.0.3 in single mode", async ({
-					page,
-				}) => {
-					await render(page);
-					const input = page.locator("#input");
-					const item = page.locator("u-combobox data");
-
-					await input.fill("Os");
-					await legacyClick(input, "oslo-id");
-					await expect(item).toHaveAttribute("value", "oslo-id");
-					await expect(input).toHaveValue("Oslo"); // Label, not value
-
-					await resetLog(page, "comboboxbeforematch");
-					await input.blur();
-					await expect(item).toHaveAttribute("value", "oslo-id");
-					expect(await logged(page, "comboboxbeforematch")).toEqual([]); // No re-match on blur after pick
-				});
-
-				test("reverts input on legacy click of a placeholder option with empty value", async ({
-					page,
-				}) => {
-					await render(page, { multiple: true });
-					const input = page.locator("#input");
-
-					await input.fill("Ber");
-					await legacyClick(input, "");
-					await expect(input).toHaveValue("Ber");
-					await expect(page.locator("u-combobox data")).toHaveCount(0);
 				});
 
 				test("does not re-match when blurring right after a prevented pick", async ({
@@ -1225,9 +1204,6 @@ export const comboboxSuite = (
 					await expect(input).toHaveValue("Bergen");
 					await expect.poll(() => docLogged(page, "input")).toEqual(["Bergen"]); // Mount sync dispatches like any later sync
 					expect(await docLogged(page, "change")).toEqual(["Bergen"]);
-					expect(await docLogged(page, "comboboxprogrammaticinput")).toContain(
-						"Bergen",
-					); // Frameworks may also write their initial bound value
 
 					await update(page, {
 						items: [{ value: "Bergen", label: "Trondheim" }],
@@ -1253,9 +1229,6 @@ export const comboboxSuite = (
 					await expect(input).toHaveValue(""); // Controlled to empty state as no <data> exists
 					await expect.poll(() => docLogged(page, "input")).toEqual([""]);
 					expect(await docLogged(page, "change")).toEqual([""]);
-					expect(await docLogged(page, "comboboxprogrammaticinput")).toContain(
-						"",
-					); // Internal write still announces itself
 				});
 
 				test("keeps prefilled input on mount without list", async ({
@@ -1270,11 +1243,8 @@ export const comboboxSuite = (
 					const input = page.locator("#input");
 
 					await expect(input).toHaveValue("Draft"); // Free text without datalist
-					expect(await docLogged(page, "input")).toEqual([]);
+					expect(await docLogged(page, "input")).toEqual([]); // Framework may write "Draft", u-combobox must not clear it
 					expect(await docLogged(page, "change")).toEqual([]);
-					expect(
-						await docLogged(page, "comboboxprogrammaticinput"),
-					).not.toContain(""); // Framework may write "Draft", u-combobox must not clear it
 				});
 
 				test("syncs single mode input when framework adds, changes and removes item", async ({

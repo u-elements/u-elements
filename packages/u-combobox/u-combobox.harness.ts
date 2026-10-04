@@ -33,7 +33,7 @@ export type HarnessConfig = {
 	toggle: boolean;
 	select: string | null; // name of a mirrored <select>
 	form: boolean | "outside"; // true wraps in <form id="form">, "outside" renders the form before the combobox and sets form="form" on the input
-	inputAttrs: Record<string, string>; // type, readonly, disabled
+	inputAttrs: Record<string, string>; // type, readonly, disabled, value (vanilla only, as an HTML attribute)
 	attrs: Record<string, string>; // Extra attributes on <u-combobox>, i.e. data-sr-*
 	listKey: number; // Change to force the framework to re-create the datalist element
 	replaceOptionsOnInput: Option[] | null; // Consumer pattern: replace options from an input handler
@@ -172,7 +172,7 @@ export const handleSubmit = (event: Event) => {
 	log("submit", event);
 };
 
-const DOC_EVENTS = ["input", "change", "comboboxprogrammaticinput"];
+const DOC_EVENTS = ["input", "change"];
 
 /**
  * Wire window.harness. The framework supplies render and update, which must apply the

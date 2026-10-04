@@ -195,6 +195,7 @@ const mount = (inst: Instance) => {
 		type: cfg.inputAttrs.type,
 		readonly: cfg.inputAttrs.readonly,
 		disabled: cfg.inputAttrs.disabled,
+		value: cfg.inputAttrs.value, // HTML attribute, as opposed to cfg.value which is written through the property
 	}) as HTMLInputElement;
 
 	combobox.addEventListener("comboboxbeforeselect", (event) =>
@@ -205,9 +206,6 @@ const mount = (inst: Instance) => {
 	);
 	combobox.addEventListener("comboboxbeforematch", (event) =>
 		log("comboboxbeforematch", event),
-	);
-	combobox.addEventListener("comboboxprogrammaticinput", (event) =>
-		log("comboboxprogrammaticinput", event),
 	);
 	combobox.addEventListener("input", (event) =>
 		handleInput(event, inst.cfg, (options) => patch({ options })),

@@ -213,10 +213,9 @@ export const customElements = {
 // Trigger value change in React compatible manor https://stackoverflow.com/a/46012210
 export const setValue = (input: HTMLInputElement, data: string, type = "") => {
 	const event = { bubbles: true, composed: true, data, inputType: type };
-	const proto = HTMLInputElement.prototype;
 
 	input.dispatchEvent(new InputEvent("beforeinput", event));
-	Object.getOwnPropertyDescriptor(proto, "value")?.set?.call(input, data);
+	input.setRangeText(data, 0, input.value.length); // Using setRangeText to not touch HTMLInputElement.prototype, aligning with browser standard
 	input.dispatchEvent(new InputEvent("input", event));
 	input.dispatchEvent(new Event("change", { bubbles: true }));
 };

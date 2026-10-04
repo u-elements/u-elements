@@ -52,7 +52,6 @@ createHarness({
 				oncomboboxbeforeselect={(event: Event) => handleBeforeSelect(event, cfg, (items) => (cfg.items = items))}
 				oncomboboxafterselect={(event: Event) => log("comboboxafterselect", event)}
 				oncomboboxbeforematch={(event: Event) => log("comboboxbeforematch", event)}
-				oncomboboxprogrammaticinput={(event: Event) => log("comboboxprogrammaticinput", event)}
 				oninput={(event: Event) => handleInput(event, cfg, (options) => (cfg.options = options))}
 				onchange={(event: Event) => log("change", event)}
 			>

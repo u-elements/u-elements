@@ -77,9 +77,6 @@ function Combobox({
 					oncomboboxbeforematch={(event: Event) =>
 						log("comboboxbeforematch", event)
 					}
-					oncomboboxprogrammaticinput={(event: Event) =>
-						log("comboboxprogrammaticinput", event)
-					}
 					oninput={(event: Event) =>
 						handleInput(event, cfg, (options) => patch({ options }))
 					}

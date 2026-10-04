@@ -142,14 +142,6 @@ myCombobox.addEventListener('comboboxbeforematch', (event) => {
 })
 ```
 
-### `comboboxprogrammaticinput`
-Triggers if `input.value` is programmatically set. Useful when extending `u-combobox` with custom functionality.
-```js
-myCombobox.addEventListener('comboboxprogrammaticinput', (event) => {
-  event.target // UHTMLComboboxElement
-})
-```
-
 
 ## Styling
 
@@ -588,8 +580,10 @@ const renderToStaticMarkup = (data: string, options: string) =>
 ## Changelog
 
 - **3.0.0:** Framework compatibility and matching changes:
+  - `u-datalist` version `3.0.0` is required to avoid stale input value cache
+  - The `comboboxprogrammaticinput` event is removed
   - Single mode only matches against present options on `Enter`, never while typing or on blur.
-  - Single mode blur reverts to the current item, while an empty input still removes the item through `comboboxbeforeselect`
+  - Single mode blur reverts to the current item, while an empty input still removes the item through `comboboxbeforeselect`. Typing an exact option label and then tabbing or clicking away no longer selects it; the user must press `Enter` or click the option to commit
   - Single mode with datalist always syncs `input.value` to the `<data>`. On mount the sync runs in a microtask, so inputs bound by React, Vue or Angular receive it
   - Single mode correctly dispatches `input` after option `click`
   - Multiple mode input value now syncs correctly in all browsers after `click` on option

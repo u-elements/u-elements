@@ -87,7 +87,6 @@ class AttrsDirective implements OnChanges {
 				(comboboxbeforeselect)="onBeforeSelect($event, cfg, index)"
 				(comboboxafterselect)="log('comboboxafterselect', $event)"
 				(comboboxbeforematch)="log('comboboxbeforematch', $event)"
-				(comboboxprogrammaticinput)="log('comboboxprogrammaticinput', $event)"
 				(input)="onInput($event, cfg, index)"
 				(change)="log('change', $event)"
 			>

@@ -659,14 +659,20 @@ export const comboboxSuite = (
 						framework !== "Vanilla",
 						"Frameworks write the bound value through the property setter, so the input is never pristine",
 					);
-					await render(page, { multiple: true });
+					await render(page, { multiple: true, clear: true, toggle: true });
 					const input = page.locator("#input");
 					const items = page.locator("u-combobox data");
+					const clear = page.locator('button[type="reset"]');
+					const toggle = page.locator("button[aria-expanded]");
 
+					await expect(clear).toHaveAttribute("hidden", "");
+					if (!IS_NATIVE) await expect(toggle).not.toHaveAttribute("hidden");
 					await input.evaluate((el: HTMLInputElement) =>
 						el.setAttribute("value", "Tr"),
 					); // Changes input.value without hitting the prototype setter
 					await expect(input).toHaveValue("Tr");
+					await expect(clear).not.toHaveAttribute("hidden"); // Buttons sync, as the attribute write changed the live value
+					await expect(toggle).toHaveAttribute("hidden", "");
 					await input.click();
 					await selectOption(
 						input,

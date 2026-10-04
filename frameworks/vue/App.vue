@@ -3,7 +3,7 @@ import { onMounted, ref } from "vue";
 import "../../packages/u-progress/u-progress";
 import "../../packages/u-datalist/u-datalist";
 import "../../packages/u-combobox/u-combobox";
-import type { UHTMLComboboxElement } from "../../packages/u-combobox";
+import type { UHTMLComboboxElement } from "../../packages/u-combobox/u-combobox";
 
 const count = ref(0);
 const value = ref("");

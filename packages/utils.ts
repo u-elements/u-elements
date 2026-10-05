@@ -212,6 +212,8 @@ export const customElements = {
 
 // Trigger value change in React compatible manor https://stackoverflow.com/a/46012210
 export const setValue = (input: HTMLInputElement, data: string, type = "") => {
+	if (input.selectionEnd === null)
+		throw new Error("Input type is not supported");
 	const event = { bubbles: true, composed: true, data, inputType: type };
 
 	input.dispatchEvent(new InputEvent("beforeinput", event));

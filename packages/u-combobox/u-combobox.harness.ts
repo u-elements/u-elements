@@ -29,7 +29,7 @@ export type HarnessConfig = {
 	options: Option[] | null; // null renders no datalist
 	nofilter: boolean;
 	label: boolean;
-	clear: boolean | "del";
+	clear: boolean;
 	toggle: boolean;
 	select: string | null; // name of a mirrored <select>
 	form: boolean | "outside"; // true wraps in <form id="form">, "outside" renders the form before the combobox and sets form="form" on the input

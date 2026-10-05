@@ -82,7 +82,7 @@ createHarness({
 					/>
 				{/if}
 				{#if cfg.toggle}<button type="button" aria-expanded="false">Toggle</button>{/if}
-				{#if cfg.clear === "del"}<del></del>{:else if cfg.clear}<button type="reset">Clear</button>{/if}
+				{#if cfg.clear}<button type="reset">Clear</button>{/if}
 				{#if cfg.options}
 					{#key cfg.listKey}
 						<svelte:element

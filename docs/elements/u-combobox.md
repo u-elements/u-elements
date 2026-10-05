@@ -572,6 +572,8 @@ const renderToStaticMarkup = (data: string, options: string) =>
 - `<input>` must be a direct child of `<u-combobox>` for programmatic `input.value` changes to be detected
 - `<datalist>` or `<u-datalist>` must be a child of `<u-combobox>`. The `list` attribute on `<input>` is managed automatically
 - Without a datalist, single mode is free text: the input is never overwritten by the `<data>` item
+- Single mode with a datalist always mirrors the `<data>` item, so a prefilled `input.value` without an item is cleared on mount. Multiple mode keeps it as filter text
+- Single mode acts on the first `<data>` only: the input, the mirrored `<select>` and option selection follow it, while extra `<data>` are kept for a later switch to multiple mode
 - The toggle button is hidden when using native `<datalist>`, as the native suggestion popup can not be detected programmatically
 - ARC Toolkit incorectly reports `aria-description` as an invalid ARIA-attribute
 - ARC Toolkit does not correcly read the relation between items with `role="option"` and the ShadowDoom wrapping container `role="listbox"`
@@ -582,16 +584,20 @@ const renderToStaticMarkup = (data: string, options: string) =>
 - **3.0.0:** Framework compatibility and matching changes:
   - `u-datalist` version `3.0.0` is required to avoid stale input value cache
   - The `comboboxprogrammaticinput` event is removed
-  - Single mode only matches against present options on `Enter`, never while typing or on blur.
-  - Single mode blur reverts to the current item, while an empty input still removes the item through `comboboxbeforeselect`. Typing an exact option label and then tabbing or clicking away no longer selects it; the user must press `Enter` or click the option to commit
-  - Single mode with datalist always syncs `input.value` to the `<data>`. On mount the sync runs in a microtask, so inputs bound by React, Vue or Angular receive it
+  - Legacy support for `<del>` as clear button is removed, use `<button type="reset">`
+  - Single mode only matches against present options on `Enter` and blur, never while typing
+  - Single mode blur matches like `Enter` but never creates: an exact option label is selected, other text reverts to the current item, and an empty input removes the item through `comboboxbeforeselect`
+  - Single mode with datalist always syncs `input.value` to the `<data>`, also on mount, where the sync runs in a microtask so inputs bound by React, Vue or Angular receive it
   - Single mode correctly dispatches `input` after option `click`
   - Multiple mode input value now syncs correctly in all browsers after `click` on option
   - Runtime toggle `data-multiple` and `data-creatable` syncs correctly
+  - Single mode mirrors only the first `<data>` into `<select>` and option selection, so the submitted value matches the input
   - Firefox consistently prevent form submit on `Enter`
   - Synthetic `InputEvent` without `inputType` (i.e. testing-library) does not cause incorrect option click
+  - Firefox spell check and autofill replacements that are not an option value are treated as typing instead of reverted
   - Attribute writes that do not change a value (i.e. Vue re-setting option `value`, React syncing input `value`) do not trigger a state sync
   - Input restore after a prevented `comboboxbeforeselect` is deferred, so frameworks rendering `<data>` asynchronously do not see the previous value flash
+  - Input types without selection support (i.e. `email`, `number`) is not supported.
 - **2.1.5:** Fix state handling when mode is multiple and controlled (i.e. React)
 - **2.1.4:** Fix internal state when preventing a selection or setting value programmatically
 - **2.1.3:** Fix issue where item behind datalist could receive focus

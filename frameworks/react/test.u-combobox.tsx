@@ -103,11 +103,7 @@ function Combobox({
 							Toggle
 						</button>
 					)}
-					{cfg.clear === "del" ? (
-						<del />
-					) : (
-						cfg.clear && <button type="reset">Clear</button>
-					)}
+					{cfg.clear && <button type="reset">Clear</button>}
 					{cfg.options && (
 						<ListTag
 							key={cfg.listKey}

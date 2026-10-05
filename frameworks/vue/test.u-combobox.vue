@@ -65,8 +65,7 @@ const inputAttrs = (cfg: HarnessConfig) => ({
           <data v-for="item in cfg.items" :key="item.value" :value="item.value">{{ item.label }}</data>
           <input :id="cfg.id" :list="listId(cfg)" v-model="cfg.value" v-bind="inputAttrs(cfg)" />
           <button v-if="cfg.toggle" type="button" aria-expanded="false">Toggle</button>
-          <del v-if="cfg.clear === 'del'"></del>
-          <button v-else-if="cfg.clear" type="reset">Clear</button>
+          <button v-if="cfg.clear" type="reset">Clear</button>
           <component
             v-if="cfg.options"
             :is="cfg.listTag"

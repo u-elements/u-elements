@@ -71,9 +71,9 @@ export default function App() {
 					id="my-input"
 					onInput={(e) => console.log("onInput", e.currentTarget.value)}
 				/>
-				<del role="img" aria-label="Fjern tekst">
+				<button type="reset" aria-label="Fjern tekst">
 					&times;
-				</del>
+				</button>
 				<u-datalist id="my-list">
 					<u-option>Test 1</u-option>
 					<u-option>Test 2</u-option>

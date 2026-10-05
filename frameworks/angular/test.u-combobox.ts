@@ -106,7 +106,7 @@ class AttrsDirective implements OnChanges {
 					[ngModelOptions]="{ standalone: true }"
 				/>
 				@if (cfg.toggle) {<button type="button" aria-expanded="false">Toggle</button>}
-				@if (cfg.clear === 'del') {<del></del>} @else if (cfg.clear) {<button type="reset">Clear</button>}
+				@if (cfg.clear) {<button type="reset">Clear</button>}
 				@if (cfg.options; as options) {
 					@for (key of [cfg.listKey]; track key) {
 						@if (cfg.listTag === 'u-datalist') {

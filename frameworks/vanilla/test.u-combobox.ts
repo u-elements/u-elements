@@ -122,21 +122,10 @@ const syncControls = ({ cfg, combobox, input }: Instance) => {
 		toggle = null;
 	}
 
-	let clear = combobox.querySelector(
-		':scope > button[type="reset"], :scope > del',
-	);
-	const wanted = cfg.clear === "del" ? "del" : cfg.clear ? "button" : null;
-	if (clear && clear.localName !== wanted) {
-		clear.remove();
-		clear = null;
-	}
-	if (wanted && !clear) {
-		clear =
-			wanted === "del"
-				? create("del")
-				: create("button", { type: "reset" }, "Clear");
-		(toggle || input).after(clear);
-	}
+	const clear = combobox.querySelector(':scope > button[type="reset"]');
+	if (cfg.clear && !clear)
+		(toggle || input).after(create("button", { type: "reset" }, "Clear"));
+	else if (!cfg.clear) clear?.remove();
 };
 
 // The list is re-created when listKey changes, options are keyed like the frameworks key them

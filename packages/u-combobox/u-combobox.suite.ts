@@ -14,21 +14,6 @@ import {
  * with the renderer's event bindings. Pure DOM tests (snapshot, shadow root host, moving
  * the element) live in u-combobox.spec.ts.
  *
- * Tests written against the specification table in u-combobox.ts:
- *
- * | Action         | Single + Non-creatable        | Single + Creatable           | Multiple + Non-creatable             | Multiple + Creatable                  |
- * | :------------- | :---------------------------- | :--------------------------- | :----------------------------------- | :------------------------------------ |
- * | Datalist click | Select item + Input value     | Select item + Input value    | Select item + Revert input value     | Select item + Revert input value      |
- * | Input type     | Filter options                | Filter options               | Filter options                       | Filter options                        |
- * | Enter          | Clear/Match -> Select/Restore | Clear/Match -> Select/Create | Match -> Select/Clear + Revert input | Match -> Select/Create + Revert input |
- * | Blur           | Clear/Match -> Select/Restore | Clear/Match -> Select/Restore| Nothing                              | Nothing                               |
- *
- * Revert input = restore the text that was typed before the action.
- * Multiple mode never clears the input on its own.
- * Blur matches like Enter in single mode but never creates: an exact label selects, other text reverts to the current item, and an empty input removes the item (can be prevented).
- * Single mode without a datalist is free text: the input is never overwritten by the item.
- * Single mode with a datalist always mirrors the item, so a prefilled input value without a <data> item is cleared on mount. Multiple mode keeps it as filter text.
- *
  * Every test runs with both native <datalist> and <u-datalist>.
  * Native <datalist> picks are simulated with setRangeText + InputEvent("insertReplacementText"),
  * as Playwright can not interact with the native suggestion popup.
@@ -101,8 +86,11 @@ export const comboboxSuite = (
 						const inputType = "insertReplacementText";
 						const data = (opt as HTMLOptionElement).value;
 						const event = { bubbles: true, composed: true, data, inputType };
+						const type = input.type; // Types without selection support (i.e. email) can not use setRangeText, so write the value as type="text"
 
+						input.type = "text";
 						input.setRangeText(data, 0, input.value.length);
+						input.type = type;
 						input.dispatchEvent(new InputEvent("input", event));
 						input.dispatchEvent(new Event("change", { bubbles: true }));
 					}, optElement);
@@ -284,7 +272,7 @@ export const comboboxSuite = (
 						.toEqual(["Oslo", "Bergen"]);
 				});
 
-				test("typing never matches, blur and Enter match option case insensitive", async ({
+				test("typing never matches, Enter matches case insensitive, blur only exact", async ({
 					page,
 				}) => {
 					await render(page);
@@ -299,19 +287,27 @@ export const comboboxSuite = (
 					expect(await logged(page, "comboboxbeforematch")).toEqual([]);
 
 					await input.blur();
-					await expect(items).toHaveText(["Bergen"]); // Blur matches like Enter
+					await expect(input).toHaveValue(""); // Blur is case sensitive, so no match and nothing to revert to
+					await expect(items).toHaveCount(0);
+					expect(await logged(page, "comboboxbeforematch")).toEqual([]); // Blur never dispatches a match
+					expect(await logged(page, "comboboxbeforeselect")).toEqual([]);
+
+					await input.click();
+					await input.fill("Bergen");
+					await input.blur();
+					await expect(items).toHaveText(["Bergen"]); // Exact label selects
 					await expect(input).toHaveValue("Bergen");
 					await expect(opts.nth(1)).toHaveAttribute("selected");
-					expect(await logged(page, "comboboxbeforematch")).toHaveLength(1);
+					expect(await logged(page, "comboboxbeforematch")).toEqual([]);
 					expect(await logged(page, "comboboxbeforeselect")).toHaveLength(1);
 
 					await input.click();
 					await input.fill("oslo");
 					await input.press("Enter");
-					await expect(items).toHaveText(["Oslo"]);
+					await expect(items).toHaveText(["Oslo"]); // Enter matches case insensitive
 					await expect(opts.nth(0)).toHaveAttribute("selected");
 					await expect(opts.nth(1)).not.toHaveAttribute("selected");
-					expect(await logged(page, "comboboxbeforematch")).toHaveLength(2);
+					expect(await logged(page, "comboboxbeforematch")).toHaveLength(1);
 				});
 
 				test("Enter matches, reverts on no match and clears on empty", async ({
@@ -368,7 +364,7 @@ export const comboboxSuite = (
 					await input.blur();
 					await expect(input).toHaveValue(""); // No item to revert to
 					await expect(items).toHaveCount(0);
-					expect(await logged(page, "comboboxbeforematch")).toHaveLength(1); // Blur matched, but found nothing
+					expect(await logged(page, "comboboxbeforematch")).toEqual([]); // Blur never dispatches a match
 					expect(await logged(page, "comboboxbeforeselect")).toEqual([]);
 
 					await input.fill("bergen");
@@ -384,9 +380,9 @@ export const comboboxSuite = (
 
 					await input.fill("Oslo"); // Exact option label
 					await input.blur();
-					await expect(items).toHaveText(["Oslo"]); // Selected, as blur matches like Enter
+					await expect(items).toHaveText(["Oslo"]); // Selected on exact label
 					await expect(input).toHaveValue("Oslo");
-					expect(await logged(page, "comboboxbeforematch")).toHaveLength(4);
+					expect(await logged(page, "comboboxbeforematch")).toHaveLength(1); // Only the Enter above matched
 					expect(await logged(page, "comboboxbeforeselect")).toHaveLength(2);
 
 					await input.fill("");
@@ -564,6 +560,119 @@ export const comboboxSuite = (
 					await expect(item).toHaveCount(1);
 					await expect(input).toHaveValue("Same text");
 					expect(await logged(page, "comboboxbeforeselect")).toEqual([]);
+				});
+			});
+
+			test.describe(name("events and state"), () => {
+				test("dispatches change only for the synced value on option click in single mode", async ({
+					page,
+				}) => {
+					await render(page);
+					await resetDocLog(page);
+					const input = page.locator("#input");
+
+					await input.pressSequentially("Ber");
+					await selectOption(
+						input,
+						page.locator(OPT_TAG, { hasText: "Bergen" }),
+					);
+					await expect(input).toHaveValue("Bergen");
+					await expect
+						.poll(() => docLogged(page, "input"))
+						.toEqual(["B", "Be", "Ber", "Bergen"]); // The click input is stopped, the sync dispatches its own
+					expect(await docLogged(page, "change")).toEqual(["Bergen"]); // Neither the reverted text nor the focus move on click dispatches change
+				});
+
+				test("dispatches no change on option click in multiple mode", async ({
+					page,
+				}) => {
+					await render(page, { multiple: true });
+					await resetDocLog(page);
+					const input = page.locator("#input");
+
+					await input.pressSequentially("Ber");
+					await selectOption(
+						input,
+						page.locator(OPT_TAG, { hasText: "Bergen" }),
+					);
+					await expect(page.locator("u-combobox data")).toHaveText(["Bergen"]);
+					await expect(input).toHaveValue("Ber");
+					await page.waitForTimeout(50);
+					expect(await docLogged(page, "input")).toEqual(["B", "Be", "Ber"]);
+					expect(await docLogged(page, "change")).toEqual([]); // Input value did not change for the consumer
+				});
+
+				test("keeps option selected after non-matching Enter in single mode", async ({
+					page,
+				}) => {
+					await render(page, { items: [BERGEN] });
+					const input = page.locator("#input");
+					const bergen = page.locator(OPT_TAG, { hasText: "Bergen" });
+
+					await expect(input).toHaveValue("Bergen");
+					await expect(bergen).toHaveAttribute("selected");
+					await input.fill("xyz");
+					await input.press("Enter");
+					await expect(input).toHaveValue("Bergen"); // Restored
+					await expect(bergen).toHaveAttribute("selected"); // Still reflects the item while the list is open
+					await expect(page.locator(OPT_TAG).first()).not.toHaveAttribute(
+						"selected",
+					);
+				});
+
+				test("syncs after form reset", async ({ page }) => {
+					test.skip(
+						framework === "React",
+						"React keeps the value attribute of a controlled input in sync, so form.reset() restores the current value and there is nothing to sync",
+					);
+					await render(page, {
+						multiple: true,
+						form: true,
+						items: [BERGEN],
+						clear: true,
+					});
+					const input = page.locator("#input");
+					const clear = page.locator('button[type="reset"]');
+					const reset = () =>
+						page.evaluate(() =>
+							(document.getElementById("form") as HTMLFormElement).reset(),
+						);
+
+					await input.fill("abc");
+					await expect(clear).not.toHaveAttribute("hidden");
+					await reset();
+					await expect(input).toHaveValue("");
+					await expect(clear).toHaveAttribute("hidden", ""); // Reset neither calls the value setter nor dispatches input, so the component listens for reset
+					await expect(page.locator("u-combobox data")).toHaveText(["Bergen"]); // Items are not form controls
+
+					await update(page, { multiple: false });
+					await expect(input).toHaveValue("Bergen");
+					await input.fill("abc");
+					await reset();
+					await expect(input).toHaveValue("Bergen"); // Single mode keeps mirroring the item
+					await expect(clear).not.toHaveAttribute("hidden");
+				});
+
+				test("selects option on click in type=email where selection is unsupported", async ({
+					page,
+				}) => {
+					await render(page, { multiple: true, inputAttrs: { type: "email" } });
+					const input = page.locator("#input");
+					const items = page.locator("u-combobox data");
+
+					await input.pressSequentially("B");
+					await selectOption(
+						input,
+						page.locator(OPT_TAG, { hasText: "Bergen" }),
+					);
+					await expect(items).toHaveText(["Bergen"]);
+					await expect(input).toHaveValue("B"); // Reverted through the native setter, as setRangeText is not supported
+
+					await update(page, { multiple: false });
+					await expect(input).toHaveValue("Bergen"); // Synced through the native setter
+					await selectOption(input, page.locator(OPT_TAG, { hasText: "Oslo" }));
+					await expect(items).toHaveText(["Oslo"]);
+					await expect(input).toHaveValue("Oslo");
 				});
 			});
 
@@ -854,6 +963,28 @@ export const comboboxSuite = (
 					await input.blur();
 					await expect(item).toHaveAttribute("value", "Bergen");
 					expect(await logged(page, "comboboxbeforematch")).toEqual([]); // Picks never match, and blur does not re-match a restored input
+				});
+
+				test("keeps typed text after a prevented pick in single mode, and reverts to the item on blur", async ({
+					page,
+				}) => {
+					await render(page, { controlled: "manual", items: [OSLO] }); // Rejects every pick
+					await resetLog(page, "comboboxbeforeselect");
+					await resetLog(page, "comboboxbeforematch");
+					const input = page.locator("#input");
+					const item = page.locator("u-combobox data");
+
+					await input.click();
+					await input.fill("Berg");
+					await selectOption(input, page.locator(OPT_TAG).nth(1));
+					await expect(item).toHaveAttribute("value", "oslo-id"); // Prevented
+					await expect(input).toHaveValue("Berg"); // Typed text is kept, so the user can keep typing
+					expect(await logged(page, "comboboxbeforeselect")).toHaveLength(1);
+
+					await input.blur();
+					await expect(input).toHaveValue("Oslo"); // Blur reverts to the item, as typed text is not an exact label
+					expect(await logged(page, "comboboxbeforeselect")).toHaveLength(1); // No new select on blur
+					expect(await logged(page, "comboboxbeforematch")).toEqual([]); // Picks and blur never match
 				});
 
 				for (const controlled of [true, false]) {

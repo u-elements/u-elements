@@ -24,6 +24,14 @@
 	"files": [
 		"dist"
 	],
+	"peerDependencies": {
+		"@u-elements/u-datalist": ">=3.0.0"
+	},
+	"peerDependenciesMeta": {
+		"@u-elements/u-datalist": {
+			"optional": true
+		}
+	},
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/u-elements/u-elements.git"

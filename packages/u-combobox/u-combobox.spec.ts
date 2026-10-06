@@ -99,6 +99,36 @@ test.describe("DOM", () => {
 				await expect(input).toHaveValue("bergen"); // Neither write is a state change, so a sync must not revert the typed text
 			});
 
+			test("syncs item text into a replaced input in single mode", async ({
+				page,
+			}) => {
+				await mount(
+					page,
+					combobox().replace(
+						"<input",
+						'<data value="Bergen">Bergen</data><input',
+					),
+				);
+				await expect(page.locator("#input")).toHaveValue("Bergen");
+
+				// Keyed re-renders can replace the input element itself
+				await page.evaluate(() => {
+					const prev = document.getElementById("input") as HTMLInputElement;
+					const next = document.createElement("input");
+					next.id = "input";
+					prev.replaceWith(next);
+				});
+				const input = page.locator("#input");
+				await expect(input).toHaveValue("Bergen"); // The new control receives the item text
+
+				await input.evaluate((el) => {
+					(el as HTMLInputElement).value = "typed"; // Programmatic changes are detected on the new control
+				});
+				await input.fill("");
+				await input.press("Enter");
+				await expect(page.locator("u-combobox data")).toHaveCount(0);
+			});
+
 			test("works after being moved in the DOM", async ({ page }) => {
 				await mount(page, `${combobox("data-multiple")}<div id="other"></div>`);
 				await listen(page, "comboboxbeforeselect");

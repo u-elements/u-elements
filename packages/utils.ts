@@ -210,16 +210,29 @@ export const customElements = {
 		window.customElements.define(name, instance),
 };
 
+/**
+ * setValue
+ * @description Set input value like the browser does on user input: dirty value, caret at end, no events and without the value setter, which u-combobox patches to detect programmatic changes
+ * @param {HTMLInputElement} input Input element to set value on
+ * @param {string} data The new value
+ * @param {inputType} type of the new event, pass false if silent
+ */
 // Trigger value change in React compatible manor https://stackoverflow.com/a/46012210
-export const setValue = (input: HTMLInputElement, data: string, type = "") => {
-	if (input.selectionEnd === null)
-		throw new Error("Input type is not supported");
-	const event = { bubbles: true, composed: true, data, inputType: type };
+export const setValue = (
+	input: HTMLInputElement,
+	data: string,
+	type: string | false = "",
+) => {
+	const silent = type === false;
+	const event = { bubbles: true, composed: true, data, inputType: type || "" };
+	const inputType = input.type;
 
-	input.dispatchEvent(new InputEvent("beforeinput", event));
+	if (!silent) input.dispatchEvent(new InputEvent("beforeinput", event));
+	input.type = "text"; // Input type 'email', 'number', 'date' does not support setRangeText
 	input.setRangeText(data, 0, input.value.length, "end"); // Using setRangeText to not touch HTMLInputElement.prototype, aligning with browser standard
-	input.dispatchEvent(new InputEvent("input", event));
-	input.dispatchEvent(new Event("change", { bubbles: true }));
+	input.type = inputType; // Revert to original input type
+	if (!silent) input.dispatchEvent(new InputEvent("input", event));
+	if (!silent) input.dispatchEvent(new Event("change", { bubbles: true }));
 };
 
 /**

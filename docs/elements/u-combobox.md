@@ -569,7 +569,7 @@ const renderToStaticMarkup = (data: string, options: string) =>
 ```
 
 ## Notes
-- `<input>` must be a direct child of `<u-combobox>` for programmatic `input.value` changes to be detected
+- The first direct child `<input>` inside `<u-combobox>` is the control, and programmatic `input.value` changes are detected on it
 - `<datalist>` or `<u-datalist>` must be a child of `<u-combobox>`. The `list` attribute on `<input>` is managed automatically
 - Without a datalist, single mode is free text: the input is never overwritten by the `<data>` item
 - Single mode with a datalist always mirrors the `<data>` item, so a prefilled `input.value` without an item is cleared on mount. Multiple mode keeps it as filter text
@@ -586,7 +586,9 @@ const renderToStaticMarkup = (data: string, options: string) =>
   - The `comboboxprogrammaticinput` event is removed
   - Legacy support for `<del>` as clear button is removed, use `<button type="reset">`
   - Single mode only matches against present options on `Enter` and blur, never while typing
-  - Single mode blur matches like `Enter` but never creates: an exact option label is selected, other text reverts to the current item, and an empty input removes the item through `comboboxbeforeselect`
+  - Single mode blur selects an option only if its label equals the input text exactly (case sensitive), without dispatching `comboboxbeforematch` and never creating. Other text reverts to the current item, and an empty input removes the item through `comboboxbeforeselect`
+  - Options keep the `selected` state of the current item when `Enter` or blur does not match
+  - `form.reset()` syncs the clear and toggle buttons, and restores the item text in single mode
   - Single mode with datalist always syncs `input.value` to the `<data>`, also on mount, where the sync runs in a microtask so inputs bound by React, Vue or Angular receive it
   - Single mode correctly dispatches `input` after option `click`
   - Multiple mode input value now syncs correctly in all browsers after `click` on option
@@ -597,7 +599,8 @@ const renderToStaticMarkup = (data: string, options: string) =>
   - Firefox spell check and autofill replacements that are not an option value are treated as typing instead of reverted
   - Attribute writes that do not change a value (i.e. Vue re-setting option `value`, React syncing input `value`) do not trigger a state sync
   - Input restore after a prevented `comboboxbeforeselect` is deferred, so frameworks rendering `<data>` asynchronously do not see the previous value flash
-  - Input types without selection support (i.e. `email`, `number`) is not supported.
+  - Single mode keeps the typed text after a prevented option pick, and reverts to the item text on blur
+  Input types without selection support (i.e. `email`, `number`) is not supported.
 - **2.1.5:** Fix state handling when mode is multiple and controlled (i.e. React)
 - **2.1.4:** Fix internal state when preventing a selection or setting value programmatically
 - **2.1.3:** Fix issue where item behind datalist could receive focus

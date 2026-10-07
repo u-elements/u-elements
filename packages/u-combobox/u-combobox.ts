@@ -34,7 +34,7 @@ import {
  * - option:       an <option> inside the <datalist> / <u-datalist>
  * - text:         the current input value
  * - cached text:  the text last seen from typing, the value attribute or the value property (_value).
- *                 Not updated by the clear button, so a prevented remove can revert input to the text before the clear
+ *                 Not updated by the clear button in single mode, so a prevented remove can revert input to the text before the clear
  * - same text:    text equals an item's text, trimmed and case-insensitive. Compared against items, never against options
  * - match:        dispatch comboboxbeforematch with the first option whose label equals the trimmed text case-insensitive.
  *                 The consumer can prevent and set option.selected to pick another option. The result is the matched option,
@@ -56,7 +56,7 @@ import {
  *
  * Typing and programmatic text (input event, value attribute, value property)
  * - Both:     cache text, sync clear and toggle buttons. Never match, never select
- * - Except:   the input event dispatched by the clear button does not cache text (see Clear button)
+ * - Except:   in single mode, the input event dispatched by the clear button does not cache text (see Clear button)
  *
  * Datalist pick (option click, or Enter on an option in <u-datalist>)
  * - Both:     revert input, then select the option. Never match. Picking <option value=""> only reverts input
@@ -84,9 +84,9 @@ import {
  *                         Otherwise replace. Accepted: sync input. Prevented: sync input
  *
  * Clear button (button[type="reset"])
- * - Both:     empty the text (dispatches input) without updating the cached text, focus input, re-open the list if it was open
- * - Single:   then behave as Enter with empty text, so a prevented remove reverts input to the text before the clear
- * - Multiple: the emptied text stays, as nothing is selected or removed
+ * - Both:     empty the text (dispatches input), focus input, re-open the list if it was open
+ * - Single:   the cached text is not updated, then behave as Enter with empty text, so a prevented remove reverts input to the text before the clear
+ * - Multiple: the emptied text is cached like typing, and stays as nothing is selected or removed
  *
  * Toggle button (button[aria-expanded])
  * - Both:     focus input and open the list if it was closed

@@ -56,17 +56,17 @@ function Combobox(props: {
 			>
 				<u-combobox
 					{...attrs(comboboxAttrs(props.cfg))}
-					on:comboboxbeforeselect={(event: Event) =>
+					on:comboboxbeforeselect={(event: CustomEvent<HTMLDataElement>) =>
 						handleBeforeSelect(event, props.cfg, (items) =>
 							props.patch({ items }),
 						)
 					}
-					on:comboboxafterselect={(event: Event) =>
+					on:comboboxafterselect={(event: CustomEvent<HTMLDataElement>) =>
 						log("comboboxafterselect", event)
 					}
-					on:comboboxbeforematch={(event: Event) =>
-						log("comboboxbeforematch", event)
-					}
+					on:comboboxbeforematch={(
+						event: CustomEvent<HTMLOptionElement | undefined>,
+					) => log("comboboxbeforematch", event)}
 					on:input={(event: Event) =>
 						handleInput(event, props.cfg, (options) => props.patch({ options }))
 					}

@@ -13,7 +13,7 @@
 		"isolatedModules": true,
 		"noEmit": true,
 		"jsx": "react-jsx",
-		"jsxImportSource": "@builder.io/qwik",
+		"jsxImportSource": "@qwik.dev/core",
 
 		/* Linting */
 		"strict": true,
@@ -22,5 +22,5 @@
 		"noFallthroughCasesInSwitch": true,
 		"types": ["vite/client"]
 	},
-	"include": ["app.tsx"]
+	"include": ["app.tsx", "test.u-combobox.tsx", "jsx.d.ts", "vite.config.ts"]
 }

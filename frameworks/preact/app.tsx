@@ -1,9 +1,9 @@
 import { render } from "preact";
 import { useRef, useState } from "preact/hooks";
-import type { UHTMLComboboxElement } from "../../packages/u-combobox";
-import "../../packages/u-progress";
-import "../../packages/u-datalist";
-import "../../packages/u-combobox";
+import type { UHTMLComboboxElement } from "../../packages/u-combobox/u-combobox";
+import "../../packages/u-progress/u-progress";
+import "../../packages/u-datalist/u-datalist";
+import "../../packages/u-combobox/u-combobox";
 
 export default function App() {
 	const [count, setCount] = useState(0);

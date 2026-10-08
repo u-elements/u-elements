@@ -576,10 +576,10 @@ Typing never selects or live-matches anything; it only filters the options. Sele
 | :----- | :---------- | :------------ |
 | Option pick | Replace the `<data>` item and sync input with item | Toggle `<data>` item, and input keeps the typed text |
 | `Enter` with empty input | Remove the item | Announce `data-sr-invalid` |
-| `Enter` with text equal to item | Sync input with item text | Remove that item |
+| `Enter` with text equal to item | Nothing | Remove that item |
 | `Enter` with other text | If an option matches, add as item. Otherwise announce `data-sr-invalid` and keeps the text, or creates item if `data-creatable` | If an option matches, add as item. Otherwise announce `data-sr-invalid` and keeps the text, or creates item if `data-creatable`  |
 | Blur with empty input | Remove the item | Nothing |
-| Blur with text equal to item | Sync input with item text | Nothing |
+| Blur with text equal to item | Nothing | Nothing |
 | Blur with other text | If an option matches, or `data-creatable`,  add as item. Otherwise sync input back to item text | Nothing |
 
 ## Notes
@@ -612,6 +612,7 @@ Typing never selects or live-matches anything; it only filters the options. Sele
   - Synthetic `InputEvent` without `inputType` (i.e. testing-library) does not cause incorrect option click
   - Firefox spell check and autofill replacements that are not an option value are treated as typing instead of reverted
   - Attribute writes that do not change a value (i.e. Vue re-setting option `value`, React syncing input `value`) do not trigger a state sync
+  - The `input` event of an option pick is intercepted in the capture phase on `window`, so frameworks delegating events from `document` (i.e. Qwik) read the reverted text instead of the option value
   - Input sync after a prevented `comboboxbeforeselect` on blur is deferred, so frameworks rendering `<data>` asynchronously do not see the previous value flash
   - The clear button in single mode no longer caches the emptied text, so a prevented removal reverts the input to the text before the clear
 - **2.1.5:** Fix state handling when mode is multiple and controlled (i.e. React)

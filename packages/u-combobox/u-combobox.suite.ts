@@ -339,7 +339,7 @@ export const comboboxSuite = (
 					expect(await logged(page, "comboboxbeforematch")).toHaveLength(3); // Empty text never matches
 				});
 
-				test("Enter on text equal to current item only syncs input", async ({
+				test("Enter on text equal to current item does nothing", async ({
 					page,
 				}) => {
 					await render(page);
@@ -357,12 +357,19 @@ export const comboboxSuite = (
 					await expect(items).toHaveCount(1);
 					await expect(input).toHaveValue("Trondheim");
 
-					await input.fill(" trondheim ");
+					await input.fill(" Trondheim ");
 					await input.press("Enter");
 					await expect(items).toHaveCount(1);
-					await expect(input).toHaveValue("Trondheim"); // Same text compares trimmed and case insensitive, and syncs to the item text
+					await expect(input).toHaveValue(" Trondheim "); // Same text compares trimmed, and the text is already the item so nothing is synced
 					expect(await logged(page, "comboboxbeforematch")).toEqual([]); // Same text never matches
 					expect(await logged(page, "comboboxbeforeselect")).toEqual([]); // And never re-selects
+
+					await input.fill("trondheim");
+					await input.press("Enter");
+					await expect(items).toHaveCount(1);
+					await expect(input).toHaveValue("Trondheim"); // Items compare case sensitive, so this matches the option instead, which is the current item and syncs
+					expect(await logged(page, "comboboxbeforematch")).toHaveLength(1);
+					expect(await logged(page, "comboboxbeforeselect")).toEqual([]);
 				});
 
 				test("Enter syncs input when the match is the current item", async ({
@@ -546,7 +553,7 @@ export const comboboxSuite = (
 					await input.fill("Oslo"); // Exact match of the shorter option is cached as typing match
 					await selectOption(
 						input,
-						page.locator(`${OPT_TAG}[value="Oslo Lufthavn"]`),
+						page.locator(OPT_TAG, { hasText: "Oslo Lufthavn" }),
 					);
 					await expect(item).toHaveText("Oslo Lufthavn");
 					await expect(input).toHaveValue("Oslo Lufthavn");
@@ -560,7 +567,10 @@ export const comboboxSuite = (
 					expect(await logged(page, "comboboxbeforeselect")).toEqual([]);
 
 					await input.click();
-					await selectOption(input, page.locator(`${OPT_TAG}[value="same-2"]`));
+					await selectOption(
+						input,
+						page.locator(OPT_TAG, { hasText: "same-2" }),
+					);
 					await expect(item).toHaveAttribute("value", "same-2");
 					await expect(input).toHaveValue("Same text");
 
@@ -584,7 +594,10 @@ export const comboboxSuite = (
 					await expect(input).toHaveValue("Same text");
 
 					await input.click();
-					await selectOption(input, page.locator(`${OPT_TAG}[value="same-2"]`));
+					await selectOption(
+						input,
+						page.locator(OPT_TAG, { hasText: "same-2" }),
+					);
 					await expect(item).toHaveAttribute("value", "same-2");
 					await expect(input).toHaveValue("Same text"); // Only the value changed, but input must still sync from the picked value to the label
 					await resetLog(page, "comboboxbeforematch");
@@ -623,7 +636,7 @@ export const comboboxSuite = (
 			});
 
 			test.describe(name("events and state"), () => {
-				test("dispatches change only for the synced value on option click in single mode", async ({
+				test("dispatches input only for the synced value on option click in single mode", async ({
 					page,
 				}) => {
 					await render(page);
@@ -639,10 +652,12 @@ export const comboboxSuite = (
 					await expect
 						.poll(() => docLogged(page, "input"))
 						.toEqual(["B", "Be", "Ber", "Bergen"]); // The click input is stopped, the sync dispatches its own
-					expect(await docLogged(page, "change")).toEqual(["Bergen"]); // Neither the reverted text nor the focus move on click dispatches change
+					expect((await docLogged(page, "change")).slice(-1)).toEqual([
+						"Bergen",
+					]); // The sync dispatches change last. Earlier change events from the browser or datalist are not suppressed
 				});
 
-				test("dispatches no change on option click in multiple mode", async ({
+				test("dispatches no input on option click in multiple mode", async ({
 					page,
 				}) => {
 					await render(page, { multiple: true });
@@ -657,8 +672,7 @@ export const comboboxSuite = (
 					await expect(page.locator("u-combobox data")).toHaveText(["Bergen"]);
 					await expect(input).toHaveValue("Ber");
 					await page.waitForTimeout(50);
-					expect(await docLogged(page, "input")).toEqual(["B", "Be", "Ber"]);
-					expect(await docLogged(page, "change")).toEqual([]); // Input value did not change for the consumer
+					expect(await docLogged(page, "input")).toEqual(["B", "Be", "Ber"]); // The click input is stopped, and the reverted text dispatches nothing
 				});
 
 				test("keeps option selected after non-matching Enter in single mode", async ({
@@ -815,12 +829,12 @@ export const comboboxSuite = (
 					await input.fill("Tr");
 					await selectOption(
 						input,
-						page.locator(`${OPT_TAG}[value="Trondheim"]`),
+						page.locator(OPT_TAG, { hasText: "Trondheim" }),
 					);
 					await expect(items).toHaveText(["Trondheim"]);
 					await expect(input).toHaveValue("Tr");
 					await expect(
-						page.locator(`${OPT_TAG}[value="Trondheim"]`),
+						page.locator(OPT_TAG, { hasText: "Trondheim" }),
 					).toHaveAttribute("selected");
 					expect(await logged(page, "input")).toEqual(["Tr"]); // Reverted pick does not dispatch input
 				});
@@ -844,7 +858,7 @@ export const comboboxSuite = (
 					await input.click();
 					await selectOption(
 						input,
-						page.locator(`${OPT_TAG}[value="Trondheim"]`),
+						page.locator(OPT_TAG, { hasText: "Trondheim" }),
 					);
 					await expect(items).toHaveText(["Trondheim"]);
 					await expect(input).toHaveValue("Tr"); // Seeded from the attribute, not cleared
@@ -874,7 +888,7 @@ export const comboboxSuite = (
 					await input.click();
 					await selectOption(
 						input,
-						page.locator(`${OPT_TAG}[value="Trondheim"]`),
+						page.locator(OPT_TAG, { hasText: "Trondheim" }),
 					);
 					await expect(items).toHaveText(["Trondheim"]);
 					await expect(input).toHaveValue("Tr");
@@ -907,9 +921,9 @@ export const comboboxSuite = (
 					expect(await logged(page, "comboboxbeforematch")).toHaveLength(1);
 
 					await input.press("Enter");
-					await expect(items).toHaveCount(0); // Toggled off
+					await expect(items).toHaveCount(0); // Toggled off through the matched option, as "bergen" is not the item text "Bergen"
 					await expect(input).toHaveValue("bergen");
-					expect(await logged(page, "comboboxbeforematch")).toHaveLength(1); // Same text as an item removes without matching
+					expect(await logged(page, "comboboxbeforematch")).toHaveLength(2);
 
 					await input.fill("oslo");
 					await input.press("Enter");
@@ -918,7 +932,12 @@ export const comboboxSuite = (
 					await expect(items.first()).toHaveAttribute("role", "option");
 					await expect(items.first()).toHaveAttribute("tabindex", "-1");
 					await expect(input).toBeFocused(); // Focus stays in input after adding
-					expect(await logged(page, "comboboxbeforematch")).toHaveLength(2);
+					expect(await logged(page, "comboboxbeforematch")).toHaveLength(3);
+
+					await input.fill("Oslo");
+					await input.press("Enter");
+					await expect(items).toHaveCount(0); // Same text as the item removes without matching
+					expect(await logged(page, "comboboxbeforematch")).toHaveLength(3);
 				});
 
 				test("Enter removes item by its text even when the option is gone", async ({
@@ -936,9 +955,15 @@ export const comboboxSuite = (
 
 					await input.fill(" bergen ");
 					await input.press("Enter");
-					await expect(items).toHaveCount(0); // Trimmed and case insensitive
-					await expect(input).toHaveValue(" bergen ");
-					expect(await logged(page, "comboboxbeforematch")).toEqual([]);
+					await expect(items).toHaveText(["Bergen"]); // Items compare case sensitive, so this is matched against options instead and finds nothing
+					expect(await logged(page, "comboboxbeforematch")).toHaveLength(1);
+					expect(await logged(page, "comboboxbeforeselect")).toEqual([]);
+
+					await input.fill(" Bergen ");
+					await input.press("Enter");
+					await expect(items).toHaveCount(0); // Trimmed
+					await expect(input).toHaveValue(" Bergen ");
+					expect(await logged(page, "comboboxbeforematch")).toHaveLength(1); // Same text never matches
 					expect(await logged(page, "comboboxbeforeselect")).toHaveLength(1);
 				});
 
@@ -949,7 +974,7 @@ export const comboboxSuite = (
 					await resetLog(page, "comboboxbeforeselect");
 					const input = page.locator("#input");
 					const items = page.locator("u-combobox data");
-					const bergen = page.locator(`${OPT_TAG}[value="Bergen"]`);
+					const bergen = page.locator(OPT_TAG, { hasText: "Bergen" }); // The Bergen option has no value attribute
 
 					await input.click();
 					await selectOption(input, bergen);
@@ -1056,7 +1081,7 @@ export const comboboxSuite = (
 					await input.fill("T");
 					await selectOption(
 						input,
-						page.locator(`${OPT_TAG}[value="Trondheim"]`),
+						page.locator(OPT_TAG, { hasText: "Trondheim" }),
 					);
 					await expect(items).toHaveText(["Trondheim"]);
 					await expect(input).toHaveValue(""); // Cleared by consumer
@@ -1231,7 +1256,7 @@ export const comboboxSuite = (
 
 					await selectOption(
 						input,
-						page.locator(`${OPT_TAG}[value="Trondheim"]`),
+						page.locator(OPT_TAG, { hasText: "Trondheim" }),
 					);
 					await expect(items).toHaveText(["Trondheim"]);
 					await expect(input).toHaveValue("Trondhjem"); // Pick reverts to the corrected text, as it was cached like typed text

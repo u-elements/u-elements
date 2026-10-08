@@ -1,8 +1,8 @@
-import "@builder.io/qwik/qwikloader.js";
-import { component$, render, useSignal } from "@builder.io/qwik";
-import "../../packages/u-progress";
-import "../../packages/u-datalist";
-import "../../packages/u-combobox";
+import "@qwik.dev/core/qwikloader.js";
+import { component$, render, useSignal } from "@qwik.dev/core";
+import "../../packages/u-progress/u-progress";
+import "../../packages/u-datalist/u-datalist";
+import "../../packages/u-combobox/u-combobox";
 
 const App = component$(() => {
 	const count = useSignal(0);
@@ -25,8 +25,8 @@ const App = component$(() => {
 				<data>Kokkos</data>
 				<data>Banan</data>
 				<data>Jordbær</data>
-				{/* @ts-ignore */}
 				<input
+					// @ts-expect-error list is missing from Qwik's input typings
 					list="my-list"
 					value={value.value}
 					onInput$={() => {

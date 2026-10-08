@@ -20,7 +20,7 @@
 		"docs:dev": "npm run build && vitepress dev docs",
 		"docs:preview": "vitepress preview docs",
 		"lint": "npx @biomejs/biome check",
-		"typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p frameworks/vanilla/tsconfig.json && tsc --noEmit -p frameworks/react/tsconfig.json && tsc --noEmit -p frameworks/angular/tsconfig.json && vue-tsc --noEmit -p frameworks/vue/tsconfig.json && svelte-check --tsconfig frameworks/svelte/tsconfig.json",
+		"typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p frameworks/vanilla/tsconfig.json && tsc --noEmit -p frameworks/react/tsconfig.json && tsc --noEmit -p frameworks/angular/tsconfig.json && vue-tsc --noEmit -p frameworks/vue/tsconfig.json && svelte-check --tsconfig frameworks/svelte/tsconfig.json && tsc --noEmit -p frameworks/solid/tsconfig.json && tsc --noEmit -p frameworks/qwik/tsconfig.json && tsc --noEmit -p frameworks/preact/tsconfig.json",
 		"prepublishOnly": "npm run build",
 		"dev:build": "vite build",
 		"dev": "vite",
@@ -32,7 +32,7 @@
 		"dev:vue": "vite --config=frameworks/vue/vite.config.ts",
 		"dev:angular": "vite --config=frameworks/angular/vite.config.ts",
 		"test": "playwright test",
-		"test:frameworks": "playwright test --project=React --project=Vue --project=Svelte --project=Angular",
+		"test:frameworks": "playwright test --project=React --project=Vue --project=Svelte --project=Angular --project=Solid --project=Qwik --project=Preact",
 		"test:update": "npm run test -- --update-snapshots"
 	},
 	"devDependencies": {
@@ -46,6 +46,7 @@
 		"@mdn/browser-compat-data": "8.1.2",
 		"@playwright/test": "1.63.0",
 		"@preact/preset-vite": "2.10.6",
+		"@qwik.dev/core": "2.0.0-rc.2",
 		"@sveltejs/vite-plugin-svelte": "7.3.0",
 		"@tsconfig/svelte": "5.0.8",
 		"@types/caniuse-lite": "1.0.5",
@@ -59,6 +60,7 @@
 		"caniuse-lite": "1.0.30001810",
 		"custom-element-vs-code-integration": "1.5.0",
 		"jshint": "2.13.6",
+		"preact": "11.0.1",
 		"prettier": "3.9.8",
 		"react": "19.3.0",
 		"react-dom": "19.3.0",

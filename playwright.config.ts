@@ -1,8 +1,17 @@
 import { defineConfig, devices } from "@playwright/test";
 
 // Framework harness pages, each served by its own Vite dev server (see frameworks/<name>/test.u-combobox.html)
-const FRAMEWORKS = { react: 5174, vue: 5175, svelte: 5176, angular: 5177 };
-const FRAMEWORK_SPECS = /\.(react|vue|svelte|angular)\.spec\.ts$/;
+const FRAMEWORKS = {
+	react: 5174,
+	vue: 5175,
+	svelte: 5176,
+	angular: 5177,
+	solid: 5178,
+	qwik: 5179,
+	preact: 5180,
+};
+const FRAMEWORK_SPECS =
+	/\.(react|vue|svelte|angular|solid|qwik|preact)\.spec\.ts$/;
 const reuseExistingServer = !process.env.CI;
 
 export default defineConfig({

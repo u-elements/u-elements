@@ -35,7 +35,8 @@ import {
  * - text:         the current input value
  * - cached text:  the text last seen from typing, the value attribute or the value property (_value).
  *                 Not updated by the clear button in single mode, so a prevented remove can revert input to the text before the clear
- * - same text:    text equals an item's text, trimmed and case-insensitive. Compared against items, never against options
+ * - same text:    trimmed text equals an item's text, case sensitive. Compared against items, never against options.
+ *                 Options are only compared through match, items are an already confirmed selection
  * - match:        dispatch comboboxbeforematch with the first option whose label equals the trimmed text case-insensitive.
  *                 The consumer can prevent and set option.selected to pick another option. The result is the matched option,
  *                 or a new item made from the text when creatable and no option matched, or nothing.
@@ -68,7 +69,7 @@ import {
  *   - Single:   select to remove the item, if any. Accepted: remove and sync input. Prevented: revert input
  *   - Multiple: announce invalid value
  * - Same text as an item
- *   - Single:   sync input
+ *   - Single:   nothing, the text already is the item
  *   - Multiple: select to remove that item. Accepted: remove. Prevented: nothing
  * - Other text
  *   - Both:     match
@@ -79,7 +80,7 @@ import {
  * Blur (focus leaves <u-combobox>; pointer down inside does not count as blur)
  * - Multiple: nothing
  * - Single + empty text:  select to remove the item, if any. Accepted: remove. Prevented: sync input
- * - Single + same text:   sync input
+ * - Single + same text:   nothing
  * - Single + other text:  match. No result: sync input. Result equal to the current item: sync input.
  *                         Otherwise replace. Accepted: sync input. Prevented: sync input
  *
@@ -117,10 +118,10 @@ import {
  * | Pick         | Revert input -> replace -> sync input                     | Revert input -> toggle                |
  * | Type         | Cache text                                                | Cache text                            |
  * | Enter empty  | Remove item                                               | Announce invalid                      |
- * | Enter same   | Sync input                                                | Remove item                           |
+ * | Enter same   | Nothing                                                   | Remove item                           |
  * | Enter other  | Match -> replace/create -> sync, else announce, keep text | Match -> toggle/create, else announce |
  * | Blur empty   | Remove item                                               | Nothing                               |
- * | Blur same    | Sync input                                                | Nothing                               |
+ * | Blur same    | Nothing                                                   | Nothing                               |
  * | Blur other   | Match -> replace/create -> sync, else sync input          | Nothing                               |
  */
 
@@ -163,7 +164,7 @@ const CSS_TOGGLE = `button[aria-expanded]`;
 const CSS_DATALIST = `datalist,u-datalist,[role="listbox"]`;
 const CSS_OPTION = `option,u-option,[role="option"]`;
 const FOCUS_VISIBLE = { focusVisible: true };
-const EVENTS = "blur change focus click input keydown pointerdown";
+const EVENTS = "blur focus click keydown pointerdown";
 const FALSE = "false";
 const TEXTS = {
 	added: "Added",
@@ -200,7 +201,6 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	_texts = { ...TEXTS };
 
 	_listHidden?: boolean;
-	_skipChange?: boolean; // Set when a datalist click was reverted, to stop the change event the datalist dispatches right after
 	_singleItem?: string | null; // Item value and text to detect item change in single mode. Null when no item, undefined until first sync so the first run always syncs
 	_value?: string; // Cache value to be able to revert on datalist click
 
@@ -231,6 +231,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 			childList: true,
 			subtree: true,
 		});
+		on(window, "input", this, true); // Window capture runs before frameworks delegating from document (i.e. Qwik), so a datalist pick can be reverted before they read the value
 		on(this, EVENTS, this, true); // Bind events using capture phase to run before frameworks
 		on(this._root, "reset", this, true); // Form reset does not dispatch input or call the value setter, so listen on the root as reset targets the form
 	}
@@ -247,20 +248,21 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		}
 	}
 	disconnectedCallback() {
+		off(window, "input", this, true);
 		off(this, EVENTS, this, true);
 		if (this._root) off(this._root, "reset", this, true);
 		COMBOBOXES.delete(this);
 		this._umutate?.();
 		// biome-ignore format: next-line
-		this._listHidden = this._focusMoved = this._skipChange = this._root = this._umutate = this._clear = this._toggle = this._control = this._select = this._options = this._items = this._list = this._singleItem = this._value = undefined;
+		this._listHidden = this._focusMoved = this._root = this._umutate = this._clear = this._toggle = this._control = this._select = this._options = this._items = this._list = this._singleItem = this._value = undefined;
 	}
 	handleEvent(event: Event) {
 		if (this.control?.disabled || this.control?.readOnly) return;
 		if (event.type === "blur") onBlur(this);
-		if (event.type === "change") onChange(this, event);
 		if (event.type === "click") onClick(this, event as MouseEvent);
 		if (event.type === "focus") speak(); // Prepare for aria-live announcements
-		if (event.type === "input") onInput(this, event);
+		if (event.type === "input" && event.composedPath()[0] === this.control)
+			onInput(this, event); // Window listener, so check the real target also inside shadow roots
 		if (event.type === "keydown") onKeyDown(this, event as KeyboardEvent);
 		if (event.type === "pointerdown") {
 			this._listHidden = !!this.list?.hidden;
@@ -320,10 +322,11 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	}
 }
 
+// Never called with empty text, see onCommit
 const dispatchMatch = (self: UHTMLComboboxElement) => {
 	const { creatable, control, options, list } = self;
-	const label = control?.value?.trim() || "";
-	const find = label.toLowerCase() || null; // Fallback to null to prevent matching empty values
+	const value = control?.value?.trim() || "";
+	const find = value.toLowerCase() || null; // Fallback to null to prevent matching empty values
 	let match: HTMLOptionElement | undefined;
 
 	if (list) {
@@ -331,35 +334,29 @@ const dispatchMatch = (self: UHTMLComboboxElement) => {
 		const event = { bubbles: true, cancelable: true, detail: match };
 
 		if (!self.dispatchEvent(new CustomEvent("comboboxbeforematch", event)))
-			match = [...options].find(getSelected); // Only match first selected option if custom matching
+			match = [...options].find(getSelected); // Prevented means custom matching, so use the first option the consumer selected
 
 		syncOptionsWithItems(self); // Keep option selection on the current items, as consumer can change option.selected in comboboxbeforematch. The matched option is selected by onMutations once its <data> is added, so a prevented or restored select never leaves a stale selection
 	}
 
-	if (!match && creatable && label) return { value: label, label, creatable }; // Return creatable value as match if no match and creatable
-	return match && { ...getItem(match), creatable: false };
+	if (!match && creatable && value) return { value, label: value }; // Create from text if no match and creatable
+	return match && getItem(match);
 };
 
+// Returns false if prevented by comboboxbeforeselect, so the caller can decide what happens to the input
 const dispatchSelect = (
 	self: UHTMLComboboxElement,
-	item?: { value: string; label?: string },
+	item: { value: string; label?: string },
 	canRemove = true,
-	canRevert = true, // Datalist pick keeps the typed text when prevented, as blur reverts to the item text
 ) => {
-	const { _texts, control, items, multiple } = self;
-	if (!item) {
-		if (multiple) return speak(_texts.invalid); // Warn about trying to select a invalid value in multiple mode
-		if (!control?.value && items[0]) return dispatchSelect(self, items[0]); // Clear if empty input and single mode
-		return syncInputWithItemSingleMode(self); // Restore previous item if non-empty input and single mode
-	}
-
+	const { control, items, multiple } = self;
 	const index = [...items].findIndex((i) => i.value === item.value);
 	const remove = items[index];
 	const focus =
 		remove === getFocusedElement(self) &&
 		(multiple ? items[index - 1] || items[index + 1] || control : control);
 
-	if (remove && !canRemove) return syncInputWithItemSingleMode(self); // If item is already present and not removeable
+	if (remove && !canRemove) return syncInputWithItemSingleMode(self) ?? true; // Already the item in single mode, so only sync the input text
 	if (focus) focus.focus(FOCUS_VISIBLE); // Move focus if item might be removed (can be prevented by comboboxbeforeselect)
 	self._focusMoved = !!focus; // Cache if focus was moved to determine if we should use aria-live or aria-label for announcements in onMutations
 
@@ -370,36 +367,60 @@ const dispatchSelect = (
 		if (remove) remove.remove();
 		else control?.insertAdjacentElement("beforebegin", add);
 		self.dispatchEvent(new CustomEvent("comboboxafterselect", event));
-	} else if (!multiple && canRevert) revertSingleSelect(self);
+		return true;
+	}
+	return false;
 };
 
-// Restore input to the item text after a prevented select in single mode. Needed by Enter, blur and clear,
-// as all of them leave typed or emptied text in the input
-const revertSingleSelect = (self: UHTMLComboboxElement) => {
-	const prev = self._singleItem; // Restore only if the consumer did not change the item, as a changed item is already synced by onMutations and a restore would overwrite later programmatic input
+// Restore input text after a prevented select in single mode
+// Defaults to the item text (blur), clear passes the text before the clear
+const restoreInput = (self: UHTMLComboboxElement, text?: string) => {
+	// Frameworks render the <data> they control asynchronously, so defer restore to prevent flash of previous value.
+	// Vue, Svelte and Angular render in the next microtask, while React queue rendering by posting to MessageChannel in the next microtask.
+	// Waiting one microtask and then posting to MessageChannel, ensures compatibility with all frameworks.
+	// setTimeout and requestAnimationFrame does not guarantee ordering, and can therefore be unreliable with React.
 	const { port1, port2 } = new MessageChannel();
-	// Deferred, as frameworks render the <data> they control asynchronously, and restoring first would flash the previous value.
-	// Vue, Svelte and Angular commit in a microtask. React schedules updates made outside its own event system in a microtask
-	// that posts a MessageChannel task, so posting our message from a later microtask runs after that render, as the posted
-	// message task source is FIFO. setTimeout and requestAnimationFrame give no such guarantee, as the browser may run a frame before pending tasks
+	const prev = getItemKey(self); // Restore only if the consumer did not change the item, as a changed item is already synced by onMutations and a restore would overwrite later programmatic input
 	port1.onmessage = () => {
 		port1.close();
-		if (self.isConnected && self._singleItem === prev)
-			syncInputWithItemSingleMode(self);
+		if (!self.isConnected || getItemKey(self) !== prev) return;
+		if (text === undefined) return syncInputWithItemSingleMode(self);
+		if (self.control && text !== self.control.value)
+			setValue(self.control, text, "insertText"); // Prevent input event being handled as "click" on option
 	};
 	Promise.resolve().then(() => port2.postMessage(0));
+};
+
+// Shared by Enter and blur, see SPECIFICATION
+const onCommit = (self: UHTMLComboboxElement, type?: string) => {
+	const { _texts, control, items, multiple } = self;
+	const value = control?.value.trim();
+	const itemMatch = value && [...items].find((i) => getText(i) === value); // Items are a confirmed selection, so compare case sensitive and against items, not options. Options with equal labels or options replaced by a fetch can then not change a committed value
+	const isBlur = type === "blur";
+	let accepted = true;
+
+	if (!value) {
+		if (multiple) speak(_texts.invalid);
+		else if (items[0]) accepted = dispatchSelect(self, items[0]); // Empty text removes the item
+	} else if (itemMatch) {
+		if (multiple) accepted = dispatchSelect(self, itemMatch); // Same text as an item removes it in multiple mode, and is already the item in single mode
+	} else {
+		const match = dispatchMatch(self);
+		if (match) accepted = dispatchSelect(self, match, multiple);
+		else if (isBlur)
+			syncInputWithItemSingleMode(self); // No match on blur falls back to the item
+		else speak(_texts.invalid); // No match on Enter keeps the typed text
+	}
+	if (!accepted && isBlur) restoreInput(self); // Enter keeps the typed text when prevented, blur falls back to the item
 };
 
 const onBlur = (self: UHTMLComboboxElement) =>
 	isPointerDown(self) || setTimeout(onBlurred, 0, self); // Delay to allow focus to be set on new element
 
 const onBlurred = (self: UHTMLComboboxElement) => {
-	const { control, multiple, options } = self;
-	if (multiple || !control || !self.isConnected) return; // Nothing to do in multiple mode, or if unmounted before the blur timeout
+	if (self.multiple || !self.control || !self.isConnected) return; // Nothing to do in multiple mode, or if unmounted before the blur timeout
 	if (self.contains(getFocusedElement(self))) return; // Focus is still inside
-	if (hasItemText(self)) return; // Input already reflects the item, so nothing to match
-	const exactMatch = [...options].find((o) => getLabel(o) === control?.value);
-	dispatchSelect(self, exactMatch && getItem(exactMatch), false);
+	onCommit(self, "blur");
 };
 
 const onReset = (self: UHTMLComboboxElement) => {
@@ -422,8 +443,13 @@ const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
 
 	if (control && clear?.contains(target as Node)) {
 		event.preventDefault(); // Prevent button[type="reset"]
+		const value = self._value || "";
 		setValue(control, "", "deleteContentBackward");
-		if (!multiple) dispatchSelect(self); // Instantly trigger removal if single mode
+		if (!multiple) {
+			self._value = value; // Single mode does not cache the clear, so a prevented removal can revert to the text before it
+			if (items[0] && !dispatchSelect(self, items[0]))
+				restoreInput(self, value);
+		}
 		control.focus();
 		return hasHiddenDatalist || control.click(); // Open list if it was open before clicking clear
 	}
@@ -443,11 +469,6 @@ const onProgrammatic = (self: UHTMLComboboxElement) => {
 	syncButtonsWithInput(self);
 };
 
-const onChange = (self: UHTMLComboboxElement, event: Event) => {
-	if (self._skipChange) event.stopImmediatePropagation(); // Stop change for a reverted value, as nothing changed for the consumer. The synced value dispatches its own change
-	self._skipChange = false;
-};
-
 const onInput = (self: UHTMLComboboxElement, e: Partial<InputEvent>) => {
 	const { control, options, multiple } = self;
 	const value = control?.value || "";
@@ -458,10 +479,8 @@ const onInput = (self: UHTMLComboboxElement, e: Partial<InputEvent>) => {
 
 	if (match && control) {
 		e.stopImmediatePropagation?.(); // Prevent input as dispatchSelect will trigger input if needed
-		self._skipChange = true; // Stop the change the datalist dispatches next, see onChange
-		setTimeout(() => (self._skipChange = false)); // In case no change follows
 		setValue(control, self._value || "", false); // Revert input value as we allow the user to event.preventDefault in comboboxbeforeselect
-		if (value) dispatchSelect(self, getItem(match), multiple, false); // Clicking a <option value=""> should not cause select
+		if (value) dispatchSelect(self, getItem(match), multiple); // Clicking a <option value=""> should not cause select. Prevented keeps the reverted text until blur
 	} else self._value = value; // Typed text, and also replacement text without an option value (i.e. Firefox spell check or autofill), so a later click reverts to it
 
 	syncButtonsWithInput(self);
@@ -474,7 +493,7 @@ const onKeyDown = (self: UHTMLComboboxElement, e: KeyboardEvent) => {
 };
 
 const onKeyDownControl = (self: UHTMLComboboxElement, e: KeyboardEvent) => {
-	const { clear, control, creatable, items, list, multiple } = self;
+	const { clear, control, creatable, items, list } = self;
 	const isBackwards = e.key === "ArrowLeft" || e.key === "Backspace";
 
 	// selectionEnd is null for type="email" and type="number", so only act when caret is known to be at start
@@ -484,9 +503,7 @@ const onKeyDownControl = (self: UHTMLComboboxElement, e: KeyboardEvent) => {
 	}
 	if (e.key === "Enter" && control && (list || creatable)) {
 		preventSubmit(control); // Prevent submitting form as we want to preform a match instead
-		if (multiple) dispatchSelect(self, dispatchMatch(self), true);
-		else if (!hasItemText(self))
-			dispatchSelect(self, dispatchMatch(self), false); // Matches against the options present now, so no state is kept while typing
+		onCommit(self); // Matches against the options present now, so no state is kept while typing
 	}
 	if (e.key === "Tab" && !e.shiftKey && clear && control?.value) {
 		e.preventDefault(); // Prevent default tab as we are moving into clear
@@ -563,9 +580,7 @@ const onMutations = (self: UHTMLComboboxElement, edit?: MutationRecord[]) => {
 	// Sync input with item in single mode with list, but only if item has actually changed. Runs last as it dispatches events
 	if (!multiple && list) {
 		const prev = self._singleItem;
-		const next = items[0]
-			? `${getValue(items[0])}\n${getText(items[0])}`
-			: null; // Key on value and text, as a datalist pick between options with equal labels only changes the value
+		const next = getItemKey(self);
 		self._singleItem = next;
 
 		// First sync is deferred, as frameworks write their bound input value after insertion (Vue v-model mounted, Angular ngModel) or ignore events during render (React commit)
@@ -679,8 +694,8 @@ function isControlValueChange(this: UHTMLComboboxElement, r: MutationRecord) {
 }
 
 // Helpers
-const hasItemText = ({ control, items }: UHTMLComboboxElement) =>
-	!!items[0] && control?.value === getText(items[0]); // Input already reflects the item (i.e. after option click). Compares against the item and not the options, so options with equal labels or options replaced by a fetch can not change a committed value
+const getItemKey = ({ items: [item] }: UHTMLComboboxElement) =>
+	item ? `${getValue(item)}\n${getText(item)}` : null; // Key on value and text, as a datalist pick between options with equal labels only changes the value
 const getLabel = (el: Element) => attr(el, "label") ?? getText(el);
 const getValue = (el: Element) => attr(el, "value") ?? getText(el);
 const getItem = (el: Element) => ({ label: getLabel(el), value: getValue(el) });

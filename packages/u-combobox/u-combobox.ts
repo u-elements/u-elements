@@ -726,7 +726,7 @@ function isModeChange(this: UHTMLComboboxElement, r: MutationRecord) {
 
 // Helpers
 const getItemKey = ({ items: [item] }: UHTMLComboboxElement) =>
-	item ? `${getValue(item)}\n${getText(item)}` : null; // Key on value and text, as a datalist pick between options with equal labels only changes the value
+	item ? `${item.textContent.length}:${getText(item)}:${getValue(item)}` : null; // Key on value and text, as a datalist pick between options with equal labels only changes the value
 const getLabel = (el: Element) => attr(el, "label") ?? getText(el);
 const getValue = (el: Element) => attr(el, "value") ?? getText(el);
 const getItem = (el: Element) => ({ label: getLabel(el), value: getValue(el) });

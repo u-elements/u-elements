@@ -576,7 +576,7 @@ Typing never selects or live-matches anything; it only filters the options. Sele
 | :----- | :---------- | :------------ |
 | Option pick | Replace the `<data>` item and sync input with item | Toggle `<data>` item, and input keeps the typed text |
 | `Enter` with empty input | Remove the item | Nothing |
-| `Enter` with text | If an option matches, add as item. Otherwise announce `data-sr-invalid` (unless text equals the item) and keeps the text, or creates item if `data-creatable` | If an option matches, toggle as item. Otherwise announce `data-sr-invalid` (unless text equals an item) and keeps the text, or creates item if `data-creatable`  |
+| `Enter` with text | If an option matches, add as item. Otherwise announce `data-sr-invalid` (unless text equals the item) and keep the text, or creates item if `data-creatable` | If an option matches, toggle as item. Otherwise announce `data-sr-invalid` (unless text equals an item) and keep the text, or creates item if `data-creatable`  |
 | Blur with empty input | Remove the item | Nothing |
 | Blur with text equal to item | Nothing | Nothing |
 | Blur with other text | If an option matches, add as item. Otherwise sync input back to item text. Never creates, also with `data-creatable` | Nothing |

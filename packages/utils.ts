@@ -212,7 +212,7 @@ export const customElements = {
 
 /**
  * setValue
- * @description Set input value like the browser does on user input: dirty value, caret at end, no events and without the value setter, which u-combobox patches to detect programmatic changes
+ * @description Set input value like the browser does on user input
  * @param {HTMLInputElement} input Input element to set value on
  * @param {string} data The new value
  * @param {inputType} type of the new event, pass false if silent

@@ -586,6 +586,9 @@ const onMutations = (self: UHTMLComboboxElement, edit?: MutationRecord[]) => {
 	attr(self._listbox, ARIA_LABEL, _texts.items);
 	self._umutate?.takeRecords(); // Clear mutation records caused by our own attribute writes. Must run before dispatching events below, so consumer mutations made in event handlers are kept
 
+	// Forget the prior item when the datalist is removed so re-adding it forces a sync.
+	if (!list) self._singleItem = undefined;
+
 	// Sync input with item in single mode with list, but only if item has actually changed. Runs last as it dispatches events
 	if (!multiple && list) {
 		const prev = self._singleItem;

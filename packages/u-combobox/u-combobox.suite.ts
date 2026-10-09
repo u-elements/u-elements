@@ -374,6 +374,32 @@ export const comboboxSuite = (
 					expect(await logged(page, "comboboxbeforeselect")).toEqual([]);
 				});
 
+				test("Enter on text equal to an item without a matching option does not announce invalid", async ({
+					page,
+				}) => {
+					await render(page, {
+						items: [{ value: "custom-id", label: "Custom" }], // Not among the options, i.e. prefilled from server before options are loaded
+					});
+					await resetLog(page, "comboboxbeforematch");
+					const input = page.locator("#input");
+					const items = page.locator("u-combobox data");
+					const live = page.locator("[aria-live='assertive']");
+
+					await expect(input).toHaveValue("Custom");
+					await input.click();
+					await input.press("Enter");
+					await page.waitForTimeout(100);
+					await expect(items).toHaveText(["Custom"]); // Unchanged
+					await expect(input).toHaveValue("Custom");
+					await expect(live).not.toHaveText(/Invalid value/); // A confirmed item is never invalid
+					expect(await logged(page, "comboboxbeforematch")).toHaveLength(1); // Still matched against the options
+
+					await input.fill("unknown");
+					await input.press("Enter");
+					await expect(live).toHaveText(/Invalid value/); // Other text still announces
+					await expect(items).toHaveText(["Custom"]);
+				});
+
 				test("Enter syncs input when the match is the current item", async ({
 					page,
 				}) => {
@@ -756,7 +782,7 @@ export const comboboxSuite = (
 			});
 
 			test.describe(name("spec: single + creatable"), () => {
-				test("Enter and blur create items, but options win over creatable", async ({
+				test("Enter creates items but blur does not, and options win over creatable", async ({
 					page,
 				}) => {
 					await render(page, { creatable: true });
@@ -773,9 +799,9 @@ export const comboboxSuite = (
 					await input.fill("Another");
 					await input.blur();
 					await expect(items).toHaveCount(1);
-					await expect(items.first()).toHaveText("Another"); // Created on blur, replacing the previous item
-					await expect(input).toHaveValue("Another");
-					expect(await logged(page, "comboboxbeforematch")).toHaveLength(2); // Blur matched before creating
+					await expect(items.first()).toHaveText("Custom"); // Blur never creates, so the item is kept
+					await expect(input).toHaveValue("Custom"); // Synced back to the item
+					expect(await logged(page, "comboboxbeforematch")).toHaveLength(2); // Blur still matched against the options
 
 					await input.click();
 					await input.fill("bergen"); // Predefined option wins over creatable on Enter
@@ -788,7 +814,7 @@ export const comboboxSuite = (
 					await expect(input).toHaveValue("Oslo");
 				});
 
-				test("without datalist keeps free text, and creates on Enter and blur", async ({
+				test("without datalist keeps free text, and creates on Enter but not on blur", async ({
 					page,
 				}) => {
 					await render(page, { creatable: true, options: null, clear: true });
@@ -807,7 +833,7 @@ export const comboboxSuite = (
 					await input.fill("Hello world");
 					await input.blur();
 					await expect(items).toHaveCount(1);
-					await expect(items.first()).toHaveText("Hello world"); // Blur creates from the text like Enter
+					await expect(items.first()).toHaveText("Hello"); // Blur never creates, so the item is kept
 					await expect(input).toHaveValue("Hello world"); // Free text is never overwritten
 					expect(await logged(page, "comboboxbeforematch")).toEqual([]); // Match is never dispatched without a datalist
 
@@ -958,11 +984,17 @@ export const comboboxSuite = (
 
 					await input.fill("Bergen");
 					await input.press("Enter");
+					await page.waitForTimeout(100);
 					await expect(items).toHaveText(["Bergen"]); // Unchanged
 					await expect(input).toHaveValue("Bergen");
-					await expect(live).toHaveText(/Invalid value/); // Announced, as the datalist has an option with value
+					await expect(live).not.toHaveText(/Invalid value/); // Not announced, as the text equals a confirmed item
 					expect(await logged(page, "comboboxbeforematch")).toHaveLength(1);
 					expect(await logged(page, "comboboxbeforeselect")).toEqual([]);
+
+					await input.fill("Other thing");
+					await input.press("Enter");
+					await expect(live).toHaveText(/Invalid value/); // Announced, as the text is neither an option nor an item
+					await expect(items).toHaveText(["Bergen"]);
 				});
 
 				test("Enter does not announce invalid value while the datalist is busy", async ({

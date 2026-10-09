@@ -225,12 +225,12 @@ export const setValue = (
 ) => {
 	const silent = type === false;
 	const event = { bubbles: true, composed: true, data, inputType: type || "" };
-	const inputType = input.type;
+	const inputType = input.selectionEnd === null && input.type; // Input types without selection support (i.e. 'email', 'number', 'date') does not support setRangeText, so temporarily switch to text
 
 	if (!silent) input.dispatchEvent(new InputEvent("beforeinput", event));
-	input.type = "text"; // Input type 'email', 'number', 'date' does not support setRangeText
+	if (inputType) input.type = "text";
 	input.setRangeText(data, 0, input.value.length, "end"); // Using setRangeText to not touch HTMLInputElement.prototype, aligning with browser standard
-	input.type = inputType; // Revert to original input type
+	if (inputType) input.type = inputType; // Revert to original input type
 	if (!silent) input.dispatchEvent(new InputEvent("input", event));
 	if (!silent) input.dispatchEvent(new Event("change", { bubbles: true }));
 };

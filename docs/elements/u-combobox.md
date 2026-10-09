@@ -576,10 +576,10 @@ Typing never selects or live-matches anything; it only filters the options. Sele
 | :----- | :---------- | :------------ |
 | Option pick | Replace the `<data>` item and sync input with item | Toggle `<data>` item, and input keeps the typed text |
 | `Enter` with empty input | Remove the item | Nothing |
-| `Enter` with text | If an option matches, add as item. Otherwise announce `data-sr-invalid` and keeps the text, or creates item if `data-creatable` | If an option matches, toggle as item. Otherwise announce `data-sr-invalid` and keeps the text, or creates item if `data-creatable`  |
+| `Enter` with text | If an option matches, add as item. Otherwise announce `data-sr-invalid` (unless text equals the item) and keeps the text, or creates item if `data-creatable` | If an option matches, toggle as item. Otherwise announce `data-sr-invalid` (unless text equals an item) and keeps the text, or creates item if `data-creatable`  |
 | Blur with empty input | Remove the item | Nothing |
 | Blur with text equal to item | Nothing | Nothing |
-| Blur with other text | If an option matches, or `data-creatable`,  add as item. Otherwise sync input back to item text | Nothing |
+| Blur with other text | If an option matches, add as item. Otherwise sync input back to item text. Never creates, also with `data-creatable` | Nothing |
 
 ## Notes
 - The child `<input>` inside `<u-combobox>` is the control, and programmatic `input.value` changes are detected on it
@@ -601,6 +601,8 @@ Typing never selects or live-matches anything; it only filters the options. Sele
   - Single mode with datalist always syncs `input.value` to the `<data>`, also on mount
   - Single mode correctly dispatches `input` after option `click`
   - Single mode mirrors only the first `<data>` into `<select>` and option selection, so the submitted value matches the input
+  - `values` returns at most one value in single mode, matching the mirrored `<data>`
+  - `Enter` with text equal to an item no longer announces `data-sr-invalid` when no option matches, as the item is a confirmed selection
   - Single mode clear button no longer caches the emptied text, so a prevented removal reverts the input to the text before the clear
   - Runtime toggle `data-multiple` and `data-creatable` syncs correctly
   - Synthetic `InputEvent` without `inputType` (i.e. testing-library) does not cause incorrect option click
@@ -610,6 +612,7 @@ Typing never selects or live-matches anything; it only filters the options. Sele
   - The `input` event of an option pick is intercepted in the capture phase on `window`, so frameworks delegating events from `document` (i.e. Qwik) read the reverted text instead of the option value
   - Input sync after a prevented `comboboxbeforeselect` on blur is deferred, so frameworks rendering `<data>` asynchronously do not see the previous value flash
   - The `comboboxprogrammaticinput` event is removed
+  - Option picks from `<u-datalist>` 2.0.3 and older, which set `input.value` through the prototype setter, are no longer taken for programmatic input, so the typed text is kept
 - **2.1.5:** Fix state handling when mode is multiple and controlled (i.e. React)
 - **2.1.4:** Fix internal state when preventing a selection or setting value programmatically
 - **2.1.3:** Fix issue where item behind datalist could receive focus

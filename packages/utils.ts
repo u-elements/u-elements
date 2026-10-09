@@ -225,7 +225,7 @@ export const setValue = (
 ) => {
 	const silent = type === false;
 	const event = { bubbles: true, composed: true, data, inputType: type || "" };
-	const inputType = input.selectionEnd === null && input.type; // Input types without selection support (i.e. 'email', 'number', 'date') does not support setRangeText, so temporarily switch to text
+	const inputType = input.selectionEnd === null && input.type; // Input types without selection support (i.e. 'email', 'number', 'date') do not support setRangeText, so temporarily switch to text
 
 	if (!silent) input.dispatchEvent(new InputEvent("beforeinput", event));
 	if (inputType) input.type = "text";
@@ -292,7 +292,6 @@ let LIVE: HTMLElement;
 let LIVE_SR_FIX = 0; // Ensure screen reader announcing by alternating non-breaking-space suffix
 let LIVE_CLEAR: ReturnType<typeof setTimeout> | number = 0;
 export const speak = (text?: string) => {
-	clearTimeout(LIVE_CLEAR);
 	if (!LIVE) {
 		LIVE = tag("div", { "aria-live": "assertive" });
 		LIVE.style.overflow = "hidden";
@@ -301,6 +300,8 @@ export const speak = (text?: string) => {
 		LIVE.style.width = "1px";
 	}
 	if (!LIVE.isConnected) document.body.appendChild(LIVE);
+	if (text === undefined) return; // Only prepare the live region, keep any pending clear so a previous announcement does not stay in <body>
+	clearTimeout(LIVE_CLEAR);
 	if (text === "") LIVE.textContent = ""; // Clear announcement immediately if empty string
 	if (text) {
 		LIVE.textContent = `${text}${LIVE_SR_FIX++ % 2 ? "\u{A0}" : ""}`; // Non-breaking space to ensure screen reader announces

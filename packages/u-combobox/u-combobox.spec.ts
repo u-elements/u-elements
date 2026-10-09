@@ -16,12 +16,9 @@ comboboxSuite("Vanilla", {
 declare global {
 	interface Window {
 		__log?: Record<string, string[]>;
+		__root: ShadowRoot; // Set by the shadow root tests, as locators can not reach into a closed shadow root
 	}
 }
-
-const setCaretStart = (input: HTMLInputElement) => {
-	input.selectionStart = input.selectionEnd = 0;
-};
 
 const mount = (page: Page, html: string) =>
 	page.evaluate((markup) => {
@@ -213,27 +210,82 @@ test.describe("DOM", () => {
 				});
 			}
 
-			test("works inside a shadow root", async ({ page }) => {
-				await mount(page, `<div id="host"></div>`);
-				await page.evaluate((markup) => {
-					const host = document.getElementById("host") as HTMLElement;
-					host.attachShadow({ mode: "open" }).innerHTML = markup;
-				}, combobox("data-multiple"));
-				const input = page.locator("#input");
-				const items = page.locator("u-combobox data");
+			// Driven through window.__root with the keyboard and mouse, as locators can not reach into a closed shadow root
+			for (const mode of ["open", "closed"] as const) {
+				test(`works inside a ${mode} shadow root`, async ({ page }) => {
+					await mount(page, `<div id="host"></div>`);
+					await page.evaluate(
+						([markup, mode]) => {
+							const host = document.getElementById("host") as HTMLElement;
+							window.__root = host.attachShadow({ mode });
+							window.__root.innerHTML = markup;
+						},
+						[combobox("data-multiple"), mode] as const,
+					);
+					// Helpers run in the page, as a closed shadow root is only reachable through the kept reference
+					const value = () =>
+						page.evaluate(
+							() =>
+								(window.__root.getElementById("input") as HTMLInputElement)
+									.value,
+						);
+					const items = () =>
+						page.evaluate(() =>
+							Array.from(window.__root.querySelectorAll("data"), (el) =>
+								el.textContent?.trim(),
+							),
+						);
+					const focused = () =>
+						page.evaluate(() => window.__root.activeElement?.nodeName);
 
-				await input.fill("Bergen");
-				await input.press("Enter");
-				await expect(items).toHaveText(["Bergen"]);
+					await page.evaluate(() =>
+						(window.__root.getElementById("input") as HTMLInputElement).focus(),
+					);
+					await page.keyboard.type("Bergen");
+					await page.keyboard.press("Enter");
+					await expect.poll(items).toEqual(["Bergen"]);
 
-				await input.fill("");
-				await input.evaluate(setCaretStart);
-				await input.press("ArrowLeft");
-				await expect(items.first()).toBeFocused();
-				await items.first().press("Backspace");
-				await expect(items).toHaveCount(0);
-				await expect(input).toBeFocused();
-			});
+					// Option pick is intercepted before the datalist value reaches the input
+					if (LIST_TAG === "u-datalist") {
+						await page.evaluate(() =>
+							(
+								window.__root.getElementById("input") as HTMLInputElement
+							).select(),
+						);
+						await page.keyboard.type("Ber");
+						await expect.poll(value).toBe("Ber");
+						await expect
+							.poll(() =>
+								page.evaluate(
+									() => window.__root.getElementById("list")?.hidden,
+								),
+							)
+							.toBe(false);
+						const [x, y] = await page.evaluate(() => {
+							const option = window.__root.querySelector("u-option") as Element;
+							const rect = option.getBoundingClientRect();
+							return [rect.x + rect.width / 2, rect.y + rect.height / 2];
+						});
+						await page.mouse.click(x, y);
+						await expect.poll(items).toEqual(["Bergen", "Oslo"]);
+						await expect.poll(value).toBe("Ber"); // Typed text is kept, not the option value
+					}
+
+					await page.evaluate(() => {
+						const input = window.__root.getElementById(
+							"input",
+						) as HTMLInputElement;
+						input.value = "";
+						input.selectionStart = input.selectionEnd = 0;
+					});
+					await page.keyboard.press("ArrowLeft");
+					await expect.poll(focused).toBe("DATA"); // Last item is focused
+					await page.keyboard.press("Backspace"); // Removes the last item, focus moves to the previous item or the input
+					const isList = LIST_TAG === "u-datalist";
+					await expect.poll(items).toEqual(isList ? ["Bergen"] : []);
+					await expect.poll(focused).toBe(isList ? "DATA" : "INPUT");
+				});
+			}
 		});
 	}
 });

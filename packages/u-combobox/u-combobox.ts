@@ -35,7 +35,7 @@ import { version } from "./package.json"; // Identity of this implementation
  * - option:       an <option> inside the <datalist> / <u-datalist>
  * - text:         the current input value
  * - cached text:  the text last seen from typing, the value attribute or the value property (_value).
- *                 Not updated by the clear button in single mode, so a prevented remove can revert input to the text before the clear
+ *                 The clear button remembers the text before clearing, so a prevented remove can revert to it
  * - same text:    trimmed text equals an item's text, case sensitive. Compared against items, never against options.
  *                 Only used by blur, as the item is an already confirmed selection. Enter always matches against the options.
  * - announce:     announce data-sr-invalid through the live region. Skipped while the datalist has aria-busy="true",
@@ -60,7 +60,6 @@ import { version } from "./package.json"; // Identity of this implementation
  *
  * Typing and programmatic text (input event, value attribute, value property)
  * - Both:     cache text, sync clear and toggle buttons. Never match, never select
- * - Except:   in single mode, the input event dispatched by the clear button does not cache text (see Clear button)
  *
  * Datalist pick (option click, or Enter on an option in <u-datalist>)
  * - Both:     revert input, then select the option. Never match. Picking <option value=""> only reverts input
@@ -69,7 +68,7 @@ import { version } from "./package.json"; // Identity of this implementation
  *
  * Enter in input (form submit is prevented when a datalist is present or creatable)
  * - Empty text
- *   - Single:   select to remove the item, if any. Accepted: remove and sync input. Prevented: revert input
+ *   - Single:   select to remove the item, if any. Accepted: remove and sync input. Prevented: nothing, the empty text stays until blur, which asks to remove again
  *   - Multiple: nothing
  * - Text (also when equal to an item, as an item can only be toggled through its option)
  *   - Both:     match. No result: announce, unless the text equals an item, as a confirmed item is never invalid
@@ -86,7 +85,7 @@ import { version } from "./package.json"; // Identity of this implementation
  *
  * Clear button (button[type="reset"])
  * - Both:     empty the text (dispatches input), focus input, re-open the list if it was open
- * - Single:   the cached text is not updated, then behave as Enter with empty text, so a prevented remove reverts input to the text before the clear
+ * - Single:   remember the text before the clear, then select to remove the item, if any. Accepted: remove. Prevented: revert input to the remembered text
  * - Multiple: the emptied text is cached like typing, and stays as nothing is selected or removed
  *
  * Toggle button (button[aria-expanded])
@@ -207,7 +206,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	_value?: string; // Cache value to be able to revert on datalist click
 
 	static get observedAttributes() {
-		return [ATTR_MULTI, ...Object.keys(TEXTS).map((key) => `data-sr-${key}`)]; // Using ES2015 syntax for backwards compatibility
+		return Object.keys(TEXTS).map((key) => `data-sr-${key}`); // Using ES2015 syntax for backwards compatibility. data-multiple is handled by the MutationObserver, so a mode change syncs batched with the framework render
 	}
 
 	constructor() {
@@ -226,31 +225,29 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		window[VERSION]?.add(this);
 		this._root = getRoot(this);
 		this._umutate = onMutation(this, onMutations, {
-			attributeFilter: ["aria-expanded", "id", "role", "value"],
-			attributeOldValue: true, // Needed to ignore no-op attribute writes from frameworks
+			attributeFilter: ["aria-expanded", "id", "role", "value", ATTR_MULTI],
+			attributeOldValue: true, // Needed to ignore no-op attribute writes from frameworks, and to detect a mode change
 			attributes: true,
 			characterData: true, // Respond to changes in <data> textContent
 			childList: true,
 			subtree: true,
 		});
-		on(window, "input", this, true); // Window capture runs before frameworks delegating from document (i.e. Qwik), so a datalist pick can be reverted before they read the value
+		// Window capture runs before frameworks delegating from document (i.e. Qwik), so a datalist pick can be reverted before they read the value.
+		// Inside a shadow root, bind to this instead: a window listener can not see the input through a closed shadow root, and delegating frameworks only see the retargeted host anyway
+		const inShadow = this._root instanceof ShadowRoot;
+		on(inShadow ? this : window, "input", this, true);
 		on(this, EVENTS, this, true); // Bind events using capture phase to run before frameworks
 		on(this._root, "reset", this, true); // Form reset does not dispatch input or call the value setter, so listen on the root as reset targets the form
 	}
-	attributeChangedCallback(prop: string, prev?: string, next?: string) {
+	attributeChangedCallback(prop: string, _: string, next?: string) {
 		const text = prop.split("data-sr-")[1] as keyof typeof TEXTS;
 		if (TEXTS[text]) this._texts[text] = next || TEXTS[text]; // Cache text attributes for performance
 		if (text === "clear" && this.clear)
 			attr(this.clear, ARIA_LABEL, this._texts.clear); // Backwards compatbile only update clear aria-label if data-sr-clear is set
-		if (prop === ATTR_MULTI && this._umutate) {
-			const wasMultiple = (prev ?? FALSE) !== FALSE;
-			if (wasMultiple === this.multiple) return; // Ignore writes that do not change mode (i.e. null to "false" from frameworks) and changes before connect
-			onMutations(this); // Re-sync on mode change
-			if (!this.multiple) syncInputWithItemSingleMode(this); // Input may hold filter text from multiple mode while cached item text is unchanged, so onMutations skips the sync
-		}
 	}
 	disconnectedCallback() {
-		off(window, "input", this, true);
+		off(window, "input", this, true); // If in LightDOM
+		off(this, "input", this, true); // If in ShadowDOM
 		off(this, EVENTS, this, true);
 		if (this._root) off(this._root, "reset", this, true);
 		window[VERSION]?.delete(this);
@@ -260,14 +257,14 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	}
 	handleEvent(event: Event) {
 		if (event.type === "reset" && event.target === this.control?.form)
-			return setTimeout(onReset, 0, this); // Controls are reset after the reset event has dispatched, so defer
+			return setTimeout(onReset, 0, this, event); // Controls are reset after the reset event has dispatched, so defer
 		if (this.control?.disabled || this.control?.readOnly) return;
 		if (event.type === "beforeinput") onBeforeinput(this, event);
 		if (event.type === "blur") onBlur(this);
 		if (event.type === "click") onClick(this, event as MouseEvent);
 		if (event.type === "focus") speak(); // Prepare for aria-live announcements
 		if (event.type === "input" && event.composedPath()[0] === this.control)
-			onInput(this, event); // Window listener, so check the real target also inside shadow roots
+			onInput(this, event); // Listener is on window or this, so check the real target also inside nested shadow roots
 		if (event.type === "keydown") onKeyDown(this, event as KeyboardEvent);
 		if (event.type === "pointerdown") {
 			this._listHidden = !!this.list?.hidden;
@@ -354,13 +351,17 @@ const dispatchSelect = (
 	canRemove = true,
 ) => {
 	const { control, items, multiple } = self;
-	const index = [...items].findIndex((i) => i.value === item.value);
+	const scope = multiple ? items : [items[0]]; // Single mode only acts on the first item, as extra <data> kept from multiple mode are not mirrored
+	const index = Array.from(scope).findIndex((i) => i?.value === item.value);
 	const remove = items[index];
 	const focus =
 		remove === getFocusedElement(self) &&
 		(multiple ? items[index - 1] || items[index + 1] || control : control);
 
-	if (remove && !canRemove) return syncInputWithItemSingleMode(self) ?? true; // Already the item in single mode, so only sync the input text
+	if (remove && !canRemove) {
+		syncInputWithItemSingleMode(self);
+		return true; // Already the item in single mode, so only sync the input text
+	}
 	if (focus) focus.focus(FOCUS_VISIBLE); // Move focus if item might be removed (can be prevented by comboboxbeforeselect)
 	self._focusMoved = !!focus; // Cache if focus was moved to determine if we should use aria-live or aria-label for announcements in onMutations
 
@@ -428,8 +429,8 @@ const onBlurred = (self: UHTMLComboboxElement) => {
 	onCommit(self, "blur");
 };
 
-const onReset = (self: UHTMLComboboxElement) => {
-	if (!self.isConnected) return;
+const onReset = (self: UHTMLComboboxElement, event: Event) => {
+	if (!self.isConnected || event.defaultPrevented) return;
 	onProgrammatic(self); // Cache the restored value and sync buttons
 	syncInputWithItemSingleMode(self); // Items are not form controls, so they are not reset, and single mode keeps mirroring the item
 };
@@ -563,6 +564,7 @@ const onMutations = (self: UHTMLComboboxElement, edit?: MutationRecord[]) => {
 	// Frameworks re-write attributes on render (i.e. Vue sets option value, React syncs input value), which is not a state change
 	if (edit?.every(isNoopAttribute, self)) return;
 	if (edit?.some(isControlValueChange, self)) self._value = control.value; // Attribute changed a pristine input without hitting the prototype setter
+	if (edit?.some(isModeChange, self)) self._singleItem = undefined; // Mode changed, so force a deferred input sync like on mount, as the input may hold filter text from multiple mode
 
 	const edits: Node[] = [];
 	for (const { addedNodes: add, removedNodes: del } of edit || []) {
@@ -679,7 +681,7 @@ const syncButtonsWithInput = (self: UHTMLComboboxElement) => {
 	}
 	if (toggle) {
 		// Show toggle only if idle and <u-datalist> is present, as native <datalist> can not be opened programmatically
-		const show = isIdle && list && list?.nodeName !== "DATALIST";
+		const show = isIdle && list && list.nodeName !== "DATALIST";
 		attr(toggle, ARIA_LABEL) || attr(toggle, ARIA_LABEL, self._texts.toggle); // Set default aria-label if not set by consumer
 		attr(toggle, "aria-hidden", `${IS_IOS || IS_ANDROID}`); // Hide from screen readers to keep datalist open on swipe right navigation
 		attr(toggle, "hidden", show ? null : "");
@@ -715,6 +717,11 @@ function isNoopAttribute(this: UHTMLComboboxElement, r: MutationRecord) {
 
 function isControlValueChange(this: UHTMLComboboxElement, r: MutationRecord) {
 	return r.target === this.control && r.attributeName === "value";
+}
+
+function isModeChange(this: UHTMLComboboxElement, r: MutationRecord) {
+	if (r.target !== this || r.attributeName !== ATTR_MULTI) return false;
+	return ((r.oldValue ?? FALSE) !== FALSE) !== this.multiple; // Ignore writes that do not change mode (i.e. null to "false" from frameworks)
 }
 
 // Helpers

@@ -1575,6 +1575,13 @@ export const comboboxSuite = (
 					await update(page, { multiple: true });
 					await expect.poll(getAll).toEqual(["oslo-id", "Bergen"]); // Switching back is lossless
 					await expect(options.nth(1)).toHaveAttribute("selected");
+
+					await update(page, { multiple: false });
+					await input.fill("Bergen"); // Bergen is a kept <data> from multiple mode, but not the mirrored item
+					await input.press("Enter");
+					await expect(page.locator("u-combobox data")).toHaveText(["Bergen"]); // Replaces the item instead of being ignored as already selected
+					await expect(input).toHaveValue("Bergen");
+					await expect.poll(getAll).toEqual(["Bergen"]);
 				});
 
 				test("restores item text in input when switching from multiple to single mode", async ({

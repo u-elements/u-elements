@@ -582,14 +582,14 @@ Typing never selects or live-matches anything; it only filters the options. Sele
 | Blur with other text | If an option matches, add as item. Otherwise sync input back to item text. Never creates, also with `data-creatable` | Nothing |
 
 ## Notes
-- The child `<input>` inside `<u-combobox>` is the control, and programmatic `input.value` changes are detected on it
+- The `<input>` must be a direct child of `<u-combobox>`. It is the control, and programmatic `input.value` changes are only detected on a direct child
 - `<datalist>` or `<u-datalist>` must be a child of `<u-combobox>`. The `list` attribute on `<input>` is managed automatically
 - Without a datalist, single mode is free text: the input is never overwritten
 - Single mode with a datalist always mirrors the `<data>` item, so a prefilled `input.value` without an item is cleared on mount. Multiple mode keeps it as filter text
 - Single mode acts on the first `<data>` only
 - The toggle button is hidden when using native `<datalist>`, as the native suggestion popup can not be detected programmatically
 - ARC Toolkit incorectly reports `aria-description` as an invalid ARIA-attribute
-- ARC Toolkit does not correcly read the relation between items with `role="option"` and the ShadowDOM wrapping container `role="listbox"`
+- ARC Toolkit does not correctly read the relation between items with `role="option"` and the ShadowDOM wrapping container `role="listbox"`
 
 
 ## Changelog

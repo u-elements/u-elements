@@ -7,7 +7,7 @@
 		"resolveJsonModule": true,
 		"experimentalDecorators": true,
 		"useDefineForClassFields": false,
-		"allowImportingTsExtensions": true
+		"allowImportingTsExtensions": true,
 		"isolatedModules": true,
 		"noEmit": true,
 		"skipLibCheck": true,

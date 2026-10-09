@@ -20,7 +20,7 @@
 		"docs:dev": "npm run build && vitepress dev docs",
 		"docs:preview": "vitepress preview docs",
 		"lint": "npx @biomejs/biome check",
-		"typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p frameworks/vanilla/tsconfig.json && tsc --noEmit -p frameworks/react/tsconfig.json && tsc --noEmit -p frameworks/angular/tsconfig.json && vue-tsc --noEmit -p frameworks/vue/tsconfig.json && svelte-check --tsconfig frameworks/svelte/tsconfig.json && tsc --noEmit -p frameworks/solid/tsconfig.json && tsc --noEmit -p frameworks/qwik/tsconfig.json && tsc --noEmit -p frameworks/preact/tsconfig.json",
+		"typecheck": "npm run build && tsc --noEmit -p tsconfig.json && tsc --noEmit -p frameworks/vanilla/tsconfig.json && tsc --noEmit -p frameworks/react/tsconfig.json && tsc --noEmit -p frameworks/angular/tsconfig.json && vue-tsc --noEmit -p frameworks/vue/tsconfig.json && svelte-check --tsconfig frameworks/svelte/tsconfig.json && tsc --noEmit -p frameworks/solid/tsconfig.json && tsc --noEmit -p frameworks/qwik/tsconfig.json && tsc --noEmit -p frameworks/preact/tsconfig.json",
 		"prepublishOnly": "npm run build",
 		"dev:build": "vite build",
 		"dev": "vite",

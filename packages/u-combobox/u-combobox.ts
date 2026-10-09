@@ -258,6 +258,8 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		this._listHidden = this._focusMoved = this._root = this._umutate = this._clear = this._toggle = this._control = this._select = this._options = this._items = this._list = this._singleItem = this._value = undefined;
 	}
 	handleEvent(event: Event) {
+		if (event.type === "reset" && event.target === this.control?.form)
+			return setTimeout(onReset, 0, this); // Controls are reset after the reset event has dispatched, so defer
 		if (this.control?.disabled || this.control?.readOnly) return;
 		if (event.type === "beforeinput") onBeforeinput(this, event);
 		if (event.type === "blur") onBlur(this);
@@ -270,8 +272,6 @@ export class UHTMLComboboxElement extends UHTMLElement {
 			this._listHidden = !!this.list?.hidden;
 			isPointerDown(this, event); // Prevent unwanted blur when pressing items with tabindex="-1"
 		}
-		if (event.type === "reset" && event.target === this.control?.form)
-			setTimeout(onReset, 0, this); // Controls are reset after the reset event has dispatched, so defer
 	}
 	get multiple() {
 		return (attr(this, ATTR_MULTI) ?? FALSE) !== FALSE; // Allow data-multiple="false" to be more React friendly

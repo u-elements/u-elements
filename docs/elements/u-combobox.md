@@ -575,9 +575,10 @@ Typing never selects or live-matches anything; it only filters the options. Sele
 | Action | Single mode | Multiple mode |
 | :----- | :---------- | :------------ |
 | Option pick | Replace the `<data>` item and sync input with item | Toggle `<data>` item, and input keeps the typed text |
-| `Enter` with empty input | Remove the item | Announce `data-sr-invalid` |
-| `Enter` with text equal to item | Nothing | Remove that item |
-| `Enter` with other text | If an option matches, add as item. Otherwise announce `data-sr-invalid` and keeps the text, or creates item if `data-creatable` | If an option matches, add as item. Otherwise announce `data-sr-invalid` and keeps the text, or creates item if `data-creatable`  |
+| `Enter` with empty input | Remove the item | Nothing |
+| `Enter` with text | If an option matches, add as item. Otherwise announce `data-sr-invalid` and keeps the text, or creates item if `data-creatable` | If an option matches, toggle as item. Otherwise announce `data-sr-invalid` and keeps the text, or creates item if `data-creatable`  |
+
+`data-sr-invalid` is not announced while the datalist has `aria-busy="true"`, so set it while options are loading.
 | Blur with empty input | Remove the item | Nothing |
 | Blur with text equal to item | Nothing | Nothing |
 | Blur with other text | If an option matches, or `data-creatable`,  add as item. Otherwise sync input back to item text | Nothing |
@@ -596,25 +597,21 @@ Typing never selects or live-matches anything; it only filters the options. Sele
 ## Changelog
 
 - **3.0.0:** Framework compatibility and matching changes:
-  - `u-datalist` version `3.0.0` is required to avoid stale input value cache
-  - The `comboboxprogrammaticinput` event is removed
-  - Legacy support for `<del>` as clear button is removed, use `<button type="reset">`
+  - Test suite for u-combobox now runs in vanilla JS, React, Angular, Svelte, Vue, Solid, Qwik and Preact to ensure framework compatibility
   - Single mode only matches against present options on `Enter` and blur, never while typing
-  - `Enter` in single mode no longer reverts the input when nothing matches. It announces `data-sr-invalid` and keeps the typed text until blur
-  - Options keep the `selected` state of the current item when `Enter` or blur does not match
-  - `form.reset()` syncs the clear and toggle buttons, and restores the item text in single mode
-  - Single mode with datalist always syncs `input.value` to the `<data>`, also on mount, where the sync runs in a microtask so inputs bound by React, Vue or Angular receive it
+  - Single mode `Enter` no longer reverts the input when nothing matches. It announces `data-sr-invalid` and keeps the typed text until blur
+  - Single mode with datalist always syncs `input.value` to the `<data>`, also on mount
   - Single mode correctly dispatches `input` after option `click`
-  - Multiple mode input value now syncs correctly in all browsers after `click` on option
-  - Runtime toggle `data-multiple` and `data-creatable` syncs correctly
   - Single mode mirrors only the first `<data>` into `<select>` and option selection, so the submitted value matches the input
-  - Firefox consistently prevent form submit on `Enter`
+  - Single mode clear button no longer caches the emptied text, so a prevented removal reverts the input to the text before the clear
+  - Runtime toggle `data-multiple` and `data-creatable` syncs correctly
   - Synthetic `InputEvent` without `inputType` (i.e. testing-library) does not cause incorrect option click
+  - `form.reset()` syncs the clear and toggle buttons, and restores the item text in single mode
   - Firefox spell check and autofill replacements that are not an option value are treated as typing instead of reverted
   - Attribute writes that do not change a value (i.e. Vue re-setting option `value`, React syncing input `value`) do not trigger a state sync
   - The `input` event of an option pick is intercepted in the capture phase on `window`, so frameworks delegating events from `document` (i.e. Qwik) read the reverted text instead of the option value
   - Input sync after a prevented `comboboxbeforeselect` on blur is deferred, so frameworks rendering `<data>` asynchronously do not see the previous value flash
-  - The clear button in single mode no longer caches the emptied text, so a prevented removal reverts the input to the text before the clear
+  - The `comboboxprogrammaticinput` event is removed
 - **2.1.5:** Fix state handling when mode is multiple and controlled (i.e. React)
 - **2.1.4:** Fix internal state when preventing a selection or setting value programmatically
 - **2.1.3:** Fix issue where item behind datalist could receive focus

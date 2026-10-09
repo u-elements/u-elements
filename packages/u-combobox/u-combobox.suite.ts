@@ -339,7 +339,7 @@ export const comboboxSuite = (
 					expect(await logged(page, "comboboxbeforematch")).toHaveLength(3); // Empty text never matches
 				});
 
-				test("Enter on text equal to current item does nothing", async ({
+				test("Enter on text equal to current item matches and only syncs input", async ({
 					page,
 				}) => {
 					await render(page);
@@ -356,19 +356,21 @@ export const comboboxSuite = (
 					await input.press("Enter");
 					await expect(items).toHaveCount(1);
 					await expect(input).toHaveValue("Trondheim");
+					expect(await logged(page, "comboboxbeforematch")).toHaveLength(1); // Enter always matches against the options
+					expect(await logged(page, "comboboxbeforeselect")).toEqual([]); // The match is the current item, so nothing is selected
 
 					await input.fill(" Trondheim ");
 					await input.press("Enter");
 					await expect(items).toHaveCount(1);
-					await expect(input).toHaveValue(" Trondheim "); // Same text compares trimmed, and the text is already the item so nothing is synced
-					expect(await logged(page, "comboboxbeforematch")).toEqual([]); // Same text never matches
-					expect(await logged(page, "comboboxbeforeselect")).toEqual([]); // And never re-selects
+					await expect(input).toHaveValue("Trondheim"); // Synced from the item, as the match is the current item
+					expect(await logged(page, "comboboxbeforematch")).toHaveLength(2);
+					expect(await logged(page, "comboboxbeforeselect")).toEqual([]);
 
 					await input.fill("trondheim");
 					await input.press("Enter");
 					await expect(items).toHaveCount(1);
-					await expect(input).toHaveValue("Trondheim"); // Items compare case sensitive, so this matches the option instead, which is the current item and syncs
-					expect(await logged(page, "comboboxbeforematch")).toHaveLength(1);
+					await expect(input).toHaveValue("Trondheim"); // Match is case insensitive
+					expect(await logged(page, "comboboxbeforematch")).toHaveLength(3);
 					expect(await logged(page, "comboboxbeforeselect")).toEqual([]);
 				});
 
@@ -936,35 +938,64 @@ export const comboboxSuite = (
 
 					await input.fill("Oslo");
 					await input.press("Enter");
-					await expect(items).toHaveCount(0); // Same text as the item removes without matching
-					expect(await logged(page, "comboboxbeforematch")).toHaveLength(3);
+					await expect(items).toHaveCount(0); // Same text as the item still goes through the option, which is selected and toggles off
+					expect(await logged(page, "comboboxbeforematch")).toHaveLength(4);
 				});
 
-				test("Enter removes item by its text even when the option is gone", async ({
+				test("Enter does not remove an item whose option is gone", async ({
 					page,
 				}) => {
 					await render(page, {
 						multiple: true,
 						items: [BERGEN],
 						options: [{ text: "Other" }],
-					}); // Same text compares against items, never against options
+					}); // Enter always matches against the options, so an item can only be toggled through its option
 					await resetLog(page, "comboboxbeforematch");
 					await resetLog(page, "comboboxbeforeselect");
 					const input = page.locator("#input");
 					const items = page.locator("u-combobox data");
+					const live = page.locator("[aria-live='assertive']");
 
-					await input.fill(" bergen ");
+					await input.fill("Bergen");
 					await input.press("Enter");
-					await expect(items).toHaveText(["Bergen"]); // Items compare case sensitive, so this is matched against options instead and finds nothing
+					await expect(items).toHaveText(["Bergen"]); // Unchanged
+					await expect(input).toHaveValue("Bergen");
+					await expect(live).toHaveText(/Invalid value/); // Announced, as the datalist has an option with value
 					expect(await logged(page, "comboboxbeforematch")).toHaveLength(1);
 					expect(await logged(page, "comboboxbeforeselect")).toEqual([]);
+				});
 
-					await input.fill(" Bergen ");
+				test("Enter does not announce invalid value while the datalist is busy", async ({
+					page,
+				}) => {
+					await render(page, { multiple: true });
+					await resetLog(page, "comboboxbeforematch");
+					const input = page.locator("#input");
+					const list = page.locator(LIST_TAG);
+					const live = page.locator("[aria-live='assertive']");
+					const setBusy = (busy: boolean) =>
+						list.evaluate((el, busy) => {
+							if (busy) el.setAttribute("aria-busy", "true");
+							else el.removeAttribute("aria-busy");
+						}, busy); // Written directly, as no harness renders it and no framework removes attributes it did not set
+
+					await setBusy(true);
+					await input.fill("Nope");
 					await input.press("Enter");
-					await expect(items).toHaveCount(0); // Trimmed
-					await expect(input).toHaveValue(" Bergen ");
-					expect(await logged(page, "comboboxbeforematch")).toHaveLength(1); // Same text never matches
-					expect(await logged(page, "comboboxbeforeselect")).toHaveLength(1);
+					expect(await logged(page, "comboboxbeforematch")).toHaveLength(1); // Matching still runs, so a consumer can match or create
+					await page.waitForTimeout(100); // Announcements are deferred
+					await expect(live).toHaveText(""); // Options are loading, so nothing to announce
+
+					await update(page, { multiple: false }); // Syncs the input to no item
+					await input.fill("Nope");
+					await input.press("Enter");
+					await page.waitForTimeout(100);
+					await expect(input).toHaveValue("Nope");
+					await expect(live).toHaveText(""); // Also in single mode
+
+					await setBusy(false);
+					await input.press("Enter");
+					await expect(live).toHaveText(/Invalid value/); // Announced once loaded
 				});
 
 				test("datalist pick toggles an already selected option off", async ({
@@ -988,7 +1019,7 @@ export const comboboxSuite = (
 					await expect(bergen).toHaveAttribute("selected");
 				});
 
-				test("Enter announces invalid value on no match and empty", async ({
+				test("Enter announces invalid value on no match, but does nothing on empty", async ({
 					page,
 				}) => {
 					await render(page, { multiple: true });
@@ -1006,9 +1037,11 @@ export const comboboxSuite = (
 					expect(await logged(page, "comboboxbeforematch")).toHaveLength(1);
 					expect(await logged(page, "comboboxbeforeselect")).toEqual([]); // No match, so nothing to select
 
+					await expect(live).toHaveText(""); // Cleared after the announcement
 					await input.fill("");
 					await input.press("Enter");
-					await expect(live).toHaveText(/Invalid value/);
+					await page.waitForTimeout(100); // Announcements are deferred
+					await expect(live).toHaveText(""); // Empty text is nothing in multiple mode
 					expect(await logged(page, "comboboxbeforematch")).toHaveLength(1); // Empty text never matches
 					expect(await logged(page, "comboboxbeforeselect")).toEqual([]);
 				});

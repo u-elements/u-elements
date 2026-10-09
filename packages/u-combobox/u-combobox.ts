@@ -36,7 +36,9 @@ import {
  * - cached text:  the text last seen from typing, the value attribute or the value property (_value).
  *                 Not updated by the clear button in single mode, so a prevented remove can revert input to the text before the clear
  * - same text:    trimmed text equals an item's text, case sensitive. Compared against items, never against options.
- *                 Options are only compared through match, items are an already confirmed selection
+ *                 Only used by blur, as the item is an already confirmed selection. Enter always matches against the options.
+ * - announce:     announce data-sr-invalid through the live region. Skipped while the datalist has aria-busy="true",
+ *                 as the options are still loading
  * - match:        dispatch comboboxbeforematch with the first option whose label equals the trimmed text case-insensitive.
  *                 The consumer can prevent and set option.selected to pick another option. The result is the matched option,
  *                 or a new item made from the text when creatable and no option matched, or nothing.
@@ -67,15 +69,12 @@ import {
  * Enter in input (form submit is prevented when a datalist is present or creatable)
  * - Empty text
  *   - Single:   select to remove the item, if any. Accepted: remove and sync input. Prevented: revert input
- *   - Multiple: announce invalid value
- * - Same text as an item
- *   - Single:   nothing, the text already is the item
- *   - Multiple: select to remove that item. Accepted: remove. Prevented: nothing
- * - Other text
+ *   - Multiple: nothing
+ * - Text (also when equal to an item, as an item can only be toggled through its option)
  *   - Both:     match
- *   - Single:   no result: announce invalid value, typed text stays until blur. Result equal to the current item: sync input.
+ *   - Single:   no result: announce, typed text stays until blur. Result equal to the current item: sync input.
  *               Otherwise replace. Accepted: sync input. Prevented: nothing, typed text stays until blur
- *   - Multiple: no result: announce invalid value. Otherwise toggle. Text is not changed
+ *   - Multiple: no result: announce. Otherwise toggle. Text is not changed
  *
  * Blur (focus leaves <u-combobox>; pointer down inside does not count as blur)
  * - Multiple: nothing
@@ -117,9 +116,8 @@ import {
  * | :----------- | :-------------------------------------------------------- | :------------------------------------ |
  * | Pick         | Revert input -> replace -> sync input                     | Revert input -> toggle                |
  * | Type         | Cache text                                                | Cache text                            |
- * | Enter empty  | Remove item                                               | Announce invalid                      |
- * | Enter same   | Nothing                                                   | Remove item                           |
- * | Enter other  | Match -> replace/create -> sync, else announce, keep text | Match -> toggle/create, else announce |
+ * | Enter empty  | Remove item                                               | Nothing                               |
+ * | Enter text   | Match -> replace/create -> sync, else announce, keep text | Match -> toggle/create, else announce |
  * | Blur empty   | Remove item                                               | Nothing                               |
  * | Blur same    | Nothing                                                   | Nothing                               |
  * | Blur other   | Match -> replace/create -> sync, else sync input          | Nothing                               |
@@ -143,15 +141,17 @@ export const UHTMLComboboxStyle = `${DISPLAY_BLOCK}
 [part="items"]:not([hidden]) { display: inline-flex; flex-wrap: wrap } /* Can not be "contents" as this confuses VoiceOver */
 :host(:not([data-multiple])) [part="items"],
 :host([data-multiple="false"]) [part="items"] { display: none }
+::slotted(del),
 ::slotted(button[type="reset"]),
 ::slotted(button[aria-expanded]) { font: inherit; border: 0; padding: 0; background: none; color: inherit; cursor: pointer; text-decoration: none }
 ::slotted(data) { cursor: pointer; pointer-events: none }
 ::slotted(data)::after { padding-inline: .5ch; pointer-events: auto }
 ::slotted(data)::after,
+::slotted(del:empty)::before,
 ::slotted(button[type="reset"]:empty)::before { content: '\\00D7'; content: '\\00D7' / '' }
 ::slotted(button[aria-expanded="false"]:empty)::before { content: '\\25BC'; content: '\\25BC' / '' }
 ::slotted(button[aria-expanded="true"]:empty)::before { content: '\\25B2'; content: '\\25B2' / '' }
-::slotted(data:focus),::slotted(button[type="reset"]:focus) { ${FOCUS_OUTLINE} }`;
+::slotted(data:focus),::slotted(del:focus),::slotted(button[type="reset"]:focus) { ${FOCUS_OUTLINE} }`;
 
 export const UHTMLComboboxShadowRoot =
 	declarativeShadowRoot(UHTMLComboboxStyle);
@@ -159,12 +159,12 @@ export const UHTMLComboboxShadowRoot =
 const COMBOBOXES = new WeakSet<UHTMLComboboxElement>(); // Respond to programmatic input.value changes
 const ATTR_MULTI = "data-multiple";
 const ARIA_LABEL = "aria-label";
-const CSS_CLEAR = `button[type="reset"]`;
+const CSS_CLEAR = `button[type="reset"],del`;
 const CSS_TOGGLE = `button[aria-expanded]`;
 const CSS_DATALIST = `datalist,u-datalist,[role="listbox"]`;
 const CSS_OPTION = `option,u-option,[role="option"]`;
 const FOCUS_VISIBLE = { focusVisible: true };
-const EVENTS = "blur focus click keydown pointerdown";
+const EVENTS = "blur beforeinput focus click keydown pointerdown";
 const FALSE = "false";
 const TEXTS = {
 	added: "Added",
@@ -200,6 +200,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	_speak = "";
 	_texts = { ...TEXTS };
 
+	_isLegacyDatalistInput?: boolean; // Used to support <u-datalist> before 2.0.3
 	_listHidden?: boolean;
 	_singleItem?: string | null; // Item value and text to detect item change in single mode. Null when no item, undefined until first sync so the first run always syncs
 	_value?: string; // Cache value to be able to revert on datalist click
@@ -258,6 +259,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	}
 	handleEvent(event: Event) {
 		if (this.control?.disabled || this.control?.readOnly) return;
+		if (event.type === "beforeinput") onBeforeinput(this, event);
 		if (event.type === "blur") onBlur(this);
 		if (event.type === "click") onClick(this, event as MouseEvent);
 		if (event.type === "focus") speak(); // Prepare for aria-live announcements
@@ -393,23 +395,21 @@ const restoreInput = (self: UHTMLComboboxElement, text?: string) => {
 
 // Shared by Enter and blur, see SPECIFICATION
 const onCommit = (self: UHTMLComboboxElement, type?: string) => {
-	const { _texts, control, items, multiple } = self;
+	const { control, items, list, multiple } = self;
 	const value = control?.value.trim();
-	const itemMatch = value && [...items].find((i) => getText(i) === value); // Items are a confirmed selection, so compare case sensitive and against items, not options. Options with equal labels or options replaced by a fetch can then not change a committed value
 	const isBlur = type === "blur";
+	const isItem = isBlur && [...items].some((i) => getText(i) === value); // Blur on the item text needs nothing, as the item is a confirmed selection. Enter always matches against the options, so an item can only be toggled through its option
 	let accepted = true;
 
 	if (!value) {
-		if (multiple) speak(_texts.invalid);
-		else if (items[0]) accepted = dispatchSelect(self, items[0]); // Empty text removes the item
-	} else if (itemMatch) {
-		if (multiple) accepted = dispatchSelect(self, itemMatch); // Same text as an item removes it in multiple mode, and is already the item in single mode
-	} else {
+		if (!multiple && items[0]) accepted = dispatchSelect(self, items[0]); // Empty text removes the item in single mode, and is nothing in multiple mode
+	} else if (!isItem) {
 		const match = dispatchMatch(self);
 		if (match) accepted = dispatchSelect(self, match, multiple);
 		else if (isBlur)
 			syncInputWithItemSingleMode(self); // No match on blur falls back to the item
-		else speak(_texts.invalid); // No match on Enter keeps the typed text
+		else if (list && attr(list, "aria-busy") !== "true")
+			speak(self._texts.invalid); // No match on Enter keeps the typed text
 	}
 	if (!accepted && isBlur) restoreInput(self); // Enter keeps the typed text when prevented, blur falls back to the item
 };
@@ -469,14 +469,23 @@ const onProgrammatic = (self: UHTMLComboboxElement) => {
 	syncButtonsWithInput(self);
 };
 
+// <u-datalist> before 2.0.3 used setValue without inputType, for both beforeinput and input
+const onBeforeinput = (self: UHTMLComboboxElement, e: Partial<InputEvent>) => {
+	if (!e.isTrusted && e instanceof InputEvent && e.inputType === "") {
+		self._isLegacyDatalistInput = true;
+		setTimeout(() => (self._isLegacyDatalistInput = false));
+	}
+};
+
 const onInput = (self: UHTMLComboboxElement, e: Partial<InputEvent>) => {
-	const { control, options, multiple } = self;
+	const { control, options, multiple, _isLegacyDatalistInput: legacy } = self;
 	const value = control?.value || "";
-	const isReplace = e.inputType === "insertReplacementText"; // Firefox native <datalist> and <u-datalist>, but also spell check and autofill
+	const isReplace = e.inputType === "insertReplacementText" || legacy; // Firefox native <datalist> and <u-datalist>, but also spell check and autofill
 	const isClick = isReplace || (e.isTrusted && !e.inputType); // WebKit and Chrome native <datalist> use Event (not InputEvent), but so does type="search" clear and autofill
 	const canMatch = isClick && (value || isReplace); // Only <u-datalist> click on <option value=""> has an empty value, as type="search" clear has no inputType either
 	const match = canMatch && [...options].find((o) => getValue(o) === value); // Only accept as option click if value corresponds to an option, avoiding false positives on spell check or autofill
 
+	self._isLegacyDatalistInput = false; // Consumed, so the sync input that follows a select, and value writes by the consumer in comboboxafterselect, are not taken for the pick
 	if (match && control) {
 		e.stopImmediatePropagation?.(); // Prevent input as dispatchSelect will trigger input if needed
 		setValue(control, self._value || "", false); // Revert input value as we allow the user to event.preventDefault in comboboxbeforeselect
@@ -646,6 +655,7 @@ const syncSelectWithItems = (self: UHTMLComboboxElement) => {
 const syncButtonsWithInput = (self: UHTMLComboboxElement) => {
 	const { clear, control, toggle, list } = self;
 	const isIdle = !control?.value || control?.disabled || control?.readOnly;
+	if (clear?.nodeName === "DEL") attr(clear, "role", "button"); // Backwards compatibility for older versions using <del> as clear button
 	if (clear) {
 		const focused = !isIdle && clear === getFocusedElement(self); // Keep focusable and visible to screen readers while focused after tabbing to clear, as closing the datalist triggers a sync. Never while idle, as setting hidden on the focused clear blurs it synchronously in Chromium, re-entering this sync before the outer call writes its stale focused state
 		attr(clear, ARIA_LABEL) || attr(clear, ARIA_LABEL, self._texts.clear); // Set default aria-label if not set by consumer
@@ -714,7 +724,12 @@ if (isBrowser() && !window.uComboboxes?.has(UHTMLComboboxElement)) {
 		const parent = this.parentElement as UHTMLComboboxElement;
 		const prev = this.value; // Compare actual values as next might be number or null
 		descriptor?.set?.call(this, next); // Call the original native setter to actually update the DOM
-		if (prev !== this.value && parent && COMBOBOXES.has(parent))
+		if (
+			prev !== this.value &&
+			parent &&
+			COMBOBOXES.has(parent) &&
+			!parent._isLegacyDatalistInput
+		)
 			onProgrammatic(parent);
 	};
 	Object.defineProperty(proto, "value", { ...descriptor, set });

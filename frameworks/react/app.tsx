@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import ReactDOM from "react-dom/client";
+import ReactDOM, { type Root } from "react-dom/client";
 // import { render } from 'react-dom' // For React 16.8
 import "../../packages/u-progress/u-progress";
 import "../../packages/u-datalist/u-datalist";
@@ -20,15 +20,13 @@ export default function App() {
 	const handleBeforeSelect = (event: CustomEvent<HTMLDataElement>) => {
 		const { multiple, values } = event.target as UHTMLComboboxElement;
 		const { isConnected, value } = event.detail;
-		console.log("beforeselect", {isConnected, value, values, multiple});
+		console.log("beforeselect", { isConnected, value, values, multiple });
 		event.preventDefault();
 
 		if (!multiple) setSelected(isConnected ? [] : [value]);
 		else
 			setSelected(
-				values
-					.concat(value)
-					.filter((v) => value !== v || !isConnected),
+				values.concat(value).filter((v) => value !== v || !isConnected),
 			);
 	};
 
@@ -58,19 +56,24 @@ export default function App() {
 			<label htmlFor="my-input">Choose ice cream</label>
 			<br />
 			{/* @ts-expect-error */}
-			<u-combobox ref={ref} data-multiple oncomboboxbeforeselect={handleBeforeSelect}>
+			<u-combobox
+				ref={ref}
+				data-multiple
+				oncomboboxbeforeselect={handleBeforeSelect}
+			>
 				<select hidden></select>
 				{selected.map((opt) => (
 					<data key={opt}>{opt}</data>
 				))}
 				<input
+					// biome-ignore lint/a11y/noAutofocus: Demo page
 					autoFocus
 					id="my-input"
 					onInput={(e) => console.log("onInput", e.currentTarget.value)}
 				/>
-				<del role="img" aria-label="Fjern tekst">
+				<button type="reset" aria-label="Fjern tekst">
 					&times;
-				</del>
+				</button>
 				<u-datalist id="my-list">
 					<u-option>Test 1</u-option>
 					<u-option>Test 2</u-option>
@@ -98,6 +101,7 @@ export default function App() {
 				<u-tablist>
 					<u-tab>Tab 1</u-tab>
 					<u-tab>Tab 2</u-tab>
+					{/* biome-ignore lint/a11y/useAriaPropsSupportedByRole: Custom element with role tab */}
 					<u-tab aria-selected="true">Tab 3</u-tab>
 				</u-tablist>
 				<u-tabpanel>Panel 1</u-tabpanel>
@@ -108,8 +112,13 @@ export default function App() {
 	);
 }
 
-// @ts-ignore
-window.mount = window.mount || ReactDOM.createRoot(document.getElementById("root"));
-// @ts-ignore
+declare global {
+	interface Window {
+		mount?: Root; // Reused across Vite HMR reloads
+	}
+}
+window.mount =
+	window.mount ||
+	ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
 window.mount.render(<App />);
 // render(<App />, document.getElementById('root')!); // For React 16.8

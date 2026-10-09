@@ -142,14 +142,6 @@ myCombobox.addEventListener('comboboxbeforematch', (event) => {
 })
 ```
 
-### `comboboxprogrammaticinput`
-Triggers if `input.value` is programmatically set. Useful when extending `u-combobox` with custom functionality.
-```js
-myCombobox.addEventListener('comboboxprogrammaticinput', (event) => {
-  event.target // HTMLInputElement
-})
-```
-
 
 ## Styling
 
@@ -399,7 +391,6 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
     const options = combobox.list.options;
     const add = options[options.length - 1];
     add.hidden = !value || combobox.values.includes(value);
-    console.log(combobox.values)
     add.value = value;
     add.label = value;
     add.textContent = `Add "${value}"`
@@ -495,7 +486,7 @@ if (typeof window !== 'undefined') {
   &lt;input id="my-controlled-input" list="my-controlled-list" /&gt;
   &lt;button type="button" aria-expanded="false"&gt;&lt;/button&gt;
   &lt;button type="reset"&gt;&lt;/button&gt;
-  &lt;u-datalist hidden id="my-controlled-list" data-nofilter&gt;
+  &lt;u-datalist hidden id="my-controlled-list"&gt;
     &lt;u-option&gt;Coconut&lt;/u-option&gt;
     &lt;u-option&gt;Strawberries&lt;/u-option&gt;
     &lt;u-option&gt;Chocolate&lt;/u-option&gt;
@@ -577,14 +568,52 @@ const renderToStaticMarkup = (data: string, options: string) =>
   </u-combobox>`
 ```
 
+## Behaviour
+
+Typing never selects or live-matches anything; it only filters the options. Selection happens on option pick, `Enter` and blur:
+
+| Action | Single mode | Multiple mode |
+| :----- | :---------- | :------------ |
+| Option pick | Replace the `<data>` item and sync input with item | Toggle `<data>` item, and input keeps the typed text |
+| `Enter` with empty input | Remove the item | Nothing |
+| `Enter` with text | If an option matches, add as item. Otherwise announce `data-sr-invalid` (unless text equals the item) and keep the text, or creates item if `data-creatable` | If an option matches, toggle as item. Otherwise announce `data-sr-invalid` (unless text equals an item) and keep the text, or creates item if `data-creatable`  |
+| Blur with empty input | Remove the item | Nothing |
+| Blur with text equal to item | Nothing | Nothing |
+| Blur with other text | If an option matches, add as item. Otherwise sync input back to item text. Never creates, also with `data-creatable` | Nothing |
+
 ## Notes
+- The `<input>` must be a direct child of `<u-combobox>`. It is the control, and programmatic `input.value` changes are only detected on a direct child
+- `<datalist>` or `<u-datalist>` must be a child of `<u-combobox>`. The `list` attribute on `<input>` is managed automatically
+- Without a datalist, single mode is free text: the input is never overwritten
+- Single mode with a datalist always mirrors the `<data>` item, so a prefilled `input.value` without an item is cleared on mount. Multiple mode keeps it as filter text
+- Single mode acts on the first `<data>` only
+- The toggle button is hidden when using native `<datalist>`, as the native suggestion popup can not be detected programmatically
 - ARC Toolkit incorectly reports `aria-description` as an invalid ARIA-attribute
-- ARC Toolkit does not correcly read the relation between items with `role="option"` and the ShadowDoom wrapping container `role="listbox"`
+- ARC Toolkit does not correctly read the relation between items with `role="option"` and the ShadowDOM wrapping container `role="listbox"`
 
 
 ## Changelog
 
-- **2.1.5:** Fix starte handling when multiple mode and controlled mode (i.e. React)
+- **3.0.0:** Framework compatibility and matching changes:
+  - Test suite for u-combobox now runs in vanilla JS, React, Angular, Svelte, Vue, Solid, Qwik and Preact to ensure framework compatibility
+  - Single mode only matches against present options on `Enter` and blur, never while typing
+  - Single mode `Enter` no longer reverts the input when nothing matches. It announces `data-sr-invalid` and keeps the typed text until blur
+  - Single mode with datalist always syncs `input.value` to the `<data>`, also on mount
+  - Single mode correctly dispatches `input` after option `click`
+  - Single mode mirrors only the first `<data>` into `<select>` and option selection, so the submitted value matches the input
+  - `values` returns at most one value in single mode, matching the mirrored `<data>`
+  - `Enter` with text equal to an item no longer announces `data-sr-invalid` when no option matches, as the item is a confirmed selection
+  - Single mode clear button no longer caches the emptied text, so a prevented removal reverts the input to the text before the clear
+  - Runtime toggle `data-multiple` and `data-creatable` syncs correctly
+  - Synthetic `InputEvent` without `inputType` (i.e. testing-library) does not cause incorrect option click
+  - `form.reset()` syncs the clear and toggle buttons, and restores the item text in single mode
+  - Firefox spell check and autofill replacements that are not an option value are treated as typing instead of reverted
+  - Attribute writes that do not change a value (i.e. Vue re-setting option `value`, React syncing input `value`) do not trigger a state sync
+  - The `input` event of an option pick is intercepted in the capture phase on `window`, so frameworks delegating events from `document` (i.e. Qwik) read the reverted text instead of the option value
+  - Input sync after a prevented `comboboxbeforeselect` on blur is deferred, so frameworks rendering `<data>` asynchronously do not see the previous value flash
+  - The `comboboxprogrammaticinput` event is removed
+  - Option picks from `<u-datalist>` 2.0.3 and older, which set `input.value` through the prototype setter, are no longer taken for programmatic input, so the typed text is kept
+- **2.1.5:** Fix state handling when mode is multiple and controlled (i.e. React)
 - **2.1.4:** Fix internal state when preventing a selection or setting value programmatically
 - **2.1.3:** Fix issue where item behind datalist could receive focus
 - **2.1.2:** Prevent unnecessary matching after option `click` in single mode

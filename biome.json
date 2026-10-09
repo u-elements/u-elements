@@ -1,17 +1,22 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.5.12/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.5.14/schema.json",
 	"files": {
 		"includes": [
 			"**",
 			"!**/dist",
 			"!**/docs/.vitepress",
-			"!**/frameworks",
 			"!**/node_modules",
 			"!**/playwright-report",
 			"!**/test-results"
 		]
 	},
-	"assist": { "actions": { "source": { "organizeImports": "on" } } },
+	"assist": {
+		"actions": {
+			"source": {
+				"organizeImports": "on"
+			}
+		}
+	},
 	"formatter": {
 		"enabled": true
 	},
@@ -31,5 +36,21 @@
 				"noSvgWithoutTitle": "off"
 			}
 		}
-	}
+	},
+	"overrides": [
+		{
+			"includes": ["**/*.vue", "**/*.svelte"],
+			"linter": {
+				"rules": {
+					"correctness": {
+						"noUnusedVariables": "off",
+						"noUnusedImports": "off"
+					},
+					"style": {
+						"useVueMultiWordComponentNames": "off"
+					}
+				}
+			}
+		}
+	]
 }

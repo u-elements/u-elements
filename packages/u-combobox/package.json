@@ -33,8 +33,8 @@
 	},
 	"scripts": {
 		"build": "tsup --config ../../tsup.config.ts",
-		"publish:patch": "npm version patch && git push --tags origin main && npm publish",
-		"publish:minor": "npm version minor && git push --tags origin main && npm publish",
-		"publish:major": "npm version major && git push --tags origin main && npm publish"
+		"publish:patch": "npm version patch && npm run build && git push --tags origin main && npm publish",
+		"publish:minor": "npm version minor && npm run build && git push --tags origin main && npm publish",
+		"publish:major": "npm version major && npm run build && git push --tags origin main && npm publish"
 	}
 }

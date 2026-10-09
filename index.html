@@ -138,7 +138,7 @@
             <div>Same text</div>
           </data>
           <input list=":u-datalist1">
-          <del></del>
+          <button type="reset"></button>
           <u-datalist data-nofilter>
             <u-option label="option-1 - Same text" value="option-1" selected>option-1 - Same text</u-option>
             <u-option label="option-2 - Same text" value="option-2">option-2 - Same text</u-option>
@@ -166,7 +166,7 @@
         <label for="input-1">Velg type iskrem</label>
         <u-combobox
           data-creatable="false"
-          data-multiple="true"
+          data-multiple="false"
           data-sr-added="La til"
           data-sr-clear="Tøm tekstfelt"
           data-sr-empty="Ingen valgte"
@@ -184,7 +184,6 @@
           <input id="input-1" list="my-list">
           <button type="button" aria-expanded="false" aria-label="Valg"></button>
           <button type="reset"></button>
-          <!-- <del>hei</del> -->
           <!-- <datalist>
             <option value="2" label="Kokkos">Kokkos<div>Hei</div></option>
             <option>Jordbær</option>
@@ -212,7 +211,7 @@
         </u-combobox>
       </form>
       <script type="module">
-        const combobox = document.querySelectorAll('u-combobox')[1];
+        const combobox = document.querySelectorAll('u-combobox')[0];
         const xhr = new XMLHttpRequest(); // Easy to abort
         let debounceTimer; // Debounce so we do not spam API
 

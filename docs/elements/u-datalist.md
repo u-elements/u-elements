@@ -305,6 +305,7 @@ const renderToStaticMarkup = (options: string) =>
 
 ## Changelog
 
+- **3.0.0:** No longer uses `HTMLInputElement.prototype` to update the input value, aligning with native browser behavior.
 - **2.0.3:** Allow `Shift` key events combined with a letter to open datalist
 - **2.0.2:** Instant setup `aria-expanded` attribute to make AXE tests happy
 - **2.0.1:** Use document.activeElement instead of .matches(":focus-within") for JSDOM testing compatibility

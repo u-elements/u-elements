@@ -210,15 +210,29 @@ export const customElements = {
 		window.customElements.define(name, instance),
 };
 
+/**
+ * setValue
+ * @description Set input value like the browser does on user input
+ * @param {HTMLInputElement} input Input element to set value on
+ * @param {string} data The new value
+ * @param {inputType} type of the new event, pass false if silent
+ */
 // Trigger value change in React compatible manor https://stackoverflow.com/a/46012210
-export const setValue = (input: HTMLInputElement, data: string, type = "") => {
-	const event = { bubbles: true, composed: true, data, inputType: type };
-	const proto = HTMLInputElement.prototype;
+export const setValue = (
+	input: HTMLInputElement,
+	data: string,
+	type: string | false = "",
+) => {
+	const silent = type === false;
+	const event = { bubbles: true, composed: true, data, inputType: type || "" };
+	const inputType = input.selectionEnd === null && input.type; // Input types without selection support (i.e. 'email', 'number', 'date') do not support setRangeText, so temporarily switch to text
 
-	input.dispatchEvent(new InputEvent("beforeinput", event));
-	Object.getOwnPropertyDescriptor(proto, "value")?.set?.call(input, data);
-	input.dispatchEvent(new InputEvent("input", event));
-	input.dispatchEvent(new Event("change", { bubbles: true }));
+	if (!silent) input.dispatchEvent(new InputEvent("beforeinput", event));
+	if (inputType) input.type = "text";
+	input.setRangeText(data, 0, input.value.length, "end"); // Using setRangeText to not touch HTMLInputElement.prototype, aligning with browser standard
+	if (inputType) input.type = inputType; // Revert to original input type
+	if (!silent) input.dispatchEvent(new InputEvent("input", event));
+	if (!silent) input.dispatchEvent(new Event("change", { bubbles: true }));
 };
 
 /**
@@ -254,8 +268,9 @@ export const declarativeShadowRoot = (style: string, slot = "<slot></slot>") =>
  */
 export const preventSubmit = (input: HTMLInputElement) => {
 	const form = attr(input, "form");
+	if (form === "#") return; // If holding Enter, avoid restoring # value
 	attr(input, "form", "#"); // Temporarily remove form association to prevent submit on enter
-	setTimeout(restoreSubmit, 0, input, form); // Restore form association on next macrotask
+	setTimeout(restoreSubmit, 16, input, form); // Restore form association on after 16ms (Firefox needs the delay)
 };
 const restoreSubmit = (input: HTMLInputElement, form: string | null) =>
 	attr(input, "form", form);
@@ -277,7 +292,6 @@ let LIVE: HTMLElement;
 let LIVE_SR_FIX = 0; // Ensure screen reader announcing by alternating non-breaking-space suffix
 let LIVE_CLEAR: ReturnType<typeof setTimeout> | number = 0;
 export const speak = (text?: string) => {
-	clearTimeout(LIVE_CLEAR);
 	if (!LIVE) {
 		LIVE = tag("div", { "aria-live": "assertive" });
 		LIVE.style.overflow = "hidden";
@@ -286,6 +300,8 @@ export const speak = (text?: string) => {
 		LIVE.style.width = "1px";
 	}
 	if (!LIVE.isConnected) document.body.appendChild(LIVE);
+	if (text === undefined) return; // Only prepare the live region, keep any pending clear so a previous announcement does not stay in <body>
+	clearTimeout(LIVE_CLEAR);
 	if (text === "") LIVE.textContent = ""; // Clear announcement immediately if empty string
 	if (text) {
 		LIVE.textContent = `${text}${LIVE_SR_FIX++ % 2 ? "\u{A0}" : ""}`; // Non-breaking space to ensure screen reader announces

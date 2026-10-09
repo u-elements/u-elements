@@ -398,12 +398,12 @@ const onCommit = (self: UHTMLComboboxElement, type?: string) => {
 	const { control, items, list, multiple } = self;
 	const value = control?.value.trim();
 	const isBlur = type === "blur";
-	const isItem = isBlur && [...items].some((i) => getText(i) === value); // Blur on the item text needs nothing, as the item is a confirmed selection. Enter always matches against the options, so an item can only be toggled through its option
+	const isSingleBlurItem = !multiple && isBlur && getText(items[0]) === value; // Blur on the item text needs nothing, as the item is a confirmed selection. Enter always matches against the options, so an item can only be toggled through its option
 	let accepted = true;
 
 	if (!value) {
 		if (!multiple && items[0]) accepted = dispatchSelect(self, items[0]); // Empty text removes the item in single mode, and is nothing in multiple mode
-	} else if (!isItem) {
+	} else if (!isSingleBlurItem) {
 		const match = dispatchMatch(self);
 		if (match) accepted = dispatchSelect(self, match, multiple);
 		else if (isBlur)
@@ -444,10 +444,12 @@ const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
 	if (control && clear?.contains(target as Node)) {
 		event.preventDefault(); // Prevent button[type="reset"]
 		const value = self._value || "";
+		const item = items[0];
+		const key = getItemKey(self); // Snapshot the item key before dispatch and restore only if the consumer left it unchanged (as i.e. Solid explicitly updates DOM synchronously)
 		setValue(control, "", "deleteContentBackward");
 		if (!multiple) {
 			self._value = value; // Single mode does not cache the clear, so a prevented removal can revert to the text before it
-			if (items[0] && !dispatchSelect(self, items[0]))
+			if (item && !dispatchSelect(self, item) && getItemKey(self) === key)
 				restoreInput(self, value);
 		}
 		control.focus();

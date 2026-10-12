@@ -216,12 +216,14 @@ export const customElements = {
  * @param {HTMLInputElement} input Input element to set value on
  * @param {string} data The new value
  * @param {inputType} type of the new event, pass false if silent
+ * @param {boolean} dispatchChange Whether to dispatch change after input. Defaults to true unless silent. Pass false for syncs that are not user commits (i.e. mount, programmatic item changes, form reset)
  */
 // Trigger value change in React compatible manor https://stackoverflow.com/a/46012210
 export const setValue = (
 	input: HTMLInputElement,
 	data: string,
 	type: string | false = "",
+	dispatchChange = type !== false,
 ) => {
 	const silent = type === false;
 	const event = { bubbles: true, composed: true, data, inputType: type || "" };
@@ -232,7 +234,8 @@ export const setValue = (
 	input.setRangeText(data, 0, input.value.length, "end"); // Using setRangeText to not touch HTMLInputElement.prototype, aligning with browser standard
 	if (inputType) input.type = inputType; // Revert to original input type
 	if (!silent) input.dispatchEvent(new InputEvent("input", event));
-	if (!silent) input.dispatchEvent(new Event("change", { bubbles: true }));
+	if (dispatchChange)
+		input.dispatchEvent(new Event("change", { bubbles: true }));
 };
 
 /**
@@ -263,7 +266,8 @@ export const declarativeShadowRoot = (style: string, slot = "<slot></slot>") =>
 
 /**
  * preventSubmit
- * @description Temporarily removes form association on input to prevent form submission, without preventing event
+ * @description Temporarily removes form association on input to prevent form submission, without preventing event.
+ * Note: input.form is null while the association is removed (16ms). This is intentional, as Firefox submits if restored earlier
  * @param {HTMLInputElement} input Input element to prevent submit on
  */
 export const preventSubmit = (input: HTMLInputElement) => {
@@ -309,4 +313,21 @@ export const speak = (text?: string) => {
 	}
 	// Note: Narrator has a minor "hiccup" when using aria-live, as it starts announcing native commands first
 	// Note: Firefox with NVDA needs 2000ms to fully announce
+};
+
+/**
+ * afterRender
+ * @description Run after frameworks have rendered asynchronously.
+ * Vue, Svelte and Angular render in the next microtask, while React queue rendering by posting to MessageChannel in the next microtask.
+ * Waiting one microtask and then posting to MessageChannel, ensures compatibility with all frameworks.
+ * setTimeout and requestAnimationFrame does not guarantee ordering, and can therefore be unreliable with React.
+ * @param {void} callback
+ */
+export const afterRender = (callback: () => void) => {
+	const { port1, port2 } = new MessageChannel();
+	port1.onmessage = () => {
+		port1.close();
+		callback();
+	};
+	Promise.resolve().then(() => port2.postMessage(0));
 };

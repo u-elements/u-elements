@@ -570,16 +570,20 @@ const renderToStaticMarkup = (data: string, options: string) =>
 
 ## Behaviour
 
-Typing never selects or live-matches anything; it only filters the options. Selection happens on option pick, `Enter` and blur:
+Typing never selects or live-matches anything; it only filters the options. Selection happens on option pick, `Enter` and blur. The full specification lives as a comment at the top of [u-combobox.ts](https://github.com/u-elements/u-elements/blob/main/packages/u-combobox/u-combobox.ts), this table is a summary:
 
 | Action | Single mode | Multiple mode |
 | :----- | :---------- | :------------ |
-| Option pick | Replace the `<data>` item and sync input with item | Toggle `<data>` item, and input keeps the typed text |
-| `Enter` with empty input | Remove the item | Nothing |
-| `Enter` with text | If an option matches, add as item. Otherwise announce `data-sr-invalid` (unless text equals the item) and keep the text, or creates item if `data-creatable` | If an option matches, toggle as item. Otherwise announce `data-sr-invalid` (unless text equals an item) and keep the text, or creates item if `data-creatable`  |
-| Blur with empty input | Remove the item | Nothing |
+| Option pick | Revert input to the typed text, then replace the `<data>` item and sync input with it. Prevented: the typed text stays until blur | Revert input to the typed text, then toggle the `<data>` item |
+| `Enter` with empty input | Remove the item. Prevented: the empty text stays until blur | Nothing |
+| `Enter` with text | If an option matches, replace the item and sync input. Otherwise announce `data-sr-invalid` (unless text equals the item) and keep the text, or create an item if `data-creatable`. Prevented: the typed text stays until blur | If an option matches, toggle the item. Otherwise announce `data-sr-invalid` (unless text equals an item) and keep the text, or create an item if `data-creatable` |
+| Blur with empty input | Remove the item. Prevented: sync input back to the item | Nothing |
 | Blur with text equal to item | Nothing | Nothing |
-| Blur with other text | If an option matches, add as item. Otherwise sync input back to item text. Never creates, also with `data-creatable` | Nothing |
+| Blur with other text | If an option matches, replace the item and sync input. Otherwise sync input back to the item. Never creates, also with `data-creatable`. Prevented: sync input back to the item | Nothing |
+| Clear button | Empty the text, then remove the item. Prevented: revert input to the text before the clear | Empty the text |
+| Mount, programmatic `<data>` change, form reset | Sync input with the item, dispatching `input` but not `change` | Text is kept |
+
+Syncing the input always dispatches `input`. `change` is only dispatched when the sync follows a user commit (option pick, `Enter`, blur, clear or item removal), never on mount, programmatic `<data>` changes or form reset.
 
 ## Notes
 - The `<input>` must be a direct child of `<u-combobox>`. It is the control, and programmatic `input.value` changes are only detected on a direct child
@@ -600,6 +604,9 @@ Typing never selects or live-matches anything; it only filters the options. Sele
   - Single mode `Enter` no longer reverts the input when nothing matches. It announces `data-sr-invalid` and keeps the typed text until blur
   - Single mode with datalist always syncs `input.value` to the `<data>`, also on mount
   - Single mode correctly dispatches `input` after option `click`
+  - `change` is only dispatched when the input sync follows a user commit (option pick, `Enter`, blur, clear or item removal), never on mount, programmatic `<data>` changes or form reset
+  - Single mode replaces the first `<data>` in place, leaving extra `<data>` kept from multiple mode untouched
+  - One shared `input` listener on `window` for all instances, instead of one per instance
   - Single mode mirrors only the first `<data>` into `<select>` and option selection, so the submitted value matches the input
   - `values` returns at most one value in single mode, matching the mirrored `<data>`
   - `Enter` with text equal to an item no longer announces `data-sr-invalid` when no option matches, as the item is a confirmed selection

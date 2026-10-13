@@ -249,7 +249,12 @@ const IS_PRESS = new WeakSet<Element>();
 export const isPointerDown = (el: Element, e?: Event) => {
 	if (e?.type === "pointerdown") {
 		IS_PRESS.add(el);
-		on(document, "pointerup", () => IS_PRESS.delete(el), EVENT_ONCE); // pointerup is "composed" so it also bubbles from ShadowDOM up to document
+		// pointerup is "composed" so it also bubbles from ShadowDOM up to document. pointercancel replaces pointerup when a touch turns into a scroll
+		const release = () => {
+			IS_PRESS.delete(el);
+			unbind();
+		};
+		const unbind = on(document, "pointerup pointercancel", release);
 	}
 	return IS_PRESS.has(el);
 };

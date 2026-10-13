@@ -51,6 +51,18 @@ const resetDocLog = (page: Page) =>
 const docLogged = (page: Page, type: string) =>
 	page.evaluate((type) => window.__doclog?.[type] || [], type);
 
+// Resolves after the component's afterRender callbacks have run (microtask, then MessageChannel).
+// Needed as Playwright evaluates run before pending MessageChannel tasks, so the next step would otherwise race them
+const afterRendered = (page: Page) =>
+	page.evaluate(
+		() =>
+			new Promise<void>((resolve) => {
+				const { port1, port2 } = new MessageChannel();
+				port1.onmessage = () => resolve(port1.close());
+				Promise.resolve().then(() => port2.postMessage(0));
+			}),
+	);
+
 export const comboboxSuite = (
 	framework: string,
 	{ url = "test.u-combobox.html", defaults = {} }: SuiteOptions = {},
@@ -758,6 +770,50 @@ export const comboboxSuite = (
 					await expect(input).toHaveValue("");
 					expect(await docLogged(page, "input")).toEqual([""]);
 					expect(await docLogged(page, "change")).toEqual([]);
+				});
+
+				test("does not dispatch change on a programmatic item change after a rejected Enter", async ({
+					page,
+				}) => {
+					await render(page, { controlled: "manual" }); // Rejects every select
+					const input = page.locator("#input");
+
+					await input.click();
+					await input.fill("Bergen");
+					await input.press("Enter"); // Prevented, and the item is left unchanged
+					await expect(input).toHaveValue("Bergen");
+					await afterRendered(page); // The rejected commit expires after the render opportunity
+					await resetDocLog(page);
+
+					await update(page, { items: [OSLO] }); // Unrelated programmatic item change
+					await expect(input).toHaveValue("Oslo");
+					expect(await docLogged(page, "input")).toEqual(["Oslo"]);
+					expect(await docLogged(page, "change")).toEqual([]); // Not a user commit, as the rejected commit has expired
+				});
+
+				test("handles blur after a pointerdown that ended in pointercancel", async ({
+					page,
+				}) => {
+					// A touch that turns into a scroll fires pointercancel instead of pointerup, which must also release the pressed state
+					await render(page, { items: [BERGEN] });
+					const input = page.locator("#input");
+
+					await input.click();
+					await input.fill("xyz");
+					const box = (await input.boundingBox()) as Record<string, number>;
+					await page.mouse.move(box.x + 5, box.y + box.height / 2);
+					await page.mouse.down(); // Pressed inside <u-combobox>
+					await input.evaluate((el) =>
+						el.dispatchEvent(
+							new PointerEvent("pointercancel", {
+								bubbles: true,
+								composed: true,
+							}),
+						),
+					);
+					await input.evaluate((el) => (el as HTMLInputElement).blur());
+					await expect(input).toHaveValue("Bergen"); // Blur is handled, falling back to the item
+					await page.mouse.up();
 				});
 
 				test("dispatches no input on option click in multiple mode", async ({
@@ -1752,7 +1808,7 @@ export const comboboxSuite = (
 			});
 
 			test.describe(name("toggle button"), () => {
-				test.skip("is hidden with native datalist, opens and closes u-datalist", async ({
+				test("is hidden with native datalist, opens and closes u-datalist", async ({
 					page,
 				}) => {
 					await render(page, { toggle: true });
@@ -1782,6 +1838,34 @@ export const comboboxSuite = (
 					await expect(input).toBeFocused();
 				});
 
+				test("opens and closes u-datalist on touch tap", async ({ page }) => {
+					// A tap dispatches mousedown, mouseup and click together after touchend, so the close can not rely on the blur from mousedown
+					test.skip(IS_NATIVE, "Toggle is hidden with native datalist");
+					test.skip(!test.info().project.use.hasTouch, "Needs a touchscreen");
+					await render(page, { toggle: true });
+					const input = page.locator("#input");
+					const toggle = page.locator("button[aria-expanded]");
+					const list = page.locator(LIST_TAG);
+					const tap = async () => {
+						const box = (await toggle.boundingBox()) as Record<string, number>;
+						await page.touchscreen.tap(
+							box.x + box.width / 2,
+							box.y + box.height / 2,
+						);
+					};
+
+					await tap();
+					await expect(list).not.toHaveAttribute("hidden");
+					await expect(toggle).toHaveAttribute("aria-expanded", "true");
+					await expect(input).toBeFocused();
+
+					await tap();
+					await expect(list).toHaveAttribute("hidden", "");
+					await expect(toggle).toHaveAttribute("aria-expanded", "false");
+					await expect(input).toHaveAttribute("aria-expanded", "false");
+					await expect(input).toBeFocused();
+				});
+
 				test("opens u-datalist on programmatic click", async ({ page }) => {
 					test.skip(IS_NATIVE, "Toggle is hidden with native datalist");
 					await render(page, { toggle: true });
@@ -1793,6 +1877,32 @@ export const comboboxSuite = (
 					await expect(list).not.toHaveAttribute("hidden");
 					await expect(toggle).toHaveAttribute("aria-expanded", "true");
 					await expect(page.locator("#input")).toBeFocused();
+				});
+
+				test("opens on programmatic click after a drag out without a click", async ({
+					page,
+				}) => {
+					test.skip(IS_NATIVE, "Toggle is hidden with native datalist");
+					await render(page, { toggle: true });
+					const input = page.locator("#input");
+					const toggle = page.locator("button[aria-expanded]");
+					const list = page.locator(LIST_TAG);
+
+					await input.click(); // Open list
+					await expect(list).not.toHaveAttribute("hidden");
+
+					// Pointerdown on the input while open, then release outside so no click is dispatched inside <u-combobox>
+					const box = (await input.boundingBox()) as Record<string, number>;
+					await page.mouse.move(box.x + 5, box.y + box.height / 2);
+					await page.mouse.down();
+					await page.mouse.move(box.x + box.width + 200, box.y + 200);
+					await page.mouse.up();
+					await input.press("Escape");
+					await expect(list).toHaveAttribute("hidden", "");
+
+					await toggle.evaluate((el) => (el as HTMLElement).click()); // Must read live state, not the stale "was open" from the pointerdown
+					await expect(list).not.toHaveAttribute("hidden");
+					await expect(input).toBeFocused();
 				});
 
 				test("reads live list state after a mouse click that returned early", async ({

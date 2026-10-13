@@ -614,6 +614,7 @@ Syncing the input always dispatches `input`. `change` is only dispatched when th
   - Runtime toggle `data-multiple` and `data-creatable` syncs correctly
   - Synthetic `InputEvent` without `inputType` (i.e. testing-library) does not cause incorrect option click
   - `form.reset()` syncs the clear and toggle buttons, and restores the item text in single mode
+  - Toggle button closes `<u-datalist>` explicitly when open, instead of relying on the blur from mousedown, which does not happen on touch
   - Firefox spell check and autofill replacements that are not an option value are treated as typing instead of reverted
   - Attribute writes that do not change a value (i.e. Vue re-setting option `value`, React syncing input `value`) do not trigger a state sync
   - The `input` event of an option pick is intercepted in the capture phase on `window`, so frameworks delegating events from `document` (i.e. Qwik) read the reverted text instead of the option value

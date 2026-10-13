@@ -97,7 +97,7 @@ export type Preact${type} = ${
 export type React${type} = ${
 				isNative
 					? `ReactTypes.JSX.IntrinsicElements['${tagNative}']`
-					: `ReactTypes.DetailedHTMLProps<ReactTypes.HTMLAttributes<${type}Element>, ${type}Element>`
+					: `ReactTypes.DetailedHTMLProps<ReactTypes.HTMLAttributes<${type}Element>, ${type}Element> & { ${onEvents("on")} }`
 			} & { class?: string }
 export type Qwik${type} = QwikJSX.IntrinsicElements['${tagNative}']
 export type Vue${type} = ${isNative ? `VueJSX.IntrinsicElementAttributes['${tagNative}']` : "VueJSX.HTMLAttributes"}

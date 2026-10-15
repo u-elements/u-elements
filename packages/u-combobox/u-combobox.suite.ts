@@ -2236,6 +2236,34 @@ export const comboboxSuite = (
 					await expect(page.locator("u-combobox data")).toHaveCount(0);
 				});
 
+				test("dispatches change once on removal, and none when a prevented removal reverts the text", async ({
+					page,
+				}) => {
+					await render(page, { clear: true, items: [BERGEN] });
+					const input = page.locator("#input");
+					const items = page.locator("u-combobox data");
+					const clear = page.locator('u-combobox button[type="reset"]');
+
+					await expect(input).toHaveValue("Bergen");
+					await resetDocLog(page);
+					await clear.click();
+					await expect(input).toHaveValue("");
+					await expect(items).toHaveCount(0);
+					await afterRendered(page); // The commit is settled after the render opportunity in controlled mode
+					expect(await docLogged(page, "input")).toEqual([""]);
+					expect(await docLogged(page, "change")).toEqual([""]); // Committed once, after the removal
+
+					await update(page, { controlled: "manual", items: [OSLO] }); // Rejects every removal
+					await expect(input).toHaveValue("Oslo");
+					await resetDocLog(page);
+					await clear.click();
+					await expect(input).toHaveValue("Oslo"); // Reverted to the text before the clear
+					await expect(items).toHaveCount(1);
+					await afterRendered(page);
+					expect(await docLogged(page, "input")).toEqual(["", "Oslo"]); // Emptied, then reverted
+					expect(await docLogged(page, "change")).toEqual([]); // The text ends up unchanged, so no change
+				});
+
 				test("is reachable with Tab and reverts tabindex after", async ({
 					page,
 				}) => {

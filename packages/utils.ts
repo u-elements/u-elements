@@ -211,31 +211,42 @@ export const customElements = {
 };
 
 /**
+ * dispatchChange
+ * @description Dispatch change like the browser does when a user commits a value
+ * @param {HTMLInputElement} input Input element to dispatch change on
+ */
+export const dispatchChange = (input: HTMLInputElement) =>
+	input.dispatchEvent(new Event("change", { bubbles: true }));
+
+/**
  * setValue
  * @description Set input value like the browser does on user input
  * @param {HTMLInputElement} input Input element to set value on
  * @param {string} data The new value
  * @param {inputType} type of the new event, pass false if silent
- * @param {boolean} dispatchChange Whether to dispatch change after input. Defaults to true unless silent. Pass false for syncs that are not user commits (i.e. mount, programmatic item changes, form reset)
+ * @param {boolean} change Whether to dispatch change after input. Defaults to true unless silent. Pass false for syncs that are not user commits (i.e. mount, programmatic item changes, form reset)
+ * @return {boolean} false if a consumer prevented beforeinput, in which case the value is left untouched and no input or change is dispatched
  */
 // Trigger value change in React compatible manor https://stackoverflow.com/a/46012210
 export const setValue = (
 	input: HTMLInputElement,
 	data: string,
 	type: string | false = "",
-	dispatchChange = type !== false,
+	change = type !== false,
 ) => {
 	const silent = type === false;
 	const event = { bubbles: true, composed: true, data, inputType: type || "" };
+	const before = { ...event, cancelable: true }; // beforeinput is cancelable like the native event, so a consumer can reject the edit
 	const inputType = input.selectionEnd === null && input.type; // Input types without selection support (i.e. 'email', 'number', 'date') do not support setRangeText, so temporarily switch to text
 
-	if (!silent) input.dispatchEvent(new InputEvent("beforeinput", event));
+	if (!silent && !input.dispatchEvent(new InputEvent("beforeinput", before)))
+		return false;
 	if (inputType) input.type = "text";
 	input.setRangeText(data, 0, input.value.length, "end"); // Using setRangeText to not touch HTMLInputElement.prototype, aligning with browser standard
 	if (inputType) input.type = inputType; // Revert to original input type
 	if (!silent) input.dispatchEvent(new InputEvent("input", event));
-	if (dispatchChange)
-		input.dispatchEvent(new Event("change", { bubbles: true }));
+	if (change) dispatchChange(input);
+	return true;
 };
 
 /**
@@ -249,12 +260,13 @@ const IS_PRESS = new WeakSet<Element>();
 export const isPointerDown = (el: Element, e?: Event) => {
 	if (e?.type === "pointerdown") {
 		IS_PRESS.add(el);
-		// pointerup is "composed" so it also bubbles from ShadowDOM up to document. pointercancel replaces pointerup when a touch turns into a scroll
+		// pointerup is "composed" so it also bubbles from ShadowDOM up to document. pointercancel replaces pointerup when a touch turns into a scroll.
+		// Capture, so a stopPropagation in a consumer or popover handler can not leave the element stuck as pressed
 		const release = () => {
 			IS_PRESS.delete(el);
 			unbind();
 		};
-		const unbind = on(document, "pointerup pointercancel", release);
+		const unbind = on(document, "pointerup pointercancel", release, EVENT_ONCE);
 	}
 	return IS_PRESS.has(el);
 };
@@ -328,11 +340,14 @@ export const speak = (text?: string) => {
  * setTimeout and requestAnimationFrame does not guarantee ordering, and can therefore be unreliable with React.
  * @param {void} callback
  */
+const RENDER_QUEUE: (() => void)[] = []; // One callback per posted message, so each keeps its own place after the renders queued before it
+let RENDER_PORT: MessagePort | undefined; // Shared channel, created on first use so SSR never touches MessageChannel
 export const afterRender = (callback: () => void) => {
-	const { port1, port2 } = new MessageChannel();
-	port1.onmessage = () => {
-		port1.close();
-		callback();
-	};
-	Promise.resolve().then(() => port2.postMessage(0));
+	if (!RENDER_PORT) {
+		const { port1, port2 } = new MessageChannel();
+		port1.onmessage = () => RENDER_QUEUE.shift()?.(); // Messages arrive in post order, so the oldest callback is always the one posted for
+		RENDER_PORT = port2;
+	}
+	RENDER_QUEUE.push(callback);
+	Promise.resolve().then(() => RENDER_PORT?.postMessage(0));
 };

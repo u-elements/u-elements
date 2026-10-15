@@ -5,6 +5,7 @@ import {
 	customElements,
 	DISPLAY_BLOCK,
 	declarativeShadowRoot,
+	dispatchChange,
 	EVENT_ONCE,
 	FOCUS_OUTLINE,
 	getFocusedElement,
@@ -396,17 +397,21 @@ const dispatchSelect = (
 
 // Restore input text after a prevented select in single mode, deferred to prevent flash of previous value.
 // key is the item key before the select: restore only if the consumer did not change the item, as a changed item is already synced by onMutations and a restore would overwrite later programmatic input.
-// Defaults to the item text (blur), clear passes the text before the clear
+// Defaults to the item text (blur). Clear passes the text before the clear, and reverts without change as the text ends up unchanged,
+// while a consumer removing the item after the clear (controlled mode) commits the emptied text, so change is dispatched then
 const restoreInput = (
 	self: UHTMLComboboxElement,
 	key: string | null,
 	text?: string,
 ) =>
 	afterRender(() => {
-		if (!self.isConnected || getItemKey(self) !== key) return;
-		if (text === undefined) return syncInputWithItemSingleMode(self, true);
-		if (self.control && text !== self.control.value)
-			setValue(self.control, text, "insertText"); // Prevent input event being handled as "click" on option
+		const { control, isConnected } = self;
+		const changed = getItemKey(self) !== key;
+		if (!isConnected || !control) return;
+		if (text === undefined)
+			return changed || syncInputWithItemSingleMode(self, true);
+		if (changed) return control.value || dispatchChange(control); // Item changed by consumer, so only commit if the text is still emptied, as a replaced item is already synced with change
+		if (text !== control.value) setValue(control, text, "insertText", false); // Prevent input event being handled as "click" on option
 	});
 
 // Shared by Enter and blur, see SPECIFICATION
@@ -477,11 +482,14 @@ const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
 	if (control && clear?.contains(target as Node)) {
 		event.preventDefault(); // Prevent button[type="reset"]
 		const value = self._value || "";
-		const item = items[0];
+		const item = multiple ? undefined : items[0];
 		const key = getItemKey(self); // Snapshot the item key before dispatchSelect, so restore only happens if the consumer left it unchanged (as i.e. Solid explicitly updates DOM synchronously)
-		setValue(control, "", "deleteContentBackward");
-		if (!multiple && item && !dispatchSelect(self, item))
-			restoreInput(self, key, value); // Single mode should restore input if the item removal was prevented
+		// With an item, change is dispatched once the removal is settled, so a prevented removal that reverts the text dispatches no change at all
+		if (setValue(control, "", "deleteContentBackward", !item) && item) {
+			if (dispatchSelect(self, item))
+				dispatchChange(control); // Removed, so the emptied text is committed. The sync following the removal has nothing to write
+			else restoreInput(self, key, value); // Single mode should restore input if the item removal was prevented
+		}
 		control.focus();
 		return hasHiddenDatalist || control.click(); // Open list if it was open before clicking clear
 	}
@@ -781,9 +789,10 @@ const getOwner = (input: Node | null | undefined) => {
 	return parent && REGISTRY[VERSION]?.has(parent) ? parent : null;
 };
 
-// One shared window capture listener for all instances in light DOM, instead of one per instance running for every input event on the page
+// One shared window capture listener for all instances in light DOM, instead of one per instance running for every input event on the page.
+// Only light DOM instances are served here, where the input is never retargeted, so event.target is the input and no composedPath() array is allocated for every input event on the page
 const onWindowInput = (event: Event) => {
-	const owner = getOwner(event.composedPath()[0] as Node);
+	const owner = getOwner(event.target as Node);
 	if (owner && !(owner._root instanceof ShadowRoot)) owner.handleEvent(event); // Instances in a shadow root listen on themselves, so skip to not handle twice through an open shadow root
 };
 

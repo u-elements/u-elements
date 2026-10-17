@@ -64,7 +64,11 @@ export class UHTMLDataListElement extends UHTMLElement {
 	_umutate?: ReturnType<typeof onMutation>;
 
 	static get observedAttributes() {
-		return ["id", ...Object.keys(TEXTS).map((key) => `data-sr-${key}`)]; // Using ES2015 syntax for backwards compatibility
+		return [
+			"hidden",
+			"id",
+			...Object.keys(TEXTS).map((key) => `data-sr-${key}`),
+		]; // Using ES2015 syntax for backwards compatibility
 	}
 
 	constructor() {
@@ -98,7 +102,13 @@ export class UHTMLDataListElement extends UHTMLElement {
 		const text = prop?.split("data-sr-")[1] as keyof typeof TEXTS;
 
 		if (TEXTS[text]) this._texts[text] = next || TEXTS[text];
-		else if (this.id) {
+		else if (prop === "hidden") {
+			// hidden is the open state, so keep the input in sync also when written by a consumer (i.e. <u-combobox> toggle button). No-op when written by setExpanded
+			const open = next === null;
+			if (this._input) attr(this._input, "aria-expanded", `${open}`);
+			if (!open) setActive(this); // Clear activedescendant when closing
+			if (this.popover && this.isConnected) this.togglePopover(open); // Mirror Popover API if used
+		} else if (this.id) {
 			const selector = `input[list="${this.id}"]` as "input";
 			const input = getRoot(this).querySelector(selector);
 			if (input) setInputAttributes(this, input);

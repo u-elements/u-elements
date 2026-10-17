@@ -210,15 +210,43 @@ export const customElements = {
 		window.customElements.define(name, instance),
 };
 
-// Trigger value change in React compatible manor https://stackoverflow.com/a/46012210
-export const setValue = (input: HTMLInputElement, data: string, type = "") => {
-	const event = { bubbles: true, composed: true, data, inputType: type };
-	const proto = HTMLInputElement.prototype;
-
-	input.dispatchEvent(new InputEvent("beforeinput", event));
-	Object.getOwnPropertyDescriptor(proto, "value")?.set?.call(input, data);
-	input.dispatchEvent(new InputEvent("input", event));
+/**
+ * dispatchChange
+ * @description Dispatch change like the browser does when a user commits a value
+ * @param {HTMLInputElement} input Input element to dispatch change on
+ */
+export const dispatchChange = (input: HTMLInputElement) =>
 	input.dispatchEvent(new Event("change", { bubbles: true }));
+
+/**
+ * setValue
+ * @description Set input value like the browser does on user input
+ * @param {HTMLInputElement} input Input element to set value on
+ * @param {string} data The new value
+ * @param {inputType} type of the new event, pass false if silent
+ * @param {boolean} change Whether to dispatch change after input. Defaults to true unless silent. Pass false for syncs that are not user commits (i.e. mount, programmatic item changes, form reset)
+ * @return {boolean} false if a consumer prevented beforeinput, in which case the value is left untouched and no input or change is dispatched
+ */
+// Trigger value change in React compatible manor https://stackoverflow.com/a/46012210
+export const setValue = (
+	input: HTMLInputElement,
+	data: string,
+	type: string | false = "",
+	change = type !== false,
+) => {
+	const silent = type === false;
+	const event = { bubbles: true, composed: true, data, inputType: type || "" };
+	const before = { ...event, cancelable: true }; // beforeinput is cancelable like the native event, so a consumer can reject the edit
+	const inputType = input.selectionEnd === null && input.type; // Input types without selection support (i.e. 'email', 'number', 'date') do not support setRangeText, so temporarily switch to text
+
+	if (!silent && !input.dispatchEvent(new InputEvent("beforeinput", before)))
+		return false;
+	if (inputType) input.type = "text";
+	input.setRangeText(data, 0, input.value.length, "end"); // Using setRangeText to not touch HTMLInputElement.prototype, aligning with browser standard
+	if (inputType) input.type = inputType; // Revert to original input type
+	if (!silent) input.dispatchEvent(new InputEvent("input", event));
+	if (change) dispatchChange(input);
+	return true;
 };
 
 /**
@@ -232,7 +260,13 @@ const IS_PRESS = new WeakSet<Element>();
 export const isPointerDown = (el: Element, e?: Event) => {
 	if (e?.type === "pointerdown") {
 		IS_PRESS.add(el);
-		on(document, "pointerup", () => IS_PRESS.delete(el), EVENT_ONCE); // pointerup is "composed" so it also bubbles from ShadowDOM up to document
+		// pointerup is "composed" so it also bubbles from ShadowDOM up to document. pointercancel replaces pointerup when a touch turns into a scroll.
+		// Capture, so a stopPropagation in a consumer or popover handler can not leave the element stuck as pressed
+		const release = () => {
+			IS_PRESS.delete(el);
+			unbind();
+		};
+		const unbind = on(document, "pointerup pointercancel", release, EVENT_ONCE);
 	}
 	return IS_PRESS.has(el);
 };
@@ -249,13 +283,15 @@ export const declarativeShadowRoot = (style: string, slot = "<slot></slot>") =>
 
 /**
  * preventSubmit
- * @description Temporarily removes form association on input to prevent form submission, without preventing event
+ * @description Temporarily removes form association on input to prevent form submission, without preventing event.
+ * Note: input.form is null while the association is removed (16ms). This is intentional, as Firefox submits if restored earlier
  * @param {HTMLInputElement} input Input element to prevent submit on
  */
 export const preventSubmit = (input: HTMLInputElement) => {
 	const form = attr(input, "form");
+	if (form === "#") return; // If holding Enter, avoid restoring # value
 	attr(input, "form", "#"); // Temporarily remove form association to prevent submit on enter
-	setTimeout(restoreSubmit, 0, input, form); // Restore form association on next macrotask
+	setTimeout(restoreSubmit, 16, input, form); // Restore form association on after 16ms (Firefox needs the delay)
 };
 const restoreSubmit = (input: HTMLInputElement, form: string | null) =>
 	attr(input, "form", form);
@@ -277,7 +313,6 @@ let LIVE: HTMLElement;
 let LIVE_SR_FIX = 0; // Ensure screen reader announcing by alternating non-breaking-space suffix
 let LIVE_CLEAR: ReturnType<typeof setTimeout> | number = 0;
 export const speak = (text?: string) => {
-	clearTimeout(LIVE_CLEAR);
 	if (!LIVE) {
 		LIVE = tag("div", { "aria-live": "assertive" });
 		LIVE.style.overflow = "hidden";
@@ -286,6 +321,8 @@ export const speak = (text?: string) => {
 		LIVE.style.width = "1px";
 	}
 	if (!LIVE.isConnected) document.body.appendChild(LIVE);
+	if (text === undefined) return; // Only prepare the live region, keep any pending clear so a previous announcement does not stay in <body>
+	clearTimeout(LIVE_CLEAR);
 	if (text === "") LIVE.textContent = ""; // Clear announcement immediately if empty string
 	if (text) {
 		LIVE.textContent = `${text}${LIVE_SR_FIX++ % 2 ? "\u{A0}" : ""}`; // Non-breaking space to ensure screen reader announces
@@ -293,4 +330,24 @@ export const speak = (text?: string) => {
 	}
 	// Note: Narrator has a minor "hiccup" when using aria-live, as it starts announcing native commands first
 	// Note: Firefox with NVDA needs 2000ms to fully announce
+};
+
+/**
+ * afterRender
+ * @description Run after frameworks have rendered asynchronously.
+ * Vue, Svelte and Angular render in the next microtask, while React queue rendering by posting to MessageChannel in the next microtask.
+ * Waiting one microtask and then posting to MessageChannel, ensures compatibility with all frameworks.
+ * setTimeout and requestAnimationFrame does not guarantee ordering, and can therefore be unreliable with React.
+ * @param {void} callback
+ */
+const RENDER_QUEUE: (() => void)[] = []; // One callback per posted message, so each keeps its own place after the renders queued before it
+let RENDER_PORT: MessagePort | undefined; // Shared channel, created on first use so SSR never touches MessageChannel
+export const afterRender = (callback: () => void) => {
+	if (!RENDER_PORT) {
+		const { port1, port2 } = new MessageChannel();
+		port1.onmessage = () => RENDER_QUEUE.shift()?.(); // Messages arrive in post order, so the oldest callback is always the one posted for
+		RENDER_PORT = port2;
+	}
+	RENDER_QUEUE.push(callback);
+	Promise.resolve().then(() => RENDER_PORT?.postMessage(0));
 };

@@ -502,7 +502,9 @@ const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
 		const key = getItemKey(self); // Snapshot the item key before dispatchSelect, so restore only happens if the consumer left it unchanged (as i.e. Solid explicitly updates DOM synchronously)
 		// With an item, change is dispatched once the removal is settled, so a prevented removal that reverts the text dispatches no change at all
 		if (setValue(control, "", "deleteContentBackward", !item) && item) {
-			if (dispatchSelect(self, item))
+			// If a synchronous input handler removes the selected <data> when the text is cleared, setValue runs that handler before this call
+			// Check that the item is still present after dispatching input before requesting its removal.
+			if (!Array.from(items).includes(item) || dispatchSelect(self, item))
 				dispatchChange(control); // Removed, so the emptied text is committed. The sync following the removal has nothing to write
 			else restoreInput(self, key, value); // Single mode should restore input if the item removal was prevented
 		}

@@ -54,7 +54,8 @@ import { version } from "./package.json"; // Identity of this implementation
  * - sync input:   set text to the item's text, or empty when there is no item. Only in single mode with a datalist,
  *                 and only when the text differs. Dispatches input, and change only when the sync follows a user commit
  *                 (pick, Enter, blur, clear, item removal), never on mount, programmatic item changes or form reset.
- *                 Never dispatches match or select
+ *                 Also when reverting to an unchanged item, as the browser has already dispatched its own change with the typed text
+ *                 before the deferred blur handling, so the last change must carry the final text. Never dispatches match or select
  * - revert input: set text back to the cached text
  *
  * Mount and item mutations (connectedCallback, <data> added/removed/changed, <input> replaced, data-multiple changed)
@@ -231,7 +232,15 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		REGISTRY[VERSION]?.add(this);
 		this._root = getRoot(this);
 		this._umutate = onMutation(this, onMutations, {
-			attributeFilter: ["aria-expanded", "id", "role", "value", ATTR_MULTI],
+			attributeFilter: [
+				"aria-expanded",
+				"disabled",
+				"id",
+				"readonly",
+				"role",
+				"value",
+				ATTR_MULTI,
+			], // disabled and readonly re-sync the clear and toggle buttons
 			attributeOldValue: true, // Needed to ignore no-op attribute writes from frameworks, and to detect a mode change
 			attributes: true,
 			characterData: true, // Respond to changes in <data> textContent
@@ -260,10 +269,14 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		// biome-ignore format: next-line
 		this._singleValue = this._focusMoved = this._root = this._umutate = this._clear = this._toggle = this._control = this._select = this._options = this._items = this._list = this._singleItem = this._value = undefined;
 	}
-	handleEvent(e: Event) {
+	// Explicit void return type, as the inferred one depends on the ambient setTimeout type (number in DOM, NodeJS.Timeout with @types/node),
+	// making source and bundled typings disagree when both are loaded, as in the frameworks/* harness projects
+	handleEvent(e: Event): void {
 		const { type, target } = e;
-		if (type === "reset")
-			return target === this.control?.form && setTimeout(onReset, 0, this, e); // Controls are reset after the reset event has dispatched, so defer. Also when disabled or readonly
+		if (type === "reset") {
+			if (target === this.control?.form) setTimeout(onReset, 0, this, e); // Controls are reset after the reset event has dispatched, so defer. Also when disabled or readonly
+			return;
+		}
 		if (type === "input" && e.composedPath()[0] !== this.control) return; // Listener is on window or this, so check the real target also inside nested shadow roots
 		if (this.control?.disabled || this.control?.readOnly) return;
 		if (type === "beforeinput") onBeforeinput(this, e);
@@ -368,6 +381,9 @@ const dispatchSelect = (
 	}
 	if (focus) focus.focus(FOCUS_VISIBLE); // Move focus if item might be removed (can be prevented by comboboxbeforeselect)
 	self._focusMoved = !!focus; // Cache if focus was moved to determine if we should use aria-live or aria-label for announcements in onMutations
+	afterRender(() => {
+		self._focusMoved = undefined; // Expire after the render opportunity if no item mutation consumed it, so a prevented select does not silence the live region on a later programmatic item change
+	});
 
 	const add = tag("data", { value: item.value }, item.label || item.value);
 	const event = { bubbles: true, cancelable: true, detail: remove || add };
@@ -528,8 +544,10 @@ const clearDatalistPick = (self: UHTMLComboboxElement) => {
 const onInput = (self: UHTMLComboboxElement, e: Partial<InputEvent>) => {
 	const { control, options, multiple, _isDatalistPick: isPick } = self;
 	const value = control?.value || "";
-	const isReplace = e.inputType === "insertReplacementText" || isPick; // Firefox native <datalist> and <u-datalist>, but also spell check and autofill
-	const isClick = isReplace || (e.isTrusted && !e.inputType); // WebKit and Chrome native <datalist> use Event (not InputEvent), but so does type="search" clear and autofill
+	const isNative = self.list?.nodeName === "DATALIST"; // Only a native <datalist> picks through a trusted event, as <u-datalist> is flagged by onBeforeinput. Trusted replacements are otherwise spell check or autofill
+	const isReplace =
+		isPick || (isNative && e.inputType === "insertReplacementText"); // <u-datalist>, and Firefox native <datalist>
+	const isClick = isReplace || (isNative && e.isTrusted && !e.inputType); // WebKit and Chrome native <datalist> use Event (not InputEvent), but so does type="search" clear and autofill
 	const canMatch = isClick && (value || isReplace); // Only <u-datalist> click on <option value=""> has an empty value, as type="search" clear has no inputType either
 	const match = canMatch && [...options].find((o) => getValue(o) === value); // Only accept as option click if value corresponds to an option, avoiding false positives on spell check or autofill
 
@@ -713,7 +731,8 @@ const syncSelectWithItems = (self: UHTMLComboboxElement) => {
 
 const syncButtonsWithInput = (self: UHTMLComboboxElement) => {
 	const { clear, control, toggle, list } = self;
-	const isIdle = !control?.value || control?.disabled || control?.readOnly;
+	const isInert = control?.disabled || control?.readOnly;
+	const isIdle = !control?.value || isInert;
 	if (clear?.nodeName === "DEL") attr(clear, "role", "button"); // Backwards compatibility for older versions using <del> as clear button
 	if (clear) {
 		const focused = !isIdle && clear === getFocusedElement(self); // Keep focusable and visible to screen readers while focused after tabbing to clear, as closing the datalist triggers a sync. Never while idle, as setting hidden on the focused clear blurs it synchronously in Chromium, re-entering this sync before the outer call writes its stale focused state
@@ -723,8 +742,8 @@ const syncButtonsWithInput = (self: UHTMLComboboxElement) => {
 		attr(clear, "tabindex", focused ? "0" : "-1");
 	}
 	if (toggle) {
-		// Show toggle only if idle and <u-datalist> is present, as native <datalist> can not be opened programmatically
-		const show = isIdle && list && list.nodeName !== "DATALIST";
+		// Show toggle only if idle, not disabled or readonly, and <u-datalist> is present, as native <datalist> can not be opened programmatically
+		const show = isIdle && !isInert && list && list.nodeName !== "DATALIST";
 		attr(toggle, ARIA_LABEL) || attr(toggle, ARIA_LABEL, self._texts.toggle); // Set default aria-label if not set by consumer
 		attr(toggle, "aria-hidden", `${IS_IOS || IS_ANDROID}`); // Hide from screen readers to keep datalist open on swipe right navigation
 		attr(toggle, "hidden", show ? null : "");

@@ -22,11 +22,5 @@
 		"noFallthroughCasesInSwitch": true,
 		"types": ["vite/client", "node"]
 	},
-	"include": [
-		"index.tsx",
-		"app.tsx",
-		"test.u-combobox.tsx",
-		"../../packages/*/dist/*.frameworks.d.ts",
-		"vite.config.ts"
-	]
+	"include": ["index.tsx", "app.tsx", "test.u-combobox.tsx", "vite.config.ts"]
 }

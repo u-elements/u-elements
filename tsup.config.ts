@@ -29,23 +29,14 @@ const manifestVSCode = customElementVsCodePlugin({
 	outdir: path.resolve(pkgPath, "dist"),
 });
 
-// Framework typings (JSX, Vue and Svelte templates) are written to a standalone dist/<pkg>.frameworks.d.ts,
-// referenced from the bundled typings so consumers get them, and included directly by the
-// frameworks/* harness projects, which import the package source and so can not use the bundled typings
-const frameworkTypesFile = `${pkgName}.frameworks.d.ts`;
-
-// Clean here instead of with clean: true, as tsup then also removes every *.d.ts in dist
-// right before its DTS build, which runs after onSuccess has written the framework typings
-fs.rmSync(path.resolve(pkgPath, "dist"), { recursive: true, force: true });
-
 export default defineConfig({
-	clean: false,
+	clean: true,
 	entry: [pkgFile],
 	format: ["cjs", "esm"],
 	target: "es6", // For backwards compatibility
 	treeshake: true,
 	dts: {
-		banner: `/// <reference path="./${frameworkTypesFile}" />`,
+		footer: getFrameworkTypes(modules),
 	},
 	async onSuccess() {
 		const manifestFile = path.resolve(pkgPath, `dist/${pkgName}.manifest.json`);
@@ -55,10 +46,6 @@ export default defineConfig({
 		});
 
 		fs.writeFileSync(manifestFile, JSON.stringify(manifestData, null, " "));
-		fs.writeFileSync(
-			path.resolve(pkgPath, `dist/${frameworkTypesFile}`),
-			getFrameworkTypes(modules),
-		);
 	},
 });
 
@@ -68,7 +55,7 @@ function getFrameworkTypes(modules: string[][]) {
 	const tagRexes = /['"](u-\S*?)['"]: (U?HTML[a-z]*Element)/gi;
 	const eventRexes = /['"]?(\S*?)['"]?: (CustomEvent(<[^>]+>)?)/gi;
 
-	const types = modules.flatMap(([, code]) => {
+	const types = modules.flatMap(([_file, code]) => {
 		const eventMap = `${code.match(/GlobalEventHandlersEventMap[^}]+/s) || ""}`;
 		const events = Array.from(eventMap.matchAll(eventRexes));
 		const onEvents = (...prefixes: string[]) =>
@@ -119,12 +106,12 @@ declare module '@qwik.dev/core/jsx-runtime' { export namespace JSX { export inte
 declare module '@vue/runtime-dom' { export interface GlobalComponents { '${tag}': Vue${type} } }
 declare module 'svelte/elements' { interface SvelteHTMLElements { '${tag}': Svelte${type} } }
 declare module 'solid-js' {
-  namespace JSX {
-    interface IntrinsicElements { '${tag}': Solid${type} }
-    interface CustomEvents { ${events.map(([, type, event]) => `"${type}": ${event}`).join("; ")} }
-  }
+	namespace JSX {
+		interface IntrinsicElements { '${tag}': Solid${type} }
+		interface CustomEvents { ${events.map(([, type, event]) => `"${type}": ${event}`).join("; ")} }
+	}
 }
-`;
+	`;
 		});
 	});
 

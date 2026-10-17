@@ -1,9 +1,11 @@
 /* @refresh reload */
 import { createSignal } from "solid-js";
+import type { UHTMLComboboxElement } from "../../packages/u-combobox/dist/u-combobox";
+import type {} from "../../packages/u-datalist/dist/u-datalist";
+import type {} from "../../packages/u-progress/dist/u-progress";
 import "../../packages/u-progress/u-progress";
 import "../../packages/u-datalist/u-datalist";
 import "../../packages/u-combobox/u-combobox";
-import type { UHTMLComboboxElement } from "../../packages/u-combobox/u-combobox";
 
 export default function App() {
 	const [count, setCount] = createSignal(0);

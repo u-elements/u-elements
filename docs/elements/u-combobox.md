@@ -612,6 +612,9 @@ Syncing the input always dispatches `input`. `change` is only dispatched when th
   - `Enter` with text equal to an item no longer announces `data-sr-invalid` when no option matches, as the item is a confirmed selection
   - Single mode clear button no longer caches the emptied text, so a prevented removal reverts the input to the text before the clear
   - Runtime toggle `data-multiple` and `data-creatable` syncs correctly
+  - Toggle button is hidden when the input is `disabled` or `readonly`, and both buttons re-sync when these attributes change at runtime
+  - Trusted `insertReplacementText` and `inputType`-less `input` events (Firefox spell check, autofill) are only taken for an option pick with native `<datalist>`, as `<u-datalist>` picks can always be detected through `beforeinput`
+  - Programmatic item changes announce through the live region also after a prevented removal moved focus
   - Synthetic `InputEvent` without `inputType` (i.e. testing-library) does not cause incorrect option click
   - `form.reset()` syncs the clear and toggle buttons, and restores the item text in single mode
   - Toggle button closes `<u-datalist>` explicitly when open, instead of relying on the blur from mousedown, which does not happen on touch

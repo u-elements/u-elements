@@ -763,7 +763,7 @@ export const comboboxSuite = (
 					await input.fill("xyz");
 					await input.blur();
 					await expect(input).toHaveValue("Bergen"); // Blur falls back to the item
-					await expect.poll(lastChange).toEqual(["Bergen"]); // Blur is a user commit
+					await expect.poll(lastChange).toEqual(["Bergen"]); // Blur is a user commit, and the browser has already dispatched change with "xyz" on blur, so the last change must carry the final text
 
 					await resetDocLog(page);
 					await update(page, { items: [] }); // Programmatic removal
@@ -1507,6 +1507,39 @@ export const comboboxSuite = (
 					);
 					await expect(items).toHaveText(["Trondheim"]);
 					await expect(input).toHaveValue("Trondhjem"); // Pick reverts to the corrected text, as it was cached like typed text
+				});
+
+				test("treats insertReplacementText equal to an option value as a pick only with native datalist", async ({
+					page,
+				}) => {
+					// Mimics a Firefox spell check correction to a word that happens to be an option value.
+					// Only a native <datalist> picks through such an event, as <u-datalist> picks are flagged by beforeinput
+					await render(page);
+					await resetLog(page, "comboboxbeforeselect");
+					const input = page.locator("#input");
+					const items = page.locator("u-combobox data");
+
+					await input.click();
+					await input.fill("Trondhiem");
+					await input.evaluate((el) => {
+						const input = el as HTMLInputElement;
+						const data = "Trondheim"; // Corrected to an option value
+						const init = {
+							bubbles: true,
+							data,
+							inputType: "insertReplacementText",
+						};
+						input.setRangeText(data, 0, input.value.length, "end");
+						input.dispatchEvent(new InputEvent("input", init));
+					});
+					await expect(input).toHaveValue("Trondheim");
+					if (IS_NATIVE) {
+						await expect(items).toHaveText(["Trondheim"]); // Native datalist can only pick through this event, so it is a pick
+						expect(await logged(page, "comboboxbeforeselect")).toHaveLength(1);
+					} else {
+						await expect(items).toHaveCount(0); // Correction is typing, so nothing is selected until Enter or blur
+						expect(await logged(page, "comboboxbeforeselect")).toEqual([]);
+					}
 				});
 
 				test("does not re-match when blurring right after a prevented pick", async ({
@@ -2348,6 +2381,36 @@ export const comboboxSuite = (
 							await expect(items).toHaveCount(1); // No item added from prefilled value
 						}
 					});
+
+					test(`hides toggle when ${state}, and re-syncs buttons when toggled at runtime`, async ({
+						page,
+					}) => {
+						await render(page, {
+							clear: true,
+							toggle: true,
+							inputAttrs: { [state]: "" },
+						});
+						const input = page.locator("#input");
+						const clear = page.locator('button[type="reset"]');
+						const toggle = page.locator("button[aria-expanded]");
+						const prop = state === "readonly" ? "readOnly" : "disabled";
+
+						await expect(toggle).toHaveAttribute("hidden", ""); // Nothing can be toggled
+						await input.evaluate((el, prop) => {
+							(el as HTMLInputElement)[prop as "disabled"] = false;
+						}, prop);
+						if (IS_NATIVE)
+							await expect(toggle).toHaveAttribute("hidden", ""); // Native datalist can not be opened programmatically
+						else await expect(toggle).not.toHaveAttribute("hidden"); // Idle and interactive
+
+						await input.fill("Hello");
+						await expect(clear).not.toHaveAttribute("hidden");
+						await input.evaluate((el, prop) => {
+							(el as HTMLInputElement)[prop as "disabled"] = true;
+						}, prop);
+						await expect(clear).toHaveAttribute("hidden", ""); // Re-synced without any other mutation
+						await expect(toggle).toHaveAttribute("hidden", "");
+					});
 				}
 			});
 
@@ -2545,6 +2608,30 @@ export const comboboxSuite = (
 					await update(page, { items: [BERGEN, OSLO] });
 					await page.waitForTimeout(500);
 					await expect(live).toHaveText(""); // Nothing announced while blurred
+				});
+
+				test("announces a programmatic item change after a prevented removal moved focus", async ({
+					page,
+				}) => {
+					await render(page, {
+						multiple: true,
+						controlled: "manual",
+						items: [BERGEN],
+					}); // Rejects every select
+					const input = page.locator("#input");
+					const items = page.locator("u-combobox data");
+					const live = page.locator("[aria-live='assertive']");
+
+					await input.focus();
+					await page.keyboard.press("ArrowLeft"); // Focus the item
+					await expect(items.first()).toBeFocused();
+					await page.keyboard.press("Enter"); // Asks to remove, moving focus to the input first
+					await expect(input).toBeFocused();
+					await expect(items).toHaveCount(1); // Prevented, so the item stays
+					await afterRendered(page); // The focus move expires after the render opportunity
+
+					await update(page, { items: [] }); // Later programmatic removal, i.e. after a confirm dialog
+					await expect(live).toHaveText(/Removed Bergen/); // Announced through the live region, as no focus move belongs to this change
 				});
 			});
 		}

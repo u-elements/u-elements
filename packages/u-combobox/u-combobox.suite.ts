@@ -816,6 +816,32 @@ export const comboboxSuite = (
 					await page.mouse.up();
 				});
 
+				test("handles blur after a press inside that is released outside without a click", async ({
+					page,
+				}) => {
+					// Pressing a non-focusable part of <u-combobox> blurs the input, and dragging out releases without the click that would have refocused it
+					await render(page, { items: [BERGEN] });
+					const input = page.locator("#input");
+					const items = page.locator("u-combobox data");
+
+					await input.fill("oslo");
+					// Measured after the fill, as Android opens the list on focus, which grows the host below the input
+					const host = (await page
+						.locator("u-combobox")
+						.boundingBox()) as Record<string, number>;
+					const box = (await input.boundingBox()) as Record<string, number>;
+					await page.mouse.move(box.x + box.width + 10, box.y + box.height / 2); // Beside the input, on the host and not on the list
+					await page.mouse.down();
+					await expect(input).not.toBeFocused();
+					await page.mouse.move(
+						host.x + host.width / 2,
+						host.y + host.height + 40,
+					); // Below the host, inside the viewport as Firefox drops events outside it
+					await page.mouse.up(); // Released outside, so no click refocuses the input
+					await expect(items).toHaveText(["Oslo"]); // Blur is handled once the press ends, matching the typed text
+					await expect(input).toHaveValue("Oslo");
+				});
+
 				test("dispatches no input on option click in multiple mode", async ({
 					page,
 				}) => {
@@ -1239,6 +1265,25 @@ export const comboboxSuite = (
 					await input.blur();
 					await expect(items).toHaveText(["Custom"]);
 					await expect(input).toHaveValue("Other");
+				});
+
+				test("holding Enter creates the item once without toggling it off", async ({
+					page,
+				}) => {
+					await render(page, { multiple: true, creatable: true, form: true });
+					await resetLog(page, "comboboxbeforematch");
+					const input = page.locator("#input");
+					const items = page.locator("u-combobox data");
+
+					await input.fill("Custom");
+					await page.keyboard.down("Enter");
+					await page.keyboard.down("Enter"); // Playwright sets repeat: true on a second down without up, like a held key
+					await page.keyboard.down("Enter");
+					await page.keyboard.up("Enter");
+					await expect(items).toHaveText(["Custom"]); // Committed once, as a repeat would toggle the created item off again
+					await expect(input).toHaveValue("Custom");
+					expect(await logged(page, "comboboxbeforematch")).toHaveLength(1);
+					expect(await logged(page, "submit")).toEqual([]); // Submit is still prevented on every repeat
 				});
 			});
 
@@ -2162,6 +2207,27 @@ export const comboboxSuite = (
 					expect(await logged(page, "submit")).toEqual([]);
 				});
 
+				test("ArrowDown and held Enter selects the active option once without submit", async ({
+					page,
+				}) => {
+					test.skip(IS_NATIVE, "Native datalist popup can not be driven");
+					// <u-datalist> stays open with the option active in multiple mode, so a repeat would toggle the item on every keydown
+					await render(page, { multiple: true, form: true });
+					await resetLog(page, "comboboxbeforeselect");
+					const input = page.locator("#input");
+
+					await input.click();
+					await input.press("ArrowDown");
+					await page.keyboard.down("Enter");
+					await page.keyboard.down("Enter"); // repeat: true
+					await page.keyboard.down("Enter");
+					await page.keyboard.up("Enter");
+					await expect(page.locator("u-combobox data")).toHaveText(["Oslo"]);
+					await expect(page.locator(LIST_TAG)).toBeVisible(); // Still open, as repeats are swallowed without picking
+					expect(await logged(page, "comboboxbeforeselect")).toHaveLength(1);
+					expect(await logged(page, "submit")).toEqual([]);
+				});
+
 				test("mirrors items into select for FormData", async ({ page }) => {
 					await render(page, {
 						multiple: true,
@@ -2382,6 +2448,36 @@ export const comboboxSuite = (
 						}
 					});
 
+					test(`caches the item text synced while ${state}, so a prevented pick or clear after enabling reverts to it`, async ({
+						page,
+					}) => {
+						// The sync writes the text with setRangeText and dispatches input, but handleEvent drops the event while inert, so the cache must be refreshed by the sync itself
+						await render(page, {
+							controlled: "manual", // Prevents every select
+							items: [BERGEN],
+							clear: true,
+							inputAttrs: { [state]: "" },
+						});
+						const input = page.locator("#input");
+						const items = page.locator("u-combobox data");
+						await expect(input).toHaveValue("Bergen"); // Synced on mount while inert
+
+						await input.evaluate((el: HTMLInputElement) => {
+							el.disabled = el.readOnly = false;
+						});
+						await input.click();
+						await selectOption(
+							input,
+							page.locator(OPT_TAG, { hasText: "Oslo" }),
+						);
+						await expect(items).toHaveText(["Bergen"]); // Prevented
+						await expect(input).toHaveValue("Bergen"); // Reverted to the synced text, not the mount value
+
+						await page.locator('button[type="reset"]').click();
+						await expect(items).toHaveText(["Bergen"]); // Prevented
+						await expect(input).toHaveValue("Bergen"); // Restored to the synced text
+					});
+
 					test(`hides toggle when ${state}, and re-syncs buttons when toggled at runtime`, async ({
 						page,
 					}) => {
@@ -2564,6 +2660,26 @@ export const comboboxSuite = (
 					await item.press("Backspace");
 					await expect(items).toHaveCount(1);
 					await expect(items.first()).toBeFocused();
+				});
+
+				test("removes one item on held Enter or Space", async ({ page }) => {
+					// Removal moves focus to the previous item, so a repeat would remove that one too, cascading through all items
+					await render(page, { multiple: true, items: ITEMS });
+					const items = page.locator("u-combobox data");
+
+					await items.nth(2).focus();
+					await page.keyboard.down("Enter");
+					await page.keyboard.down("Enter"); // repeat: true
+					await page.keyboard.down("Enter");
+					await page.keyboard.up("Enter");
+					await expect(items).toHaveCount(2);
+					await expect(items.nth(1)).toBeFocused();
+
+					await page.keyboard.down(" ");
+					await page.keyboard.down(" "); // repeat: true
+					await page.keyboard.up(" ");
+					await expect(items).toHaveCount(1);
+					await expect(items.nth(0)).toBeFocused();
 				});
 			});
 

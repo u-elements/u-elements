@@ -133,6 +133,8 @@ myCombobox.addEventListener('comboboxafterselect', (event) => {
 ```
 
 ### `comboboxbeforematch`
+Dispatched on `Enter`, and in single mode also on blur, when the input has text and a datalist is present. Never dispatched while typing, when empty input or when missing datalist. Prevent the event and set `option.selected` to pick another option, or no option to reject the match.
+
 ```js
 myCombobox.addEventListener('comboboxbeforematch', (event) => {
   event.target // UHTMLComboboxElement
@@ -568,32 +570,16 @@ const renderToStaticMarkup = (data: string, options: string) =>
   </u-combobox>`
 ```
 
-## Behaviour
-
-Typing never selects or live-matches anything; it only filters the options. Selection happens on option pick, `Enter` and blur. The full specification lives as a comment at the top of [u-combobox.ts](https://github.com/u-elements/u-elements/blob/main/packages/u-combobox/u-combobox.ts), this table is a summary:
-
-| Action | Single mode | Multiple mode |
-| :----- | :---------- | :------------ |
-| Option pick | Revert input to the typed text, then replace the `<data>` item and sync input with it. Prevented: the typed text stays until blur | Revert input to the typed text, then toggle the `<data>` item |
-| `Enter` with empty input | Remove the item. Prevented: the empty text stays until blur | Nothing |
-| `Enter` with text | If an option matches, replace the item and sync input. Otherwise announce `data-sr-invalid` (unless text equals the item) and keep the text, or create an item if `data-creatable`. Prevented: the typed text stays until blur | If an option matches, toggle the item. Otherwise announce `data-sr-invalid` (unless text equals an item) and keep the text, or create an item if `data-creatable` |
-| Blur with empty input | Remove the item. Prevented: sync input back to the item | Nothing |
-| Blur with text equal to item | Nothing | Nothing |
-| Blur with other text | If an option matches, replace the item and sync input. Otherwise sync input back to the item. Never creates, also with `data-creatable`. Prevented: sync input back to the item | Nothing |
-| Clear button | Empty the text, then remove the item. Prevented: revert input to the text before the clear | Empty the text |
-| Mount, programmatic `<data>` change, form reset | Sync input with the item, dispatching `input` but not `change` | Text is kept |
-
-Syncing the input always dispatches `input`. `change` is only dispatched when the sync follows a user commit (option pick, `Enter`, blur, clear or item removal), never on mount, programmatic `<data>` changes or form reset.
-
 ## Notes
 - The `<input>` must be a direct child of `<u-combobox>`. It is the control, and programmatic `input.value` changes are only detected on a direct child
 - `<datalist>` or `<u-datalist>` must be a child of `<u-combobox>`. The `list` attribute on `<input>` is managed automatically
 - Without a datalist, single mode is free text: the input is never overwritten
-- Single mode with a datalist always mirrors the `<data>` item, so a prefilled `input.value` without an item is cleared on mount. Multiple mode keeps it as filter text
+- Single mode with a datalist always mirrors the `<data>` item. Multiple mode keeps it as filter text.
 - Single mode acts on the first `<data>` only
 - The toggle button is hidden when using native `<datalist>`, as the native suggestion popup can not be detected programmatically
-- ARC Toolkit incorectly reports `aria-description` as an invalid ARIA-attribute
+- ARC Toolkit incorrectly reports `aria-description` as an invalid ARIA-attribute
 - ARC Toolkit does not correctly read the relation between items with `role="option"` and the ShadowDOM wrapping container `role="listbox"`
+- See full behavior spec in [u-combobx source](https://github.com/u-elements/u-elements/blob/main/packages/u-combobox/u-combobox.ts)
 
 
 ## Changelog
@@ -618,6 +604,8 @@ Syncing the input always dispatches `input`. `change` is only dispatched when th
   - Synthetic `InputEvent` without `inputType` (i.e. testing-library) does not cause incorrect option click
   - `form.reset()` syncs the clear and toggle buttons, and restores the item text in single mode
   - Toggle button closes `<u-datalist>` explicitly when open, instead of relying on the blur from mousedown, which does not happen on touch
+  - Holding `Enter` in the input, or `Enter` or `Space` on an item, commits once instead of on every key repeat
+  - Blur is handled after a press inside `<u-combobox>` that is released outside without a click, instead of being skipped
   - Firefox spell check and autofill replacements that are not an option value are treated as typing instead of reverted
   - Attribute writes that do not change a value (i.e. Vue re-setting option `value`, React syncing input `value`) do not trigger a state sync
   - The `input` event of an option pick is intercepted in the capture phase on `window`, so frameworks delegating events from `document` (i.e. Qwik) read the reverted text instead of the option value

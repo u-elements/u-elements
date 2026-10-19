@@ -6,7 +6,7 @@ import {
 	attachStyle,
 	attr,
 	customElements,
-	getFocusedElement,
+	getFocused,
 	off,
 	on,
 	UHTMLElement,
@@ -220,7 +220,7 @@ const renderTHead = (self: UHTMLDatePickerElement, table: HTMLTableElement) => {
 };
 
 const renderTbody = (self: UHTMLDatePickerElement, table: HTMLTableElement) => {
-	const hasFocus = table.contains(getFocusedElement(self));
+	const hasFocus = table.contains(getFocused(self));
 	const date = self.focusedDate;
 	const today = new Date();
 	const month = date.getMonth();

@@ -137,7 +137,7 @@ export const getRoot = (node: Node): Document | ShadowRoot => {
  * @param node The target node
  * @return The Element with focus in the current root
  */
-export const getFocusedElement = (node: Node) => getRoot(node).activeElement;
+export const getFocused = (node: Node) => getRoot(node).activeElement;
 
 /**
  * getInputLabel
@@ -227,7 +227,7 @@ export const dispatchChange = (input: HTMLInputElement) =>
  * @param {boolean} change Whether to dispatch change after input. Defaults to true unless silent. Pass false for syncs that are not user commits (i.e. mount, programmatic item changes, form reset)
  * @return {boolean} false if a consumer prevented beforeinput, in which case the value is left untouched and no input or change is dispatched
  */
-// Trigger value change in React compatible manor https://stackoverflow.com/a/46012210
+// Trigger value change in React compatible manner https://stackoverflow.com/a/46012210
 export const setValue = (
 	input: HTMLInputElement,
 	data: string,
@@ -250,25 +250,37 @@ export const setValue = (
 };
 
 /**
- * isPointerDown
- * @description Prevent unwanted "blur" events when pressing something with tabIndex=-1
- * @param {Event} [event] Optional event to set mousedown/up state
- * @return {boolean} Whether mouse is currently down
+ * onFocusLeave
+ * @description Run callback once focus has left, also after a press inside that is released outside without a click.
+ * Pressing something inside with tabindex="-1" blurs before the click refocuses, so a press defers the check until
+ * pointerup or pointercancel, then one tick, letting the click refocus first. A drag out releases without a click and still runs the check
+ * @param {Node} el Element or root to listen on. Also what counts as inside, unless isInside is given
+ * @param {Function} fn Runs when the focused element is no longer inside
+ * @param {Function} [isInside] Optional predicate, i.e. to also count a connected input outside el
+ * @return {Function} Cleanup function unbinding the listeners
  */
-// Prevent loosing focus on mousedown on <data> despite tabIndex -1
-const IS_PRESS = new WeakSet<Element>();
-export const isPointerDown = (el: Element, e?: Event) => {
-	if (e?.type === "pointerdown") {
-		IS_PRESS.add(el);
-		// pointerup is "composed" so it also bubbles from ShadowDOM up to document. pointercancel replaces pointerup when a touch turns into a scroll.
-		// Capture, so a stopPropagation in a consumer or popover handler can not leave the element stuck as pressed
-		const release = () => {
-			IS_PRESS.delete(el);
-			unbind();
-		};
-		const unbind = on(document, "pointerup pointercancel", release, EVENT_ONCE);
-	}
-	return IS_PRESS.has(el);
+export const onFocusLeave = (
+	el: Node,
+	fn: () => void,
+	isInside = (node: Node | null) => el.contains(node),
+) => {
+	let hasBlurred: true | undefined; // focusout inside happened while pressed, so check once the press ends
+	let unPress: (() => void) | undefined; // Between pointerdown inside and pointerup or pointercancel
+	const check = () => setTimeout(() => isInside(getFocused(el)) || fn(), 0); // Delay to allow focus to be set on new element
+	const end = () => {
+		if (hasBlurred) check();
+		unPress?.();
+		unPress = hasBlurred = undefined;
+	};
+	const handle = (e: Event) => {
+		if (!isInside(e.target as Node)) return; // Only presses and blurs inside count
+		if (e.type === "focusout") {
+			if (!unPress) check();
+			else hasBlurred = true; // Defer check to the end of the press
+		} else if (!unPress)
+			unPress = on(document, "pointerup pointercancel", end, EVENT_ONCE);
+	};
+	return on(el, "pointerdown focusout", handle, true); // Capture, as focusout of a descendant is handled before frameworks and the datalist
 };
 
 /**

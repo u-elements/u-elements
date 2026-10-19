@@ -8,14 +8,14 @@ import {
 	DISPLAY_BLOCK,
 	declarativeShadowRoot,
 	FOCUS_OUTLINE,
-	getFocusedElement,
+	getFocused,
 	getRoot,
 	IS_ANDROID,
 	IS_IOS,
 	isBrowser,
-	isPointerDown,
 	off,
 	on,
+	onFocusLeave,
 	onMutation,
 	preventSubmit,
 	SAFE_MULTISELECTABLE,
@@ -45,7 +45,7 @@ export const UHTMLDataListShadowRoot =
 
 let LIVE_TIMER: ReturnType<typeof setTimeout>;
 const EVENTS_IDLE_CAPTURE = "focus click keydown";
-const EVENTS_ACTIVE_BUBBLE = "focusout input pointerdown"; // Using bubble here so <u-combobox> capture input events runs before <u-datalist>
+const EVENTS_ACTIVE_BUBBLE = "input"; // Using bubble here so <u-combobox> capture input events runs before <u-datalist>. focusout and pointerdown are handled by onFocusLeave
 const TEXTS = {
 	of: "of",
 	plural: "%d hits",
@@ -61,6 +61,7 @@ export class UHTMLDataListElement extends UHTMLElement {
 	_options?: HTMLCollectionOf<HTMLOptionElement>; // Caching options to speed up performance
 	_root?: Document | ShadowRoot; // Used to consistently remember root for event delegation
 	_texts = { ...TEXTS };
+	_unfocus?: ReturnType<typeof onFocusLeave>;
 	_umutate?: ReturnType<typeof onMutation>;
 
 	static get observedAttributes() {
@@ -83,6 +84,15 @@ export class UHTMLDataListElement extends UHTMLElement {
 		attr(this, "tabindex", "-1"); // Prevent tabstop even if consumer sets overflow: auto (https://issues.chromium.org/issues/40456188)
 		on(this._root, EVENTS_IDLE_CAPTURE, this, true); // Use capture to catch non-bubling focus
 
+		// Close when focus leaves the input and the list, deferred while an option is pressed. Bound on the root as the input is outside this.
+		// Not on Android, as Samsung Internet sets keyboard-focus to <body> when screen reader is on <datalist>, so a blur must not close
+		if (!IS_ANDROID)
+			this._unfocus = onFocusLeave(
+				this._root,
+				() => onBlurred(this),
+				(node) => this._input === node || this.contains(node),
+			);
+
 		this._umutate = onMutation(this, onMutations, {
 			attributeFilter: ["disabled", "hidden", "label", "value"], // Listening to hidden attribute to update on open
 			attributes: true,
@@ -95,8 +105,9 @@ export class UHTMLDataListElement extends UHTMLElement {
 		if (this._root) off(this._root, EVENTS_IDLE_CAPTURE, this, true); // Unbind capture
 		if (this._root) off(this._root, EVENTS_ACTIVE_BUBBLE, this); // Unbind bubble
 		setInputAttributes(this, null); // Reset input
+		this._unfocus?.();
 		this._umutate?.();
-		this._umutate = this._root = this._input = undefined;
+		this._umutate = this._unfocus = this._root = this._input = undefined;
 	}
 	attributeChangedCallback(prop?: string, _prev?: string, next?: string) {
 		const text = prop?.split("data-sr-")[1] as keyof typeof TEXTS;
@@ -117,11 +128,9 @@ export class UHTMLDataListElement extends UHTMLElement {
 	handleEvent(event: Event) {
 		if (event.defaultPrevented) return;
 		if (event.type === "focus") onFocus(this, event);
-		if (event.type === "focusout") onBlur(this, event);
 		if (event.type === "click") onClick(this, event);
 		if (event.type === "input") onMutations(this);
 		if (event.type === "keydown") onKeyDown(this, event as KeyboardEvent);
-		if (event.type === "pointerdown") onPointerDown(this, event);
 	}
 	get options(): HTMLCollectionOf<HTMLOptionElement> {
 		const el = !this._options && this.querySelector('[role="option"],option'); // Support renaming u-option element
@@ -184,25 +193,14 @@ const onFocus = (self: UHTMLDataListElement, { target: el }: Event) => {
 	} else onBlurred(self);
 };
 
-const onBlur = (
-	self: UHTMLDataListElement,
-	event: Event & Partial<FocusEvent>,
-) => {
-	isPointerDown(self)
-		? event.stopImmediatePropagation() // Native datalist does not move focus out when selecting, so prevent blur events
-		: IS_ANDROID || setTimeout(onBlurred, 0, self, event); // Samsung Internet sets keyboard-focus to <body> when screen reader to <datalist>, so we should not close on blur
-};
-
+// Focus has left the input and the list (see onFocusLeave), or focus moved to another input, or a click landed outside
 const onBlurred = (self: UHTMLDataListElement) => {
-	const focus = getFocusedElement(self);
-	if (self._input === focus || self.contains(focus)) return; // Ignore if focus is still on input or inside datalist
+	const focus = getFocused(self);
+	if (self._input === focus || self.contains(focus)) return; // Ignore if focus is still on input or inside datalist, as onFocus and onClick call this directly
 	if (self._root) off(self._root, EVENTS_ACTIVE_BUBBLE, self); // Unbind events relevant to focused state
 	setExpanded(self, false);
 	self._input = undefined;
 };
-
-const onPointerDown = (self: UHTMLDataListElement, event: Event) =>
-	self.contains(event.target as Node) && isPointerDown(self, event); // Prevent unwanted blur when pressing options with tabindex="-1"
 
 const onClick = (self: UHTMLDataListElement, event: Event) => {
 	if (isInput(event.target)) onFocus(self, event); // Make sure we potentially connect, in case focus happens before u-datalist connectedCallback has run
@@ -220,13 +218,13 @@ const onClick = (self: UHTMLDataListElement, event: Event) => {
 const onKeyDown = (self: UHTMLDataListElement, event: KeyboardEvent) => {
 	if (isInput(event.target)) onFocus(self, event); // Make sure we potentially connect, in case focus happens before u-datalist connectedCallback has run
 	if (self._input !== event.target) return; // Only handle events from connected input
-	const { key, ctrlKey, metaKey, altKey } = event;
+	const { key, ctrlKey, metaKey, altKey, repeat } = event;
 	const skip = ctrlKey || metaKey || key === "Shift" || key === "Tab";
 	if (skip || (altKey && !key.startsWith("Arrow"))) return; // Skip if modifier keys or tab or non-arrow with alt
 	if (key === "Escape" && !self.hidden) event.preventDefault(); // Prevent Safari from minimizing the window and <dialog> from closing
 
-	setExpanded(self, key !== "Escape"); // Close on ESC but show on other keys
 	const isEnter = key === "Enter";
+	if (!repeat) setExpanded(self, key !== "Escape"); // Close on ESC but show on other keys, except a held Enter, which must not re-open after the pick closed the list
 	const active = attr(self._input, "aria-activedescendant");
 	const opts: HTMLOptionElement[] = [];
 	let prev = -1;
@@ -251,8 +249,8 @@ const onKeyDown = (self: UHTMLDataListElement, event: KeyboardEvent) => {
 	}
 	if (isEnter && opts[next]) {
 		event.stopImmediatePropagation(); // Native datalist does not trigger Enter on keydown on item, but instead a input event
-		preventSubmit(self._input); // Prevent form submit on enter if "focus" is inside datalist
-		opts[next].click();
+		preventSubmit(self._input); // Prevent form submit on enter if "focus" is inside datalist, also on key repeat
+		if (!repeat) opts[next].click(); // Holding Enter picks once, so a multiselect option does not toggle on every repeat
 	} else setActive(self, opts[next]);
 };
 
@@ -281,7 +279,7 @@ const onMutations = (self: UHTMLDataListElement) => {
 
 const speakHits = (self: UHTMLDataListElement, show: HTMLOptionElement[]) =>
 	!self.hidden &&
-	self._input === getFocusedElement(self) &&
+	self._input === getFocused(self) &&
 	speak(
 		`${show.some(({ value }) => value) ? `${self._texts[show[1] ? "plural" : "singular"]}`.replace("%d", `${show.length}`) : self.innerText}`,
 	);

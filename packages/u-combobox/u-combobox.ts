@@ -57,6 +57,10 @@ import { version } from "./package.json"; // Identity of this implementation
  *                 Also when reverting to an unchanged item, as the browser has already dispatched its own change with the typed text
  *                 before the deferred blur handling, so the last change must carry the final text. Never dispatches match or select
  * - revert input: set text back to the cached text
+ * - commit:       a select from a user action. The item change that follows consumes it, also when the consumer prevented
+ *                 and renders the item itself (controlled mode), so the sync dispatches change. Expires unconsumed after the
+ *                 render opportunity (one microtask, then one MessageChannel task), so a later programmatic item change dispatches no change.
+ *                 A consumer deferring the render beyond that (i.e. React startTransition, a debounced state update) is a programmatic item change
  *
  * Mount and item mutations (connectedCallback, <data> added/removed/changed, <input> replaced, data-multiple changed)
  * - Single:   sync input. The first sync after mount is deferred one microtask so frameworks can write their bound value first.
@@ -68,7 +72,8 @@ import { version } from "./package.json"; // Identity of this implementation
  * - Both:     cache text, sync clear and toggle buttons. Never match, never select
  *
  * Datalist pick (option click, or Enter on an option in <u-datalist>)
- * - Both:     revert input, then select the option. Never match. Picking <option value=""> only reverts input
+ * - Both:     revert input, then select the option. Never match. Picking <option value=""> only reverts input.
+ *             <u-datalist> cancels mousedown inside the list, so the press never blurs the input and the browser never dispatches change with the typed text
  * - Single:   replace. Accepted: sync input. Prevented: the reverted text stays until blur. Picking the current item only syncs input
  * - Multiple: toggle. Text is not changed
  *
@@ -86,7 +91,7 @@ import { version } from "./package.json"; // Identity of this implementation
  * - Multiple: nothing
  * - Readonly: nothing, also when the text was set programmatically. A readonly input can be focused, so blur is gated like every other action
  * - Single + empty text:  select to remove the item, if any. Accepted: remove. Prevented: sync input
- * - Single + same text:   nothing
+ * - Single + same text:   sync input, which only writes when the text differs from the item in surrounding whitespace
  * - Single + other text:  match, but never create from text. No result: sync input. Result equal to the current item: sync input.
  *                         Otherwise replace. Accepted: sync input. Prevented: sync input
  *
@@ -128,7 +133,7 @@ import { version } from "./package.json"; // Identity of this implementation
  * | Enter empty  | Remove item                                               | Nothing                               |
  * | Enter text   | Match -> replace/create -> sync, else announce, keep text | Match -> toggle/create, else announce |
  * | Blur empty   | Remove item                                               | Nothing                               |
- * | Blur same    | Nothing                                                   | Nothing                               |
+ * | Blur same    | Sync input (whitespace only)                              | Nothing                               |
  * | Blur other   | Match -> replace -> sync, else sync input (never creates) | Nothing                               |
  */
 
@@ -174,6 +179,13 @@ const CSS_OPTION = `option,u-option,[role="option"]`;
 const FOCUS_VISIBLE = { focusVisible: true };
 const EVENTS = "beforeinput focus click keydown mousedown"; // blur and pointerdown are handled by onFocusLeave
 const FALSE = "false";
+
+// A select from a user action, pending until the item change that follows consumes it, or it expires unconsumed after the render opportunity. See SPECIFICATION
+type Commit = {
+	focus: boolean; // Focus moved to a neighbour before the select, so a removal announces through aria-label instead of the live region
+	text: string; // Input text at the select, so the sync following the item change dispatches change only while the text is still this
+	then?: (consumed: boolean) => void; // Runs once when settled: consumed by an item change (true), or expired unconsumed (false)
+};
 const TEXTS = {
 	added: "Added",
 	clear: "Clear input",
@@ -205,13 +217,12 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	_root?: Document | ShadowRoot; // Root at connect, to listen for form reset events
 	_select?: HTMLSelectElement | null;
 	_toggle?: HTMLElement | null;
-	_focusMoved?: boolean; // Used to determine if we announce through aria-live or aria-label when items are added or removed
 	_speak = "";
 	_texts = { ...TEXTS };
 
+	_commit?: Commit; // Pending user commit (pick, Enter, blur, clear, chip removal), see dispatchSelect. Settled by identity, so a commit never settles a later one
 	_isDatalistPick?: ReturnType<typeof setTimeout>; // Timeout between beforeinput and input of a <u-datalist> pick, see onBeforeinput
 	_singleItem?: string | null; // Item value and text to detect item change in single mode. Null when no item, undefined until first sync so the first run always syncs
-	_singleValue?: string; // Input text at the last user commit in single mode (pick, Enter, blur, clear, item removal). Pending until the item change that follows is synced, and the sync dispatches change only while the text is still this, so programmatic item changes and mount never do
 	_value?: string; // Cache value to be able to revert on datalist click
 
 	static get observedAttributes() {
@@ -271,7 +282,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		this._unfocus?.();
 		this._umutate?.();
 		// biome-ignore format: next-line
-		this._singleValue = this._focusMoved = this._root = this._umutate = this._unfocus = this._clear = this._toggle = this._control = this._select = this._options = this._items = this._list = this._singleItem = this._value = undefined;
+		this._commit = this._root = this._umutate = this._unfocus = this._clear = this._toggle = this._control = this._select = this._options = this._items = this._list = this._singleItem = this._value = undefined;
 	}
 	// Explicit void return type, as the inferred one depends on the ambient setTimeout type (number in DOM, NodeJS.Timeout with @types/node),
 	// making source and bundled typings disagree when both are loaded, as in the frameworks/* harness projects
@@ -364,11 +375,13 @@ const dispatchMatch = (
 };
 
 // Returns false if prevented by comboboxbeforeselect, so the caller can decide what happens to the input.
-// Pass fromOption = true when the item comes from a match or pick: single mode then only re-confirms an existing item, while a chip removes it
+// Pass fromOption = true when the item comes from a match or pick: single mode then only re-confirms an existing item, while a chip removes it.
+// Pass then to run once the commit is settled, see Commit
 const dispatchSelect = (
 	self: UHTMLComboboxElement,
 	item: { value: string; label?: string },
 	fromOption = false,
+	then?: Commit["then"],
 ) => {
 	if (item instanceof HTMLDataElement) item = getItem(item);
 	const { control, items, multiple, values } = self;
@@ -383,24 +396,18 @@ const dispatchSelect = (
 		return true; // Already the item in single mode, so only sync the input text. Multiple mode toggles
 	}
 	if (focus) focus.focus(FOCUS_VISIBLE); // Move focus if item might be removed (can be prevented by comboboxbeforeselect)
-	self._focusMoved = !!focus; // Cache if focus was moved to determine if we should use aria-live or aria-label for announcements in onMutations
 
 	const add = tag("data", { value: item.value }, item.label || item.value);
 	const event = { bubbles: true, cancelable: true, detail: remove || add };
 	const accepted = self.dispatchEvent(
 		new CustomEvent("comboboxbeforeselect", event),
 	);
-	// Single mode remembers the committed text, so the input sync following the item change dispatches change.
-	// Also when the consumer prevents and renders the item itself (controlled mode), as the text is unchanged until then
-	const value = control?.value;
-	if (!multiple) self._singleValue = value;
-
-	// Expire both after the render opportunity if no item mutation consumed them, so a prevented select neither silences the live region
-	// nor dispatches change on a later programmatic item change. Queued after the dispatch, so the consumer's own scheduling in the handler is ahead of it
-	afterRender(() => {
-		self._focusMoved = undefined;
-		if (!multiple && self._singleValue === value) self._singleValue = undefined;
-	});
+	// Record the commit after the dispatch, as the consumer may write the input in the handler. Also when prevented, as a consumer rendering the item itself (controlled mode) consumes it through the item change.
+	// Expire after the render opportunity if no item change consumed it, so a prevented select neither silences the live region nor dispatches change on a later programmatic item change.
+	// Queued after the dispatch, so the consumer's own scheduling in the handler is ahead of it
+	const commit: Commit = { focus: !!focus, text: control?.value || "", then };
+	self._commit = commit;
+	afterRender(() => settleCommit(self, commit, false));
 	if (accepted) {
 		if (remove) remove.remove();
 		else if (!multiple && items[0])
@@ -412,29 +419,16 @@ const dispatchSelect = (
 	return false;
 };
 
-// Restore input text after a prevented select in single mode, deferred to prevent flash of previous value.
-// key is the item key before the select: restore only if the consumer did not change the item, as a changed item is already synced by onMutations and a restore would overwrite later programmatic input
-const restoreInputOnBlur = (self: UHTMLComboboxElement, key: string | null) =>
-	afterRender(() => {
-		if (self.isConnected && self.control && getItemKey(self) === key)
-			syncInputWithItemSingleMode(self, true); // Prevented select falls back to the item text
-	});
-
-// Clear reverts to the text before the clear without change, as the text ends up unchanged.
-// A consumer removing the item after the clear (controlled mode) commits the emptied text, so change is dispatched then
-const restoreInputOnClear = (
+// Settle a commit once: consumed by an item change, or expired unconsumed after the render opportunity. No-op if already settled or superseded by a later commit
+const settleCommit = (
 	self: UHTMLComboboxElement,
-	key: string | null,
-	text: string,
-) =>
-	afterRender(() => {
-		const { control, isConnected } = self;
-		if (!isConnected || !control) return;
-		if (getItemKey(self) !== key) {
-			if (!control.value) dispatchChange(control); // Item changed by consumer, so only commit if the text is still emptied, as a replaced item is already synced with change
-		} else if (text !== control.value)
-			setValue(control, text, "insertText", false); // Prevent input event being handled as "click" on option
-	});
+	commit: Commit | undefined,
+	consumed = true,
+) => {
+	if (!commit || self._commit !== commit) return;
+	self._commit = undefined;
+	commit.then?.(consumed);
+};
 
 // Shared by Enter and blur, see SPECIFICATION. Blur comes from onFocusLeave, deferred while an item or button is pressed
 const onCommit = (self: UHTMLComboboxElement, isBlur = false) => {
@@ -442,24 +436,26 @@ const onCommit = (self: UHTMLComboboxElement, isBlur = false) => {
 	if (!control || !self.isConnected) return; // Unmounted before the blur timeout
 	if (isBlur && (multiple || control.disabled || control.readOnly)) return; // Nothing to do in multiple mode. Blur bypasses handleEvent, so apply the same inert gate as every other action
 	const value = control.value.trim();
-	const key = getItemKey(self); // Snapshot before dispatchSelect, so a prevented select only restores if the consumer left the item unchanged
 	const isItem = multiple
 		? Array.from(items, getText).includes(value)
 		: getText(items[0]) === value; // Text equal to a confirmed item is never invalid. Enter still matches against the options, as an item can only be toggled through its option
-	let accepted = true;
+	// A prevented select on blur falls back to the item once the commit expires, as leaving the field is not a confirmation.
+	// A consumer changing the item meanwhile consumes the commit, and the item change is already synced.
+	// Enter keeps the typed text when prevented
+	const then = isBlur
+		? (consumed: boolean) => consumed || syncInputWithItemSingleMode(self, true)
+		: undefined;
 
 	if (!value) {
-		if (!multiple && items[0]) accepted = dispatchSelect(self, items[0]); // Empty text removes the item in single mode, and is nothing in multiple mode
+		if (!multiple && items[0]) dispatchSelect(self, items[0], false, then); // Empty text removes the item in single mode, and is nothing in multiple mode
 	} else if (!isBlur || !isItem) {
-		// Blur on the item text needs nothing, as the item is a confirmed selection
 		const match = dispatchMatch(self, value, !isBlur); // Blur never creates from text, as leaving the field is not a confirmation
-		if (match) accepted = dispatchSelect(self, match, true);
+		if (match) dispatchSelect(self, match, true, then);
 		else if (isBlur)
 			syncInputWithItemSingleMode(self, true); // No match on blur falls back to the item
 		else if (list && !isItem && attr(list, "aria-busy") !== "true")
 			speak(self._texts.invalid); // No match on Enter keeps the typed text
-	}
-	if (!accepted && isBlur) restoreInputOnBlur(self, key); // Enter keeps the typed text when prevented, blur falls back to the item
+	} else syncInputWithItemSingleMode(self, true); // Blur on the item text only trims surrounding whitespace, as the item is a confirmed selection
 };
 
 // Keep focus on the input when pressing the toggle or clear button, so no blur closes <u-datalist> before the click and onClick can read live state.
@@ -492,16 +488,20 @@ const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
 
 	if (control && clear?.contains(target as Node)) {
 		event.preventDefault(); // Prevent button[type="reset"]
-		const value = self._value || "";
+		const text = self._value || "";
 		const item = multiple ? undefined : items[0];
-		const key = getItemKey(self); // Snapshot the item key before dispatchSelect, so restore only happens if the consumer left it unchanged (as i.e. Solid explicitly updates DOM synchronously)
-		// With an item, change is dispatched once the removal is settled, so a prevented removal that reverts the text dispatches no change at all
+
+		// With an item, the emptied text is committed once the removal has consumed the commit, also by a consumer in controlled mode, and only if the text is still empty,
+		// as a replaced item is already synced with change. A prevented removal expires the commit and reverts to the text before the clear without change, as the text ends up unchanged
+		const then = (consumed: boolean) => {
+			if (consumed) return control.value || dispatchChange(control);
+			if (text !== control.value) setValue(control, text, "insertText", false); // Prevent input event being handled as "click" on option
+		};
+
+		// If a synchronous input handler removes the selected <data> when the text is cleared, setValue runs that handler before this call
 		if (setValue(control, "", "deleteContentBackward", !item) && item) {
-			// If a synchronous input handler removes the selected <data> when the text is cleared, setValue runs that handler before this call
-			// Check that the item is still present after dispatching input before requesting its removal.
-			if (!self.contains(item) || dispatchSelect(self, item))
-				dispatchChange(control); // Removed, so the emptied text is committed. The sync following the removal has nothing to write
-			else restoreInputOnClear(self, key, value); // Single mode should restore input if the item removal was prevented
+			if (self.contains(item)) dispatchSelect(self, item, false, then);
+			else dispatchChange(control); // Already removed, so the emptied text is committed now
 		}
 		control.focus();
 		return hasHiddenDatalist || control.click(); // Open list if it was open before clicking clear
@@ -566,6 +566,7 @@ const onKeyDown = (self: UHTMLComboboxElement, e: KeyboardEvent) => {
 const onKeyDownControl = (self: UHTMLComboboxElement, e: KeyboardEvent) => {
 	const { clear, control, creatable, items, list } = self;
 	const isBackwards = e.key === "ArrowLeft" || e.key === "Backspace";
+	if (e.isComposing || e.keyCode === 229) return; // The IME owns Enter and arrows while composing. Chrome has isComposing false on the keydown starting a composition, but keyCode 229
 
 	// selectionEnd is null for type="email" and type="number", so only act when caret is known to be at start
 	if (isBackwards && control?.selectionEnd === 0) {
@@ -641,21 +642,20 @@ const onMutations = (self: UHTMLComboboxElement, edit?: MutationRecord[]) => {
 	attr(self._listbox, ARIA_LABEL, _texts.items);
 	self._umutate?.takeRecords(); // Clear mutation records caused by our own attribute writes. Must run before dispatching events below, so consumer mutations made in event handlers are kept
 	syncSingleInputWithItemChange(self); // Runs last as it dispatches events
+	if (edits.length) settleCommit(self, self._commit); // An added or removed item consumes the pending commit, also in multiple mode and without a datalist
 };
 
 // Announce an added or removed item through aria-label when focus moved (chip removal), otherwise through the live region
 const announceItemChange = (self: UHTMLComboboxElement, edits: Node[]) => {
 	const { _texts, control, multiple } = self;
 	const focus = getFocused(self);
-	const focusMoved = self._focusMoved;
 	const doSpeak = multiple ? edits.length === 1 : edits[0] === focus; // Only speak in single mode if item is visible and focused
-	self._focusMoved = undefined; // Consumed, so a later programmatic item change does not reuse a stale focus move
 	if (!doSpeak || !control || !self.contains(focus)) return;
 
 	const label = attr(control, ARIA_LABEL); // Store so we can revert after announcement
 	self._speak = `${_texts[edits[0].isConnected ? "added" : "removed"]} ${getText(edits[0])}, `; // Updates aria-labels
 	attr(control, ARIA_LABEL, `${self._speak}${getInputLabel(control)}`); // Make sure control also can aria-label-announce
-	if (!focusMoved) setTimeout(() => speak(self._speak.slice(0, -2))); // Aria-live when no focus move, remove trailing command, setTimeout to take presence
+	if (!self._commit?.focus) setTimeout(() => speak(self._speak.slice(0, -2))); // Aria-live when no focus move belongs to the pending commit, remove trailing command, setTimeout to take presence
 	setTimeout(speakReset, 300, self, label); // 300ms delay so screen readers announces new aria-label. Note: Causes short double/hiccup announce in NVDA Firefox
 };
 
@@ -673,9 +673,9 @@ const syncSingleInputWithItemChange = (self: UHTMLComboboxElement) => {
 			if (self.isConnected) syncInputWithItemSingleMode(self);
 		});
 	else if (prev !== next) {
-		const dispatchChange = self._singleValue === self.control.value; // Dispatch change only if the item change follows a user commit, and the text is still the committed text
-		self._singleValue = undefined; // Consumed, also when no text needed syncing (i.e. clear removed the item), so a later programmatic item change does not dispatch change
-		syncInputWithItemSingleMode(self, dispatchChange);
+		const commit = self._commit;
+		syncInputWithItemSingleMode(self, commit?.text === self.control.value); // Dispatch change only if the item change follows a user commit, and the text is still the committed text
+		settleCommit(self, commit); // Consumed, also when no text needed syncing (i.e. clear removed the item), so a later programmatic item change does not dispatch change
 	}
 };
 
@@ -762,7 +762,7 @@ const syncOptionsWithItems = (self: UHTMLComboboxElement) => {
 };
 
 // TODO: aria-required="true" => setCustomValidity
-// Pass commit = true when the sync follows a user commit, so change is dispatched like the browser does on user input
+// Pass dispatchChange = true when the sync follows a user commit, so change is dispatched like the browser does on user input
 const syncInputWithItemSingleMode = (
 	self: UHTMLComboboxElement,
 	dispatchChange = false,
@@ -814,7 +814,8 @@ const setSelected = (el: Element, selected: boolean) =>
 // Compatibility with <u-datalist> before 3.0.0. To drop support, delete this section and inline false at its two call sites:
 // - Before 2.0.3 the pick events had an empty inputType instead of insertReplacementText (onBeforeinput)
 // - Before 3.0.0 the picked value was written through the prototype setter, which must not be taken for programmatic input (value setter below)
-const isLegacyPickType = (e: Partial<InputEvent>) => e.inputType === "";
+const isLegacyPickType = (e: Partial<InputEvent>) =>
+	e.inputType === "" && typeof e.data === "string"; // Old picks always carried the option value as data, unlike a synthetic beforeinput without init (i.e. testing-library)
 const isLegacyPickWrite = (self: UHTMLComboboxElement) =>
 	!!self._isDatalistPick;
 

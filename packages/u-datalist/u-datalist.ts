@@ -44,7 +44,7 @@ export const UHTMLDataListShadowRoot =
 	declarativeShadowRoot(UHTMLDataListStyle);
 
 let LIVE_TIMER: ReturnType<typeof setTimeout>;
-const EVENTS_IDLE_CAPTURE = "focus click keydown";
+const EVENTS_IDLE_CAPTURE = "focus click keydown mousedown";
 const EVENTS_ACTIVE_BUBBLE = "input"; // Using bubble here so <u-combobox> capture input events runs before <u-datalist>. focusout and pointerdown are handled by onFocusLeave
 const TEXTS = {
 	of: "of",
@@ -131,6 +131,7 @@ export class UHTMLDataListElement extends UHTMLElement {
 		if (event.type === "click") onClick(this, event);
 		if (event.type === "input") onMutations(this);
 		if (event.type === "keydown") onKeyDown(this, event as KeyboardEvent);
+		if (event.type === "mousedown") onMousedown(this, event);
 	}
 	get options(): HTMLCollectionOf<HTMLOptionElement> {
 		const el = !this._options && this.querySelector('[role="option"],option'); // Support renaming u-option element
@@ -202,6 +203,12 @@ const onBlurred = (self: UHTMLDataListElement) => {
 	self._input = undefined;
 };
 
+// Keep focus on the input when pressing inside the list, so no blur closes it or makes the browser dispatch change with the typed text before the pick.
+// mousedown (also the compatibility mousedown after a touch tap) is what moves focus, and cancelling it never suppresses the click or scrollbar drag
+const onMousedown = (self: UHTMLDataListElement, event: Event) => {
+	if (self.contains(event.target as Node)) event.preventDefault();
+};
+
 const onClick = (self: UHTMLDataListElement, event: Event) => {
 	if (isInput(event.target)) onFocus(self, event); // Make sure we potentially connect, in case focus happens before u-datalist connectedCallback has run
 	if (self._input === event.target) return setExpanded(self, true);
@@ -219,12 +226,14 @@ const onKeyDown = (self: UHTMLDataListElement, event: KeyboardEvent) => {
 	if (isInput(event.target)) onFocus(self, event); // Make sure we potentially connect, in case focus happens before u-datalist connectedCallback has run
 	if (self._input !== event.target) return; // Only handle events from connected input
 	const { key, ctrlKey, metaKey, altKey, repeat } = event;
+	const isComposing = event.isComposing || event.keyCode === 229; // Chrome has isComposing false on the keydown starting a composition, but keyCode 229
 	const skip = ctrlKey || metaKey || key === "Shift" || key === "Tab";
 	if (skip || (altKey && !key.startsWith("Arrow"))) return; // Skip if modifier keys or tab or non-arrow with alt
-	if (key === "Escape" && !self.hidden) event.preventDefault(); // Prevent Safari from minimizing the window and <dialog> from closing
+	if (key === "Escape" && !self.hidden && !isComposing) event.preventDefault(); // Prevent Safari from minimizing the window and <dialog> from closing
 
 	const isEnter = key === "Enter";
 	if (!repeat) setExpanded(self, key !== "Escape"); // Close on ESC but show on other keys, except a held Enter, which must not re-open after the pick closed the list
+	if (isComposing) return; // The IME owns Enter, Escape and arrows while composing, so only open the list
 	const active = attr(self._input, "aria-activedescendant");
 	const opts: HTMLOptionElement[] = [];
 	let prev = -1;

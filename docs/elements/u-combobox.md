@@ -577,6 +577,7 @@ const renderToStaticMarkup = (data: string, options: string) =>
 - Single mode with a datalist always mirrors the `<data>` item. Multiple mode keeps it as filter text.
 - Single mode acts on the first `<data>` only
 - The toggle button is hidden when using native `<datalist>`, as the native suggestion popup can not be detected programmatically
+- In controlled mode, `change` is dispatched by the input sync that follows the `<data>` change, as long as the framework renders within the next render opportunity (one microtask, then one MessageChannel task). A render deferred beyond that (i.e. React `startTransition`, a debounced state update) is treated as a programmatic `<data>` change and dispatches `input` but not `change`
 - ARC Toolkit incorrectly reports `aria-description` as an invalid ARIA-attribute
 - ARC Toolkit does not correctly read the relation between items with `role="option"` and the ShadowDOM wrapping container `role="listbox"`
 - See full behavior spec in [u-combobx source](https://github.com/u-elements/u-elements/blob/main/packages/u-combobox/u-combobox.ts)
@@ -610,6 +611,8 @@ const renderToStaticMarkup = (data: string, options: string) =>
   - Attribute writes that do not change a value (i.e. Vue re-setting option `value`, React syncing input `value`) do not trigger a state sync
   - The `input` event of an option pick is intercepted in the capture phase on `window`, so frameworks delegating events from `document` (i.e. Qwik) read the reverted text instead of the option value
   - Input sync after a prevented `comboboxbeforeselect` on blur is deferred, so frameworks rendering `<data>` asynchronously do not see the previous value flash
+  - `Enter` is ignored while composing with an Input Method Editor (IME), so confirming a composition does not match or select
+  - Pending commits are settled by identity, so a later commit with the same text is never expired by an earlier one
   - The `comboboxprogrammaticinput` event is removed
   - Option picks from `<u-datalist>` 2.0.3 and older, which set `input.value` through the prototype setter, are no longer taken for programmatic input, so the typed text is kept
 - **2.1.5:** Fix state handling when mode is multiple and controlled (i.e. React)

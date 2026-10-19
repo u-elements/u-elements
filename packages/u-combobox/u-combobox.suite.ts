@@ -357,6 +357,29 @@ export const comboboxSuite = (
 					expect(await logged(page, "comboboxbeforeselect")).toHaveLength(2);
 				});
 
+				test("blur trims whitespace around the item text without matching", async ({
+					page,
+				}) => {
+					await render(page, { items: [BERGEN] });
+					const input = page.locator("#input");
+					const items = page.locator("u-combobox data");
+					await expect(input).toHaveValue("Bergen");
+					await resetLog(page, "comboboxbeforematch");
+					await resetLog(page, "comboboxbeforeselect");
+					await resetDocLog(page);
+
+					await input.click();
+					await input.fill("  Bergen  ");
+					await input.blur();
+					await expect(input).toHaveValue("Bergen"); // Synced to the item text, as the padded text is the item
+					await expect(items).toHaveText(["Bergen"]);
+					await expect
+						.poll(() => docLogged(page, "change").then((log) => log.slice(-1)))
+						.toEqual(["Bergen"]); // The last change carries the final text, as the browser dispatched its own with the padded text
+					expect(await logged(page, "comboboxbeforematch")).toEqual([]); // A confirmed item is never matched
+					expect(await logged(page, "comboboxbeforeselect")).toEqual([]);
+				});
+
 				test("Enter matches, keeps text and announces on no match, and clears on empty", async ({
 					page,
 				}) => {
@@ -739,9 +762,35 @@ export const comboboxSuite = (
 					await expect
 						.poll(() => docLogged(page, "input"))
 						.toEqual(["B", "Be", "Ber", "Bergen"]); // The click input is stopped, the sync dispatches its own
-					expect((await docLogged(page, "change")).slice(-1)).toEqual([
-						"Bergen",
-					]); // The sync dispatches change last. Earlier change events from the browser or datalist are not suppressed
+					if (IS_NATIVE)
+						expect((await docLogged(page, "change")).slice(-1)).toEqual([
+							"Bergen",
+						]); // The sync dispatches change last, after the change of the simulated native pick
+					else expect(await docLogged(page, "change")).toEqual(["Bergen"]); // Only the sync dispatches change, as the pick was reverted and the text was unchanged
+				});
+
+				test("dispatches no change on an option click that keeps the text in multiple mode", async ({
+					page,
+				}) => {
+					test.skip(
+						IS_NATIVE,
+						"The simulated native pick dispatches change itself",
+					);
+					await render(page, { multiple: true });
+					await resetDocLog(page);
+					const input = page.locator("#input");
+					const items = page.locator("u-combobox data");
+
+					await input.pressSequentially("Ber");
+					await selectOption(
+						input,
+						page.locator(OPT_TAG, { hasText: "Bergen" }),
+					);
+					await expect(items).toHaveText(["Bergen"]);
+					await expect(input).toHaveValue("Ber");
+					await afterRendered(page);
+					expect(await docLogged(page, "input")).toEqual(["B", "Be", "Ber"]); // The click input is stopped
+					expect(await docLogged(page, "change")).toEqual([]); // The text ends up unchanged, so no change
 				});
 
 				test("dispatches change only when the sync follows a user commit", async ({
@@ -1460,6 +1509,32 @@ export const comboboxSuite = (
 					await expect(input).toHaveValue("Ber"); // Not reverted
 					await expect(page.locator("u-combobox data")).toHaveCount(0);
 					expect(await logged(page, "input")).toEqual(["Ber"]); // Propagated to consumer
+				});
+
+				test("treats synthetic beforeinput without data followed by input as typing", async ({
+					page,
+				}) => {
+					// Mimics @testing-library fireEvent.beforeInput(input) followed by fireEvent.input(input, { target: { value } }).
+					// A pick from <u-datalist> before 2.0.3 also had an empty inputType, but always carried the option value as data
+					await render(page, { multiple: true });
+					await resetLog(page, "input");
+					const input = page.locator("#input");
+
+					await input.evaluate((el) => {
+						const input = el as HTMLInputElement;
+						const proto = HTMLInputElement.prototype;
+						input.dispatchEvent(
+							new InputEvent("beforeinput", { bubbles: true }),
+						);
+						Object.getOwnPropertyDescriptor(proto, "value")?.set?.call(
+							input,
+							"Bergen", // An option value, which a flagged pick would select
+						);
+						input.dispatchEvent(new InputEvent("input", { bubbles: true }));
+					});
+					await expect(input).toHaveValue("Bergen"); // Not reverted
+					await expect(page.locator("u-combobox data")).toHaveCount(0);
+					expect(await logged(page, "input")).toEqual(["Bergen"]); // Propagated to consumer
 				});
 
 				test("treats insertReplacementText without an option value as typing", async ({
@@ -2480,6 +2555,37 @@ export const comboboxSuite = (
 					await expect(input).toBeFocused();
 					await input.press("ArrowLeft");
 					await expect(input).toBeFocused();
+				});
+
+				test("ignores Enter while composing with an IME", async ({ page }) => {
+					await render(page, { creatable: true });
+					await resetLog(page, "comboboxbeforematch");
+					await resetLog(page, "comboboxbeforeselect");
+					const input = page.locator("#input");
+					const items = page.locator("u-combobox data");
+					const composingEnter = (el: Element, init: KeyboardEventInit) =>
+						el.dispatchEvent(
+							new KeyboardEvent("keydown", {
+								bubbles: true,
+								cancelable: true,
+								key: "Enter",
+								...init,
+							}),
+						);
+
+					await input.click();
+					await input.fill("Custom");
+					if (!IS_NATIVE) await input.press("ArrowDown"); // Activate an option in <u-datalist>, which Enter would otherwise pick
+					await input.evaluate(composingEnter, { isComposing: true }); // Confirming a composition, as in Firefox and Safari
+					await input.evaluate(composingEnter, { keyCode: 229 }); // As in Chrome, where isComposing can be false with keyCode 229
+					await page.waitForTimeout(100); // Give a wrongly handled Enter time to surface
+					await expect(items).toHaveCount(0);
+					await expect(input).toHaveValue("Custom");
+					expect(await logged(page, "comboboxbeforematch")).toEqual([]);
+					expect(await logged(page, "comboboxbeforeselect")).toEqual([]);
+
+					await input.press("Enter"); // A real Enter commits
+					await expect(items).toHaveCount(1);
 				});
 
 				test("navigates between items and input with arrow keys", async ({

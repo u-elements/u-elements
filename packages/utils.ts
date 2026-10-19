@@ -223,21 +223,23 @@ export const dispatchChange = (input: HTMLInputElement) =>
  * @description Set input value like the browser does on user input
  * @param {HTMLInputElement} input Input element to set value on
  * @param {string} data The new value
- * @param {inputType} type of the new event, pass false if silent
- * @param {boolean} change Whether to dispatch change after input. Defaults to true unless silent. Pass false for syncs that are not user commits (i.e. mount, programmatic item changes, form reset)
+ * @param {inputType} type of the new event, pass false if silent. Required, as an empty inputType is what picks from <u-datalist> before 2.0.3 look like
+ * @param {boolean} change Whether to dispatch change after input. Defaults to true unless silent. Pass false for syncs that are not user commits (i.e. mount, programmatic item changes, form reset).
+ * Like the browser, change is only dispatched if the value is still changed after the input event, as an input handler may revert the write (i.e. <u-combobox> reverting a datalist pick)
  * @return {boolean} false if a consumer prevented beforeinput, in which case the value is left untouched and no input or change is dispatched
  */
 // Trigger value change in React compatible manner https://stackoverflow.com/a/46012210
 export const setValue = (
 	input: HTMLInputElement,
 	data: string,
-	type: string | false = "",
+	type: string | false,
 	change = type !== false,
 ) => {
 	const silent = type === false;
 	const event = { bubbles: true, composed: true, data, inputType: type || "" };
 	const before = { ...event, cancelable: true }; // beforeinput is cancelable like the native event, so a consumer can reject the edit
 	const inputType = input.selectionEnd === null && input.type; // Input types without selection support (i.e. 'email', 'number', 'date') do not support setRangeText, so temporarily switch to text
+	const prev = input.value;
 
 	if (!silent && !input.dispatchEvent(new InputEvent("beforeinput", before)))
 		return false;
@@ -245,7 +247,7 @@ export const setValue = (
 	input.setRangeText(data, 0, input.value.length, "end"); // Using setRangeText to not touch HTMLInputElement.prototype, aligning with browser standard
 	if (inputType) input.type = inputType; // Revert to original input type
 	if (!silent) input.dispatchEvent(new InputEvent("input", event));
-	if (change) dispatchChange(input);
+	if (change && input.value !== prev) dispatchChange(input); // Only if the value ended up changed, as an input handler may have reverted it
 	return true;
 };
 
@@ -267,7 +269,7 @@ export const onFocusLeave = (
 	let hasBlurred: true | undefined; // focusout inside happened while pressed, so check once the press ends
 	let unPress: (() => void) | undefined; // Between pointerdown inside and pointerup or pointercancel
 	const check = () => setTimeout(() => isInside(getFocused(el)) || fn(), 0); // Delay to allow focus to be set on new element
-	const end = () => {
+	const cancel = () => {
 		if (hasBlurred) check();
 		unPress?.();
 		unPress = hasBlurred = undefined;
@@ -278,9 +280,13 @@ export const onFocusLeave = (
 			if (!unPress) check();
 			else hasBlurred = true; // Defer check to the end of the press
 		} else if (!unPress)
-			unPress = on(document, "pointerup pointercancel", end, EVENT_ONCE);
+			unPress = on(document, "pointerup pointercancel", cancel, EVENT_ONCE);
 	};
-	return on(el, "pointerdown focusout", handle, true); // Capture, as focusout of a descendant is handled before frameworks and the datalist
+	const unHandle = on(el, "pointerdown focusout", handle, true); // Capture, as focusout of a descendant is handled before frameworks and the datalist
+	return () => {
+		unHandle();
+		unPress?.();
+	};
 };
 
 /**

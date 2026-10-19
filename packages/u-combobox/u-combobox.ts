@@ -49,8 +49,8 @@ import { version } from "./package.json"; // Identity of this implementation
  * - select:       dispatch comboboxbeforeselect with the item to add or remove.
  *                 Accepted: the DOM is changed and comboboxafterselect is dispatched. Prevented: the DOM is unchanged
  * - toggle:       multiple mode select: removes the item if its value is already an item, otherwise adds it
- * - replace:      single mode select: replaces the current item in place (if any), otherwise adds the new one.
- *                 Extra <data> kept from multiple mode are left untouched
+ * - replace:      single mode select: removes every <data>, then adds the new item. A removal only removes.
+ *                 Extra <data> kept from multiple mode are therefore dropped on the first select, as single mode holds at most one item
  * - sync input:   set text to the item's text, or empty when there is no item. Only in single mode with a datalist,
  *                 and only when the text differs. Dispatches input, and change only when the sync follows a user commit
  *                 (pick, Enter, blur, clear, item removal), never on mount, programmatic item changes or form reset.
@@ -118,7 +118,7 @@ import { version } from "./package.json"; // Identity of this implementation
  * - Single:   sync input
  *
  * Runtime mode change
- * - data-multiple removed: the first item is the item, extra <data> are kept in DOM but not mirrored, also through later selects. Sync input
+ * - data-multiple removed: the first item is the item, extra <data> are kept in DOM but not mirrored until the first select drops them. Sync input
  * - data-multiple added:   all <data> are items. Text is kept
  * - data-creatable:        only affects the next Enter
  *
@@ -284,17 +284,14 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		// biome-ignore format: next-line
 		this._commit = this._root = this._umutate = this._unfocus = this._clear = this._toggle = this._control = this._select = this._options = this._items = this._list = this._singleItem = this._value = undefined;
 	}
-	// Explicit void return type, as the inferred one depends on the ambient setTimeout type (number in DOM, NodeJS.Timeout with @types/node),
-	// making source and bundled typings disagree when both are loaded, as in the frameworks/* harness projects
 	handleEvent(e: Event): void {
 		const { type, target } = e;
 		if (type === "reset") {
 			if (target === this.control?.form) setTimeout(onReset, 0, this, e); // Controls are reset after the reset event has dispatched, so defer. Also when disabled or readonly
-			return;
+			return; // Explicit void return type, returning setTimeout causes diffent types in DOM and Node
 		}
 		if (type === "input" && e.composedPath()[0] !== this.control) return; // Listener is on window or this, so check the real target also inside nested shadow roots
-		if (type !== "input" && (this.control?.disabled || this.control?.readOnly))
-			return; // input passes while inert, as the text of a sync must be cached and setRangeText bypasses the value setter. No user action dispatches input then, so only syncs and consumer writes reach onInput
+		if (type !== "input" && isInert(this)) return; // input passes while inert, as the text of a sync must be cached and setRangeText bypasses the value setter. No user action dispatches input then, so only syncs and consumer writes reach onInput
 		if (type === "beforeinput") onBeforeinput(this, e);
 		if (type === "click") onClick(this, e as MouseEvent);
 		if (type === "focus") speak(); // Prepare for aria-live announcements
@@ -361,11 +358,13 @@ const dispatchMatch = (
 	let match: HTMLOptionElement | undefined;
 
 	if (list) {
-		match = [...options].find((o) => getLabel(o).trim().toLowerCase() === find);
+		match = [...options].find(
+			(o) => !isDisabled(o) && getLabel(o).trim().toLowerCase() === find,
+		);
 		const event = { bubbles: true, cancelable: true, detail: match };
 
 		if (!self.dispatchEvent(new CustomEvent("comboboxbeforematch", event)))
-			match = [...options].find(getSelected); // Prevented means custom matching, so use the first option the consumer selected
+			match = [...options].find(isSelected); // Prevented means custom matching, so use the first option the consumer selected
 
 		syncOptionsWithItems(self); // Keep option selection on the current items, as consumer can change option.selected in comboboxbeforematch. The matched option is selected by onMutations once its <data> is added, so a prevented or restored select never leaves a stale selection
 	}
@@ -383,6 +382,7 @@ const dispatchSelect = (
 	fromOption = false,
 	then?: Commit["then"],
 ) => {
+	settleCommit(self, self._commit, false); // A superseded commit expires unconsumed, so a pending blur or clear revert runs before this select reads the text. Must run first, as the revert would otherwise rewrite the input after the new commit recorded its text, and the sync that follows would skip change
 	if (item instanceof HTMLDataElement) item = getItem(item);
 	const { control, items, multiple, values } = self;
 	const index = values.indexOf(item.value); // Single mode only acts on the first item, as extra <data> kept from multiple mode are not mirrored
@@ -409,9 +409,8 @@ const dispatchSelect = (
 	self._commit = commit;
 	afterRender(() => settleCommit(self, commit, false));
 	if (accepted) {
+		if (!multiple) for (const el of [...items]) el.remove(); // Single mode holds at most one item, so extras kept from multiple mode are dropped on the first select. Spread, as items is live
 		if (remove) remove.remove();
-		else if (!multiple && items[0])
-			items[0].replaceWith(add); // Replace in place, so extra <data> kept from multiple mode are untouched and the new item stays first
 		else control?.insertAdjacentElement("beforebegin", add);
 		self.dispatchEvent(new CustomEvent("comboboxafterselect", event));
 		return true;
@@ -434,7 +433,7 @@ const settleCommit = (
 const onCommit = (self: UHTMLComboboxElement, isBlur = false) => {
 	const { control, items, list, multiple } = self;
 	if (!control || !self.isConnected) return; // Unmounted before the blur timeout
-	if (isBlur && (multiple || control.disabled || control.readOnly)) return; // Nothing to do in multiple mode. Blur bypasses handleEvent, so apply the same inert gate as every other action
+	if (isBlur && (multiple || isInert(self))) return; // Nothing to do in multiple mode. Blur bypasses handleEvent, so apply the same inert gate as every other action
 	const value = control.value.trim();
 	const isItem = multiple
 		? Array.from(items, getText).includes(value)
@@ -447,7 +446,9 @@ const onCommit = (self: UHTMLComboboxElement, isBlur = false) => {
 		: undefined;
 
 	if (!value) {
-		if (!multiple && items[0]) dispatchSelect(self, items[0], false, then); // Empty text removes the item in single mode, and is nothing in multiple mode
+		// Empty text removes the item in single mode, and is nothing in multiple mode
+		if (!multiple && items[0]) dispatchSelect(self, items[0], false, then);
+		else if (isBlur) syncInputWithItemSingleMode(self, true); // Sync input to trim input value
 	} else if (!isBlur || !isItem) {
 		const match = dispatchMatch(self, value, !isBlur); // Blur never creates from text, as leaving the field is not a confirmation
 		if (match) dispatchSelect(self, match, true, then);
@@ -662,8 +663,9 @@ const announceItemChange = (self: UHTMLComboboxElement, edits: Node[]) => {
 // Sync input with item in single mode with list, but only if item has actually changed
 const syncSingleInputWithItemChange = (self: UHTMLComboboxElement) => {
 	if (self.multiple || !self.list || !self.control) return;
+	const item = self.items[0];
 	const prev = self._singleItem;
-	const next = getItemKey(self);
+	const next = item ? JSON.stringify([getText(item), getValue(item)]) : null; // Key on value and text, as a datalist pick between options with equal labels only changes the value;
 	self._singleItem = next;
 
 	// First sync is deferred, as frameworks write their bound input value after insertion (Vue v-model mounted, Angular ngModel) or ignore events during render (React commit)
@@ -732,8 +734,8 @@ const syncSelectWithItems = (self: UHTMLComboboxElement) => {
 
 const syncButtonsWithInput = (self: UHTMLComboboxElement) => {
 	const { clear, control, toggle, list } = self;
-	const isInert = control?.disabled || control?.readOnly;
-	const isIdle = !control?.value || isInert;
+	const isInertControl = isInert(self);
+	const isIdle = !control?.value || isInertControl;
 	if (clear?.nodeName === "DEL") attr(clear, "role", "button"); // Backwards compatibility for older versions using <del> as clear button
 	if (clear) {
 		const focused = !isIdle && clear === getFocused(self); // Keep focusable and visible to screen readers while focused after tabbing to clear, as closing the datalist triggers a sync. Never while idle, as setting hidden on the focused clear blurs it synchronously in Chromium, re-entering this sync before the outer call writes its stale focused state
@@ -744,7 +746,8 @@ const syncButtonsWithInput = (self: UHTMLComboboxElement) => {
 	}
 	if (toggle) {
 		// Show toggle only if idle, not disabled or readonly, and <u-datalist> is present, as native <datalist> can not be opened programmatically
-		const show = isIdle && !isInert && list && list.nodeName !== "DATALIST";
+		const show =
+			isIdle && !isInertControl && list && list.nodeName !== "DATALIST";
 		attr(toggle, ARIA_LABEL) || attr(toggle, ARIA_LABEL, self._texts.toggle); // Set default aria-label if not set by consumer
 		attr(toggle, "aria-hidden", `${IS_IOS || IS_ANDROID}`); // Hide from screen readers to keep datalist open on swipe right navigation
 		attr(toggle, "hidden", show ? null : "");
@@ -758,7 +761,8 @@ const syncOptionsWithItems = (self: UHTMLComboboxElement) => {
 	const { _texts, list, multiple, values, options } = self;
 	attr(list, "data-sr-of", _texts.of); // Forward of text
 	attr(list, SAFE_MULTISELECTABLE, `${multiple}`); // Forward multiselect
-	for (const opt of options) setSelected(opt, values.includes(getValue(opt))); // u-option might not be initialized yet
+	for (const opt of options)
+		attr(opt, "selected", values.includes(getValue(opt)) ? "" : null); // u-option might not be initialized yet
 };
 
 // TODO: aria-required="true" => setCustomValidity
@@ -771,7 +775,8 @@ const syncInputWithItemSingleMode = (
 	const { control, items } = self;
 	const value = getText(items[0]);
 	const action = value ? "insertText" : "deleteContentBackward";
-	if (value !== control.value) setValue(control, value, action, dispatchChange); // Prevent input event being handled as "click" on option. The input event caches the text in onInput, also while disabled or readonly
+	if (value !== control.value)
+		setValue(control, value, action, dispatchChange, false); // Not cancelable, as the sync mirrors a confirmed item and the veto point is comboboxbeforeselect. A cancelled sync would leave the input showing text the item state no longer has. Prevent input event being handled as "click" on option. The input event caches the text in onInput, also while disabled or readonly
 };
 
 // Mutations helpers
@@ -800,16 +805,16 @@ function isModeChange(this: UHTMLComboboxElement, r: MutationRecord) {
 	return ((r.oldValue ?? FALSE) !== FALSE) !== this.multiple; // Ignore writes that do not change mode (i.e. null to "false" from frameworks)
 }
 
-// Item helpers
-const getItemKey = ({ items: [item] }: UHTMLComboboxElement) =>
-	item ? JSON.stringify([getText(item), getValue(item)]) : null; // Key on value and text, as a datalist pick between options with equal labels only changes the value
+// Element helpers
 const getLabel = (el: Element) => attr(el, "label") ?? getText(el);
 const getValue = (el: Element) => attr(el, "value") ?? getText(el);
 const getItem = (el: Element) => ({ label: getLabel(el), value: getValue(el) });
-const getSelected = (el: HTMLOptionElement) =>
-	el.selected ?? el.hasAttribute("selected");
-const setSelected = (el: Element, selected: boolean) =>
-	attr(el, "selected", selected ? "" : null);
+const isDisabled = (opt: HTMLOptionElement) =>
+	opt.disabled ?? opt.hasAttribute("disabled");
+const isSelected = (opt: HTMLOptionElement) =>
+	opt.selected ?? opt.hasAttribute("selected");
+const isInert = ({ control }: UHTMLComboboxElement) =>
+	control?.readOnly || control?.matches(":disabled"); // Using :disabled to resepct fieldset[disabled] as well
 
 // Compatibility with <u-datalist> before 3.0.0. To drop support, delete this section and inline false at its two call sites:
 // - Before 2.0.3 the pick events had an empty inputType instead of insertReplacementText (onBeforeinput)
@@ -819,10 +824,12 @@ const isLegacyPickType = (e: Partial<InputEvent>) =>
 const isLegacyPickWrite = (self: UHTMLComboboxElement) =>
 	!!self._isDatalistPick;
 
-// Resolve the connected <u-combobox> of this implementation owning an input, as the input must be a direct child
+// Resolve the connected <u-combobox> of this implementation owning an input
 const getOwner = (input: Node | null | undefined) => {
-	const parent = input?.parentElement as UHTMLComboboxElement | null;
-	return parent && REGISTRY[VERSION]?.has(parent) ? parent : null;
+	const registry = REGISTRY[VERSION];
+	for (let el = input; el; el = el.parentElement)
+		if (registry?.has(el as UHTMLComboboxElement))
+			return el as UHTMLComboboxElement;
 };
 
 // One shared window capture listener for all instances in light DOM, instead of one per instance running for every input event on the page.

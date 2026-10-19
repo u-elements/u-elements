@@ -571,7 +571,6 @@ const renderToStaticMarkup = (data: string, options: string) =>
 ```
 
 ## Notes
-- The `<input>` must be a direct child of `<u-combobox>`. It is the control, and programmatic `input.value` changes are only detected on a direct child
 - `<datalist>` or `<u-datalist>` must be a child of `<u-combobox>`. The `list` attribute on `<input>` is managed automatically
 - Without a datalist, single mode is free text: the input is never overwritten
 - Single mode with a datalist always mirrors the `<data>` item. Multiple mode keeps it as filter text.
@@ -592,7 +591,7 @@ const renderToStaticMarkup = (data: string, options: string) =>
   - Single mode with datalist always syncs `input.value` to the `<data>`, also on mount
   - Single mode correctly dispatches `input` after option `click`
   - `change` is only dispatched when the input sync follows a user commit (option pick, `Enter`, blur, clear or item removal), never on mount, programmatic `<data>` changes or form reset
-  - Single mode replaces the first `<data>` in place, leaving extra `<data>` kept from multiple mode untouched
+  - Single mode holds at most one `<data>`. A select removes every `<data>` before adding the new item, so extra `<data>` kept from a switch out of multiple mode are dropped on the first select
   - One shared `input` listener on `window` for all instances, instead of one per instance
   - Single mode mirrors only the first `<data>` into `<select>` and option selection, so the submitted value matches the input
   - `values` returns at most one value in single mode, matching the mirrored `<data>`

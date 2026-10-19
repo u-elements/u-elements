@@ -1858,9 +1858,46 @@ export const comboboxSuite = (
 					await input.press("Enter");
 					await expect(page.locator("u-combobox data").first()).toHaveText(
 						"Bergen",
-					); // Replaces the first item in place instead of being ignored as already selected. Kept <data> are untouched by the component, so uncontrolled mode now holds two Bergen while controlled mode renders the single item from state
+					); // Replaces the item instead of being ignored as already selected. Single mode drops every <data> before adding, so uncontrolled mode now holds one Bergen like controlled mode renders from state
+					await expect(page.locator("u-combobox data")).toHaveCount(1);
 					await expect(input).toHaveValue("Bergen");
 					await expect.poll(getAll).toEqual(["Bergen"]); // Form value mirrors the first item only
+				});
+
+				test("leaves no item when removing after switching from multiple to single mode", async ({
+					page,
+				}) => {
+					await render(page, {
+						multiple: true,
+						select: "tags",
+						clear: true,
+						items: [OSLO, BERGEN],
+					});
+					const input = page.locator("#input");
+					const items = page.locator("u-combobox data");
+					const options = page.locator("select option");
+
+					await update(page, { multiple: false });
+					await expect(input).toHaveValue("Oslo");
+					await input.click();
+					await page.locator('button[type="reset"]').click();
+					await expect(items).toHaveCount(0); // Bergen must not become the item
+					await expect(input).toHaveValue("");
+					await expect(options).toHaveCount(0);
+
+					await update(page, { multiple: true, items: [OSLO, BERGEN] });
+					await update(page, { multiple: false });
+					await input.fill("");
+					await input.press("Enter"); // Empty commit removes the item
+					await expect(items).toHaveCount(0);
+					await expect(input).toHaveValue("");
+
+					await update(page, { multiple: true, items: [OSLO, BERGEN] });
+					await update(page, { multiple: false });
+					await input.fill("");
+					await input.blur(); // Empty blur removes the item
+					await expect(items).toHaveCount(0);
+					await expect(input).toHaveValue("");
 				});
 
 				test("restores item text in input when switching from multiple to single mode", async ({

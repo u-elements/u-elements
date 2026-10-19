@@ -226,6 +226,8 @@ export const dispatchChange = (input: HTMLInputElement) =>
  * @param {inputType} type of the new event, pass false if silent. Required, as an empty inputType is what picks from <u-datalist> before 2.0.3 look like
  * @param {boolean} change Whether to dispatch change after input. Defaults to true unless silent. Pass false for syncs that are not user commits (i.e. mount, programmatic item changes, form reset).
  * Like the browser, change is only dispatched if the value is still changed after the input event, as an input handler may revert the write (i.e. <u-combobox> reverting a datalist pick)
+ * @param {boolean} cancelable Whether a consumer can prevent beforeinput to reject the edit, like the native event. Defaults to true.
+ * Pass false for writes that mirror already confirmed state (i.e. <u-combobox> syncing the input to its item), as the veto point for those is the select, not the edit
  * @return {boolean} false if a consumer prevented beforeinput, in which case the value is left untouched and no input or change is dispatched
  */
 // Trigger value change in React compatible manner https://stackoverflow.com/a/46012210
@@ -234,10 +236,11 @@ export const setValue = (
 	data: string,
 	type: string | false,
 	change = type !== false,
+	cancelable = true,
 ) => {
 	const silent = type === false;
 	const event = { bubbles: true, composed: true, data, inputType: type || "" };
-	const before = { ...event, cancelable: true }; // beforeinput is cancelable like the native event, so a consumer can reject the edit
+	const before = { ...event, cancelable }; // beforeinput is cancelable like the native event, so a consumer can reject the edit
 	const inputType = input.selectionEnd === null && input.type; // Input types without selection support (i.e. 'email', 'number', 'date') do not support setRangeText, so temporarily switch to text
 	const prev = input.value;
 

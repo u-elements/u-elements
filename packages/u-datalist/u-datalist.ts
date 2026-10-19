@@ -140,7 +140,8 @@ export class UHTMLDataListElement extends UHTMLElement {
 	}
 }
 
-const isDisabled = (el: HTMLInputElement) => el.disabled || el.readOnly;
+const isInert = (el: HTMLInputElement) =>
+	el.readOnly || el.matches(":disabled"); // Respects fieldset[disabled]
 const isInput = (el: unknown): el is HTMLInputElement =>
 	el instanceof HTMLInputElement;
 const isVisible = (el: Element) =>
@@ -177,7 +178,7 @@ const setInputAttributes = (
 	attr(input, "aria-expanded", setup && `${!hidden}`);
 	attr(input, "autocomplete", setup && "off");
 	attr(input, "enterkeyhint", "done");
-	attr(input, "role", setup && !isDisabled(input) ? "combobox" : null);
+	attr(input, "role", setup && !isInert(input) ? "combobox" : null);
 };
 
 const onFocus = (self: UHTMLDataListElement, { target: el }: Event) => {
@@ -185,7 +186,7 @@ const onFocus = (self: UHTMLDataListElement, { target: el }: Event) => {
 	if (isInput(el) && el.getAttribute("list") === self.id) {
 		setInputAttributes(self, null); // Reset previous input
 		setInputAttributes(self, el); // Ensure attributes
-		if (isDisabled(el)) return; // Do not open if disabled or readOnly
+		if (isInert(el)) return; // Do not open if disabled or readOnly
 		if (self._root) on(self._root, EVENTS_ACTIVE_BUBBLE, self); // Listen to input events to update the list
 		attr(self, "aria-label", el.labels?.[0]?.textContent.trim() || null);
 		speak(); // Prepare for aria-live announcements
@@ -232,7 +233,7 @@ const onKeyDown = (self: UHTMLDataListElement, event: KeyboardEvent) => {
 	if (key === "Escape" && !self.hidden && !isComposing) event.preventDefault(); // Prevent Safari from minimizing the window and <dialog> from closing
 
 	const isEnter = key === "Enter";
-	if (!repeat) setExpanded(self, key !== "Escape"); // Close on ESC but show on other keys, except a held Enter, which must not re-open after the pick closed the list
+	if (!repeat) setExpanded(self, isComposing || key !== "Escape"); // Close on ESC but show on other keys, except a held Enter, which must not re-open after the pick closed the list
 	if (isComposing) return; // The IME owns Enter, Escape and arrows while composing, so only open the list
 	const active = attr(self._input, "aria-activedescendant");
 	const opts: HTMLOptionElement[] = [];

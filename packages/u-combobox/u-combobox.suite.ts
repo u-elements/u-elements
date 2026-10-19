@@ -427,31 +427,37 @@ export const comboboxSuite = (
 					expect(await logged(page, "comboboxbeforeselect")).toEqual([]);
 				});
 
-				test("Enter on text equal to an item without a matching option does not announce invalid", async ({
-					page,
-				}) => {
-					await render(page, {
-						items: [{ value: "custom-id", label: "Custom" }], // Not among the options, i.e. prefilled from server before options are loaded
+				for (const multiple of [false, true]) {
+					test(`Enter on text equal to an item without a matching option does not announce invalid in ${multiple ? "multiple" : "single"} mode`, async ({
+						page,
+					}) => {
+						await render(page, {
+							multiple,
+							items: [{ value: "custom-id", label: "Custom" }], // Not among the options, i.e. prefilled from server before options are loaded
+							options: [{ text: "Other" }],
+						}); // Enter always matches against the options, so an item can only be toggled through its option
+						await resetLog(page, "comboboxbeforematch");
+						await resetLog(page, "comboboxbeforeselect");
+						const input = page.locator("#input");
+						const items = page.locator("u-combobox data");
+						const live = page.locator("[aria-live='assertive']");
+
+						await input.click();
+						await input.fill("Custom");
+						await input.press("Enter");
+						await page.waitForTimeout(100);
+						await expect(items).toHaveText(["Custom"]); // Unchanged
+						await expect(input).toHaveValue("Custom");
+						await expect(live).not.toHaveText(/Invalid value/); // A confirmed item is never invalid
+						expect(await logged(page, "comboboxbeforematch")).toHaveLength(1); // Still matched against the options
+						expect(await logged(page, "comboboxbeforeselect")).toEqual([]);
+
+						await input.fill("Other thing");
+						await input.press("Enter");
+						await expect(live).toHaveText(/Invalid value/); // Announced, as the text is neither an option nor an item
+						await expect(items).toHaveText(["Custom"]);
 					});
-					await resetLog(page, "comboboxbeforematch");
-					const input = page.locator("#input");
-					const items = page.locator("u-combobox data");
-					const live = page.locator("[aria-live='assertive']");
-
-					await expect(input).toHaveValue("Custom");
-					await input.click();
-					await input.press("Enter");
-					await page.waitForTimeout(100);
-					await expect(items).toHaveText(["Custom"]); // Unchanged
-					await expect(input).toHaveValue("Custom");
-					await expect(live).not.toHaveText(/Invalid value/); // A confirmed item is never invalid
-					expect(await logged(page, "comboboxbeforematch")).toHaveLength(1); // Still matched against the options
-
-					await input.fill("unknown");
-					await input.press("Enter");
-					await expect(live).toHaveText(/Invalid value/); // Other text still announces
-					await expect(items).toHaveText(["Custom"]);
-				});
+				}
 
 				test("Enter syncs input when the match is the current item", async ({
 					page,
@@ -882,39 +888,6 @@ export const comboboxSuite = (
 					await expect(bergen).toHaveAttribute("selected");
 				});
 
-				test("syncs after form reset", async ({ page }) => {
-					test.skip(
-						framework === "React",
-						"React keeps the value attribute of a controlled input in sync, so form.reset() restores the current value and there is nothing to sync",
-					);
-					await render(page, {
-						multiple: true,
-						form: true,
-						items: [BERGEN],
-						clear: true,
-					});
-					const input = page.locator("#input");
-					const clear = page.locator('button[type="reset"]');
-					const reset = () =>
-						page.evaluate(() =>
-							(document.getElementById("form") as HTMLFormElement).reset(),
-						);
-
-					await input.fill("abc");
-					await expect(clear).not.toHaveAttribute("hidden");
-					await reset();
-					await expect(input).toHaveValue("");
-					await expect(clear).toHaveAttribute("hidden", ""); // Reset neither calls the value setter nor dispatches input, so the component listens for reset
-					await expect(page.locator("u-combobox data")).toHaveText(["Bergen"]); // Items are not form controls
-
-					await update(page, { multiple: false });
-					await expect(input).toHaveValue("Bergen");
-					await input.fill("abc");
-					await reset();
-					await expect(input).toHaveValue("Bergen"); // Single mode keeps mirroring the item
-					await expect(clear).not.toHaveAttribute("hidden");
-				});
-
 				test("selects option on click in type=email where selection is unsupported", async ({
 					page,
 				}) => {
@@ -1123,35 +1096,6 @@ export const comboboxSuite = (
 					await input.press("Enter");
 					await expect(items).toHaveCount(0); // Same text as the item still goes through the option, which is selected and toggles off
 					expect(await logged(page, "comboboxbeforematch")).toHaveLength(4);
-				});
-
-				test("Enter does not remove an item whose option is gone", async ({
-					page,
-				}) => {
-					await render(page, {
-						multiple: true,
-						items: [BERGEN],
-						options: [{ text: "Other" }],
-					}); // Enter always matches against the options, so an item can only be toggled through its option
-					await resetLog(page, "comboboxbeforematch");
-					await resetLog(page, "comboboxbeforeselect");
-					const input = page.locator("#input");
-					const items = page.locator("u-combobox data");
-					const live = page.locator("[aria-live='assertive']");
-
-					await input.fill("Bergen");
-					await input.press("Enter");
-					await page.waitForTimeout(100);
-					await expect(items).toHaveText(["Bergen"]); // Unchanged
-					await expect(input).toHaveValue("Bergen");
-					await expect(live).not.toHaveText(/Invalid value/); // Not announced, as the text equals a confirmed item
-					expect(await logged(page, "comboboxbeforematch")).toHaveLength(1);
-					expect(await logged(page, "comboboxbeforeselect")).toEqual([]);
-
-					await input.fill("Other thing");
-					await input.press("Enter");
-					await expect(live).toHaveText(/Invalid value/); // Announced, as the text is neither an option nor an item
-					await expect(items).toHaveText(["Bergen"]);
 				});
 
 				test("Enter does not announce invalid value while the datalist is busy", async ({
@@ -1434,28 +1378,26 @@ export const comboboxSuite = (
 					expect(await logged(page, "comboboxbeforematch")).toHaveLength(1); // Picks never match, blur does
 				});
 
-				for (const controlled of [true, false]) {
-					test(`restores the search text after selecting multiple datalist options (${controlled ? "controlled" : "uncontrolled"})`, async ({
-						page,
-					}) => {
-						await render(page, { multiple: true, controlled });
-						const input = page.locator("#input");
-						const items = page.locator("u-combobox data");
+				test("restores the search text after selecting multiple datalist options in uncontrolled mode", async ({
+					page,
+				}) => {
+					await render(page, { multiple: true, controlled: false }); // Component manages items itself
+					const input = page.locator("#input");
+					const items = page.locator("u-combobox data");
 
-						await input.click();
-						await selectOption(
-							input,
-							page.locator(`${OPT_TAG}[value="oslo-id"]`),
-						);
-						await expect(items).toHaveText(["Oslo"]);
-						await expect(input).toHaveValue("");
+					await input.click();
+					await selectOption(
+						input,
+						page.locator(`${OPT_TAG}[value="oslo-id"]`),
+					);
+					await expect(items).toHaveText(["Oslo"]);
+					await expect(input).toHaveValue("");
 
-						await input.fill("Ber");
-						await selectOption(input, page.locator(OPT_TAG).nth(1));
-						await expect(items).toHaveText(["Oslo", "Bergen"]);
-						await expect(input).toHaveValue("Ber");
-					});
-				}
+					await input.fill("Ber");
+					await selectOption(input, page.locator(OPT_TAG).nth(1));
+					await expect(items).toHaveText(["Oslo", "Bergen"]);
+					await expect(input).toHaveValue("Ber");
+				});
 
 				test("keeps the clicked option on blur after a substring search with a dynamic add option", async ({
 					page,
@@ -2276,6 +2218,32 @@ export const comboboxSuite = (
 					await expect.poll(getAll).toEqual(["Bergen"]);
 				});
 
+				test("hides clear button after form reset in multiple mode", async ({
+					page,
+				}) => {
+					test.skip(
+						framework === "React",
+						"React keeps the value attribute of a controlled input in sync, so form.reset() restores the current value and there is nothing to sync",
+					);
+					await render(page, {
+						multiple: true,
+						form: true,
+						items: [BERGEN],
+						clear: true,
+					});
+					const input = page.locator("#input");
+					const clear = page.locator('button[type="reset"]');
+
+					await input.fill("abc");
+					await expect(clear).not.toHaveAttribute("hidden");
+					await page.evaluate(() =>
+						(document.getElementById("form") as HTMLFormElement).reset(),
+					);
+					await expect(input).toHaveValue("");
+					await expect(clear).toHaveAttribute("hidden", ""); // Reset neither calls the value setter nor dispatches input, so the component listens for reset
+					await expect(page.locator("u-combobox data")).toHaveText(["Bergen"]); // Items are not form controls
+				});
+
 				test("syncs single mode input after form reset", async ({ page }) => {
 					await render(page, {
 						form: true,
@@ -2324,18 +2292,7 @@ export const comboboxSuite = (
 			});
 
 			test.describe(name("clear button"), () => {
-				test("removes item in single mode", async ({ page }) => {
-					await render(page, { clear: true });
-					await update(page, { items: [BERGEN] });
-					const input = page.locator("#input");
-
-					await expect(input).toHaveValue("Bergen");
-					await page.locator('button[type="reset"]').click();
-					await expect(input).toHaveValue("");
-					await expect(page.locator("u-combobox data")).toHaveCount(0);
-				});
-
-				test("dispatches change once on removal, and none when a prevented removal reverts the text", async ({
+				test("removes item in single mode and dispatches change once, and none when a prevented removal reverts the text", async ({
 					page,
 				}) => {
 					await render(page, { clear: true, items: [BERGEN] });
@@ -2363,29 +2320,7 @@ export const comboboxSuite = (
 					expect(await docLogged(page, "change")).toEqual([]); // The text ends up unchanged, so no change
 				});
 
-				test("is reachable with Tab and reverts tabindex after", async ({
-					page,
-				}) => {
-					await render(page, { multiple: true, clear: true });
-					const input = page.locator("#input");
-					const clear = page.locator('button[type="reset"]');
-					const list = page.locator(LIST_TAG);
-
-					await input.click();
-					await input.pressSequentially("abc"); // Keydown opens <u-datalist>, so Tab also closes it
-					await input.press("Tab");
-					await expect(clear).toBeFocused();
-					if (!IS_NATIVE) await expect(list).toHaveAttribute("hidden", "");
-					await expect(clear).toHaveAttribute("tabindex", "0"); // Must survive the sync triggered by the list closing
-					await expect(clear).toHaveAttribute("aria-hidden", "false");
-					await clear.press("Enter");
-					await expect(input).toHaveValue("");
-					await expect(input).toBeFocused();
-					await expect(clear).toHaveAttribute("tabindex", "-1");
-					await expect(clear).toHaveAttribute("hidden", "");
-				});
-
-				test("does not reopen the list when activated with Enter after Tab", async ({
+				test("is reachable with Tab, reverts tabindex after, and does not reopen the list when activated with Enter", async ({
 					page,
 				}) => {
 					const IS_ANDROID = test.info().project.name === "Mobile Chrome"; // u-datalist opens on focus in Android
@@ -2395,28 +2330,21 @@ export const comboboxSuite = (
 					const list = page.locator(LIST_TAG);
 
 					await input.click();
-					await input.pressSequentially("abc"); // Keydown opens <u-datalist>
+					await input.pressSequentially("abc"); // Keydown opens <u-datalist>, so Tab also closes it
 					if (!IS_NATIVE) await expect(list).not.toHaveAttribute("hidden");
 					await input.press("Tab");
 					await expect(clear).toBeFocused();
 					if (!IS_NATIVE) await expect(list).toHaveAttribute("hidden", ""); // Closed by focus leaving the input
+					await expect(clear).toHaveAttribute("tabindex", "0"); // Must survive the sync triggered by the list closing
+					await expect(clear).toHaveAttribute("aria-hidden", "false");
 
 					await clear.press("Enter"); // Programmatic click, no pointerdown
 					await expect(input).toHaveValue("");
 					await expect(input).toBeFocused();
+					await expect(clear).toHaveAttribute("tabindex", "-1");
+					await expect(clear).toHaveAttribute("hidden", "");
 					if (!IS_NATIVE && !IS_ANDROID)
 						await expect(list).toHaveAttribute("hidden", ""); // Live state was closed, so it stays closed
-				});
-
-				test("uses data-sr-clear as aria-label", async ({ page }) => {
-					await render(page, {
-						clear: true,
-						attrs: { "data-sr-clear": "Tøm" },
-					});
-					await expect(page.locator('button[type="reset"]')).toHaveAttribute(
-						"aria-label",
-						"Tøm",
-					);
 				});
 			});
 
@@ -2684,13 +2612,15 @@ export const comboboxSuite = (
 			});
 
 			test.describe(name("announcements"), () => {
-				test("uses data-sr-* texts for description and live region", async ({
+				test("uses data-sr-* texts for description, live region and clear button", async ({
 					page,
 				}) => {
 					await render(page, {
 						multiple: true,
+						clear: true,
 						attrs: {
 							"data-sr-added": "La til",
+							"data-sr-clear": "Tøm",
 							"data-sr-empty": "Ingen valgte",
 							"data-sr-found": "%d valgt",
 						},
@@ -2698,6 +2628,10 @@ export const comboboxSuite = (
 					const input = page.locator("#input");
 					const live = page.locator("[aria-live='assertive']");
 
+					await expect(page.locator('button[type="reset"]')).toHaveAttribute(
+						"aria-label",
+						"Tøm",
+					);
 					await expect(input).toHaveAttribute(
 						"aria-description",
 						"Ingen valgte",

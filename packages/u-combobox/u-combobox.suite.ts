@@ -2436,6 +2436,31 @@ export const comboboxSuite = (
 						await expect(toggle).toHaveAttribute("hidden", "");
 					});
 				}
+
+				test("ignores blur when readonly, also with programmatic text", async ({
+					page,
+				}) => {
+					// A readonly input can be focused, so blur must be gated like every other action and never match or sync
+					await render(page, {
+						items: [BERGEN],
+						inputAttrs: { readonly: "" },
+					});
+					await resetLog(page, "comboboxbeforematch");
+					const input = page.locator("#input");
+					const items = page.locator("u-combobox data");
+					await expect(input).toHaveValue("Bergen"); // Synced on mount
+
+					await input.evaluate((el: HTMLInputElement) => {
+						el.value = "Oslo"; // Equal to an option label, which blur would otherwise match
+					});
+					await input.focus();
+					await input.blur();
+					await page.waitForTimeout(50); // Blur commit is deferred one tick
+
+					await expect(items).toHaveText(["Bergen"]); // Not replaced
+					await expect(input).toHaveValue("Oslo"); // Not synced back to the item
+					expect(await logged(page, "comboboxbeforematch")).toEqual([]);
+				});
 			});
 
 			test.describe(name("keyboard"), () => {

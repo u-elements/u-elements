@@ -2492,6 +2492,37 @@ export const comboboxSuite = (
 						}
 					});
 
+					test(`treats a replacement as typing when ${state}`, async ({
+						page,
+					}) => {
+						// input passes the inert gate so a sync can cache its text, but a native datalist pick fingerprint must not reach dispatchSelect while inert
+						await render(page, {
+							multiple: true,
+							items: [BERGEN],
+							value: "typed",
+							inputAttrs: { [state]: "" },
+						});
+						const input = page.locator("#input");
+						const items = page.locator("u-combobox data");
+						await resetLog(page, "input");
+
+						await input.evaluate((el: HTMLInputElement) => {
+							const data = "oslo-id";
+							el.setRangeText(data, 0, el.value.length);
+							el.dispatchEvent(
+								new InputEvent("input", {
+									bubbles: true,
+									composed: true,
+									data,
+									inputType: "insertReplacementText",
+								}),
+							);
+						});
+						await expect(items).toHaveText(["Bergen"]); // Never a pick while inert
+						await expect(input).toHaveValue("oslo-id"); // Kept as a consumer write
+						expect(await logged(page, "input")).toEqual(["oslo-id"]); // Not suppressed
+					});
+
 					test(`caches the item text synced while ${state}, so a prevented pick or clear after enabling reverts to it`, async ({
 						page,
 					}) => {

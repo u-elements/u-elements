@@ -555,7 +555,10 @@ const onInput = (self: UHTMLComboboxElement, event: Partial<InputEvent>) => {
 	const isReplace =
 		isPick || (isNative && inputType === "insertReplacementText"); // <u-datalist>, and Firefox native <datalist>. Only a <u-datalist> pick of <option value=""> has an empty value
 	const isClick = isReplace || (isNative && isTrusted && !inputType && value); // WebKit and Chrome native <datalist> use Event (not InputEvent), but so does type="search" clear (empty value) and autofill
-	const match = isClick && [...options].find((o) => getValue(o) === value); // Only accept as option click if value corresponds to an option, avoiding false positives on spell check or autofill
+	const match =
+		isClick &&
+		!isInert(self) && // Every action is ignored while inert (see SPECIFICATION), so a replacement then is a consumer write, cached like typing instead of taken for a pick
+		[...options].find((o) => getValue(o) === value); // Only accept as option click if value corresponds to an option, avoiding false positives on spell check or autofill
 
 	clearDatalistPick(self); // Consumed, so the sync input that follows a select, and value writes by the consumer in comboboxafterselect, are not taken for the pick
 	if (match && control) {

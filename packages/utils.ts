@@ -370,11 +370,23 @@ export const speak = (text?: string) => {
  * @param {void} callback
  */
 const RENDER_QUEUE: (() => void)[] = []; // One callback per posted message, so each keeps its own place after the renders queued before it
-let RENDER_PORT: MessagePort | undefined; // Shared channel, created on first use so SSR never touches MessageChannel
+let RENDER_PORT: MessagePort | undefined; // Shared channel, created on first use so SSR never touches MessageChannel, and closed once drained
 export const afterRender = (callback: () => void) => {
 	if (!RENDER_PORT) {
 		const { port1, port2 } = new MessageChannel();
-		port1.onmessage = () => RENDER_QUEUE.shift()?.(); // Messages arrive in post order, so the oldest callback is always the one posted for
+		port1.onmessage = () => {
+			try {
+				RENDER_QUEUE.shift()?.(); // Messages arrive in post order, so the oldest callback is always the one posted for
+			} finally {
+				// Every push posts exactly one message, so an empty queue means nothing is in flight.
+				// Close both ports then, as a started port keeps Node alive (i.e. jsdom tests), and recreate on the next call
+				if (!RENDER_QUEUE.length) {
+					port1.close();
+					port2.close();
+					RENDER_PORT = undefined;
+				}
+			}
+		};
 		RENDER_PORT = port2;
 	}
 	RENDER_QUEUE.push(callback);

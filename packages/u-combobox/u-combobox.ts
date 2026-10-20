@@ -186,6 +186,14 @@ type Commit = {
 	text: string; // Input text at the select, so the sync following the item change dispatches change only while the text is still this
 	then?: (consumed: boolean) => void; // Runs once when settled: consumed by an item change (true), or expired unconsumed (false)
 };
+
+// An added or removed item announcement, prefixing the aria-labels of the input and items until reset. See announceItemChange
+type Announce = {
+	text: string; // Prefix such as "Added Apple, "
+	label: string | null; // Pristine aria-label of the input, restored by speakReset
+	reset: ReturnType<typeof setTimeout>; // Pending speakReset, replaced when a new announcement arrives within the reset delay
+};
+
 const TEXTS = {
 	added: "Added",
 	clear: "Clear input",
@@ -217,9 +225,9 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	_root?: Document | ShadowRoot; // Root at connect, to listen for form reset events
 	_select?: HTMLSelectElement | null;
 	_toggle?: HTMLElement | null;
-	_speak = "";
 	_texts = { ...TEXTS };
 
+	_announce?: Announce; // Pending announcement prefixing aria-labels, see announceItemChange
 	_commit?: Commit; // Pending user commit (pick, Enter, blur, clear, chip removal), see dispatchSelect. Settled by identity, so a commit never settles a later one
 	_isDatalistPick?: ReturnType<typeof setTimeout>; // Timeout between beforeinput and input of a <u-datalist> pick, see onBeforeinput
 	_singleItem?: string | null; // Item value and text to detect item change in single mode. Null when no item, undefined until first sync so the first run always syncs
@@ -278,6 +286,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		off(this, EVENTS, this, true);
 		if (this._root) off(this._root, "reset", this, true);
 		clearDatalistPick(this);
+		announceReset(this); // Revert a prefixed aria-label
 		REGISTRY[VERSION]?.delete(this);
 		this._unfocus?.();
 		this._umutate?.();
@@ -288,7 +297,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		const { type, target } = e;
 		if (type === "reset") {
 			if (target === this.control?.form) setTimeout(onReset, 0, this, e); // Controls are reset after the reset event has dispatched, so defer. Also when disabled or readonly
-			return; // Explicit void return type, returning setTimeout causes diffent types in DOM and Node
+			return; // Explicit void return type, returning setTimeout causes different types in DOM and Node
 		}
 		if (type === "input" && e.composedPath()[0] !== this.control) return; // Listener is on window or this, so check the real target also inside nested shadow roots
 		if (type !== "input" && isInert(this)) return; // input passes while inert, as the text of a sync must be cached and setRangeText bypasses the value setter. No user action dispatches input then, so only syncs and consumer writes reach onInput
@@ -313,7 +322,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	}
 	get control(): HTMLInputElement | null {
 		if (!this._control?.isConnected)
-			this._control = this.querySelector("input"); // Pure lookup, a new or replaced input is detected by onMutations through its mutation record
+			this._control = this.querySelector(":scope > input"); // Pure lookup, a new or replaced input is detected by onMutations through its mutation record
 		return this._control; // Inspired by https://developer.mozilla.org/en-US/docs/Web/API/HTMLLabelElement/control
 	}
 	get list(): HTMLDataListElement | null {
@@ -648,16 +657,18 @@ const onMutations = (self: UHTMLComboboxElement, edit?: MutationRecord[]) => {
 
 // Announce an added or removed item through aria-label when focus moved (chip removal), otherwise through the live region
 const announceItemChange = (self: UHTMLComboboxElement, edits: Node[]) => {
-	const { _texts, control, multiple } = self;
+	const { _announce, _texts, control, multiple } = self;
 	const focus = getFocused(self);
 	const doSpeak = multiple ? edits.length === 1 : edits[0] === focus; // Only speak in single mode if item is visible and focused
 	if (!doSpeak || !control || !self.contains(focus)) return;
 
-	const label = attr(control, ARIA_LABEL); // Store so we can revert after announcement
-	self._speak = `${_texts[edits[0].isConnected ? "added" : "removed"]} ${getText(edits[0])}, `; // Updates aria-labels
-	attr(control, ARIA_LABEL, `${self._speak}${getInputLabel(control)}`); // Make sure control also can aria-label-announce
-	if (!self._commit?.focus) setTimeout(() => speak(self._speak.slice(0, -2))); // Aria-live when no focus move belongs to the pending commit, remove trailing command, setTimeout to take presence
-	setTimeout(speakReset, 300, self, label); // 300ms delay so screen readers announces new aria-label. Note: Causes short double/hiccup announce in NVDA Firefox
+	clearTimeout(_announce?.reset);
+	const label = _announce ? _announce.label : attr(control, ARIA_LABEL);
+	if (_announce) attr(control, ARIA_LABEL, label); // Restore before reading the accessible name
+	const text = `${_texts[edits[0].isConnected ? "added" : "removed"]} ${getText(edits[0])}, `;
+	self._announce = { text, label, reset: setTimeout(announceReset, 300, self) }; // 300ms delay so screen readers announces new aria-label. Note: Causes short double/hiccup announce in NVDA Firefox
+	attr(control, ARIA_LABEL, `${text}${getInputLabel(control)}`); // Make sure control also can aria-label-announce
+	if (!self._commit?.focus) setTimeout(() => speak(text.slice(0, -2))); // Aria-live when no focus move belongs to the pending commit, remove trailing comma, setTimeout to take presence
 };
 
 // Sync input with item in single mode with list, but only if item has actually changed
@@ -681,19 +692,22 @@ const syncSingleInputWithItemChange = (self: UHTMLComboboxElement) => {
 	}
 };
 
-const speakReset = (self: UHTMLComboboxElement, label: string | null) => {
-	self._speak = "";
-	if (self.control) attr(self.control, ARIA_LABEL, label); // Revert aria-label to original value after announcement
+const announceReset = (self: UHTMLComboboxElement) => {
+	if (!self._announce) return; // Nothing to revert
+	if (self.control) attr(self.control, ARIA_LABEL, self._announce.label); // Revert aria-label to original value after announcement
+	clearTimeout(self._announce.reset);
+	self._announce = undefined;
 	syncItems(self);
 };
 
 // Sync helpers
 const syncItems = (self: UHTMLComboboxElement) => {
-	const { _listbox, _texts, _speak, items, multiple } = self;
+	const { _announce, _listbox, _texts, items, multiple } = self;
+	const prefix = _announce?.text ?? "";
 
 	let idx = 0;
 	for (const item of items) {
-		const text = `${_speak}${getText(item)}, ${_texts.remove}${IS_IOS ? `, ${++idx} ${_texts.of} ${items.length}` : ""}`;
+		const text = `${prefix}${getText(item)}, ${_texts.remove}${IS_IOS ? `, ${++idx} ${_texts.of} ${items.length}` : ""}`;
 		attr(item, ARIA_LABEL, text);
 		attr(item, "hidden", multiple ? null : ""); // Avoid ARC Toolkit warning in single mode
 		attr(item, "role", "option");
@@ -761,8 +775,11 @@ const syncOptionsWithItems = (self: UHTMLComboboxElement) => {
 	const { _texts, list, multiple, values, options } = self;
 	attr(list, "data-sr-of", _texts.of); // Forward of text
 	attr(list, SAFE_MULTISELECTABLE, `${multiple}`); // Forward multiselect
-	for (const opt of options)
-		attr(opt, "selected", values.includes(getValue(opt)) ? "" : null); // u-option might not be initialized yet
+	for (const opt of options) {
+		const selected = values.includes(getValue(opt));
+		opt.selected = selected; // Add property as attribute and proptery can get out of sync
+		attr(opt, "selected", selected ? "" : null); // Also add attribute as u-option might not be initialized yet
+	}
 };
 
 // TODO: aria-required="true" => setCustomValidity
@@ -814,7 +831,7 @@ const isDisabled = (opt: HTMLOptionElement) =>
 const isSelected = (opt: HTMLOptionElement) =>
 	opt.selected ?? opt.hasAttribute("selected");
 const isInert = ({ control }: UHTMLComboboxElement) =>
-	control?.readOnly || control?.matches(":disabled"); // Using :disabled to resepct fieldset[disabled] as well
+	control?.readOnly || control?.matches(":disabled"); // Using :disabled to respect fieldset[disabled] as well
 
 // Compatibility with <u-datalist> before 3.0.0. To drop support, delete this section and inline false at its two call sites:
 // - Before 2.0.3 the pick events had an empty inputType instead of insertReplacementText (onBeforeinput)
@@ -826,10 +843,8 @@ const isLegacyPickWrite = (self: UHTMLComboboxElement) =>
 
 // Resolve the connected <u-combobox> of this implementation owning an input
 const getOwner = (input: Node | null | undefined) => {
-	const registry = REGISTRY[VERSION];
-	for (let el = input; el; el = el.parentElement)
-		if (registry?.has(el as UHTMLComboboxElement))
-			return el as UHTMLComboboxElement;
+	const parent = input?.parentElement as UHTMLComboboxElement;
+	return parent && REGISTRY[VERSION].has(parent) ? parent : null;
 };
 
 // One shared window capture listener for all instances in light DOM, instead of one per instance running for every input event on the page.

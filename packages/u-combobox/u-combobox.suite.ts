@@ -2828,6 +2828,36 @@ export const comboboxSuite = (
 					await expect(live).toHaveText(""); // Nothing announced while blurred
 				});
 
+				test("restores aria-label after two item changes within the announcement delay", async ({
+					page,
+				}) => {
+					await render(page, { multiple: true, items: ITEMS });
+					const input = page.locator("#input");
+					const items = page.locator("u-combobox data");
+
+					await expect(input).not.toHaveAttribute("aria-label");
+					await items.nth(2).focus();
+					// Both removals run in the page, so the second is guaranteed to land within the 300ms reset delay of the first
+					const label = await page.evaluate(async () => {
+						const tick = () => new Promise((r) => setTimeout(r, 50));
+						const press = () =>
+							document.activeElement?.dispatchEvent(
+								new KeyboardEvent("keydown", {
+									key: "Backspace",
+									bubbles: true,
+								}),
+							);
+						press(); // Removes Trondheim, focus moves to Bergen
+						await tick(); // Let the removal render and announce
+						press(); // Removes Bergen
+						await tick();
+						return document.getElementById("input")?.getAttribute("aria-label");
+					});
+					expect(label).toBe("Removed Bergen, Label"); // Not stacked on the previous announcement
+					await expect(items).toHaveText(["Oslo"]);
+					await expect(input).not.toHaveAttribute("aria-label"); // Restored once the last announcement has been read
+				});
+
 				test("announces a programmatic item change after a prevented removal moved focus", async ({
 					page,
 				}) => {

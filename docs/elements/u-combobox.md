@@ -10,7 +10,7 @@ import { data } from '../filesize.data.ts'
 
 **Quick intro:**
 - Use `<data>` as direct child elements - these are the removable items
-- Use `<input>` and `<u-datalist>` to allow adding and suggesting items
+- Use `<input>` as as direct child and `<u-datalist>` to allow adding and suggesting items
 - Use `data-multiple` to allow selecting multiple items
 - Use `data-creatable` to allow creating items not in the list
 - Use `data-sr-*` attributes to translate screen reader announcements
@@ -579,7 +579,7 @@ const renderToStaticMarkup = (data: string, options: string) =>
 - In controlled mode, `change` is dispatched by the input sync that follows the `<data>` change, as long as the framework renders within the next render opportunity (one microtask, then one MessageChannel task). A render deferred beyond that (i.e. React `startTransition`, a debounced state update) is treated as a programmatic `<data>` change and dispatches `input` but not `change`
 - ARC Toolkit incorrectly reports `aria-description` as an invalid ARIA-attribute
 - ARC Toolkit does not correctly read the relation between items with `role="option"` and the ShadowDOM wrapping container `role="listbox"`
-- See full behavior spec in [u-combobx source](https://github.com/u-elements/u-elements/blob/main/packages/u-combobox/u-combobox.ts)
+- See full behavior spec in [u-combobox source](https://github.com/u-elements/u-elements/blob/main/packages/u-combobox/u-combobox.ts)
 
 
 ## Changelog
@@ -593,6 +593,7 @@ const renderToStaticMarkup = (data: string, options: string) =>
   - `change` is only dispatched when the input sync follows a user commit (option pick, `Enter`, blur, clear or item removal), never on mount, programmatic `<data>` changes or form reset
   - Single mode holds at most one `<data>`. A select removes every `<data>` before adding the new item, so extra `<data>` kept from a switch out of multiple mode are dropped on the first select
   - One shared `input` listener on `window` for all instances, instead of one per instance
+  - `<input>` must be a direct child of `<u-combobox>`, as the owning `<u-combobox>` is resolved from the input's parent
   - Single mode mirrors only the first `<data>` into `<select>` and option selection, so the submitted value matches the input
   - `values` returns at most one value in single mode, matching the mirrored `<data>`
   - `Enter` with text equal to an item no longer announces `data-sr-invalid` when no option matches, as the item is a confirmed selection

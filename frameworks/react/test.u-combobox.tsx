@@ -1,7 +1,7 @@
 // React harness page for the shared u-combobox suite (packages/u-combobox/u-combobox.suite.ts).
 // Items are rendered from state (controlled), the input value is a controlled input,
 // and all combobox events are bound with React 19 custom element event props.
-import { StrictMode, useState } from "react";
+import { StrictMode, startTransition, useState } from "react";
 import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
 import "../../packages/u-datalist/u-datalist";
@@ -49,6 +49,14 @@ function Combobox({
 	patch: (patch: HarnessPatch) => void;
 }) {
 	if (!cfg.mounted) return null;
+	if (cfg.renderCost) {
+		const end = performance.now() + cfg.renderCost; // Simulate a slow render, longer than the scheduler's 5ms slice
+		while (performance.now() < end);
+	}
+	const setItems = (items: HarnessConfig["items"]) =>
+		cfg.transition
+			? startTransition(() => patch({ items })) // Time sliced, so a slow render yields past the render opportunity
+			: patch({ items });
 	const ListTag = cfg.listTag as "datalist";
 	const OptTag = optionTag(cfg) as "option";
 	const Wrapper = cfg.form === true ? "form" : "div";
@@ -69,7 +77,7 @@ function Combobox({
 				<UCombobox
 					{...comboboxAttrs(cfg)}
 					oncomboboxbeforeselect={(event: Event) =>
-						handleBeforeSelect(event, cfg, (items) => patch({ items }))
+						handleBeforeSelect(event, cfg, setItems)
 					}
 					oncomboboxafterselect={(event: Event) =>
 						log("comboboxafterselect", event)

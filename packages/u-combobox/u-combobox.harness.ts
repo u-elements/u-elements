@@ -37,6 +37,8 @@ export type HarnessConfig = {
 	attrs: Record<string, string>; // Extra attributes on <u-combobox>, i.e. data-sr-*
 	listKey: number; // Change to force the framework to re-create the datalist element
 	replaceOptionsOnInput: Option[] | null; // Consumer pattern: replace options from an input handler
+	renderCost: number; // Milliseconds of synchronous work per render, to test commits against a slow framework render (React harness only)
+	transition: boolean; // Apply controlled item updates in a transition, so a slow render yields to the scheduler (React harness only)
 	mounted: boolean;
 };
 export type HarnessPatch = Partial<HarnessConfig>;
@@ -72,6 +74,8 @@ export const DEFAULTS: HarnessConfig = {
 	attrs: {},
 	listKey: 0,
 	replaceOptionsOnInput: null,
+	renderCost: 0,
+	transition: false,
 	mounted: false,
 };
 

@@ -278,8 +278,15 @@ export const onFocusLeave = (
 	isInside = (node: Node | null) => el.contains(node),
 ) => {
 	let hasBlurred: true | undefined; // focusout inside happened while pressed, so check once the press ends
+	let pending: ReturnType<typeof setTimeout> | undefined; // One check per settle, as two focusouts inside one task must not run fn twice
 	let unPress: (() => void) | undefined; // Between pointerdown inside and pointerup or pointercancel
-	const check = () => setTimeout(() => isInside(getFocused(el)) || fn(), 0); // Delay to allow focus to be set on new element
+	const check = () => {
+		clearTimeout(pending);
+		pending = setTimeout(() => {
+			pending = undefined;
+			if (!isInside(getFocused(el))) fn();
+		}, 0); // Delay to allow focus to be set on new element
+	};
 	const cancel = () => {
 		if (hasBlurred) check();
 		unPress?.();
@@ -297,6 +304,7 @@ export const onFocusLeave = (
 	return () => {
 		unHandle();
 		unPress?.();
+		clearTimeout(pending);
 	};
 };
 

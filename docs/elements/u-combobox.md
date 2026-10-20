@@ -133,7 +133,7 @@ myCombobox.addEventListener('comboboxafterselect', (event) => {
 ```
 
 ### `comboboxbeforematch`
-Dispatched on `Enter`, and in single mode also on blur, when the input has text and a datalist is present. Never dispatched while typing, when empty input or when missing datalist. Prevent the event and set `option.selected` to pick another option, or no option to reject the match.
+Dispatched on `Enter`, and in single mode also on blur, when the input has text and a datalist is present. Never dispatched while typing, when empty input or when missing datalist. Hidden and disabled options are not matched. Prevent the event and set `option.selected` on all options to change or reject match.
 
 ```js
 myCombobox.addEventListener('comboboxbeforematch', (event) => {
@@ -597,6 +597,9 @@ const renderToStaticMarkup = (data: string, options: string) =>
   - Single mode mirrors only the first `<data>` into `<select>` and option selection, so the submitted value matches the input
   - `values` returns at most one value in single mode, matching the mirrored `<data>`
   - `Enter` with text equal to an item no longer announces `data-sr-invalid` when no option matches, as the item is a confirmed selection
+  - `Enter` in multiple mode only adds. A matched option that is already an item is kept, as removal is intended through a pick or an item
+  - Hidden and disabled options are never matched on `Enter` or blur
+  - Preventing `comboboxbeforematch` without selecting an option rejects the match, instead of taking the first option mirroring an existing item
   - Single mode clear button no longer caches the emptied text, so a prevented removal reverts the input to the text before the clear
   - Runtime toggle `data-multiple` and `data-creatable` syncs correctly
   - Toggle button is hidden when the input is `disabled` or `readonly`, and both buttons re-sync when these attributes change at runtime

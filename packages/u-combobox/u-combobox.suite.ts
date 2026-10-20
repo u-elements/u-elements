@@ -1117,13 +1117,15 @@ export const comboboxSuite = (
 					expect(await logged(page, "comboboxbeforematch")).toEqual([]);
 				});
 
-				test("Enter toggles matched item and keeps typed text", async ({
+				test("Enter adds matched item once and keeps typed text", async ({
 					page,
 				}) => {
 					await render(page, { multiple: true });
 					await resetLog(page, "comboboxbeforematch");
+					await resetLog(page, "comboboxbeforeselect");
 					const input = page.locator("#input");
 					const items = page.locator("u-combobox data");
+					const live = page.locator("[aria-live='assertive']");
 
 					await input.fill("bergen");
 					await input.press("Enter");
@@ -1132,23 +1134,28 @@ export const comboboxSuite = (
 					expect(await logged(page, "comboboxbeforematch")).toHaveLength(1);
 
 					await input.press("Enter");
-					await expect(items).toHaveCount(0); // Toggled off through the matched option, as "bergen" is not the item text "Bergen"
+					await page.waitForTimeout(100);
+					await expect(items).toHaveText(["Bergen"]); // Still matched, but already an item, so Enter only adds and never toggles off
 					await expect(input).toHaveValue("bergen");
+					await expect(live).not.toHaveText(/Invalid value/); // A matched option is never invalid
 					expect(await logged(page, "comboboxbeforematch")).toHaveLength(2);
+					expect(await logged(page, "comboboxbeforeselect")).toHaveLength(1);
 
 					await input.fill("oslo");
 					await input.press("Enter");
-					await expect(items.first()).toHaveAttribute("value", "oslo-id"); // Value from option
-					await expect(items.first()).toHaveText("Oslo"); // Label from option
-					await expect(items.first()).toHaveAttribute("role", "option");
-					await expect(items.first()).toHaveAttribute("tabindex", "-1");
+					await expect(items.nth(1)).toHaveAttribute("value", "oslo-id"); // Value from option
+					await expect(items.nth(1)).toHaveText("Oslo"); // Label from option
+					await expect(items.nth(1)).toHaveAttribute("role", "option");
+					await expect(items.nth(1)).toHaveAttribute("tabindex", "-1");
 					await expect(input).toBeFocused(); // Focus stays in input after adding
 					expect(await logged(page, "comboboxbeforematch")).toHaveLength(3);
 
 					await input.fill("Oslo");
 					await input.press("Enter");
-					await expect(items).toHaveCount(0); // Same text as the item still goes through the option, which is selected and toggles off
+					await page.waitForTimeout(100);
+					await expect(items).toHaveText(["Bergen", "Oslo"]); // Same text as the item still goes through the option, and is kept
 					expect(await logged(page, "comboboxbeforematch")).toHaveLength(4);
+					expect(await logged(page, "comboboxbeforeselect")).toHaveLength(2);
 				});
 
 				test("Enter does not announce invalid value while the datalist is busy", async ({
@@ -1277,9 +1284,9 @@ export const comboboxSuite = (
 					await page.keyboard.down("Enter"); // Playwright sets repeat: true on a second down without up, like a held key
 					await page.keyboard.down("Enter");
 					await page.keyboard.up("Enter");
-					await expect(items).toHaveText(["Custom"]); // Committed once, as a repeat would toggle the created item off again
+					await expect(items).toHaveText(["Custom"]); // Committed once, so the created item does not flicker on key repeat
 					await expect(input).toHaveValue("Custom");
-					expect(await logged(page, "comboboxbeforematch")).toHaveLength(1);
+					expect(await logged(page, "comboboxbeforematch")).toHaveLength(1); // Matched once, as repeats are ignored
 					expect(await logged(page, "submit")).toEqual([]); // Submit is still prevented on every repeat
 				});
 			});
@@ -1368,6 +1375,10 @@ export const comboboxSuite = (
 							// Prefix matching as in the docs: loop all options and set selected accordingly
 							el.addEventListener("comboboxbeforematch", (event) => {
 								event.preventDefault();
+								const { detail } = event as CustomEvent<HTMLOptionElement>;
+								if (!window.__log) window.__log = {};
+								if (!window.__log.matchdetail) window.__log.matchdetail = [];
+								window.__log.matchdetail.push(detail?.label ?? "none"); // Label of the exact match offered by the component, before the custom match
 								const query = el.control?.value.trim().toLowerCase() || "";
 								for (const opt of el.options)
 									opt.selected =
@@ -1386,17 +1397,25 @@ export const comboboxSuite = (
 					await expect(input).toHaveValue("tron"); // Multiple mode keeps the text
 					await expect(oslo).toHaveAttribute("selected"); // Option selection mirrors the items again after the custom match
 					await expect(trondheim).toHaveAttribute("selected");
+					expect(await logged(page, "matchdetail")).toEqual(["none"]); // No label equals "tron", so detail is undefined
 
 					await input.fill("osl");
 					await input.press("Enter");
-					await expect(items).toHaveText(["Trondheim"]); // Custom match toggles the existing item
-					await expect(oslo).not.toHaveAttribute("selected");
+					await page.waitForTimeout(100);
+					await expect(items).toHaveText(["Oslo", "Trondheim"]); // Custom match of an existing item is kept, as Enter only adds
+					await expect(oslo).toHaveAttribute("selected");
+					await expect(trondheim).toHaveAttribute("selected");
 
 					await update(page, { multiple: false, items: [] });
-					await input.fill("berg");
+					await input.fill("bergen");
 					await input.press("Enter");
 					await expect(items).toHaveText(["Bergen"]);
 					await expect(input).toHaveValue("Bergen"); // Single mode syncs the input to the custom match
+					expect(await logged(page, "matchdetail")).toEqual([
+						"none",
+						"none",
+						"Bergen",
+					]); // detail is the option whose label equals the text, also when prevented
 
 					await input.fill("xyz");
 					await input.press("Enter");
@@ -1407,6 +1426,101 @@ export const comboboxSuite = (
 					await input.blur();
 					await expect(items).toHaveText(["Trondheim"]); // Blur uses the custom match too
 					await expect(input).toHaveValue("Trondheim");
+				});
+
+				for (const multiple of [false, true]) {
+					test(`rejects the match when comboboxbeforematch is prevented and all options are deselected in ${multiple ? "multiple" : "single"} mode`, async ({
+						page,
+					}) => {
+						await render(page, { multiple, items: [OSLO] });
+						await page
+							.locator("u-combobox")
+							.evaluate((el: UHTMLComboboxElement) => {
+								el.addEventListener("comboboxbeforematch", (event) => {
+									event.preventDefault();
+									for (const opt of el.options) opt.selected = false; // Options mirror the items, so reject by deselecting all, as in the docs
+								});
+							});
+						await resetLog(page, "comboboxbeforeselect");
+						const input = page.locator("#input");
+						const items = page.locator("u-combobox data");
+						const oslo = page.locator(OPT_TAG, { hasText: "Oslo" });
+						const live = page.locator("[aria-live='assertive']");
+
+						await input.click();
+						await input.fill("bergen"); // Would match Bergen without the prevent
+						await input.press("Enter");
+						await page.waitForTimeout(100);
+						await expect(items).toHaveText(["Oslo"]); // Not Bergen, and the existing item is not taken for the custom match
+						await expect(input).toHaveValue("bergen"); // Typed text stays until blur
+						await expect(live).toHaveText(/Invalid value/); // Rejected is no match
+						await expect(oslo).toHaveAttribute("selected"); // Option selection mirrors the items again
+						expect(await logged(page, "comboboxbeforeselect")).toEqual([]);
+
+						await input.blur();
+						await expect(items).toHaveText(["Oslo"]);
+						await expect(input).toHaveValue(multiple ? "bergen" : "Oslo"); // Single mode syncs to the item on blur
+						expect(await logged(page, "comboboxbeforeselect")).toEqual([]);
+					});
+				}
+
+				test("does not match a hidden or disabled option", async ({ page }) => {
+					await render(page, {
+						multiple: true,
+						options: [
+							{ text: "Oslo", value: "oslo-id", hidden: true },
+							{ text: "Bergen" },
+							{ text: "Trondheim" },
+						],
+					});
+					await page
+						.locator(OPT_TAG, { hasText: "Bergen" })
+						.evaluate((el) => el.setAttribute("disabled", "")); // Written directly, as the harness has no disabled option
+					await resetLog(page, "comboboxbeforematch");
+					const input = page.locator("#input");
+					const items = page.locator("u-combobox data");
+					const live = page.locator("[aria-live='assertive']");
+
+					await input.click();
+					await input.fill("oslo");
+					await input.press("Enter");
+					await page.waitForTimeout(100);
+					await expect(items).toHaveCount(0); // Hidden option is not offered, so it is not matched
+					await expect(live).toHaveText(/Invalid value/);
+
+					await input.fill("bergen");
+					await input.press("Enter");
+					await page.waitForTimeout(100);
+					await expect(items).toHaveCount(0); // Disabled option is not matched
+
+					await input.fill("trondheim");
+					await input.press("Enter");
+					await expect(items).toHaveText(["Trondheim"]);
+					expect(await logged(page, "comboboxbeforematch")).toHaveLength(3); // Match is still dispatched, so a consumer can match or create
+				});
+
+				test("restores the text after a prevented clear removal, also when the consumer prevents beforeinput", async ({
+					page,
+				}) => {
+					await render(page, {
+						controlled: "manual",
+						items: [OSLO],
+						clear: true,
+					}); // Rejects every select
+					await page.locator("#input").evaluate((el) => {
+						el.addEventListener("beforeinput", (event) => {
+							if ((event as InputEvent).inputType === "insertText")
+								event.preventDefault(); // A consumer rejecting edits must not be able to leave the input empty while the item stays
+						});
+					});
+					const input = page.locator("#input");
+					const items = page.locator("u-combobox data");
+					await expect(input).toHaveValue("Oslo");
+
+					await input.click();
+					await page.locator('button[type="reset"]').click();
+					await expect(items).toHaveText(["Oslo"]); // Prevented
+					await expect(input).toHaveValue("Oslo"); // Restored, as the revert mirrors confirmed state and is not cancelable
 				});
 
 				test("keeps typed text after a prevented pick in single mode, and reverts to the item on blur", async ({

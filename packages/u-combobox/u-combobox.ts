@@ -42,8 +42,9 @@ import { version } from "./package.json"; // Identity of this implementation
  *                 Only used by blur, as the item is an already confirmed selection. Enter always matches against the options.
  * - announce:     announce data-sr-invalid through the live region. Skipped while the datalist has aria-busy="true",
  *                 as the options are still loading
- * - match:        dispatch comboboxbeforematch with the first option whose label equals the trimmed text case-insensitive. Only on Enter and blur, never while typing.
- *                 The consumer can prevent and set option.selected to pick another option. The result is the matched option,
+ * - match:        dispatch comboboxbeforematch with the first enabled and non-hidden option whose label equals the trimmed text case-insensitive. Only on Enter and blur, never while typing.
+ *                 Option selection is cleared while the event dispatches, so the consumer can prevent and set option.selected to pick another option,
+ *                 or prevent and select nothing to reject the match. The result is the matched option,
  *                 or a new item made from the text when creatable and no option matched (Enter only, never blur), or nothing.
  *                 Match is never dispatched for empty text, and never without a datalist (creatable still creates from the text on Enter)
  * - select:       dispatch comboboxbeforeselect with the item to add or remove.
@@ -81,11 +82,11 @@ import { version } from "./package.json"; // Identity of this implementation
  * - Empty text
  *   - Single:   select to remove the item, if any. Accepted: remove and sync input. Prevented: nothing, the empty text stays until blur, which asks to remove again
  *   - Multiple: nothing
- * - Text (also when equal to an item, as an item can only be toggled through its option)
+ * - Text (also when equal to an item, as an item can only be removed through its option or chip)
  *   - Both:     match. No result: announce, unless the text equals an item, as a confirmed item is never invalid
  *   - Single:   no result: typed text stays until blur. Result equal to the current item: sync input.
  *               Otherwise replace. Accepted: sync input. Prevented: nothing, typed text stays until blur
- *   - Multiple: no result: nothing. Otherwise toggle. Text is not changed
+ *   - Multiple: no result: nothing. Result already an item: nothing, as Enter only adds. Otherwise add. Text is not changed
  *
  * Blur (focus leaves <u-combobox>; a pointer down inside defers the check until the press ends, so a click can refocus first)
  * - Multiple: nothing
@@ -124,14 +125,15 @@ import { version } from "./package.json"; // Identity of this implementation
  *
  * Always
  * - Disabled or readonly input: every action above is ignored, blur included. Only the text of a sync or consumer write is still cached
- * - No datalist: free text. Input is never synced, match is never dispatched
+ * - No datalist: free text. Input is never synced, match is never dispatched.
+ *                Enter or blur on empty text still removes the item in single mode, as empty text is no selection
  *
  * | Action       | Single                                                    | Multiple                              |
  * | :----------- | :-------------------------------------------------------- | :------------------------------------ |
  * | Pick         | Revert input -> replace -> sync input                     | Revert input -> toggle                |
  * | Type         | Cache text                                                | Cache text                            |
  * | Enter empty  | Remove item                                               | Nothing                               |
- * | Enter text   | Match -> replace/create -> sync, else announce, keep text | Match -> toggle/create, else announce |
+ * | Enter text   | Match -> replace/create -> sync, else announce, keep text | Match -> add/create, else announce    |
  * | Blur empty   | Remove item                                               | Nothing                               |
  * | Blur same    | Sync input (whitespace only)                              | Nothing                               |
  * | Blur other   | Match -> replace -> sync, else sync input (never creates) | Nothing                               |
@@ -367,15 +369,19 @@ const dispatchMatch = (
 	let match: HTMLOptionElement | undefined;
 
 	if (list) {
-		match = [...options].find(
-			(o) => !isDisabled(o) && getLabel(o).trim().toLowerCase() === find,
+		const opts = [...options];
+		match = opts.find(
+			(opt) =>
+				!opt.hidden &&
+				!isDisabled(opt) &&
+				getLabel(opt).trim().toLowerCase() === find,
 		);
 		const event = { bubbles: true, cancelable: true, detail: match };
 
 		if (!self.dispatchEvent(new CustomEvent("comboboxbeforematch", event)))
-			match = [...options].find(isSelected); // Prevented means custom matching, so use the first option the consumer selected
+			match = opts.find(isSelected); // Prevented means custom matching: the first option the handler selected, or nothing to reject the match
 
-		syncOptionsWithItems(self); // Keep option selection on the current items, as consumer can change option.selected in comboboxbeforematch. The matched option is selected by onMutations once its <data> is added, so a prevented or restored select never leaves a stale selection
+		syncOptionsWithItems(self); // Restore the mirror of the current items. The matched option is selected by onMutations once its <data> is added, so a prevented or restored select never leaves a stale selection
 	}
 
 	if (!match && create && self.creatable) return { value, label: value }; // Create from text if no match and creatable
@@ -402,6 +408,7 @@ const dispatchSelect = (
 
 	if (remove && fromOption && !multiple) {
 		syncInputWithItemSingleMode(self, true); // Already the item in single mode, so only sync the input text. Multiple mode toggles. A <u-datalist> pick runs this inside its own input dispatch, and its setValue skips its change as this one already committed the text
+		then?.(true); // Settled as consumed: the item is confirmed, so a blur fallback has nothing to revert
 		return true;
 	}
 	if (focus) focus.focus(FOCUS_VISIBLE); // Move focus if item might be removed (can be prevented by comboboxbeforeselect)
@@ -460,10 +467,11 @@ const onCommit = (self: UHTMLComboboxElement, isBlur = false) => {
 		else if (isBlur) syncInputWithItemSingleMode(self, true); // Sync input to trim input value
 	} else if (!isBlur || !isItem) {
 		const match = dispatchMatch(self, value, !isBlur); // Blur never creates from text, as leaving the field is not a confirmation
-		if (match) dispatchSelect(self, match, true, then);
+		const isAdded = multiple && !!match && self.values.includes(match.value); // Already an item: keep it, as Enter only adds. Removal is only intended through a pick or a chip
+		if (match && !isAdded) dispatchSelect(self, match, true, then);
 		else if (isBlur)
 			syncInputWithItemSingleMode(self, true); // No match on blur falls back to the item
-		else if (list && !isItem && attr(list, "aria-busy") !== "true")
+		else if (!match && list && !isItem && attr(list, "aria-busy") !== "true")
 			speak(self._texts.invalid); // No match on Enter keeps the typed text
 	} else syncInputWithItemSingleMode(self, true); // Blur on the item text only trims surrounding whitespace, as the item is a confirmed selection
 };
@@ -505,7 +513,8 @@ const onClick = (self: UHTMLComboboxElement, event: MouseEvent) => {
 		// as a replaced item is already synced with change. A prevented removal expires the commit and reverts to the text before the clear without change, as the text ends up unchanged
 		const then = (consumed: boolean) => {
 			if (consumed) return control.value || dispatchChange(control);
-			if (text !== control.value) setValue(control, text, "insertText", false); // Prevent input event being handled as "click" on option
+			if (text !== control.value)
+				setValue(control, text, "insertText", false, false); // Not cancelable, as it restores confirmed state like the item sync. Prevent input event being handled as "click" on option
 		};
 
 		// If a synchronous input handler removes the selected <data> when the text is cleared, setValue runs that handler before this call
@@ -778,11 +787,7 @@ const syncOptionsWithItems = (self: UHTMLComboboxElement) => {
 	const { _texts, list, multiple, values, options } = self;
 	attr(list, "data-sr-of", _texts.of); // Forward of text
 	attr(list, SAFE_MULTISELECTABLE, `${multiple}`); // Forward multiselect
-	for (const opt of options) {
-		const selected = values.includes(getValue(opt));
-		if ("selected" in opt) opt.selected = selected; // Avoid shadowing the accessor before u-option upgrades
-		attr(opt, "selected", selected ? "" : null); // Also add attribute as u-option might not be initialized yet
-	}
+	for (const opt of options) setSelected(opt, values.includes(getValue(opt)));
 };
 
 // TODO: aria-required="true" => setCustomValidity
@@ -829,12 +834,16 @@ function isModeChange(this: UHTMLComboboxElement, r: MutationRecord) {
 const getLabel = (el: Element) => attr(el, "label") ?? getText(el);
 const getValue = (el: Element) => attr(el, "value") ?? getText(el);
 const getItem = (el: Element) => ({ label: getLabel(el), value: getValue(el) });
+const isInert = ({ control }: UHTMLComboboxElement) =>
+	control?.readOnly || control?.matches(":disabled"); // Using :disabled to respect fieldset[disabled] as well
 const isDisabled = (opt: HTMLOptionElement) =>
 	opt.disabled ?? opt.hasAttribute("disabled");
 const isSelected = (opt: HTMLOptionElement) =>
 	opt.selected ?? opt.hasAttribute("selected");
-const isInert = ({ control }: UHTMLComboboxElement) =>
-	control?.readOnly || control?.matches(":disabled"); // Using :disabled to respect fieldset[disabled] as well
+const setSelected = (opt: HTMLOptionElement, selected: boolean) => {
+	if ("selected" in opt) opt.selected = selected; // Avoid shadowing the accessor before u-option upgrades
+	attr(opt, "selected", selected ? "" : null); // Also the attribute, as u-option might not be initialized yet
+};
 
 // Compatibility with <u-datalist> before 3.0.0. To drop support, delete this section and inline false at its two call sites:
 // - Before 2.0.3 the pick events had an empty inputType instead of insertReplacementText (onBeforeinput)
@@ -847,7 +856,9 @@ const isLegacyPickWrite = (self: UHTMLComboboxElement) =>
 // Resolve the connected <u-combobox> of this implementation owning an input
 const getOwner = (input: Node | null | undefined) => {
 	const parent = input?.parentElement as UHTMLComboboxElement;
-	return parent && REGISTRY[VERSION].has(parent) ? parent : null;
+	return parent && REGISTRY[VERSION].has(parent) && parent.control === input
+		? parent
+		: null; // Only the control, as a sibling <input type="hidden"> carrying the form value is not owned
 };
 
 // One shared window capture listener for all instances in light DOM, instead of one per instance running for every input event on the page.

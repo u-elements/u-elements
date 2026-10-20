@@ -511,6 +511,7 @@ export const comboboxSuite = (
 					const input = page.locator("#input");
 					const item = page.locator("u-combobox data");
 					await expect(input).toHaveValue("Oslo");
+					await resetDocLog(page);
 
 					await input.click();
 					await input.fill("os");
@@ -522,6 +523,9 @@ export const comboboxSuite = (
 					await expect(input).toHaveValue("Oslo"); // Synced back from the item
 					expect(await logged(page, "comboboxbeforeselect")).toEqual([]);
 					expect(await logged(page, "comboboxbeforematch")).toEqual([]); // Picks never match
+					await afterRendered(page);
+					if (!IS_NATIVE)
+						expect(await docLogged(page, "change")).toEqual(["Oslo"]); // Exactly one change: the sync commits the text inside the pick's input dispatch, so the <u-datalist> setValue skips its own, like the browser. Skipped for the simulated native pick, which dispatches its own change
 				});
 
 				test("blur matches, reverts on no match and clears on empty", async ({

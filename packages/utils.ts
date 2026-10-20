@@ -225,7 +225,8 @@ export const dispatchChange = (input: HTMLInputElement) =>
  * @param {string} data The new value
  * @param {inputType} type of the new event, pass false if silent. Required, as an empty inputType is what picks from <u-datalist> before 2.0.3 look like
  * @param {boolean} change Whether to dispatch change after input. Defaults to true unless silent. Pass false for syncs that are not user commits (i.e. mount, programmatic item changes, form reset).
- * Like the browser, change is only dispatched if the value is still changed after the input event, as an input handler may revert the write (i.e. <u-combobox> reverting a datalist pick)
+ * Like the browser, change is only dispatched if the value differs from the text as of the last change: the value before the write, or the value at a change an input handler
+ * dispatched meanwhile. An input handler may revert the write (i.e. <u-combobox> reverting a datalist pick), or rewrite it and commit it itself (i.e. <u-combobox> syncing a re-picked item)
  * @param {boolean} cancelable Whether a consumer can prevent beforeinput to reject the edit, like the native event. Defaults to true.
  * Pass false for writes that mirror already confirmed state (i.e. <u-combobox> syncing the input to its item), as the veto point for those is the select, not the edit
  * @return {boolean} false if a consumer prevented beforeinput, in which case the value is left untouched and no input or change is dispatched
@@ -242,15 +243,22 @@ export const setValue = (
 	const event = { bubbles: true, composed: true, data, inputType: type || "" };
 	const before = { ...event, cancelable }; // beforeinput is cancelable like the native event, so a consumer can reject the edit
 	const inputType = input.selectionEnd === null && input.type; // Input types without selection support (i.e. 'email', 'number', 'date') do not support setRangeText, so temporarily switch to text
-	const prev = input.value;
+	let last = input.value; // Text as of the last change, like the browser tracks it: the value before the write, or the value at a change dispatched by an input handler
+	const onChange = () => {
+		last = input.value;
+	};
 
 	if (!silent && !input.dispatchEvent(new InputEvent("beforeinput", before)))
 		return false;
 	if (inputType) input.type = "text";
 	input.setRangeText(data, 0, input.value.length, "end"); // Using setRangeText to not touch HTMLInputElement.prototype, aligning with browser standard
 	if (inputType) input.type = inputType; // Revert to original input type
-	if (!silent) input.dispatchEvent(new InputEvent("input", event));
-	if (change && input.value !== prev) dispatchChange(input); // Only if the value ended up changed, as an input handler may have reverted it
+	if (!silent) {
+		input.addEventListener("change", onChange, true); // Capture, so a change stopped by a handler on the input still counts
+		input.dispatchEvent(new InputEvent("input", event));
+		input.removeEventListener("change", onChange, true);
+	}
+	if (change && input.value !== last) dispatchChange(input); // Only if the value ended up changed, as an input handler may have reverted it, or already dispatched change for it
 	return true;
 };
 

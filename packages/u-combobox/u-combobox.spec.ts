@@ -126,6 +126,43 @@ test.describe("DOM", () => {
 				await expect(page.locator("u-combobox data")).toHaveCount(0);
 			});
 
+			test("falls back after a prevented clear or blur select that re-rendered the unchanged item as a new <data>", async ({
+				page,
+			}) => {
+				await mount(
+					page,
+					combobox()
+						.replace("<input", '<data value="oslo-id">Oslo</data><input')
+						.replace(
+							"</u-combobox>",
+							'<button type="reset"></button></u-combobox>',
+						),
+				);
+				const input = page.locator("#input");
+				const items = page.locator("u-combobox data");
+				await expect(input).toHaveValue("Oslo");
+
+				// A controlled handler can prevent the select and re-render the unchanged item as a new node (i.e. Angular *ngFor without trackBy)
+				await page.evaluate(() => {
+					document
+						.querySelector("u-combobox")
+						?.addEventListener("comboboxbeforeselect", (e) => {
+							e.preventDefault();
+							const data = (e.target as Element).querySelector("data");
+							data?.replaceWith(data.cloneNode(true));
+						});
+				});
+
+				await page.locator('u-combobox button[type="reset"]').click();
+				await expect(items).toHaveText(["Oslo"]); // Prevented
+				await expect(input).toHaveValue("Oslo"); // Reverted to the text before the clear, as the removal was rejected and the item is unchanged
+
+				await input.fill("Bergen");
+				await input.blur();
+				await expect(items).toHaveText(["Oslo"]);
+				await expect(input).toHaveValue("Oslo"); // Falls back to the item, as the match was rejected and the item is unchanged
+			});
+
 			test("works after being moved in the DOM", async ({ page }) => {
 				await mount(page, `${combobox("data-multiple")}<div id="other"></div>`);
 				await listen(page, "comboboxbeforeselect");

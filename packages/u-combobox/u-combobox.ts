@@ -401,8 +401,8 @@ const dispatchSelect = (
 		(multiple ? items[index - 1] || items[index + 1] || control : control);
 
 	if (remove && fromOption && !multiple) {
-		syncInputWithItemSingleMode(self, true);
-		return true; // Already the item in single mode, so only sync the input text. Multiple mode toggles
+		syncInputWithItemSingleMode(self, true); // Already the item in single mode, so only sync the input text. Multiple mode toggles. A <u-datalist> pick runs this inside its own input dispatch, and its setValue skips its change as this one already committed the text
+		return true;
 	}
 	if (focus) focus.focus(FOCUS_VISIBLE); // Move focus if item might be removed (can be prevented by comboboxbeforeselect)
 
@@ -651,8 +651,8 @@ const onMutations = (self: UHTMLComboboxElement, edit?: MutationRecord[]) => {
 	attr(control, "list", useId(list)); // Connect datalist and input
 	attr(self._listbox, ARIA_LABEL, _texts.items);
 	self._umutate?.takeRecords(); // Clear mutation records caused by our own attribute writes. Must run before dispatching events below, so consumer mutations made in event handlers are kept
-	syncSingleInputWithItemChange(self); // Runs last as it dispatches events
-	if (edits.length) settleCommit(self, self._commit); // An added or removed item consumes the pending commit, also in multiple mode and without a datalist
+	syncSingleInputWithItemChange(self); // Runs last as it dispatches events, and consumes the pending commit on an item change in single mode with a datalist
+	if (edits.length && (multiple || !list)) settleCommit(self, self._commit); // Otherwise any added or removed item consumes the pending commit. Not in single mode with a datalist, as a prevented select re-rendered as a new <data> with the same text and value is no item change, and the commit must expire for the blur or clear fallback to run
 };
 
 // Announce an added or removed item through aria-label when focus moved (chip removal), otherwise through the live region

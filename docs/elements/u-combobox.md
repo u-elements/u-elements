@@ -10,7 +10,7 @@ import { data } from '../filesize.data.ts'
 
 **Quick intro:**
 - Use `<data>` as direct child elements - these are the removable items
-- Use `<input>` as as direct child and `<u-datalist>` to allow adding and suggesting items
+- Use `<input>` as direct child and `<u-datalist>` to allow adding and suggesting items
 - Use `data-multiple` to allow selecting multiple items
 - Use `data-creatable` to allow creating items not in the list
 - Use `data-sr-*` attributes to translate screen reader announcements

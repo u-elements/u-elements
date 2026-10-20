@@ -322,7 +322,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	}
 	get control(): HTMLInputElement | null {
 		if (!this._control?.isConnected)
-			this._control = this.querySelector(":scope > input"); // Pure lookup, a new or replaced input is detected by onMutations through its mutation record
+			this._control = this.querySelector(':scope > input:not([type="hidden"])'); // Pure lookup, a new or replaced input is detected by onMutations through its mutation record
 		return this._control; // Inspired by https://developer.mozilla.org/en-US/docs/Web/API/HTMLLabelElement/control
 	}
 	get list(): HTMLDataListElement | null {
@@ -777,7 +777,7 @@ const syncOptionsWithItems = (self: UHTMLComboboxElement) => {
 	attr(list, SAFE_MULTISELECTABLE, `${multiple}`); // Forward multiselect
 	for (const opt of options) {
 		const selected = values.includes(getValue(opt));
-		opt.selected = selected; // Add property as attribute and proptery can get out of sync
+		if ("selected" in opt) opt.selected = selected; // Avoid shadowing the accessor before u-option upgrades
 		attr(opt, "selected", selected ? "" : null); // Also add attribute as u-option might not be initialized yet
 	}
 };

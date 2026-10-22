@@ -85,13 +85,11 @@ export class UHTMLDataListElement extends UHTMLElement {
 		on(this._root, EVENTS_IDLE_CAPTURE, this, true); // Use capture to catch non-bubling focus
 
 		// Close when focus leaves the input and the list, deferred while an option is pressed. Bound on the root as the input is outside this.
-		// Not on Android, as Samsung Internet sets keyboard-focus to <body> when screen reader is on <datalist>, so a blur must not close
-		if (!IS_ANDROID)
-			this._unfocus = onFocusLeave(
-				this._root,
-				() => onBlurred(this),
-				(node) => this._input === node || this.contains(node),
-			);
+		this._unfocus = onFocusLeave(
+			this._root,
+			() => onBlurred(this),
+			(node) => this._input === node || this.contains(node),
+		);
 
 		this._umutate = onMutation(this, onMutations, {
 			attributeFilter: ["disabled", "hidden", "label", "value"], // Listening to hidden attribute to update on open

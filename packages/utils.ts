@@ -7,6 +7,7 @@ export const isBrowser = () =>
 const IS_BROWSER = isBrowser(); // Cache this since it's used in many places and can be dynamic in tests
 const AGENT = IS_BROWSER ? navigator.userAgent : "";
 export const IS_ANDROID = /android/i.test(AGENT);
+export const IS_SAMSUNGINTERNET = /samsungbrowser/i.test(AGENT); // Samsung Internet on Android
 export const IS_FIREFOX = /firefox/i.test(AGENT);
 export const IS_IOS = /iPad|iPhone|iPod/.test(AGENT);
 export const IS_SAFARI = /^((?!chrome|android).)*safari/i.test(AGENT);
@@ -149,7 +150,7 @@ export const getInputLabel = (el: Element) => {
 	const label = attr(el, "aria-label") || "";
 	const labels = attr(el, "aria-labelledby")?.split(" ") || [];
 	return [
-		...labels.map((id) => document.getElementById(id.trim() || "-")), // Get all labelledby elements
+		...labels.map((id) => getRoot(el).getElementById(id.trim() || "-")), // Get all labelledby elements
 		...Array.from((el as HTMLInputElement).labels || []), // Get all <label> elements
 	]
 		.reduce((acc, el) => acc || el?.innerText?.trim() || "", label)
@@ -266,7 +267,9 @@ export const setValue = (
  * onFocusLeave
  * @description Run callback once focus has left, also after a press inside that is released outside without a click.
  * Pressing something inside with tabindex="-1" blurs before the click refocuses, so a press defers the check until
- * pointerup or pointercancel, then one tick, letting the click refocus first. A drag out releases without a click and still runs the check
+ * pointerup or pointercancel, then one tick, letting the click refocus first. A drag out releases without a click and still runs the check.
+ * In Samsung Internet, focus landing on <body> does not count as leaving, as it moves keyboard focus to <body> while TalkBack is on a listbox.
+ * Not on all of Android, as a tap on dead space also lands on <body>, and that must still count as leaving in Chrome
  * @param {Node} el Element or root to listen on. Also what counts as inside, unless isInside is given
  * @param {Function} fn Runs when the focused element is no longer inside
  * @param {Function} [isInside] Optional predicate, i.e. to also count a connected input outside el
@@ -284,7 +287,10 @@ export const onFocusLeave = (
 		clearTimeout(pending);
 		pending = setTimeout(() => {
 			pending = undefined;
-			if (!isInside(getFocused(el))) fn();
+			if (isInside(getFocused(el))) return;
+			if (IS_SAMSUNGINTERNET && document.activeElement === document.body)
+				return; // Focus went nowhere, see description. document.activeElement, as getFocused returns null for a shadow root when focus is outside it
+			fn();
 		}, 0); // Delay to allow focus to be set on new element
 	};
 	const cancel = () => {
@@ -383,17 +389,13 @@ export const afterRender = (callback: () => void) => {
 	if (!RENDER_PORT) {
 		const { port1, port2 } = new MessageChannel();
 		port1.onmessage = () => {
-			try {
-				RENDER_QUEUE.shift()?.(); // Messages arrive in post order, so the oldest callback is always the one posted for
-			} finally {
-				// Every push posts exactly one message, so an empty queue means nothing is in flight.
-				// Close both ports then, as a started port keeps Node alive (i.e. jsdom tests), and recreate on the next call
-				if (!RENDER_QUEUE.length) {
-					port1.close();
-					port2.close();
-					RENDER_PORT = undefined;
-				}
+			const callback = RENDER_QUEUE.shift();
+			if (!RENDER_QUEUE.length) {
+				port1.close(); // Cleanup before callback in case callback throws.
+				port2.close(); // Cleanup needed on Node (i.e. jsdom tests), as a started port keeps Node alive
+				RENDER_PORT = undefined;
 			}
+			callback?.();
 		};
 		RENDER_PORT = port2;
 	}

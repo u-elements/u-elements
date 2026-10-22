@@ -2181,6 +2181,32 @@ export const comboboxSuite = (
 			});
 
 			test.describe(name("mount"), () => {
+				test("mirrors items into options replaced after mount", async ({
+					page,
+				}) => {
+					await render(page, { multiple: true, items: [OSLO, BERGEN] });
+					const items = page.locator("u-combobox data");
+					const oslo = page.locator(OPT_TAG, { hasText: "Oslo" });
+					const bergen = page.locator(OPT_TAG, { hasText: "Bergen" });
+					const other = page.locator(OPT_TAG, { hasText: "Other" });
+
+					await expect(oslo).toHaveAttribute("selected");
+					await expect(bergen).toHaveAttribute("selected");
+
+					// New ids force the framework to create new option elements, so only the list contents mutate (i.e. async search results)
+					await update(page, {
+						options: [
+							{ text: "Other" },
+							{ id: "oslo-2", value: "oslo-id", text: "Oslo" },
+							{ id: "bergen-2", text: "Bergen" },
+						],
+					});
+					await expect(oslo).toHaveAttribute("selected"); // The replaced options mirror the items again
+					await expect(bergen).toHaveAttribute("selected");
+					await expect(other).not.toHaveAttribute("selected");
+					await expect(items).toHaveText(["Oslo", "Bergen"]); // Items are untouched by an option change
+				});
+
 				test("syncs single mode input on mount and dispatches input but not change", async ({
 					page,
 				}) => {
@@ -2598,6 +2624,20 @@ export const comboboxSuite = (
 						);
 						await items.first().evaluate((el) => (el as HTMLElement).click());
 						await expect(items).toHaveCount(1);
+						await expect(items.first()).toHaveAttribute(
+							"aria-disabled",
+							"true",
+						); // Items can not be removed while inert
+						await expect(items.first()).not.toHaveAttribute("tabindex"); // So a press must not focus the item either
+						await items
+							.first()
+							.click({ position: { x: 2, y: 2 }, force: true }); // Force, as the item has pointer-events: none
+						await expect(items.first()).not.toBeFocused();
+
+						await update(page, { inputAttrs: {} });
+						await expect(items.first()).not.toHaveAttribute("aria-disabled"); // Removable again
+						await expect(items.first()).toHaveAttribute("tabindex", "-1");
+						await update(page, { inputAttrs: { [state]: "" } });
 
 						if (state === "readonly") {
 							await input.focus();
@@ -2869,6 +2909,44 @@ export const comboboxSuite = (
 					await expect(items).toHaveCount(3);
 					await expect(items.nth(1)).toBeFocused(); // No previous, so the next item
 					expect(await logged(page, "comboboxbeforeselect")).toHaveLength(2);
+				});
+
+				test("removes the pressed item when two items share a value", async ({
+					page,
+				}) => {
+					await render(page, {
+						multiple: true,
+						controlled: "manual",
+						items: [OSLO, { value: "Bergen", label: "Bergen 1" }],
+					}); // Rejects every removal, so the detail can be inspected while both items remain
+					await page
+						.locator("u-combobox")
+						.evaluate((el: UHTMLComboboxElement) => {
+							// Inserted outside the framework, as frameworks keying items by value (i.e. Svelte) refuse a duplicate. No update follows, so no render reconciles it away
+							const dupe = document.createElement("data");
+							dupe.value = "Bergen";
+							dupe.textContent = "Bergen 2";
+							el.control?.insertAdjacentElement("beforebegin", dupe);
+							el.addEventListener("comboboxbeforeselect", (event) => {
+								const { detail } = event as CustomEvent<HTMLDataElement>;
+								if (!window.__log) window.__log = {};
+								if (!window.__log.detail) window.__log.detail = [];
+								window.__log.detail.push(detail.textContent || ""); // Which of the equal-value items the component wants to remove
+							});
+						});
+					const items = page.locator("u-combobox data");
+
+					await items.nth(2).focus();
+					await items.nth(2).press("Backspace");
+					await expect(items.nth(1)).toBeFocused(); // Focus moved to the previous item of the pressed one, not of the first with that value
+					expect(await logged(page, "detail")).toEqual(["Bergen 2"]); // The pressed item, not the first item with that value
+
+					await items.nth(1).press("Backspace");
+					await expect(items.nth(0)).toBeFocused();
+					expect(await logged(page, "detail")).toEqual([
+						"Bergen 2",
+						"Bergen 1",
+					]);
 				});
 
 				test("does not obstruct datalist keyboard navigation", async ({

@@ -149,6 +149,7 @@ myCombobox.addEventListener('comboboxbeforematch', (event) => {
 
 - `<u-combobox>` renders as `display: block`, while `<data>` renders as `display: inline-block` with a `::after` element to render the removal `×`.
 - Style the wrapper around `<data>`-elements can be styled using `::part(items)`.
+- `<data>` elements get `aria-disabled="true"` while the `<input>` is `disabled` or `readonly`, so style non-removable items using `data[aria-disabled="true"]`.
 - If the `<button type="reset">` is empty, a `×` icon is automaticallay rendered as `::before` pseudo-element.
 - If the `<button aria-expanded="false"></button>` is empty, a `▼` icon is automaticallay rendered as `::before` pseudo-element.
 
@@ -599,7 +600,6 @@ const renderToStaticMarkup = (data: string, options: string) =>
   - `Enter` with text equal to an item no longer announces `data-sr-invalid` when no option matches, as the item is a confirmed selection
   - `Enter` in multiple mode only adds. A matched option that is already an item is kept, as removal is intended through a pick or an item
   - Hidden and disabled options are never matched on `Enter` or blur
-  - Preventing `comboboxbeforematch` without selecting an option rejects the match, instead of taking the first option mirroring an existing item
   - Single mode clear button no longer caches the emptied text, so a prevented removal reverts the input to the text before the clear
   - Runtime toggle `data-multiple` and `data-creatable` syncs correctly
   - Toggle button is hidden when the input is `disabled` or `readonly`, and both buttons re-sync when these attributes change at runtime
@@ -618,6 +618,9 @@ const renderToStaticMarkup = (data: string, options: string) =>
   - Pending commits are settled by identity, so a later commit with the same text is never expired by an earlier one
   - The `comboboxprogrammaticinput` event is removed
   - Option picks from `<u-datalist>` 2.0.3 and older, which set `input.value` through the prototype setter, are no longer taken for programmatic input, so the typed text is kept
+  - Items get `aria-disabled="true"` and lose `tabindex` while the input is `disabled` or `readonly`, so a press can not focus an item that can not be removed. Style with `data[aria-disabled="true"]`
+  - Replacing options (i.e. async search results) only re-syncs the option selection, instead of a full state sync
+  - Samsung Internet parking keyboard focus on `<body>` while TalkBack is on the list is no longer treated as blur, so the typed text is kept while browsing suggestions
 - **2.1.5:** Fix state handling when mode is multiple and controlled (i.e. React)
 - **2.1.4:** Fix internal state when preventing a selection or setting value programmatically
 - **2.1.3:** Fix issue where item behind datalist could receive focus

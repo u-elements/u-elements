@@ -7,11 +7,14 @@ const { label, lang } = defineProps<{ label: string; lang?: string }>();
 
 // Import all uElements
 Promise.all(
-	Object.entries(import.meta.glob([
-		"../../../packages/*/u-*.ts",
-		"!../../../packages/**/*.spec.ts",
-	]))
-	.map(([, module]) =>(module as () => void)()),
+	Object.entries(
+		import.meta.glob([
+			"../../../packages/*/u-*.ts",
+			"!../../../packages/**/*.spec.ts",
+			"!../../../packages/**/*.suite.ts",
+			"!../../../packages/**/*.harness.ts",
+		]),
+	).map(([, module]) => (module as () => void)()),
 );
 
 let timer: ReturnType<typeof setTimeout> | number = 0;

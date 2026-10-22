@@ -7,6 +7,7 @@ export const isBrowser = () =>
 const IS_BROWSER = isBrowser(); // Cache this since it's used in many places and can be dynamic in tests
 const AGENT = IS_BROWSER ? navigator.userAgent : "";
 export const IS_ANDROID = /android/i.test(AGENT);
+export const IS_SAMSUNGINTERNET = /samsungbrowser/i.test(AGENT); // Samsung Internet on Android
 export const IS_FIREFOX = /firefox/i.test(AGENT);
 export const IS_IOS = /iPad|iPhone|iPod/.test(AGENT);
 export const IS_SAFARI = /^((?!chrome|android).)*safari/i.test(AGENT);
@@ -137,7 +138,7 @@ export const getRoot = (node: Node): Document | ShadowRoot => {
  * @param node The target node
  * @return The Element with focus in the current root
  */
-export const getFocusedElement = (node: Node) => getRoot(node).activeElement;
+export const getFocused = (node: Node) => getRoot(node).activeElement;
 
 /**
  * getInputLabel
@@ -149,7 +150,7 @@ export const getInputLabel = (el: Element) => {
 	const label = attr(el, "aria-label") || "";
 	const labels = attr(el, "aria-labelledby")?.split(" ") || [];
 	return [
-		...labels.map((id) => document.getElementById(id.trim() || "-")), // Get all labelledby elements
+		...labels.map((id) => getRoot(el).getElementById(id.trim() || "-")), // Get all labelledby elements
 		...Array.from((el as HTMLInputElement).labels || []), // Get all <label> elements
 	]
 		.reduce((acc, el) => acc || el?.innerText?.trim() || "", label)
@@ -210,31 +211,107 @@ export const customElements = {
 		window.customElements.define(name, instance),
 };
 
-// Trigger value change in React compatible manor https://stackoverflow.com/a/46012210
-export const setValue = (input: HTMLInputElement, data: string, type = "") => {
-	const event = { bubbles: true, composed: true, data, inputType: type };
-	const proto = HTMLInputElement.prototype;
-
-	input.dispatchEvent(new InputEvent("beforeinput", event));
-	Object.getOwnPropertyDescriptor(proto, "value")?.set?.call(input, data);
-	input.dispatchEvent(new InputEvent("input", event));
+/**
+ * dispatchChange
+ * @description Dispatch change like the browser does when a user commits a value
+ * @param {HTMLInputElement} input Input element to dispatch change on
+ */
+export const dispatchChange = (input: HTMLInputElement) =>
 	input.dispatchEvent(new Event("change", { bubbles: true }));
+
+/**
+ * setValue
+ * @description Set input value like the browser does on user input
+ * @param {HTMLInputElement} input Input element to set value on
+ * @param {string} data The new value
+ * @param {inputType} type of the new event, pass false if silent. Required, as an empty inputType is what picks from <u-datalist> before 2.0.3 look like
+ * @param {boolean} change Whether to dispatch change after input. Defaults to true unless silent. Pass false for syncs that are not user commits (i.e. mount, programmatic item changes, form reset).
+ * Like the browser, change is only dispatched if the value differs from the text as of the last change: the value before the write, or the value at a change an input handler
+ * dispatched meanwhile. An input handler may revert the write (i.e. <u-combobox> reverting a datalist pick), or rewrite it and commit it itself (i.e. <u-combobox> syncing a re-picked item)
+ * @param {boolean} cancelable Whether a consumer can prevent beforeinput to reject the edit, like the native event. Defaults to true.
+ * Pass false for writes that mirror already confirmed state (i.e. <u-combobox> syncing the input to its item), as the veto point for those is the select, not the edit
+ * @return {boolean} false if a consumer prevented beforeinput, in which case the value is left untouched and no input or change is dispatched
+ */
+// Trigger value change in React compatible manner https://stackoverflow.com/a/46012210
+export const setValue = (
+	input: HTMLInputElement,
+	data: string,
+	type: string | false,
+	change = type !== false,
+	cancelable = true,
+) => {
+	const silent = type === false;
+	const event = { bubbles: true, composed: true, data, inputType: type || "" };
+	const before = { ...event, cancelable }; // beforeinput is cancelable like the native event, so a consumer can reject the edit
+	const inputType = input.selectionEnd === null && input.type; // Input types without selection support (i.e. 'email', 'number', 'date') do not support setRangeText, so temporarily switch to text
+	let last = input.value; // Text as of the last change, like the browser tracks it: the value before the write, or the value at a change dispatched by an input handler
+	const onChange = () => {
+		last = input.value;
+	};
+
+	if (!silent && !input.dispatchEvent(new InputEvent("beforeinput", before)))
+		return false;
+	if (inputType) input.type = "text";
+	input.setRangeText(data, 0, input.value.length, "end"); // Using setRangeText to not touch HTMLInputElement.prototype, aligning with browser standard
+	if (inputType) input.type = inputType; // Revert to original input type
+	if (!silent) {
+		input.addEventListener("change", onChange, true); // Capture, so a change stopped by a handler on the input still counts
+		input.dispatchEvent(new InputEvent("input", event));
+		input.removeEventListener("change", onChange, true);
+	}
+	if (change && input.value !== last) dispatchChange(input); // Only if the value ended up changed, as an input handler may have reverted it, or already dispatched change for it
+	return true;
 };
 
 /**
- * isPointerDown
- * @description Prevent unwanted "blur" events when pressing something with tabIndex=-1
- * @param {Event} [event] Optional event to set mousedown/up state
- * @return {boolean} Whether mouse is currently down
+ * onFocusLeave
+ * @description Run callback once focus has left, also after a press inside that is released outside without a click.
+ * Pressing something inside with tabindex="-1" blurs before the click refocuses, so a press defers the check until
+ * pointerup or pointercancel, then one tick, letting the click refocus first. A drag out releases without a click and still runs the check.
+ * In Samsung Internet, focus landing on <body> does not count as leaving, as it moves keyboard focus to <body> while TalkBack is on a listbox.
+ * Not on all of Android, as a tap on dead space also lands on <body>, and that must still count as leaving in Chrome
+ * @param {Node} el Element or root to listen on. Also what counts as inside, unless isInside is given
+ * @param {Function} fn Runs when the focused element is no longer inside
+ * @param {Function} [isInside] Optional predicate, i.e. to also count a connected input outside el
+ * @return {Function} Cleanup function unbinding the listeners
  */
-// Prevent loosing focus on mousedown on <data> despite tabIndex -1
-const IS_PRESS = new WeakSet<Element>();
-export const isPointerDown = (el: Element, e?: Event) => {
-	if (e?.type === "pointerdown") {
-		IS_PRESS.add(el);
-		on(document, "pointerup", () => IS_PRESS.delete(el), EVENT_ONCE); // pointerup is "composed" so it also bubbles from ShadowDOM up to document
-	}
-	return IS_PRESS.has(el);
+export const onFocusLeave = (
+	el: Node,
+	fn: () => void,
+	isInside = (node: Node | null) => el.contains(node),
+) => {
+	let hasBlurred: true | undefined; // focusout inside happened while pressed, so check once the press ends
+	let pending: ReturnType<typeof setTimeout> | undefined; // One check per settle, as two focusouts inside one task must not run fn twice
+	let unPress: (() => void) | undefined; // Between pointerdown inside and pointerup or pointercancel
+	const check = () => {
+		clearTimeout(pending);
+		pending = setTimeout(() => {
+			pending = undefined;
+			if (isInside(getFocused(el))) return;
+			if (IS_SAMSUNGINTERNET && document.activeElement === document.body)
+				return; // Focus went nowhere, see description. document.activeElement, as getFocused returns null for a shadow root when focus is outside it
+			fn();
+		}, 0); // Delay to allow focus to be set on new element
+	};
+	const cancel = () => {
+		if (hasBlurred) check();
+		unPress?.();
+		unPress = hasBlurred = undefined;
+	};
+	const handle = (e: Event) => {
+		if (!isInside(e.target as Node)) return; // Only presses and blurs inside count
+		if (e.type === "focusout") {
+			if (!unPress) check();
+			else hasBlurred = true; // Defer check to the end of the press
+		} else if (!unPress)
+			unPress = on(document, "pointerup pointercancel", cancel, EVENT_ONCE);
+	};
+	const unHandle = on(el, "pointerdown focusout", handle, true); // Capture, as focusout of a descendant is handled before frameworks and the datalist
+	return () => {
+		unHandle();
+		unPress?.();
+		clearTimeout(pending);
+	};
 };
 
 /**
@@ -249,13 +326,15 @@ export const declarativeShadowRoot = (style: string, slot = "<slot></slot>") =>
 
 /**
  * preventSubmit
- * @description Temporarily removes form association on input to prevent form submission, without preventing event
+ * @description Temporarily removes form association on input to prevent form submission, without preventing event.
+ * Note: input.form is null while the association is removed (16ms). This is intentional, as Firefox submits if restored earlier
  * @param {HTMLInputElement} input Input element to prevent submit on
  */
 export const preventSubmit = (input: HTMLInputElement) => {
 	const form = attr(input, "form");
+	if (form === "#") return; // If holding Enter, avoid restoring # value
 	attr(input, "form", "#"); // Temporarily remove form association to prevent submit on enter
-	setTimeout(restoreSubmit, 0, input, form); // Restore form association on next macrotask
+	setTimeout(restoreSubmit, 16, input, form); // Restore form association on after 16ms (Firefox needs the delay)
 };
 const restoreSubmit = (input: HTMLInputElement, form: string | null) =>
 	attr(input, "form", form);
@@ -277,7 +356,6 @@ let LIVE: HTMLElement;
 let LIVE_SR_FIX = 0; // Ensure screen reader announcing by alternating non-breaking-space suffix
 let LIVE_CLEAR: ReturnType<typeof setTimeout> | number = 0;
 export const speak = (text?: string) => {
-	clearTimeout(LIVE_CLEAR);
 	if (!LIVE) {
 		LIVE = tag("div", { "aria-live": "assertive" });
 		LIVE.style.overflow = "hidden";
@@ -286,6 +364,8 @@ export const speak = (text?: string) => {
 		LIVE.style.width = "1px";
 	}
 	if (!LIVE.isConnected) document.body.appendChild(LIVE);
+	if (text === undefined) return; // Only prepare the live region, keep any pending clear so a previous announcement does not stay in <body>
+	clearTimeout(LIVE_CLEAR);
 	if (text === "") LIVE.textContent = ""; // Clear announcement immediately if empty string
 	if (text) {
 		LIVE.textContent = `${text}${LIVE_SR_FIX++ % 2 ? "\u{A0}" : ""}`; // Non-breaking space to ensure screen reader announces
@@ -293,4 +373,32 @@ export const speak = (text?: string) => {
 	}
 	// Note: Narrator has a minor "hiccup" when using aria-live, as it starts announcing native commands first
 	// Note: Firefox with NVDA needs 2000ms to fully announce
+};
+
+/**
+ * afterRender
+ * @description Run after frameworks have rendered asynchronously.
+ * Vue, Svelte and Angular render in the next microtask, while React queue rendering by posting to MessageChannel in the next microtask.
+ * Waiting one microtask and then posting to MessageChannel, ensures compatibility with all frameworks.
+ * setTimeout and requestAnimationFrame does not guarantee ordering, and can therefore be unreliable with React.
+ * @param {void} callback
+ */
+const RENDER_QUEUE: (() => void)[] = []; // One callback per posted message, so each keeps its own place after the renders queued before it
+let RENDER_PORT: MessagePort | undefined; // Shared channel, created on first use so SSR never touches MessageChannel, and closed once drained
+export const afterRender = (callback: () => void) => {
+	if (!RENDER_PORT) {
+		const { port1, port2 } = new MessageChannel();
+		port1.onmessage = () => {
+			const callback = RENDER_QUEUE.shift();
+			if (!RENDER_QUEUE.length) {
+				port1.close(); // Cleanup before callback in case callback throws.
+				port2.close(); // Cleanup needed on Node (i.e. jsdom tests), as a started port keeps Node alive
+				RENDER_PORT = undefined;
+			}
+			callback?.();
+		};
+		RENDER_PORT = port2;
+	}
+	RENDER_QUEUE.push(callback);
+	Promise.resolve().then(() => RENDER_PORT?.postMessage(0));
 };

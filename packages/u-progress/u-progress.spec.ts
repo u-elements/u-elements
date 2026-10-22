@@ -62,7 +62,8 @@ test.describe("UHTMLProgressElement", () => {
 		await expect(progress).toHaveAttribute("aria-busy", "false");
 		await expect(progress).toHaveAttribute("aria-valuenow", "50");
 
-		await progress.evaluate<void, HTMLProgressElement>((el) => {
+		await progress.evaluate((node) => {
+			const el = node as HTMLProgressElement;
 			el.max = 20;
 			el.value = 30;
 		});
@@ -119,14 +120,16 @@ test.describe("UHTMLProgressElement", () => {
 		const progress = page.locator("u-progress");
 
 		await expect(
-			progress.evaluate<void, HTMLProgressElement>((el) => {
+			progress.evaluate((node) => {
+				const el = node as HTMLProgressElement;
 				// @ts-expect-error testing native coercion
 				el.value = "banana";
 			}),
 		).rejects.toThrow(/non-finite/i);
 
 		await expect(
-			progress.evaluate<void, HTMLProgressElement>((el) => {
+			progress.evaluate((node) => {
+				const el = node as HTMLProgressElement;
 				// @ts-expect-error testing native coercion
 				el.max = "banana";
 			}),
@@ -142,7 +145,8 @@ test.describe("UHTMLProgressElement", () => {
 
 		const progress = page.locator("u-progress");
 
-		await progress.evaluate<void, HTMLProgressElement>((el) => {
+		await progress.evaluate((node) => {
+			const el = node as HTMLProgressElement;
 			el.value = "5" as never;
 			el.max = "10" as never;
 		});
@@ -162,8 +166,8 @@ test.describe("UHTMLProgressElement", () => {
 		);
 
 		const progress = page.locator("u-progress");
-		const labelsCount = await progress.evaluate<number, HTMLProgressElement>(
-			(el) => el.labels.length,
+		const labelsCount = await progress.evaluate(
+			(el) => (el as HTMLProgressElement).labels.length,
 		);
 
 		expect(labelsCount).toBe(3);
@@ -203,7 +207,8 @@ test.describe("UHTMLProgressElement", () => {
 		await mount(page, `<u-progress value="5" max="10"></u-progress>`);
 
 		const progress = page.locator("u-progress");
-		await progress.evaluate<void, HTMLProgressElement>((el) => {
+		await progress.evaluate((node) => {
+			const el = node as HTMLProgressElement;
 			el.max = 20;
 		});
 

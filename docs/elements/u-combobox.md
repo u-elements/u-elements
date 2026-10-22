@@ -10,7 +10,7 @@ import { data } from '../filesize.data.ts'
 
 **Quick intro:**
 - Use `<data>` as direct child elements - these are the removable items
-- Use `<input>` and `<u-datalist>` to allow adding and suggesting items
+- Use `<input>` as direct child and `<u-datalist>` to allow adding and suggesting items
 - Use `data-multiple` to allow selecting multiple items
 - Use `data-creatable` to allow creating items not in the list
 - Use `data-sr-*` attributes to translate screen reader announcements
@@ -133,6 +133,8 @@ myCombobox.addEventListener('comboboxafterselect', (event) => {
 ```
 
 ### `comboboxbeforematch`
+Dispatched on `Enter`, and in single mode also on blur, when the input has text and a datalist is present. Never dispatched while typing, when empty input or when missing datalist. Hidden and disabled options are not matched. Prevent the event and set `option.selected` on all options to change or reject match.
+
 ```js
 myCombobox.addEventListener('comboboxbeforematch', (event) => {
   event.target // UHTMLComboboxElement
@@ -142,19 +144,12 @@ myCombobox.addEventListener('comboboxbeforematch', (event) => {
 })
 ```
 
-### `comboboxprogrammaticinput`
-Triggers if `input.value` is programmatically set. Useful when extending `u-combobox` with custom functionality.
-```js
-myCombobox.addEventListener('comboboxprogrammaticinput', (event) => {
-  event.target // HTMLInputElement
-})
-```
-
 
 ## Styling
 
 - `<u-combobox>` renders as `display: block`, while `<data>` renders as `display: inline-block` with a `::after` element to render the removal `×`.
 - Style the wrapper around `<data>`-elements can be styled using `::part(items)`.
+- `<data>` elements get `aria-disabled="true"` while the `<input>` is `disabled` or `readonly`, so style non-removable items using `data[aria-disabled="true"]`.
 - If the `<button type="reset">` is empty, a `×` icon is automaticallay rendered as `::before` pseudo-element.
 - If the `<button aria-expanded="false"></button>` is empty, a `▼` icon is automaticallay rendered as `::before` pseudo-element.
 
@@ -399,7 +394,6 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
     const options = combobox.list.options;
     const add = options[options.length - 1];
     add.hidden = !value || combobox.values.includes(value);
-    console.log(combobox.values)
     add.value = value;
     add.label = value;
     add.textContent = `Add "${value}"`
@@ -495,7 +489,7 @@ if (typeof window !== 'undefined') {
   &lt;input id="my-controlled-input" list="my-controlled-list" /&gt;
   &lt;button type="button" aria-expanded="false"&gt;&lt;/button&gt;
   &lt;button type="reset"&gt;&lt;/button&gt;
-  &lt;u-datalist hidden id="my-controlled-list" data-nofilter&gt;
+  &lt;u-datalist hidden id="my-controlled-list"&gt;
     &lt;u-option&gt;Coconut&lt;/u-option&gt;
     &lt;u-option&gt;Strawberries&lt;/u-option&gt;
     &lt;u-option&gt;Chocolate&lt;/u-option&gt;
@@ -578,13 +572,56 @@ const renderToStaticMarkup = (data: string, options: string) =>
 ```
 
 ## Notes
-- ARC Toolkit incorectly reports `aria-description` as an invalid ARIA-attribute
-- ARC Toolkit does not correcly read the relation between items with `role="option"` and the ShadowDoom wrapping container `role="listbox"`
+- `<datalist>` or `<u-datalist>` must be a child of `<u-combobox>`. The `list` attribute on `<input>` is managed automatically
+- Without a datalist, single mode is free text: the input is never overwritten
+- Single mode with a datalist always mirrors the `<data>` item. Multiple mode keeps it as filter text.
+- Single mode acts on the first `<data>` only
+- The toggle button is hidden when using native `<datalist>`, as the native suggestion popup can not be detected programmatically
+- In controlled mode, `change` is dispatched by the input sync that follows the `<data>` change, as long as the framework renders within the next render opportunity (one microtask, then one MessageChannel task). A render deferred beyond that (i.e. React `startTransition`, a debounced state update) is treated as a programmatic `<data>` change and dispatches `input` but not `change`
+- ARC Toolkit incorrectly reports `aria-description` as an invalid ARIA-attribute
+- ARC Toolkit does not correctly read the relation between items with `role="option"` and the ShadowDOM wrapping container `role="listbox"`
+- See full behavior spec in [u-combobox source](https://github.com/u-elements/u-elements/blob/main/packages/u-combobox/u-combobox.ts)
 
 
 ## Changelog
 
-- **2.1.5:** Fix starte handling when multiple mode and controlled mode (i.e. React)
+- **3.0.0:** Framework compatibility and matching changes:
+  - Test suite for u-combobox now runs in vanilla JS, React, Angular, Svelte, Vue, Solid, Qwik and Preact to ensure framework compatibility
+  - Single mode only matches against present options on `Enter` and blur, never while typing
+  - Single mode `Enter` no longer reverts the input when nothing matches. It announces `data-sr-invalid` and keeps the typed text until blur
+  - Single mode with datalist always syncs `input.value` to the `<data>`, also on mount
+  - Single mode correctly dispatches `input` after option `click`
+  - `change` is only dispatched when the input sync follows a user commit (option pick, `Enter`, blur, clear or item removal), never on mount, programmatic `<data>` changes or form reset
+  - Single mode holds at most one `<data>`. A select removes every `<data>` before adding the new item, so extra `<data>` kept from a switch out of multiple mode are dropped on the first select
+  - One shared `input` listener on `window` for all instances, instead of one per instance
+  - `<input>` must be a direct child of `<u-combobox>`, as the owning `<u-combobox>` is resolved from the input's parent
+  - Single mode mirrors only the first `<data>` into `<select>` and option selection, so the submitted value matches the input
+  - `values` returns at most one value in single mode, matching the mirrored `<data>`
+  - `Enter` with text equal to an item no longer announces `data-sr-invalid` when no option matches, as the item is a confirmed selection
+  - `Enter` in multiple mode only adds. A matched option that is already an item is kept, as removal is intended through a pick or an item
+  - Hidden and disabled options are never matched on `Enter` or blur
+  - Single mode clear button no longer caches the emptied text, so a prevented removal reverts the input to the text before the clear
+  - Runtime toggle `data-multiple` and `data-creatable` syncs correctly
+  - Toggle button is hidden when the input is `disabled` or `readonly`, and both buttons re-sync when these attributes change at runtime
+  - Trusted `insertReplacementText` and `inputType`-less `input` events (Firefox spell check, autofill) are only taken for an option pick with native `<datalist>`, as `<u-datalist>` picks can always be detected through `beforeinput`
+  - Programmatic item changes announce through the live region also after a prevented removal moved focus
+  - Synthetic `InputEvent` without `inputType` (i.e. testing-library) does not cause incorrect option click
+  - `form.reset()` syncs the clear and toggle buttons, and restores the item text in single mode
+  - Toggle button closes `<u-datalist>` explicitly when open, instead of relying on the blur from mousedown, which does not happen on touch
+  - Holding `Enter` in the input, or `Enter` or `Space` on an item, commits once instead of on every key repeat
+  - Blur is handled after a press inside `<u-combobox>` that is released outside without a click, instead of being skipped
+  - Firefox spell check and autofill replacements that are not an option value are treated as typing instead of reverted
+  - Attribute writes that do not change a value (i.e. Vue re-setting option `value`, React syncing input `value`) do not trigger a state sync
+  - The `input` event of an option pick is intercepted in the capture phase on `window`, so frameworks delegating events from `document` (i.e. Qwik) read the reverted text instead of the option value
+  - Input sync after a prevented `comboboxbeforeselect` on blur is deferred, so frameworks rendering `<data>` asynchronously do not see the previous value flash
+  - `Enter` is ignored while composing with an Input Method Editor (IME), so confirming a composition does not match or select
+  - Pending commits are settled by identity, so a later commit with the same text is never expired by an earlier one
+  - The `comboboxprogrammaticinput` event is removed
+  - Option picks from `<u-datalist>` 2.0.3 and older, which set `input.value` through the prototype setter, are no longer taken for programmatic input, so the typed text is kept
+  - Items get `aria-disabled="true"` and lose `tabindex` while the input is `disabled` or `readonly`, so a press can not focus an item that can not be removed. Style with `data[aria-disabled="true"]`
+  - Replacing options (i.e. async search results) only re-syncs the option selection, instead of a full state sync
+  - Samsung Internet parking keyboard focus on `<body>` while TalkBack is on the list is no longer treated as blur, so the typed text is kept while browsing suggestions
+- **2.1.5:** Fix state handling when mode is multiple and controlled (i.e. React)
 - **2.1.4:** Fix internal state when preventing a selection or setting value programmatically
 - **2.1.3:** Fix issue where item behind datalist could receive focus
 - **2.1.2:** Prevent unnecessary matching after option `click` in single mode

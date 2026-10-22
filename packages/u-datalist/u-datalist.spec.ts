@@ -235,6 +235,61 @@ test.describe("HTMLDataListElement", () => {
 		await expect(datalist).toBeHidden();
 	});
 
+	test("picks the active option once on held Enter", async ({ page }) => {
+		// Multiselectable stays open with the option active after a pick, so a repeat would pick again on every keydown
+		await mount(
+			page,
+			DEFAULT.replace(
+				"<u-datalist",
+				'<u-datalist aria-multiselectable="true" data-multiselectable="true"', // data- variant is what Android reads, see SAFE_MULTISELECTABLE
+			),
+		);
+		const datalist = page.locator("u-datalist");
+		const input = page.locator("input");
+
+		await input.evaluate((el: HTMLInputElement) => {
+			let inputs = 0;
+			el.addEventListener("input", () =>
+				el.setAttribute("data-inputs", `${++inputs}`),
+			);
+			el.form?.addEventListener("submit", (e) => {
+				e.preventDefault();
+				el.setAttribute("data-submit", "");
+			});
+		});
+
+		await input.focus();
+		await input.press("ArrowDown");
+		await page.keyboard.down("Enter");
+		await page.keyboard.down("Enter"); // Playwright sets repeat: true on a second down without up, like a held key
+		await page.keyboard.down("Enter");
+		await page.keyboard.up("Enter");
+		await expect(input).toHaveValue("Option 1");
+		await expect(input).toHaveAttribute("data-inputs", "1"); // Picked once
+		await expect(datalist).toBeVisible();
+		await expect(input).not.toHaveAttribute("data-submit"); // Submit is still prevented on every repeat
+	});
+
+	test("does not re-open on held Enter after the pick closed the list", async ({
+		page,
+	}) => {
+		await mount(page, DEFAULT);
+		const datalist = page.locator("u-datalist");
+		const input = page.locator("input");
+
+		await input.evaluate((el: HTMLInputElement) =>
+			el.form?.addEventListener("submit", (e) => e.preventDefault()),
+		); // A held Enter on a closed list is a plain Enter in the input, so only keep the page from navigating
+
+		await input.focus();
+		await input.press("ArrowDown");
+		await page.keyboard.down("Enter");
+		await page.keyboard.down("Enter"); // repeat: true
+		await page.keyboard.up("Enter");
+		await expect(input).toHaveValue("Option 1");
+		await expect(datalist).toBeHidden();
+	});
+
 	test("ignores keystrokes with meta keys", async ({ page }) => {
 		await mount(page, DEFAULT);
 		const input = page.locator("input");

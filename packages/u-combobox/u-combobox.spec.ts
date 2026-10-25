@@ -178,74 +178,46 @@ test.describe("DOM", () => {
 				expect(await logged(page, "comboboxbeforeselect")).toHaveLength(1);
 			});
 
-			// <u-datalist> before 3.0.0 picked an option by dispatching beforeinput, writing input.value through the
-			// prototype setter (patched by u-combobox to detect programmatic input) and dispatching input.
-			// Before 2.0.3 the events had an empty inputType, 2.0.3 used insertReplacementText
-			for (const inputType of ["", "insertReplacementText"]) {
-				const legacy = `legacy <u-datalist> ${inputType ? "2.0.3" : "before 2.0.3"}`;
-				const legacyPick = ([value, inputType]: readonly string[]) => {
+			// A <u-datalist> pick writes the option value with setRangeText and dispatches an untrusted input with insertReplacementText, like Firefox does for native <datalist>.
+			// No beforeinput is involved, as no browser dispatches one for a pick. <u-datalist> before 3.0.0 wrote through the prototype setter instead, which is cached as
+			// programmatic text, so the typed text would not be restored. That is why <u-combobox> 3.0.0 requires <u-datalist> 3.0.0
+			test("takes an untrusted insertReplacementText with an option value for a pick and restores the typed text", async ({
+				page,
+			}) => {
+				await mount(page, combobox("data-multiple"));
+				const input = page.locator("#input");
+				const items = page.locator("u-combobox data");
+
+				await input.pressSequentially("Ber");
+				await page.evaluate(() => {
 					const input = document.getElementById("input") as HTMLInputElement;
 					const init = {
 						bubbles: true,
-						composed: true,
-						data: value,
-						inputType,
+						data: "oslo-id",
+						inputType: "insertReplacementText",
 					};
-					const proto = HTMLInputElement.prototype;
-					input.dispatchEvent(new InputEvent("beforeinput", init));
-					Object.getOwnPropertyDescriptor(proto, "value")?.set?.call(
-						input,
-						value,
-					);
+					input.setRangeText("oslo-id", 0, input.value.length, "end");
 					input.dispatchEvent(new InputEvent("input", init));
-					input.dispatchEvent(new Event("change", { bubbles: true }));
-				};
-
-				test(`${legacy} pick adds item and keeps typed text in multiple mode`, async ({
-					page,
-				}) => {
-					await mount(page, combobox("data-multiple"));
-					const input = page.locator("#input");
-					const items = page.locator("u-combobox data");
-
-					await input.pressSequentially("Ber");
-					await page.evaluate(legacyPick, ["oslo-id", inputType] as const);
-					await expect(items).toHaveText(["Oslo"]);
-					await expect(input).toHaveValue("Ber"); // The setter write of the pick is not cached as typed text
-
-					await page.evaluate(legacyPick, ["oslo-id", inputType] as const);
-					await expect(items).toHaveCount(0); // Toggled off
-					await expect(input).toHaveValue("Ber");
 				});
+				await expect(items).toHaveText(["Oslo"]); // Picked
+				await expect(input).toHaveValue("Ber"); // Reverted to the typed text, as the option value was only written by the pick
 
-				test(`${legacy} prevented pick reverts to typed text in single mode`, async ({
-					page,
-				}) => {
-					await mount(page, combobox());
-					await listen(page, "comboboxbeforeselect");
-					const input = page.locator("#input");
-					const items = page.locator("u-combobox data");
-
-					await input.pressSequentially("Ber");
-					await page.evaluate(legacyPick, ["oslo-id", inputType] as const);
-					await expect(items).toHaveText(["Oslo"]);
-					await expect(input).toHaveValue("Oslo"); // Accepted pick syncs the input
-
-					await page.evaluate(() => {
-						document
-							.querySelector("u-combobox")
-							?.addEventListener("comboboxbeforeselect", (e) =>
-								e.preventDefault(),
-							);
-					});
-					await input.fill("Tron");
-					await page.evaluate(legacyPick, ["Trondheim", inputType] as const);
-					await page.waitForTimeout(100); // Give a wrongly cached value time to surface
-					await expect(items).toHaveText(["Oslo"]); // Prevented
-					await expect(input).toHaveValue("Tron"); // Reverted to the typed text, not the option value
-					expect(await logged(page, "comboboxbeforeselect")).toHaveLength(2);
+				await page.evaluate(() => {
+					const input = document.getElementById("input") as HTMLInputElement;
+					const init = {
+						bubbles: true,
+						data: "oslo-id",
+						inputType: "insertReplacementText",
+					};
+					Object.getOwnPropertyDescriptor(
+						HTMLInputElement.prototype,
+						"value",
+					)?.set?.call(input, "oslo-id"); // Like <u-datalist> before 3.0.0, which is cached as programmatic text
+					input.dispatchEvent(new InputEvent("input", init));
 				});
-			}
+				await expect(items).toHaveCount(0); // Toggled off, as the event is still a pick
+				await expect(input).toHaveValue("oslo-id"); // Reverted to the cached text, which the setter write replaced
+			});
 
 			// Driven through window.__root with the keyboard and mouse, as locators can not reach into a closed shadow root
 			for (const mode of ["open", "closed"] as const) {

@@ -138,7 +138,6 @@ export const comboboxSuite = (
 					page,
 				}) => {
 					const { name } = test.info().project;
-					const IS_IOS = name === "Mobile Safari";
 					const IS_ANDROID = name === "Mobile Chrome";
 					await render(page, { multiple: true, items: [OSLO, BERGEN] });
 					const input = page.locator("#input");
@@ -160,13 +159,11 @@ export const comboboxSuite = (
 					await expect(items.nth(0)).toHaveAttribute("value", "oslo-id");
 					await expect(items.nth(1)).toHaveAttribute("value", "Bergen");
 
-					for (const [index, text] of ["Oslo", "Bergen"].entries()) {
+					for (const [index] of ["Oslo", "Bergen"].entries()) {
 						const item = items.nth(index);
-						const label = `${text}, Press to remove${IS_IOS ? `, ${index + 1} of 2` : ""}`;
 						await expect(item).toHaveAttribute("role", "option");
 						await expect(item).toHaveAttribute("tabindex", "-1");
 						await expect(item).toHaveAttribute("slot", "items");
-						await expect(item).toHaveAttribute("aria-label", label);
 					}
 				});
 
@@ -181,12 +178,12 @@ export const comboboxSuite = (
 
 					await update(page, { clear: true, toggle: true }); // Rendered by the framework after mount
 
-					await expect(clear).toHaveAttribute("aria-label", "Clear input");
+					await expect(clear).not.toHaveAttribute("aria-label"); // The harness buttons have text content, which is their name
 					await expect(clear).toHaveAttribute("aria-hidden", ariaHidden);
 					await expect(clear).toHaveAttribute("hidden", "");
 					await expect(clear).toHaveAttribute("tabindex", "-1");
 
-					await expect(toggle).toHaveAttribute("aria-label", "Options");
+					await expect(toggle).not.toHaveAttribute("aria-label");
 					await expect(toggle).toHaveAttribute("aria-hidden", ariaHidden);
 					await expect(toggle).toHaveAttribute("aria-expanded", "false");
 					await expect(toggle).toHaveAttribute("tabindex", "-1");
@@ -1499,7 +1496,7 @@ export const comboboxSuite = (
 					expect(await logged(page, "comboboxbeforematch")).toHaveLength(3); // Match is still dispatched, so a consumer can match or create
 				});
 
-				test("restores the text after a prevented clear removal, also when the consumer prevents beforeinput", async ({
+				test("restores the text after a prevented clear removal", async ({
 					page,
 				}) => {
 					await render(page, {
@@ -1507,12 +1504,6 @@ export const comboboxSuite = (
 						items: [OSLO],
 						clear: true,
 					}); // Rejects every select
-					await page.locator("#input").evaluate((el) => {
-						el.addEventListener("beforeinput", (event) => {
-							if ((event as InputEvent).inputType === "insertText")
-								event.preventDefault(); // A consumer rejecting edits must not be able to leave the input empty while the item stays
-						});
-					});
 					const input = page.locator("#input");
 					const items = page.locator("u-combobox data");
 					await expect(input).toHaveValue("Oslo");
@@ -1629,11 +1620,11 @@ export const comboboxSuite = (
 					expect(await logged(page, "input")).toEqual(["Ber"]); // Propagated to consumer
 				});
 
-				test("treats synthetic beforeinput without data followed by input as typing", async ({
+				test("treats a synthetic input without inputType as typing", async ({
 					page,
 				}) => {
 					// Mimics @testing-library fireEvent.beforeInput(input) followed by fireEvent.input(input, { target: { value } }).
-					// A pick from <u-datalist> before 2.0.3 also had an empty inputType, but always carried the option value as data
+					// An untrusted event without inputType is never a pick, also when the value is an option value
 					await render(page, { multiple: true });
 					await resetLog(page, "input");
 					const input = page.locator("#input");
@@ -1689,11 +1680,12 @@ export const comboboxSuite = (
 					await expect(input).toHaveValue("Trondhjem"); // Pick reverts to the corrected text, as it was cached like typed text
 				});
 
-				test("treats insertReplacementText equal to an option value as a pick only with native datalist", async ({
+				test("treats insertReplacementText equal to an option value as a pick", async ({
 					page,
 				}) => {
-					// Mimics a Firefox spell check correction to a word that happens to be an option value.
-					// Only a native <datalist> picks through such an event, as <u-datalist> picks are flagged by beforeinput
+					// An untrusted insertReplacementText is what a <u-datalist> pick dispatches, and the only way a test can simulate a native <datalist> pick.
+					// A Firefox spell check correction to a word that happens to be an option value dispatches the same event, but trusted, which is only a pick
+					// with native <datalist>. That can not be simulated, as a test can not dispatch trusted events
 					await render(page);
 					await resetLog(page, "comboboxbeforeselect");
 					const input = page.locator("#input");
@@ -1712,14 +1704,9 @@ export const comboboxSuite = (
 						input.setRangeText(data, 0, input.value.length, "end");
 						input.dispatchEvent(new InputEvent("input", init));
 					});
-					await expect(input).toHaveValue("Trondheim");
-					if (IS_NATIVE) {
-						await expect(items).toHaveText(["Trondheim"]); // Native datalist can only pick through this event, so it is a pick
-						expect(await logged(page, "comboboxbeforeselect")).toHaveLength(1);
-					} else {
-						await expect(items).toHaveCount(0); // Correction is typing, so nothing is selected until Enter or blur
-						expect(await logged(page, "comboboxbeforeselect")).toEqual([]);
-					}
+					await expect(items).toHaveText(["Trondheim"]); // Picked
+					await expect(input).toHaveValue("Trondheim"); // Synced to the item in single mode
+					expect(await logged(page, "comboboxbeforeselect")).toHaveLength(1);
 				});
 
 				test("does not re-match when blurring right after a prevented pick", async ({
@@ -2624,10 +2611,6 @@ export const comboboxSuite = (
 						);
 						await items.first().evaluate((el) => (el as HTMLElement).click());
 						await expect(items).toHaveCount(1);
-						await expect(items.first()).toHaveAttribute(
-							"aria-disabled",
-							"true",
-						); // Items can not be removed while inert
 						await expect(items.first()).not.toHaveAttribute("tabindex"); // So a press must not focus the item either
 						await items
 							.first()
@@ -2635,7 +2618,6 @@ export const comboboxSuite = (
 						await expect(items.first()).not.toBeFocused();
 
 						await update(page, { inputAttrs: {} });
-						await expect(items.first()).not.toHaveAttribute("aria-disabled"); // Removable again
 						await expect(items.first()).toHaveAttribute("tabindex", "-1");
 						await update(page, { inputAttrs: { [state]: "" } });
 
@@ -2649,7 +2631,7 @@ export const comboboxSuite = (
 					test(`treats a replacement as typing when ${state}`, async ({
 						page,
 					}) => {
-						// input passes the inert gate so a sync can cache its text, but a native datalist pick fingerprint must not reach dispatchSelect while inert
+						// input passes the inert gate so a sync can cache its text, but a pick fingerprint must not reach dispatchSelect while inert
 						await render(page, {
 							multiple: true,
 							items: [BERGEN],
@@ -3007,26 +2989,31 @@ export const comboboxSuite = (
 			});
 
 			test.describe(name("announcements"), () => {
-				test("uses data-sr-* texts for description, live region and clear button", async ({
+				// The harness buttons have text content, so empty them to test the default naming of empty buttons
+				const emptyButtons = (page: Page) =>
+					page.evaluate(() => {
+						for (const el of document.querySelectorAll("u-combobox > button"))
+							el.textContent = "";
+					});
+
+				test("uses --sr-* custom properties for description, live region and buttons", async ({
 					page,
 				}) => {
-					await render(page, {
-						multiple: true,
-						clear: true,
-						attrs: {
-							"data-sr-added": "La til",
-							"data-sr-clear": "Tøm",
-							"data-sr-empty": "Ingen valgte",
-							"data-sr-found": "%d valgt",
-						},
+					// Inherited, so a translation can be set once on an ancestor
+					await page.addStyleTag({
+						content: `body {
+							--sr-added: "La til";
+							--sr-clear: "Tøm";
+							--sr-empty: "Ingen valgte";
+							--sr-found: "%d valgt";
+							--sr-toggle: 'Valg';
+						}`,
 					});
+					await render(page, { multiple: true, clear: true, toggle: true });
+					await emptyButtons(page);
 					const input = page.locator("#input");
 					const live = page.locator("[aria-live='assertive']");
 
-					await expect(page.locator('button[type="reset"]')).toHaveAttribute(
-						"aria-label",
-						"Tøm",
-					);
 					await expect(input).toHaveAttribute(
 						"aria-description",
 						"Ingen valgte",

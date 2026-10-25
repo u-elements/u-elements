@@ -13,7 +13,7 @@ import { data } from '../filesize.data.ts'
 - Use `<input>` as direct child and `<u-datalist>` to allow adding and suggesting items
 - Use `data-multiple` to allow selecting multiple items
 - Use `data-creatable` to allow creating items not in the list
-- Use `data-sr-*` attributes to translate screen reader announcements
+- Use `--sr-*` CSS custom properties to translate screen reader texts
 - Use matching `id` on `<input>` and `for` attribute on `<label>` to connect
 - Optionally use `<select>` as child for `FormData` or form submission compatibility
 - Optionally use `<button type="reset">` after `input` to create a clear button
@@ -37,7 +37,7 @@ import { data } from '../filesize.data.ts'
   &lt;input id="my-input" list="my-list" /&gt;
   &lt;button type="button" aria-expanded="false"&gt;&lt;/button&gt;
   &lt;button type="reset"&gt;&lt;/button&gt;
-  &lt;u-datalist hidden id="my-list" data-sr-singular="%d flavor" data-sr-plural="%d flavours"&gt;
+  &lt;u-datalist hidden id="my-list" style="--sr-singular: '%d flavor'; --sr-plural: '%d flavours'"&gt;
     &lt;u-option&gt;Coconut&lt;/u-option&gt;
     &lt;u-option&gt;Strawberries&lt;/u-option&gt;
     &lt;u-option&gt;Chocolate&lt;/u-option&gt;
@@ -86,16 +86,9 @@ bun add -S @u-elements/u-combobox
 ### `<u-combobox>`
 
 - **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
-  - `data-sr-added` prefixes announcements about additions. Defaults to `"Added"`
-  - `data-sr-removed` prefixes announcements about removals. Defaults to `"Removed"`
-  - `data-sr-remove` announces ability to remove. Defaults to `"Press to remove"`
-  - `data-sr-empty` announces no selected items. Defaults to `"No selected"`
-  - `data-sr-found` announces where to find amount of selected items. Defaults to `"Navigate left to find %d selected"`
-  - `data-sr-invalid` announces if trying to select invalid value. Defaults to `"Invalid value""`
-  - `data-sr-of` separates "number _of_ total" in announcements. Defaults to `"of"`
-  - `data-sr-items` aria-label for listbox containing selected items. Defaults to `"Selected"`
-  - `data-sr-clear` aria-label of clear button. Defaults to `"Clear input"`
-  - `data-sr-toggle` aria-label of toggle list button. Defaults to `"Options"`
+  - `data-multiple` allows selecting multiple items
+  - `data-creatable` allows creating items not in the list
+- **Screen reader texts:** set through [`--sr-*` CSS custom properties](#screen-reader-texts)
 - **DOM interface:** `UHTMLComboboxElement` extends [`HTMLElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement)
   - `UHTMLComboboxElement.control` returns `HTMLInputElement | null`
   - `UHTMLComboboxElement.items` returns `HTMLCollectionOf<HTMLDataElement>`
@@ -148,10 +141,32 @@ myCombobox.addEventListener('comboboxbeforematch', (event) => {
 ## Styling
 
 - `<u-combobox>` renders as `display: block`, while `<data>` renders as `display: inline-block` with a `::after` element to render the removal `×`.
+- Customize or hide the removal `×` via `--x: ''` on `<u-combobox>`; don’t change CSS `content`, as this can break screen reader announcements
 - Style the wrapper around `<data>`-elements can be styled using `::part(items)`.
-- `<data>` elements get `aria-disabled="true"` while the `<input>` is `disabled` or `readonly`, so style non-removable items using `data[aria-disabled="true"]`.
-- If the `<button type="reset">` is empty, a `×` icon is automaticallay rendered as `::before` pseudo-element.
-- If the `<button aria-expanded="false"></button>` is empty, a `▼` icon is automaticallay rendered as `::before` pseudo-element.
+- `<data>` elements get `aria-disabled="true"` while the `<input>` is `disabled` or `readonly`
+- `<data>` elements uses a `::before` with `position: absolute` for screen reader announcements
+- If `<button type="reset">` is empty, a `×` renders with `::before`
+- If `<button aria-expanded="false"></button>` is empty, a `▼` renders with `::before`
+
+### Screen reader texts
+
+Screen reader texts are set through CSS custom properties. They inherit, so a translation can be set once for a page or a language, i.e. `:lang(nb) { --sr-clear: "Tøm" }`.
+
+- `--sr-added` prefixes announcements about additions. Defaults to `"Added"`
+- `--sr-removed` prefixes announcements about removals. Defaults to `"Removed"`
+- `--sr-remove` announces ability to remove. Defaults to `"Press to remove"`
+- `--sr-empty` announces no selected items. Defaults to `"No selected"`
+- `--sr-found` announces where to find amount of selected items. Defaults to `"Navigate left to find %d selected"`
+- `--sr-invalid` announces if trying to select invalid value. Defaults to `"Invalid value"`
+- `--sr-of` separates "number _of_ total" in announcements. Defaults to `"of"`
+- `--sr-items` aria-label for listbox containing selected items. Defaults to `"Selected"`
+- `--sr-clear` name of clear button. Defaults to `"Clear input"`
+- `--sr-toggle` name of toggle list button. Defaults to `"Options"`
+- `--sr-singular` and `--sr-plural` announce hits, see [`<u-datalist>`](./u-datalist#attributes-and-props)
+
+::: tip Note:
+If you are using a strict Content Security Policy (CSP), inline `style` HTML attributes are blocked. Set the properties in your CSS, or through `element.style.setProperty('"New string"')` (note that the string must be quoted) or a framework `style` binding.
+:::
 
 ## Example: Norwegian
 
@@ -160,22 +175,12 @@ myCombobox.addEventListener('comboboxbeforematch', (event) => {
 &lt;label for="my-norwegian-input"&gt;
   Velg type iskrem
 &lt;/label&gt;
-&lt;u-combobox
-  data-sr-added="La til"
-  data-sr-clear="Fjern tekst"
-  data-sr-empty="Ingen valgte"
-  data-sr-found="Naviger til venstre for å finne %d valgte"
-  data-sr-items="Valgte"
-  data-sr-of="av"
-  data-sr-remove="Trykk for å fjerne"
-  data-sr-removed="Fjernet"
-  data-sr-toggle="Valg"
-&gt;
+&lt;u-combobox id="my-norwegian"&gt;
   &lt;data&gt;Kokkos&lt;/data&gt;
   &lt;input id="my-norwegian-input" list="my-norwegian-list" /&gt;
   &lt;button type="button" aria-expanded="false"&gt;&lt;/button&gt;
   &lt;button type="reset"&gt;&lt;/button&gt;
-  &lt;u-datalist hidden id="my-norwegian-list" data-sr-singular="%d smak" data-sr-plural="%d smaker"&gt;
+  &lt;u-datalist hidden id="my-norwegian-list"&gt;
     &lt;u-option&gt;Kokkos&lt;/u-option&gt;
     &lt;u-option&gt;Jordbær&lt;/u-option&gt;
     &lt;u-option&gt;Sjokolade&lt;/u-option&gt;
@@ -187,6 +192,21 @@ myCombobox.addEventListener('comboboxbeforematch', (event) => {
   &lt;/u-datalist&gt;
 &lt;/u-combobox&gt;
 &lt;style&gt;
+  /* Screen reader texts inherit, so they also apply to the u-datalist inside. Set them on :root or :lang() to translate a whole page */
+  #my-norwegian {
+    --sr-added: "La til";
+    --sr-clear: "Fjern tekst";
+    --sr-empty: "Ingen valgte";
+    --sr-found: "Naviger til venstre for å finne";
+    --sr-invalid: "Ugyldig verdi";
+    --sr-items: "Valgte";
+    --sr-of: "av";
+    --sr-plural: "%d smaker";
+    --sr-remove: "Trykk for å fjerne";
+    --sr-removed: "Fjernet";
+    --sr-singular: "%d smak";
+    --sr-toggle: "Valg";
+  }
   /* Styling just for example: */
   u-combobox { border: 1px solid; display: flex; flex-wrap: wrap; gap: .5em; padding: .5em; position: relative }
   u-option[selected] { font-weight: bold }
@@ -574,10 +594,9 @@ const renderToStaticMarkup = (data: string, options: string) =>
 ## Notes
 - `<datalist>` or `<u-datalist>` must be a child of `<u-combobox>`. The `list` attribute on `<input>` is managed automatically
 - Without a datalist, single mode is free text: the input is never overwritten
-- Single mode with a datalist always mirrors the `<data>` item. Multiple mode keeps it as filter text.
 - Single mode acts on the first `<data>` only
 - The toggle button is hidden when using native `<datalist>`, as the native suggestion popup can not be detected programmatically
-- In controlled mode, `change` is dispatched by the input sync that follows the `<data>` change, as long as the framework renders within the next render opportunity (one microtask, then one MessageChannel task). A render deferred beyond that (i.e. React `startTransition`, a debounced state update) is treated as a programmatic `<data>` change and dispatches `input` but not `change`
+- In controlled mode, `change` is dispatched by the input sync that follows the `<data>` change. A deferred render (i.e. React `startTransition`, a debounced state update) is treated as a programmatic `<data>` change and dispatches `input` but not `change`
 - ARC Toolkit incorrectly reports `aria-description` as an invalid ARIA-attribute
 - ARC Toolkit does not correctly read the relation between items with `role="option"` and the ShadowDOM wrapping container `role="listbox"`
 - See full behavior spec in [u-combobox source](https://github.com/u-elements/u-elements/blob/main/packages/u-combobox/u-combobox.ts)
@@ -587,8 +606,11 @@ const renderToStaticMarkup = (data: string, options: string) =>
 
 - **3.0.0:** Framework compatibility and matching changes:
   - Test suite for u-combobox now runs in vanilla JS, React, Angular, Svelte, Vue, Solid, Qwik and Preact to ensure framework compatibility
+  - Requires `<u-datalist>` 3.0.0 or newer. Older versions write the option value of a pick through `HTMLInputElement.prototype.value`, which is cached as programmatic text, so the typed text would not be restored after the pick
+  - Screen reader texts are set through [`--sr-*` CSS custom properties](#screen-reader-texts) instead of `data-sr-*` attributes. They inherit, so a translation can be set once on `:root` or `:lang()`, and `--sr-of` is no longer forwarded to `<u-datalist>` as it reads the inherited property itself
+  - Empty clear and toggle buttons are named through CSS alternative text, so no `aria-label` is written. A consumer `aria-label` is always respected, also when `--sr-clear` or `--sr-toggle` is set
   - Single mode only matches against present options on `Enter` and blur, never while typing
-  - Single mode `Enter` no longer reverts the input when nothing matches. It announces `data-sr-invalid` and keeps the typed text until blur
+  - Single mode `Enter` no longer reverts the input when nothing matches. It announces `--sr-invalid` and keeps the typed text until blur
   - Single mode with datalist always syncs `input.value` to the `<data>`, also on mount
   - Single mode correctly dispatches `input` after option `click`
   - `change` is only dispatched when the input sync follows a user commit (option pick, `Enter`, blur, clear or item removal), never on mount, programmatic `<data>` changes or form reset
@@ -597,13 +619,13 @@ const renderToStaticMarkup = (data: string, options: string) =>
   - `<input>` must be a direct child of `<u-combobox>`, as the owning `<u-combobox>` is resolved from the input's parent
   - Single mode mirrors only the first `<data>` into `<select>` and option selection, so the submitted value matches the input
   - `values` returns at most one value in single mode, matching the mirrored `<data>`
-  - `Enter` with text equal to an item no longer announces `data-sr-invalid` when no option matches, as the item is a confirmed selection
+  - `Enter` with text equal to an item no longer announces `--sr-invalid` when no option matches, as the item is a confirmed selection
   - `Enter` in multiple mode only adds. A matched option that is already an item is kept, as removal is intended through a pick or an item
   - Hidden and disabled options are never matched on `Enter` or blur
   - Single mode clear button no longer caches the emptied text, so a prevented removal reverts the input to the text before the clear
   - Runtime toggle `data-multiple` and `data-creatable` syncs correctly
   - Toggle button is hidden when the input is `disabled` or `readonly`, and both buttons re-sync when these attributes change at runtime
-  - Trusted `insertReplacementText` and `inputType`-less `input` events (Firefox spell check, autofill) are only taken for an option pick with native `<datalist>`, as `<u-datalist>` picks can always be detected through `beforeinput`
+  - An option pick is detected through its `input` event, as no browser dispatches `beforeinput` for a pick. Trusted `insertReplacementText` and `inputType`-less `input` events (Firefox spell check, autofill) are only taken for a pick with native `<datalist>`, while a `<u-datalist>` pick is the untrusted `insertReplacementText` it dispatches
   - Programmatic item changes announce through the live region also after a prevented removal moved focus
   - Synthetic `InputEvent` without `inputType` (i.e. testing-library) does not cause incorrect option click
   - `form.reset()` syncs the clear and toggle buttons, and restores the item text in single mode
@@ -617,7 +639,6 @@ const renderToStaticMarkup = (data: string, options: string) =>
   - `Enter` is ignored while composing with an Input Method Editor (IME), so confirming a composition does not match or select
   - Pending commits are settled by identity, so a later commit with the same text is never expired by an earlier one
   - The `comboboxprogrammaticinput` event is removed
-  - Option picks from `<u-datalist>` 2.0.3 and older, which set `input.value` through the prototype setter, are no longer taken for programmatic input, so the typed text is kept
   - Items get `aria-disabled="true"` and lose `tabindex` while the input is `disabled` or `readonly`, so a press can not focus an item that can not be removed. Style with `data[aria-disabled="true"]`
   - Replacing options (i.e. async search results) only re-syncs the option selection, instead of a full state sync
   - Samsung Internet parking keyboard focus on `<body>` while TalkBack is on the list is no longer treated as blur, so the typed text is kept while browsing suggestions

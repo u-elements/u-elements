@@ -27,11 +27,7 @@ export default function App() {
 				<data>Kokkos</data>
 				<data>Banan</data>
 				<data>Jordbær</data>
-				<u-datalist
-					class="my-class-name"
-					data-sr-singular="%d hit"
-					data-sr-plural="%d hits"
-				>
+				<u-datalist class="my-class-name">
 					<u-option value="test-1">Test 1</u-option>
 					<u-option value="test-2">Test 2</u-option>
 					<u-option value="test-3">Test 3</u-option>

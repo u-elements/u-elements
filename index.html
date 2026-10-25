@@ -166,23 +166,25 @@
         <label for="input-1">Velg type iskrem</label>
         <u-combobox
           data-creatable="false"
-          data-multiple="false"
-          data-sr-added="La til"
-          data-sr-clear="Tøm tekstfelt"
-          data-sr-empty="Ingen valgte"
-          data-sr-found="Naviger til venstre for å finne %d valgte"
-          data-sr-invalid="Ugyldig verdi"
-          data-sr-items="Valgte"
-          data-sr-of="av"
-          data-sr-remove="Trykk for å fjerne"
-          data-sr-removed="Fjernet"
+          data-multiple="true"
+          style="
+            --sr-added: 'La til';
+            --sr-clear: 'Tøm tekstfelt';
+            --sr-empty: 'Ingen valgte';
+            --sr-found: 'Naviger til venstre for å finne %d valgte';
+            --sr-invalid: 'Ugyldig verdi';
+            --sr-items: 'Valgte';
+            --sr-of: 'av';
+            --sr-remove: 'Trykk for å fjerne';
+            --sr-removed: 'Fjernet';
+          "
         >
           <select name="test" hidden></select>
           <data>Jordbær</data>
           <!-- <data>Oslo</data>
           <data>Lakris</data> -->
           <input id="input-1" list="my-list">
-          <button type="button" aria-expanded="false" aria-label="Valg"></button>
+          <button type="button" aria-expanded="false"></button>
           <button type="reset"></button>
           <!-- <datalist>
             <option value="2" label="Kokkos">Kokkos<div>Hei</div></option>

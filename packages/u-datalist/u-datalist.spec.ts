@@ -174,7 +174,7 @@ test.describe("HTMLDataListElement", () => {
 			page,
 			`
         <label>Search here <input type="text" list="datalist-1" /></label>
-        <u-datalist id="datalist-1" data-sr-singular="%d hit" data-sr-plural="%d hits">
+        <u-datalist id="datalist-1">
           <u-option>Option 1</u-option>
           <u-option>Option 2</u-option>
           <u-option>Option 3</u-option>
@@ -357,18 +357,47 @@ test.describe("HTMLDataListElement", () => {
 		await expect(datalist).toBeVisible();
 	});
 
+	test("announces hits with --sr-* custom properties", async ({ page }) => {
+		await mount(
+			page,
+			`<style>:root { --sr-singular: "%d treff"; --sr-plural: '%d treff' }</style>
+        <label>Search here <input type="text" list="datalist-1" /></label>
+        <u-datalist id="datalist-1">
+          <u-option>Option 1</u-option>
+          <u-option>Option 2</u-option>
+          <u-option>Option 3</u-option>
+        </u-datalist>`,
+		);
+		const input = page.locator("input").first();
+		const live = page.locator("[aria-live='assertive']");
+
+		await input.click();
+		// Record every announcement, as the live region is cleared again shortly after speaking
+		await live.evaluate((el) => {
+			new MutationObserver(() => {
+				el.dataset.spoken = `${el.dataset.spoken || ""}|${el.textContent}`;
+			}).observe(el, { childList: true, characterData: true, subtree: true });
+		});
+		const spoken = () => live.evaluate((el) => el.dataset.spoken || "");
+
+		await input.pressSequentially("Option 1", { delay: 50 }); // Like a user, as the list clears the pending announcement in a timeout when it opens, which keys dispatched without a gap would all precede
+		await expect.poll(spoken).toMatch(/1 treff/);
+		await input.press("Backspace");
+		await input.press("Backspace");
+		await expect.poll(spoken).toMatch(/3 treff/);
+	});
 	test("handles multiple datalist on same page", async ({ page }) => {
 		await mount(
 			page,
 			`<form>
         <label>Search here<input type="text" list="datalist-1" /></label>
-        <u-datalist id="datalist-1" data-sr-singular="%d hit" data-sr-plural="%d hits">
+        <u-datalist id="datalist-1">
           <u-option>Option 1</u-option>
           <u-option>Option 2</u-option>
           <u-option>Option 3</u-option>
         </u-datalist>
         <label>Search here<input type="text" list="datalist-2" /></label>
-        <u-datalist id="datalist-2" data-sr-singular="%d hit" data-sr-plural="%d hits">
+        <u-datalist id="datalist-2">
           <u-option>Option 1</u-option>
           <u-option>Option 2</u-option>
           <u-option>Option 3</u-option>
@@ -398,7 +427,7 @@ test.describe("HTMLDataListElement", () => {
 			`<form>
         <label>Search here 1<input type="text" list="datalist-1" /></label>
         <label>Search here 2<input type="text" list="datalist-1" /></label>
-        <u-datalist id="datalist-1" data-sr-singular="%d hit" data-sr-plural="%d hits">
+        <u-datalist id="datalist-1">
           <u-option>Option 1</u-option>
           <u-option>Option 2</u-option>
           <u-option>Option 3</u-option>

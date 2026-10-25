@@ -224,43 +224,29 @@ export const dispatchChange = (input: HTMLInputElement) =>
  * @description Set input value like the browser does on user input
  * @param {HTMLInputElement} input Input element to set value on
  * @param {string} data The new value
- * @param {inputType} type of the new event, pass false if silent. Required, as an empty inputType is what picks from <u-datalist> before 2.0.3 look like
- * @param {boolean} change Whether to dispatch change after input. Defaults to true unless silent. Pass false for syncs that are not user commits (i.e. mount, programmatic item changes, form reset).
- * Like the browser, change is only dispatched if the value differs from the text as of the last change: the value before the write, or the value at a change an input handler
- * dispatched meanwhile. An input handler may revert the write (i.e. <u-combobox> reverting a datalist pick), or rewrite it and commit it itself (i.e. <u-combobox> syncing a re-picked item)
- * @param {boolean} cancelable Whether a consumer can prevent beforeinput to reject the edit, like the native event. Defaults to true.
- * Pass false for writes that mirror already confirmed state (i.e. <u-combobox> syncing the input to its item), as the veto point for those is the select, not the edit
- * @return {boolean} false if a consumer prevented beforeinput, in which case the value is left untouched and no input or change is dispatched
+ * @param {InputEventInit} [inputEvent] Omit to never trigger input event
+ * @param {boolean} [change] Whether to dispatch change after input, but is skippped if input is reverted
  */
-// Trigger value change in React compatible manner https://stackoverflow.com/a/46012210
 export const setValue = (
 	input: HTMLInputElement,
 	data: string,
-	type: string | false,
-	change = type !== false,
-	cancelable = true,
+	inputEvent?: InputEventInit,
+	change?: boolean,
 ) => {
-	const silent = type === false;
-	const event = { bubbles: true, composed: true, data, inputType: type || "" };
-	const before = { ...event, cancelable }; // beforeinput is cancelable like the native event, so a consumer can reject the edit
-	const inputType = input.selectionEnd === null && input.type; // Input types without selection support (i.e. 'email', 'number', 'date') do not support setRangeText, so temporarily switch to text
 	let last = input.value; // Text as of the last change, like the browser tracks it: the value before the write, or the value at a change dispatched by an input handler
-	const onChange = () => {
-		last = input.value;
-	};
+	const type = input.selectionEnd === null && input.type; // Input types without selection support (i.e. 'email', 'number', 'date') do not support setRangeText
+	const event = { bubbles: true, composed: true, data, ...inputEvent };
+	const onChange = () => (last = input.value);
 
-	if (!silent && !input.dispatchEvent(new InputEvent("beforeinput", before)))
-		return false;
-	if (inputType) input.type = "text";
+	if (type) input.type = "text";
 	input.setRangeText(data, 0, input.value.length, "end"); // Using setRangeText to not touch HTMLInputElement.prototype, aligning with browser standard
-	if (inputType) input.type = inputType; // Revert to original input type
-	if (!silent) {
-		input.addEventListener("change", onChange, true); // Capture, so a change stopped by a handler on the input still counts
+	if (type) input.type = type;
+	if (inputEvent) {
+		on(input, "change", onChange, true); // Capture, so a change stopped by a handler on the input still counts
 		input.dispatchEvent(new InputEvent("input", event));
-		input.removeEventListener("change", onChange, true);
+		off(input, "change", onChange, true);
 	}
 	if (change && input.value !== last) dispatchChange(input); // Only if the value ended up changed, as an input handler may have reverted it, or already dispatched change for it
-	return true;
 };
 
 /**
@@ -348,14 +334,28 @@ const restoreSubmit = (input: HTMLInputElement, form: string | null) =>
 export const getText = (el?: Node | null) => el?.textContent?.trim() || "";
 
 /**
- * speak
+ * srText
+ * @description Get a screen reader text from the --sr-<key> CSS custom property, so consumers can translate through CSS.
+ * Inherited, so a translation can be set once on :root or :lang(). The value must be a quoted string, as it is also used as alternative text in content.
+ * Read on demand, as the computed style can not be observed for changes
+ */
+export const srText = (el: Element, key: string, fallback: string): string => {
+	const value = getComputedStyle(el).getPropertyValue(`--sr-${key}`).trim();
+	const quote = value[0];
+	const quoted = (quote === '"' || quote === "'") && value.endsWith(quote);
+	const text = quoted ? value.slice(1, -1).replace(/\\(.)/g, "$1") : value; // Unquote and unescape \" \' and \\
+	return text || fallback;
+};
+
+/**
+ * ariaNotify
  * @description Creates a aria-live element for announcements. Needed since VO is flaky on announcing aria-live inside ShadowDOM
  * @param {string} text Optional text to announce
  */
 let LIVE: HTMLElement;
 let LIVE_SR_FIX = 0; // Ensure screen reader announcing by alternating non-breaking-space suffix
 let LIVE_CLEAR: ReturnType<typeof setTimeout> | number = 0;
-export const speak = (text?: string) => {
+export const ariaNotify = (text?: string) => {
 	if (!LIVE) {
 		LIVE = tag("div", { "aria-live": "assertive" });
 		LIVE.style.overflow = "hidden";
@@ -369,7 +369,7 @@ export const speak = (text?: string) => {
 	if (text === "") LIVE.textContent = ""; // Clear announcement immediately if empty string
 	if (text) {
 		LIVE.textContent = `${text}${LIVE_SR_FIX++ % 2 ? "\u{A0}" : ""}`; // Non-breaking space to ensure screen reader announces
-		LIVE_CLEAR = setTimeout(speak, !IS_MAC && IS_FIREFOX ? 2000 : 300, ""); // Clear after 300ms to allow announcement, but prevent screen reader from finding the text in <body>
+		LIVE_CLEAR = setTimeout(ariaNotify, !IS_MAC && IS_FIREFOX ? 2000 : 300, ""); // Clear after 300ms to allow announcement, but prevent screen reader from finding the text in <body>
 	}
 	// Note: Narrator has a minor "hiccup" when using aria-live, as it starts announcing native commands first
 	// Note: Firefox with NVDA needs 2000ms to fully announce

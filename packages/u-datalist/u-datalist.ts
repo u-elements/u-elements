@@ -2,6 +2,7 @@ export type { UHTMLOptionElement } from "./u-option";
 
 import "./u-option"; // Import to register u-option
 import {
+	ariaNotify,
 	attachStyle,
 	attr,
 	customElements,
@@ -20,10 +21,11 @@ import {
 	preventSubmit,
 	SAFE_MULTISELECTABLE,
 	setValue,
-	speak,
+	srText,
 	UHTMLElement,
 	useId,
 } from "../utils";
+import { version } from "./package.json";
 
 declare global {
 	interface HTMLElementTagNameMap {
@@ -46,6 +48,7 @@ export const UHTMLDataListShadowRoot =
 let LIVE_TIMER: ReturnType<typeof setTimeout>;
 const EVENTS_IDLE_CAPTURE = "focus click keydown mousedown";
 const EVENTS_ACTIVE_BUBBLE = "input"; // Using bubble here so <u-combobox> capture input events runs before <u-datalist>. focusout and pointerdown are handled by onFocusLeave
+// Screen reader texts, translated through --sr-<key> CSS custom properties. See srText
 const TEXTS = {
 	of: "of",
 	plural: "%d hits",
@@ -60,16 +63,12 @@ export class UHTMLDataListElement extends UHTMLElement {
 	_input?: HTMLInputElement; // Using underscore instead of private fields for backwards compatibility
 	_options?: HTMLCollectionOf<HTMLOptionElement>; // Caching options to speed up performance
 	_root?: Document | ShadowRoot; // Used to consistently remember root for event delegation
-	_texts = { ...TEXTS };
 	_unfocus?: ReturnType<typeof onFocusLeave>;
 	_umutate?: ReturnType<typeof onMutation>;
 
+	version = version; // Expose version for easier debugging
 	static get observedAttributes() {
-		return [
-			"hidden",
-			"id",
-			...Object.keys(TEXTS).map((key) => `data-sr-${key}`),
-		]; // Using ES2015 syntax for backwards compatibility
+		return ["hidden", "id"]; // Using ES2015 syntax for backwards compatibility
 	}
 
 	constructor() {
@@ -108,10 +107,7 @@ export class UHTMLDataListElement extends UHTMLElement {
 		this._umutate = this._unfocus = this._root = this._input = undefined;
 	}
 	attributeChangedCallback(prop?: string, _prev?: string, next?: string) {
-		const text = prop?.split("data-sr-")[1] as keyof typeof TEXTS;
-
-		if (TEXTS[text]) this._texts[text] = next || TEXTS[text];
-		else if (prop === "hidden") {
+		if (prop === "hidden") {
 			// hidden is the open state, so keep the input in sync also when written by a consumer (i.e. <u-combobox> toggle button). No-op when written by setExpanded
 			const open = next === null;
 			if (this._input) attr(this._input, "aria-expanded", `${open}`);
@@ -187,7 +183,7 @@ const onFocus = (self: UHTMLDataListElement, { target: el }: Event) => {
 		if (isInert(el)) return; // Do not open if disabled or readOnly
 		if (self._root) on(self._root, EVENTS_ACTIVE_BUBBLE, self); // Listen to input events to update the list
 		attr(self, "aria-label", el.labels?.[0]?.textContent.trim() || null);
-		speak(); // Prepare for aria-live announcements
+		ariaNotify(); // Prepare for aria-live announcements
 		self._input = el;
 		if (IS_ANDROID) setExpanded(self, true); // Android TalkBack does not trigger click event on input, so expand right away
 	} else onBlurred(self);
@@ -215,8 +211,10 @@ const onClick = (self: UHTMLDataListElement, event: Event) => {
 	for (const opt of self.options)
 		if (opt.contains(event.target as Node)) {
 			self._input?.focus(); // Ensure input has focus to keep datalist open, also on pointerup
-			if (self._input)
-				setValue(self._input, opt.value, "insertReplacementText");
+			if (self._input) {
+				const inputEvent = { inputType: "insertReplacementText" };
+				setValue(self._input, opt.value, inputEvent, true); // Dispatch change like native <datalist>, unless an input handler reverted the value (i.e. <u-combobox>)
+			}
 			return setExpanded(self, attr(self, SAFE_MULTISELECTABLE) === "true");
 		}
 };
@@ -277,20 +275,24 @@ const onMutations = (self: UHTMLDataListElement) => {
 	clearTimeout(LIVE_TIMER); // Announce hits if real user has typed
 	LIVE_TIMER = setTimeout(speakHits, 500, self, show); // 500ms makes room for screen reader to announce the typed character, before announcing the hits count
 
-	if (IS_IOS)
+	// TODO EIRIK: Use CSS and respect aria-posint
+	if (IS_IOS) {
+		const of = srText(self, "of", TEXTS.of); // Read once before the writes, as reading the computed style flushes style
 		show.forEach((opt, index, { length }) => {
-			attr(opt, "title", `${index + 1} ${self._texts.of} ${length}`); // Announce count in iOS
+			attr(opt, "title", `${index + 1} ${of} ${length}`); // Announce count in iOS
 		});
+	}
 
 	self._umutate?.takeRecords(); // Clear mutation records to prevent unwanted MutationObserver triggers when changing attributes in render
 };
 
-const speakHits = (self: UHTMLDataListElement, show: HTMLOptionElement[]) =>
-	!self.hidden &&
-	self._input === getFocused(self) &&
-	speak(
-		`${show.some(({ value }) => value) ? `${self._texts[show[1] ? "plural" : "singular"]}`.replace("%d", `${show.length}`) : self.innerText}`,
-	);
+const speakHits = (self: UHTMLDataListElement, show: HTMLOptionElement[]) => {
+	const key = show[1] ? "plural" : "singular";
+	if (!self.hidden && self._input === getFocused(self))
+		ariaNotify(
+			`${show.some(({ value }) => value) ? srText(self, key, TEXTS[key]).replace("%d", `${show.length}`) : self.innerText}`,
+		);
+};
 
 // Polyfill input.list so it also receives u-datalist
 if (isBrowser())

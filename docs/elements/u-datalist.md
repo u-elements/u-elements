@@ -15,7 +15,7 @@ import { data } from '../filesize.data.ts'
 - Use `<u-option>` as direct child elements - these will show the suggestions while typing
 - Use matching `id` on `<u-datalist>` and `list` attribute on `<input>` to connect
 - Use `data-nofilter` to [prevent filtering](https://github.com/whatwg/html/issues/4882)
-- Use `data-*` attributes to translate screen reader announcements
+- Use `--sr-*` CSS custom properties to translate screen reader texts
 - Use `popover` attribute to activate [Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API)
 - **Want to show suggestions from a data source?** [See u-combobox &rarr;](/elements/u-combobox)
 - **MDN Web Docs:** [&lt;datalist&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist) ([HTMLDatalistElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDatalistElement)) / [&lt;option&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option) ([HTMLOptionElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLOptionElement))
@@ -28,7 +28,7 @@ import { data } from '../filesize.data.ts'
   Choose flavor of ice cream
 &lt;/label&gt;
 &lt;input id="my-input" list="my-list" /&gt;
-&lt;u-datalist id="my-list" data-sr-singular="%d flavor" data-sr-plural="%d flavours"&gt;
+&lt;u-datalist id="my-list" style="--sr-singular: '%d flavor'; --sr-plural: '%d flavours'"&gt;
   &lt;u-option&gt;Coconut&lt;/u-option&gt;
   &lt;u-option&gt;Strawberries&lt;/u-option&gt;
   &lt;u-option&gt;Chocolate&lt;/u-option&gt;
@@ -75,10 +75,6 @@ bun add -S @u-elements/u-datalist
 
 - **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
   - `id` must be identical to value of `list` attribute on associated `<input>`
-  - Screen reader attributes required to meet [WCAG §4.1.3](https://www.w3.org/TR/WCAG21/#status-messages): 
-    - `data-sr-singular="%d hit"` announces single hit
-    - `data-sr-plural="%d hits"` announces multiple hits
-    - ***Note:** If `<u-datalist>` has no options, visible text will be announced instead (i.e. No results)*
 - **DOM interface:** [`HTMLDataListElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDataListElement)
   - `HTMLDataListElement.options` returns `HTMLCollectionOf<HTMLOptionElement>`. However, note that there is inconsistency between Firefox and other browsers, regarding whether `disabled` options are included or not. To ensure access to all options, consider using `.children` instead.
 
@@ -107,6 +103,19 @@ If you need to detect click on options or require a more fine-grained API — in
 ## Styling
 
 While `<u-datalist>` and `<u-option>` are styleable, *native* datalist and option elements are currently not. However, there is a possibility that the [native elements may support styling in the future](https://open-ui.org/components/customizableselect/#rich-content-in-options).
+
+### Screen reader texts
+
+Screen reader texts are set through CSS custom properties. They inherit, so a translation can be set once for a page or a language, i.e.`:lang(nb) { --sr-plural: "%d treff" }`.
+
+- `--sr-singular` announces single hit. Defaults to `"%d hit"`
+- `--sr-plural` announces multiple hits. Defaults to `"%d hits"`
+- `--sr-of` separates "number _of_ total" in announcements. Defaults to `"of"`
+- If `<u-datalist>` has no options, visible text will be announced instead (i.e. No results)
+
+::: tip Note:
+If you are using a strict Content Security Policy (CSP), inline `style` HTML attributes are blocked. Set the properties in your CSS, or through `element.style.setProperty('"New string"')` (note that the string must be quoted) or a framework `style` binding.
+:::
 
 ### Styling with the display property
 
@@ -202,7 +211,7 @@ u-option:not([selected]) {
   Choose flavor of ice cream
   &lt;input type="text" id="my-styling-input" class="my-input" list="my-styling" /&gt;
 &lt;/label&gt;
-&lt;u-datalist class="my-list" id="my-styling" data-sr-singular="%d flavor" data-sr-plural="%d flavours"&gt;
+&lt;u-datalist class="my-list" id="my-styling" style="--sr-singular: '%d flavor'; --sr-plural: '%d flavours'"&gt;
   &lt;u-option&gt;Coconut&lt;/u-option&gt;
   &lt;u-option&gt;Strawberries&lt;/u-option&gt;
   &lt;u-option&gt;Chocolate&lt;/u-option&gt;
@@ -221,7 +230,7 @@ Using [Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API
   Choose flavor of ice cream
   &lt;input type="text" id="my-popover-input" list="my-popover" /&gt;
 &lt;/label&gt;
-&lt;u-datalist popover id="my-popover" data-sr-singular="%d flavor" data-sr-plural="%d flavours"&gt;
+&lt;u-datalist popover id="my-popover" style="--sr-singular: '%d flavor'; --sr-plural: '%d flavours'"&gt;
   &lt;u-option&gt;Coconut&lt;/u-option&gt;
   &lt;u-option&gt;Strawberries&lt;/u-option&gt;
   &lt;u-option&gt;Chocolate&lt;/u-option&gt;
@@ -236,7 +245,7 @@ Using [Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API
 <pre hidden>
 &lt;label for="my-dynamic-input"&gt;Choose your email&lt;/label&gt;
 &lt;input type="text" id="my-dynamic-input" list="my-dynamic-list" placeholder="Type email..." /&gt;
-&lt;u-datalist id="my-dynamic-list" data-nofilter data-sr-singular="%d suggestion" data-sr-plural="%d suggestions"&gt;
+&lt;u-datalist id="my-dynamic-list" data-nofilter style="--sr-singular: '%d suggestion'; --sr-plural: '%d suggestions'"&gt;
 &lt;/u-datalist&gt;
 &lt;script type="module"&gt;
   const input = document.getElementById('my-dynamic-input');
@@ -306,7 +315,9 @@ const renderToStaticMarkup = (options: string) =>
 ## Changelog
 
 - **3.0.0:**
+  - Screen reader texts are set through `--sr-singular`, `--sr-plural` and `--sr-of` CSS custom properties instead of `data-sr-*` attributes. They inherit, so a translation can be set once on `:root` or `:lang()`.
   - No longer uses `HTMLInputElement.prototype` to update the input value, aligning with native browser behavior.
+  - A pick no longer dispatches `beforeinput` before writing the option value, as no browser does so for native `<datalist>`.
   - Writing the `hidden` attribute now syncs `aria-expanded` and `aria-activedescendant`.
   - Holding `Enter` on an active option picks it once instead of on every key repeat. Closes when a press on an option is released outside without a click, instead of staying open until the next click.
   - Pressing inside the list keeps focus on the input, so no `blur` or `change` with the typed text is dispatched before the pick.

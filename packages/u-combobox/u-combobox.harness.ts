@@ -34,7 +34,7 @@ export type HarnessConfig = {
 	select: string | null; // name of a mirrored <select>
 	form: boolean | "outside"; // true wraps in <form id="form">, "outside" renders the form before the combobox and sets form="form" on the input
 	inputAttrs: Record<string, string>; // type, readonly, disabled, value (vanilla only, as an HTML attribute)
-	attrs: Record<string, string>; // Extra attributes on <u-combobox>, i.e. data-sr-*
+	attrs: Record<string, string>; // Extra attributes on <u-combobox>, i.e. data-multiple="false"
 	listKey: number; // Change to force the framework to re-create the datalist element
 	replaceOptionsOnInput: Option[] | null; // Consumer pattern: replace options from an input handler
 	renderCost: number; // Milliseconds of synchronous work per render, to test commits against a slow framework render (React harness only)

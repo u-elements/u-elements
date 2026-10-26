@@ -34,13 +34,16 @@ declare global {
 }
 
 const DATA_ACTIVE = "data-activedescendant";
+const ARIA_SIZE = "aria-setsize";
 const ARIA_HIDDEN = "aria-hidden";
 export const UHTMLDataListStyle = `${DISPLAY_BLOCK}
-::slotted([role="option"]) { display: block; cursor: pointer }
+::slotted([role="option"]) { display:block;cursor:pointer }
 ::slotted([role="option"][${DATA_ACTIVE}]) { ${FOCUS_OUTLINE} }
 ::slotted([role="option"][${ARIA_HIDDEN}="true"]),
 ::slotted([role="option"][disabled]),
-::slotted([role="option"][hidden]) { display: none !important }`;
+::slotted([role="option"][hidden]) { display: none !important }
+::slotted([role="option"])::after{content:''/var(--sr-ios,"")}
+@supports(-webkit-touch-callout:none) {::slotted([role="option"])::after { --sr-ios: ", "attr(data-sr-pos)" "var(--sr-of, "of")" "attr(aria-setsize,var(--sr-count, "")) }}`;
 
 export const UHTMLDataListShadowRoot =
 	declarativeShadowRoot(UHTMLDataListStyle);
@@ -48,19 +51,14 @@ export const UHTMLDataListShadowRoot =
 let LIVE_TIMER: ReturnType<typeof setTimeout>;
 const EVENTS_IDLE_CAPTURE = "focus click keydown mousedown";
 const EVENTS_ACTIVE_BUBBLE = "input"; // Using bubble here so <u-combobox> capture input events runs before <u-datalist>. focusout and pointerdown are handled by onFocusLeave
-// Screen reader texts, translated through --sr-<key> CSS custom properties. See srText
-const TEXTS = {
-	of: "of",
-	plural: "%d hits",
-	singular: "%d hit",
-};
 
 /**
  * The `<u-datalist>` HTML element contains a set of `<u-option>` elements that represent the permissible or recommended options available to choose from within other controls.
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist)
  */
 export class UHTMLDataListElement extends UHTMLElement {
-	_input?: HTMLInputElement; // Using underscore instead of private fields for backwards compatibility
+	_announced?: string; // Last announced query and hit count
+	_control?: HTMLInputElement; // Using underscore instead of private fields for backwards compatibility
 	_options?: HTMLCollectionOf<HTMLOptionElement>; // Caching options to speed up performance
 	_root?: Document | ShadowRoot; // Used to consistently remember root for event delegation
 	_unfocus?: ReturnType<typeof onFocusLeave>;
@@ -87,7 +85,7 @@ export class UHTMLDataListElement extends UHTMLElement {
 		this._unfocus = onFocusLeave(
 			this._root,
 			() => onBlurred(this),
-			(node) => this._input === node || this.contains(node),
+			(node) => this._control === node || this.contains(node),
 		);
 
 		this._umutate = onMutation(this, onMutations, {
@@ -104,17 +102,18 @@ export class UHTMLDataListElement extends UHTMLElement {
 		setInputAttributes(this, null); // Reset input
 		this._unfocus?.();
 		this._umutate?.();
-		this._umutate = this._unfocus = this._root = this._input = undefined;
+		this._umutate = this._unfocus = this._root = this._control = undefined;
 	}
 	attributeChangedCallback(prop?: string, _prev?: string, next?: string) {
 		if (prop === "hidden") {
 			// hidden is the open state, so keep the input in sync also when written by a consumer (i.e. <u-combobox> toggle button). No-op when written by setExpanded
 			const open = next === null;
-			if (this._input) attr(this._input, "aria-expanded", `${open}`);
+			if (this._control) attr(this._control, "aria-expanded", `${open}`);
 			if (!open) setActive(this); // Clear activedescendant when closing
+			if (!open) this._announced = undefined; // Announce hits again next time the list opens
 			if (this.popover && this.isConnected) this.togglePopover(open); // Mirror Popover API if used
 		} else if (this.id) {
-			const selector = `input[list="${this.id}"]` as "input";
+			const selector = `input[list="${CSS.escape(this.id)}"]` as "input";
 			const input = getRoot(this).querySelector(selector);
 			if (input) setInputAttributes(this, input);
 		}
@@ -140,7 +139,7 @@ const isVisible = (el: Element) =>
 	attr(el, ARIA_HIDDEN) !== "true" && el.clientHeight;
 
 const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
-	if (self._input) attr(self._input, "aria-expanded", `${open}`);
+	if (self._control) attr(self._control, "aria-expanded", `${open}`);
 	if (!self.isConnected || self.hidden !== open) return; // No change needed
 	if (!open) setActive(self); // Clear activedescendant when closing
 	if (self.popover) self.togglePopover(open); // Mirror Popover API if used
@@ -149,7 +148,7 @@ const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
 };
 
 const setActive = (self: UHTMLDataListElement, opt?: HTMLOptionElement) => {
-	if (self._input) attr(self._input, "aria-activedescendant", useId(opt));
+	if (self._control) attr(self._control, "aria-activedescendant", useId(opt));
 	for (const o of self.options) attr(o, DATA_ACTIVE, o === opt ? "" : null);
 	opt?.scrollIntoView({ block: "nearest" });
 };
@@ -158,7 +157,7 @@ const setInputAttributes = (
 	self: UHTMLDataListElement,
 	setup: HTMLInputElement | null,
 ) => {
-	const input = setup || self._input;
+	const input = setup || self._control;
 	const hidden = !self._root || self.hidden; // Assume hidden when no _root, as the component has not run connectedCallback yet
 	if (!input) return;
 	if (self.popover) {
@@ -174,7 +173,7 @@ const setInputAttributes = (
 };
 
 const onFocus = (self: UHTMLDataListElement, { target: el }: Event) => {
-	if (self._input === el) return; // Connected to the current target
+	if (self._control === el) return; // Connected to the current target
 	if (isInput(el) && el.getAttribute("list") === self.id) {
 		setInputAttributes(self, null); // Reset previous input
 		setInputAttributes(self, el); // Ensure attributes
@@ -182,7 +181,7 @@ const onFocus = (self: UHTMLDataListElement, { target: el }: Event) => {
 		if (self._root) on(self._root, EVENTS_ACTIVE_BUBBLE, self); // Listen to input events to update the list
 		attr(self, "aria-label", el.labels?.[0]?.textContent.trim() || null);
 		ariaNotify(); // Prepare for aria-live announcements
-		self._input = el;
+		self._control = el;
 		if (IS_ANDROID) setExpanded(self, true); // Android TalkBack does not trigger click event on input, so expand right away
 	} else onBlurred(self);
 };
@@ -190,10 +189,10 @@ const onFocus = (self: UHTMLDataListElement, { target: el }: Event) => {
 // Focus has left the input and the list (see onFocusLeave), or focus moved to another input, or a click landed outside
 const onBlurred = (self: UHTMLDataListElement) => {
 	const focus = getFocused(self);
-	if (self._input === focus || self.contains(focus)) return; // Ignore if focus is still on input or inside datalist, as onFocus and onClick call this directly
+	if (self._control === focus || self.contains(focus)) return; // Ignore if focus is still on input or inside datalist, as onFocus and onClick call this directly
 	if (self._root) off(self._root, EVENTS_ACTIVE_BUBBLE, self); // Unbind events relevant to focused state
 	setExpanded(self, false);
-	self._input = undefined;
+	self._control = undefined;
 };
 
 // Keep focus on the input when pressing inside the list, so no blur closes it or makes the browser dispatch change with the typed text before the pick.
@@ -204,14 +203,14 @@ const onMousedown = (self: UHTMLDataListElement, event: Event) => {
 
 const onClick = (self: UHTMLDataListElement, event: Event) => {
 	if (isInput(event.target)) onFocus(self, event); // Make sure we potentially connect, in case focus happens before u-datalist connectedCallback has run
-	if (self._input === event.target) return setExpanded(self, true);
+	if (self._control === event.target) return setExpanded(self, true);
 	if (!self.contains(event.target as Node)) return onBlurred(self);
 	for (const opt of self.options)
 		if (opt.contains(event.target as Node)) {
-			self._input?.focus(); // Ensure input has focus to keep datalist open, also on pointerup
-			if (self._input) {
+			self._control?.focus(); // Ensure input has focus to keep datalist open, also on pointerup
+			if (self._control) {
 				const inputEvent = { inputType: "insertReplacementText" };
-				setValue(self._input, opt.value, inputEvent, true); // Dispatch change like native <datalist>, unless an input handler reverted the value (i.e. <u-combobox>)
+				setValue(self._control, opt.value, inputEvent, true); // Dispatch change like native <datalist>, unless an input handler reverted the value (i.e. <u-combobox>)
 			}
 			return setExpanded(self, attr(self, SAFE_MULTISELECTABLE) === "true");
 		}
@@ -219,7 +218,7 @@ const onClick = (self: UHTMLDataListElement, event: Event) => {
 
 const onKeyDown = (self: UHTMLDataListElement, event: KeyboardEvent) => {
 	if (isInput(event.target)) onFocus(self, event); // Make sure we potentially connect, in case focus happens before u-datalist connectedCallback has run
-	if (self._input !== event.target) return; // Only handle events from connected input
+	if (self._control !== event.target) return; // Only handle events from connected input
 	const { key, ctrlKey, metaKey, altKey, repeat } = event;
 	const isComposing = event.isComposing || event.keyCode === 229; // Chrome has isComposing false on the keydown starting a composition, but keyCode 229
 	const skip = ctrlKey || metaKey || key === "Shift" || key === "Tab";
@@ -229,7 +228,7 @@ const onKeyDown = (self: UHTMLDataListElement, event: KeyboardEvent) => {
 	const isEnter = key === "Enter";
 	if (!repeat) setExpanded(self, isComposing || key !== "Escape"); // Close on ESC but show on other keys, except a held Enter, which must not re-open after the pick closed the list
 	if (isComposing) return; // The IME owns Enter, Escape and arrows while composing, so only open the list
-	const active = attr(self._input, "aria-activedescendant");
+	const active = attr(self._control, "aria-activedescendant");
 	const opts: HTMLOptionElement[] = [];
 	let prev = -1;
 	let next = -1;
@@ -249,18 +248,18 @@ const onKeyDown = (self: UHTMLDataListElement, event: KeyboardEvent) => {
 
 	if (opts[next]) {
 		event.preventDefault(); // Prevent scroll when on option
-		self._input.focus(); // Force Firefox to keep focus on input
+		self._control.focus(); // Force Firefox to keep focus on input
 	}
 	if (isEnter && opts[next]) {
 		event.stopImmediatePropagation(); // Native datalist does not trigger Enter on keydown on item, but instead a input event
-		preventSubmit(self._input); // Prevent form submit on enter if "focus" is inside datalist, also on key repeat
+		preventSubmit(self._control); // Prevent form submit on enter if "focus" is inside datalist, also on key repeat
 		if (!repeat) opts[next].click(); // Holding Enter picks once, so a multiselect option does not toggle on every repeat
 	} else setActive(self, opts[next]);
 };
 
 const onMutations = (self: UHTMLDataListElement) => {
-	if (!self._input || self.hidden) return; // Do not process if hidden or no input connected
-	const query = self._input.value.toLowerCase().trim() || "";
+	if (!self._control || self.hidden) return; // Do not process if hidden or no input connected
+	const query = self._control.value.toLowerCase().trim() || "";
 	const filter = !self.hasAttribute("data-nofilter"); // Support proposed nofilter attribute https://github.com/whatwg/html/issues/4882
 	const hide: HTMLOptionElement[] = [];
 	const show: HTMLOptionElement[] = [];
@@ -271,25 +270,31 @@ const onMutations = (self: UHTMLDataListElement) => {
 	for (const opt of show) attr(opt, ARIA_HIDDEN, "false");
 
 	clearTimeout(LIVE_TIMER); // Announce hits if real user has typed
-	LIVE_TIMER = setTimeout(speakHits, 500, self, show); // 500ms makes room for screen reader to announce the typed character, before announcing the hits count
+	LIVE_TIMER = setTimeout(announce, 500, self, show); // 500ms makes room for screen reader to announce the typed character, before announcing the hits count
+	self.style.setProperty("--sr-count", `'${getTotal(show)}'`);
 
-	// TODO EIRIK: Use CSS and respect aria-posint
-	if (IS_IOS) {
-		const of = srText(self, "of", TEXTS.of); // Read once before the writes, as reading the computed style flushes style
-		show.forEach((opt, index, { length }) => {
-			attr(opt, "title", `${index + 1} ${of} ${length}`); // Announce count in iOS
-		});
-	}
-
+	// onMutations, after the aria-hidden writes
+	if (IS_IOS)
+		show.map((opt, index) =>
+			attr(opt, "data-sr-pos", attr(opt, "aria-posinset") || `${index + 1}`),
+		);
 	self._umutate?.takeRecords(); // Clear mutation records to prevent unwanted MutationObserver triggers when changing attributes in render
 };
 
-const speakHits = (self: UHTMLDataListElement, show: HTMLOptionElement[]) => {
-	const key = show[1] ? "plural" : "singular";
-	if (!self.hidden && self._input === getFocused(self))
-		ariaNotify(
-			`${show.some(({ value }) => value) ? srText(self, key, TEXTS[key]).replace("%d", `${show.length}`) : self.innerText}`,
-		);
+const getTotal = (opts: HTMLOptionElement[]) => {
+	const sized = opts.find((opt) => opt.hasAttribute(ARIA_SIZE));
+	return Number(sized?.getAttribute(ARIA_SIZE)) || opts.length;
+};
+
+const announce = (self: UHTMLDataListElement, hits: HTMLOptionElement[]) => {
+	if (self.hidden || self._control !== getFocused(self)) return;
+	const total = getTotal(hits);
+	const announced = `${self._control?.value}|${total}`;
+	if (self._announced === announced) return; // Prevent re-announcing if same result
+	self._announced = announced;
+	ariaNotify(
+		`${hits.some(({ value }) => value) ? srText(self, total === 1 ? "singular" : "plural", total === 1 ? "%d hit" : "%d hits").replace("%d", `${total}`) : self.innerText}`,
+	);
 };
 
 // Polyfill input.list so it also receives u-datalist

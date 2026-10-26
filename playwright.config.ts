@@ -15,7 +15,7 @@ const FRAMEWORK_SPECS =
 const reuseExistingServer = !process.env.CI;
 
 export default defineConfig({
-	testDir: "./packages/u-combobox",
+	testDir: "./packages",
 	fullyParallel: true,
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 2 : 0,

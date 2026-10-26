@@ -316,12 +316,13 @@ const renderToStaticMarkup = (options: string) =>
 
 - **3.0.0:**
   - Screen reader texts are set through `--sr-singular`, `--sr-plural` and `--sr-of` CSS custom properties instead of `data-sr-*` attributes. They inherit, so a translation can be set once on `:root` or `:lang()`.
+  - Options and screen reader announcements now support and respect `aria-posinset` and `aria-setsize`.
   - No longer uses `HTMLInputElement.prototype` to update the input value, aligning with native browser behavior.
-  - A pick no longer dispatches `beforeinput` before writing the option value, as no browser does so for native `<datalist>`.
+  - A pick no longer dispatches `beforeinput` before writing the option value, aligning with native browser behavior.
   - Writing the `hidden` attribute now syncs `aria-expanded` and `aria-activedescendant`.
-  - Holding `Enter` on an active option picks it once instead of on every key repeat. Closes when a press on an option is released outside without a click, instead of staying open until the next click.
-  - Pressing inside the list keeps focus on the input, so no `blur` or `change` with the typed text is dispatched before the pick.
-  - A pick dispatches `change` only if the value is still changed after the `input` event, as an `input` handler may revert it (i.e. `<u-combobox>`).
+  - Holding `Enter` on an active option picks it once instead of on every key repeat.
+  - Pressing inside the list keeps focus on the input, aligning with native browser behavior.
+  - A pick dispatches `change` only if the value is still changed after the `input` event.
   - Keys are ignored while composing with an Input Method Editor (IME), except that the list still opens.
 - **2.0.3:** Allow `Shift` key events combined with a letter to open datalist
 - **2.0.2:** Instant setup `aria-expanded` attribute to make AXE tests happy

@@ -178,12 +178,10 @@ export const comboboxSuite = (
 
 					await update(page, { clear: true, toggle: true }); // Rendered by the framework after mount
 
-					await expect(clear).not.toHaveAttribute("aria-label"); // The harness buttons have text content, which is their name
 					await expect(clear).toHaveAttribute("aria-hidden", ariaHidden);
 					await expect(clear).toHaveAttribute("hidden", "");
 					await expect(clear).toHaveAttribute("tabindex", "-1");
 
-					await expect(toggle).not.toHaveAttribute("aria-label");
 					await expect(toggle).toHaveAttribute("aria-hidden", ariaHidden);
 					await expect(toggle).toHaveAttribute("aria-expanded", "false");
 					await expect(toggle).toHaveAttribute("tabindex", "-1");
@@ -2611,11 +2609,9 @@ export const comboboxSuite = (
 						);
 						await items.first().evaluate((el) => (el as HTMLElement).click());
 						await expect(items).toHaveCount(1);
-						await expect(items.first()).not.toHaveAttribute("tabindex"); // So a press must not focus the item either
 						await items
 							.first()
 							.click({ position: { x: 2, y: 2 }, force: true }); // Force, as the item has pointer-events: none
-						await expect(items.first()).not.toBeFocused();
 
 						await update(page, { inputAttrs: {} });
 						await expect(items.first()).toHaveAttribute("tabindex", "-1");

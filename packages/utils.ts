@@ -223,23 +223,23 @@ export const dispatchChange = (input: HTMLInputElement) =>
  * setValue
  * @description Set input value like the browser does on user input
  * @param {HTMLInputElement} input Input element to set value on
- * @param {string} data The new value
+ * @param {string} value The new value
  * @param {InputEventInit} [inputEvent] Omit to never trigger input event
  * @param {boolean} [change] Whether to dispatch change after input, but is skippped if input is reverted
  */
 export const setValue = (
 	input: HTMLInputElement,
-	data: string,
+	value: string,
 	inputEvent?: InputEventInit,
 	change?: boolean,
 ) => {
 	let last = input.value; // Text as of the last change, like the browser tracks it: the value before the write, or the value at a change dispatched by an input handler
 	const type = input.selectionEnd === null && input.type; // Input types without selection support (i.e. 'email', 'number', 'date') do not support setRangeText
-	const event = { bubbles: true, composed: true, data, ...inputEvent };
+	const event = { bubbles: true, composed: true, data: value, ...inputEvent };
 	const onChange = () => (last = input.value);
 
 	if (type) input.type = "text";
-	input.setRangeText(data, 0, input.value.length, "end"); // Using setRangeText to not touch HTMLInputElement.prototype, aligning with browser standard
+	input.setRangeText(value, 0, input.value.length, "end"); // Using setRangeText to not touch HTMLInputElement.prototype, aligning with browser standard
 	if (type) input.type = type;
 	if (inputEvent) {
 		on(input, "change", onChange, true); // Capture, so a change stopped by a handler on the input still counts

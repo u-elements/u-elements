@@ -134,8 +134,6 @@ export class UHTMLDataListElement extends UHTMLElement {
 	}
 }
 
-const isInert = (el: HTMLInputElement) =>
-	el.readOnly || el.matches(":disabled"); // Respects fieldset[disabled]
 const isInput = (el: unknown): el is HTMLInputElement =>
 	el instanceof HTMLInputElement;
 const isVisible = (el: Element) =>
@@ -172,7 +170,7 @@ const setInputAttributes = (
 	attr(input, "aria-expanded", setup && `${!hidden}`);
 	attr(input, "autocomplete", setup && "off");
 	attr(input, "enterkeyhint", "done");
-	attr(input, "role", setup && !isInert(input) ? "combobox" : null);
+	attr(input, "role", setup ? "combobox" : null);
 };
 
 const onFocus = (self: UHTMLDataListElement, { target: el }: Event) => {
@@ -180,7 +178,7 @@ const onFocus = (self: UHTMLDataListElement, { target: el }: Event) => {
 	if (isInput(el) && el.getAttribute("list") === self.id) {
 		setInputAttributes(self, null); // Reset previous input
 		setInputAttributes(self, el); // Ensure attributes
-		if (isInert(el)) return; // Do not open if disabled or readOnly
+		if (el.readOnly || el.matches(":disabled")) return; // Do not open if disabled or readOnly
 		if (self._root) on(self._root, EVENTS_ACTIVE_BUBBLE, self); // Listen to input events to update the list
 		attr(self, "aria-label", el.labels?.[0]?.textContent.trim() || null);
 		ariaNotify(); // Prepare for aria-live announcements

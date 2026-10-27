@@ -10,6 +10,30 @@ const mount = async (page: Page, html: string) => {
 	}, html);
 };
 
+// Record every announcement, as the live region is cleared again shortly after speaking.
+// Install after focusing the input, as the live region is created on focus.
+// Resolves to the spoken texts in order, without the clears and the alternating non-breaking space, which trim strips
+const recordSpoken = async (page: Page) => {
+	const live = page.locator("[aria-live='assertive']");
+	await live.evaluate((el) => {
+		new MutationObserver(() => {
+			el.dataset.spoken = `${el.dataset.spoken || ""}|${el.textContent}`;
+		}).observe(el, { childList: true, characterData: true, subtree: true });
+	});
+	return () =>
+		live.evaluate((el) =>
+			(el.dataset.spoken || "")
+				.split("|")
+				.map((text) => text.trim())
+				.filter(Boolean),
+		);
+};
+
+// Opening the list clears a pending announcement in a timeout, which keys or mutations dispatched without a gap would precede.
+// A timeout queued after it resolves once it has run, also when the browser defers timers after input
+const opened = (page: Page) =>
+	page.evaluate(() => new Promise((resolve) => setTimeout(resolve)));
+
 const DEFAULT = `<form>
       <label>
         Search here
@@ -369,22 +393,135 @@ test.describe("HTMLDataListElement", () => {
         </u-datalist>`,
 		);
 		const input = page.locator("input").first();
-		const live = page.locator("[aria-live='assertive']");
 
 		await input.click();
-		// Record every announcement, as the live region is cleared again shortly after speaking
-		await live.evaluate((el) => {
-			new MutationObserver(() => {
-				el.dataset.spoken = `${el.dataset.spoken || ""}|${el.textContent}`;
-			}).observe(el, { childList: true, characterData: true, subtree: true });
-		});
-		const spoken = () => live.evaluate((el) => el.dataset.spoken || "");
+		const spoken = await recordSpoken(page);
 
 		await input.pressSequentially("Option 1", { delay: 50 }); // Like a user, as the list clears the pending announcement in a timeout when it opens, which keys dispatched without a gap would all precede
-		await expect.poll(spoken).toMatch(/1 treff/);
+		await expect.poll(spoken).toContain("1 treff");
 		await input.press("Backspace");
 		await input.press("Backspace");
-		await expect.poll(spoken).toMatch(/3 treff/);
+		await expect.poll(spoken).toContain("3 treff");
+	});
+
+	test("announces aria-setsize as the hit count for a virtualized window", async ({
+		page,
+	}) => {
+		// A consumer rendering a window of a larger result set sets aria-setsize on the rendered options
+		await mount(
+			page,
+			`<label>Search here <input type="text" list="datalist-1" /></label>
+        <u-datalist id="datalist-1" data-nofilter>
+          <u-option aria-setsize="7" hidden>Hidden</u-option>
+          <u-option aria-posinset="41" aria-setsize="120">Option 1</u-option>
+          <u-option aria-posinset="42" aria-setsize="120">Option 2</u-option>
+          <u-option aria-posinset="43" aria-setsize="120">Option 3</u-option>
+        </u-datalist>`,
+		);
+		const input = page.locator("input").first();
+		const options = page.locator("u-option:not([hidden])");
+
+		await input.click();
+		const spoken = await recordSpoken(page);
+		await opened(page);
+
+		await input.press("x");
+		await expect.poll(spoken).toEqual(["120 hits"]); // The total, not the 3 rendered options and not the hidden option's 7
+
+		if (test.info().project.name === "Mobile Safari")
+			for (const [index, pos] of ["41", "42", "43"].entries())
+				await expect(options.nth(index)).toHaveAttribute("data-sr-pos", pos); // iOS reads the position from aria-posinset instead of the rendered index
+	});
+
+	test("picks singular or plural from the aria-setsize total", async ({
+		page,
+	}) => {
+		await mount(
+			page,
+			`<label>Search here <input type="text" list="datalist-1" /></label>
+        <u-datalist id="datalist-1" data-nofilter>
+          <u-option aria-posinset="1" aria-setsize="1">Option 1</u-option>
+        </u-datalist>`,
+		);
+		const input = page.locator("input").first();
+		const option = page.locator("u-option");
+		const setSize = (size: string) =>
+			option.evaluate(
+				(el, size) => el.setAttribute("aria-setsize", size),
+				size,
+			);
+
+		await input.click();
+		const spoken = await recordSpoken(page);
+		await opened(page);
+
+		await input.press("x");
+		await expect.poll(spoken).toEqual(["1 hit"]);
+
+		await setSize("5"); // One rendered option, but the total is plural
+		await expect.poll(spoken).toEqual(["1 hit", "5 hits"]);
+
+		await setSize("-1"); // Unknown total per ARIA, so fall back to the rendered count
+		await expect.poll(spoken).toEqual(["1 hit", "5 hits", "1 hit"]);
+
+		await setSize("2");
+		await expect.poll(spoken).toEqual(["1 hit", "5 hits", "1 hit", "2 hits"]);
+
+		await setSize("abc"); // Not a number, so fall back to the rendered count
+		await expect
+			.poll(spoken)
+			.toEqual(["1 hit", "5 hits", "1 hit", "2 hits", "1 hit"]);
+	});
+
+	test("does not re-announce when options are replaced with the same query and total", async ({
+		page,
+	}) => {
+		// A consumer fetching a window re-renders fresh option elements, which must not repeat the hit count
+		await mount(
+			page,
+			`<label>Search here <input type="text" list="datalist-1" /></label>
+        <u-datalist id="datalist-1" data-nofilter>
+          <u-option aria-posinset="1" aria-setsize="120">Option 1</u-option>
+          <u-option aria-posinset="2" aria-setsize="120">Option 2</u-option>
+          <u-option aria-posinset="3" aria-setsize="120">Option 3</u-option>
+        </u-datalist>`,
+		);
+		const input = page.locator("input").first();
+		const datalist = page.locator("u-datalist");
+		const replaceOptions = (size: string) =>
+			datalist.evaluate((el, size) => {
+				el.replaceChildren(
+					...["Option 1", "Option 2", "Option 3"].map((text, index) => {
+						const opt = document.createElement("u-option");
+						opt.setAttribute("aria-posinset", `${index + 1}`);
+						opt.setAttribute("aria-setsize", size);
+						opt.textContent = text;
+						return opt;
+					}),
+				);
+			}, size);
+
+		await input.click();
+		const spoken = await recordSpoken(page);
+		await opened(page);
+
+		await input.press("x");
+		await expect.poll(spoken).toEqual(["120 hits"]);
+
+		await replaceOptions("120");
+		await page.waitForTimeout(700); // Past the 500ms announcement timer
+		expect(await spoken()).toEqual(["120 hits"]); // Same query and total, so nothing new to announce
+
+		await replaceOptions("121");
+		await expect.poll(spoken).toEqual(["120 hits", "121 hits"]); // A new total is announced
+
+		await input.press("Escape");
+		await expect(datalist).toBeHidden();
+		await input.press("ArrowDown");
+		await expect(datalist).toBeVisible();
+		await opened(page);
+		await replaceOptions("121");
+		await expect.poll(spoken).toEqual(["120 hits", "121 hits", "121 hits"]); // Closing clears the last announcement, so the same result is announced again on the next open
 	});
 	test("handles multiple datalist on same page", async ({ page }) => {
 		await mount(

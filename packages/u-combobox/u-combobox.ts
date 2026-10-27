@@ -395,12 +395,13 @@ const dispatchMatch = (self: UHTMLComboboxElement, isBlur = false) => {
 		syncOptions(self); // Restore the mirror of the current items
 
 		if (match) match = getItem(match);
-		else if (!isBlur && self.creatable) match = { value, label: value }; // Create from text if no match and creatable
+		else if (!isBlur && self.creatable && !isItem)
+			match = { value, label: value }; // Create from text if no match and creatable, but never from the text of an item, as that is a confirmed selection
 
 		if (match && !(multiple && self.values.includes(match.value)))
 			dispatchSelect(self, match, true, settle);
 		else if (isBlur) syncInputSingleMode(self, true);
-		else if (!match && !isItem && list?.ariaBusy !== "true")
+		else if (!match && !isItem && list && attr(list, "aria-busy") !== "true")
 			ariaNotify(srText(self, "invalid", "Invalid value")); // No match on Enter keeps the typed text
 	} else syncInputSingleMode(self, true); // Blur on the item text only trims surrounding whitespace, as the item is a confirmed selection
 };
@@ -446,7 +447,8 @@ const onClick = (self: UHTMLComboboxElement, e: MouseEvent) => {
 		const value = control.value;
 
 		setValue(control, "", "deleteContentBackward");
-		if (!first || !self.contains(first)) dispatchChange(control);
+		if (!first || !self.contains(first))
+			control.value || dispatchChange(control); // No change event if value was edited during input handler
 		else
 			dispatchSelect(self, first, false, () => {
 				if (!items[0]) return control.value || dispatchChange(control); // No change event if value was edited during input handler
@@ -494,6 +496,7 @@ const onInput = (self: UHTMLComboboxElement, e: Partial<InputEvent>) => {
 };
 
 const onKeyDown = (self: UHTMLComboboxElement, e: KeyboardEvent) => {
+	self._enter = false; // Only the keydown right before the keyup can arm the match, so a keydown that moved focus or a modifier press never leaves it armed
 	if (e.ctrlKey || e.metaKey || e.shiftKey || e.key === "Alt") return; // Firefox sets altKey: false when VO key in VoiceOver
 	if (self.control === e.target) onKeyDownControl(self, e);
 	else onKeyDownItems(self, e);
@@ -512,7 +515,8 @@ const onKeyDownControl = (self: UHTMLComboboxElement, e: KeyboardEvent) => {
 		preventSubmit(control); // On keydown, as this is what submits
 		self._enter = true; // Match on keyup, see onKeyUp
 	}
-	if (k === "Tab" && clear && control?.value) {
+	if (k === "Tab" && control?.value) {
+		if (!clear?.clientHeight || !clear.clientWidth) return; // Stop if clear is hidden
 		e.preventDefault(); // Prevent default tab as we are moving into clear
 		attr(clear, "aria-hidden", FALSE); // Allow screen readers to announce clear button as we are focusing it
 		attr(clear, "tabindex", "0"); // Needed to prevent Safari from looping focus back to input on text Tab-press
@@ -549,11 +553,10 @@ const onMutations = (self: UHTMLComboboxElement, r?: MutationRecord[]) => {
 	const { _listbox, control, items, list, multiple } = self;
 	if (!control || r?.every(isNoopAttribute, self)) return; // Frameworks can re-write attributes on render (i.e. Vue sets option value, React syncs input value), which is not a state change
 	if (list && r?.every(isInside, list)) return syncOptions(self); // Only the options changed (i.e. async search results)
-	if (r?.every(isExpanded, control)) return syncButtons(self); // Only the open state changed, which only the toggle button mirrors
+	if (r?.every(isExpanded, self)) return syncButtons(self); // Only the open state changed, which only the toggle button mirrors
 
 	const keys = Array.from(items, (el) => JSON.stringify(getItem(el))); // Use keys instead of nodes, as some frameworks re-render DOM nodes
 	const prev = self._serialized || keys;
-	const hint = `${multiple ? `${items.length ? srText(self, "found", "Navigate left to find %d selected").replace("%d", `${items.length}`) : srText(self, "empty", "No selected")}` : ""}`;
 	const isInit = !r || r.some(isAdd, control) || r.some(isListOrMode, self);
 	const isEdit = `${prev}` !== `${keys}`;
 
@@ -567,12 +570,15 @@ const onMutations = (self: UHTMLComboboxElement, r?: MutationRecord[]) => {
 		attr(item, "tabindex", "-1");
 		attr(item, "value", getValue(item));
 	}
-	if (isEdit) announceItemChange(self, prev, keys);
-	if (isInit || isEdit || (list && r?.some(isInside, list))) syncOptions(self);
-	if (isInit || isEdit || r?.some(isAdd, self._select?.[0])) syncSelect(self);
 	if (list) attr(list, SAFE_MULTISELECTABLE, `${multiple}`);
+	if (isEdit) announceItemChange(self, prev, keys);
+	if (isEdit || isInit || (list && r?.some(isInside, list))) syncOptions(self);
+	if (isEdit || isInit || r?.some(isAdd, self._select?.[0])) syncSelect(self);
+	if (isEdit || isInit) {
+		const hint = `${multiple ? `${items.length ? srText(self, "found", "Navigate left to find %d selected").replace("%d", `${items.length}`) : srText(self, "empty", "No selected")}` : ""}`;
+		attr(control, "aria-description", hint); // Only when the count can have changed, as srText forces a style recalculation
+	}
 	attr(_listbox, "hidden", items.length ? null : ""); // Avoid Siteimprove warning about empty role="listbox"
-	attr(control, "aria-description", hint || null);
 	attr(control, "list", useId(list));
 	syncButtons(self);
 	self._umutate?.takeRecords(); // Clear mutations caused by our attribute writes, before dispatching events, so consumer mutations made in event handlers are kept
@@ -644,18 +650,17 @@ const syncOptions = ({ values, options }: UHTMLComboboxElement) => {
 
 const syncButtons = (self: UHTMLComboboxElement) => {
 	const { _listIsNative: isNative, clear, control, toggle, list } = self;
-	const inert = control?.disabled || control?.readOnly; // Using .disabled since it is hidden by CSS when :disabled
-	const value = control?.value;
+	const x = clear && control?.value && !control.readOnly && !control.disabled; // Using .disabled since it is hidden by CSS when :disabled
 	if (clear) {
-		const focused = value && clear === getFocused(self); // It is possible to tab to clear button
+		const focused = control?.value && clear === getFocused(self); // It is possible to tab to clear button
 		attr(clear, "aria-hidden", focused ? FALSE : IS_MOBILE); // Hide from screen readers to keep datalist open on mobile swipe right screen reader navigation
-		attr(clear, "hidden", value && !inert ? null : "");
+		attr(clear, "hidden", x ? null : "");
 		attr(clear, "tabindex", focused ? "0" : "-1");
 	}
 	if (toggle) {
 		attr(toggle, "aria-expanded", `${!isNative && list?.hidden === false}`);
 		attr(toggle, "aria-hidden", IS_MOBILE); // Hide from screen readers to keep datalist open on swipe right navigation
-		attr(toggle, "hidden", !list || value || inert || isNative ? "" : null);
+		attr(toggle, "hidden", !list || x || isNative ? "" : null); // Hide toggle if native datalist
 		attr(toggle, "tabindex", "-1");
 		attr(toggle, "type", "button"); // Prevent submit
 	}
@@ -683,8 +688,9 @@ function isInside(this: HTMLDataListElement, r: MutationRecord) {
 function isAdd(this: Element | null, { addedNodes: a }: MutationRecord) {
 	return !!this && Array.prototype.some.call(a, (n: Node) => n.contains(this));
 }
-function isExpanded(this: Element, r: MutationRecord) {
-	return r.target === this && r.attributeName === "aria-expanded";
+function isExpanded(this: UHTMLComboboxElement, r: MutationRecord) {
+	const isButton = r.target === this.control || r.target === this.toggle; // Also the toggle, as syncButtons writes aria-expanded on it outside the observer callback
+	return isButton && r.attributeName === "aria-expanded";
 }
 function isListOrMode(this: UHTMLComboboxElement, r: MutationRecord) {
 	if (isAdd.call(this.list, r)) return true; // A datalist is addeed

@@ -605,6 +605,7 @@ const renderToStaticMarkup = (data: string, options: string) =>
 
 - **3.0.0:** Framework compatibility and matching changes:
   - Test suite for u-combobox now runs in vanilla JS, React, Angular, Svelte, Vue, Solid, Qwik and Preact to ensure framework compatibility
+  - Support for `<del>` clear button removed, please use `button[type="reset"]` instead.
   - `Enter` matches on `keyup` instead of `keydown`, as Safari writes a native `<datalist>` pick between the two
   - Requires `<u-datalist>` 3.0.0 or newer. Older versions write the option value of a pick through `HTMLInputElement.prototype.value`, which is cached as programmatic text, so the typed text would not be restored after the pick
   - Screen reader texts are set through [`--sr-*` CSS custom properties](#screen-reader-texts) instead of `data-sr-*` attributes. They inherit, so a translation can be set once on `:root` or `:lang()`, and `--sr-of` is no longer forwarded to `<u-datalist>` as it reads the inherited property itself

@@ -13,6 +13,7 @@ const FRAMEWORKS = {
 const FRAMEWORK_SPECS =
 	/\.(react|vue|svelte|angular|solid|qwik|preact)\.spec\.ts$/;
 const reuseExistingServer = !process.env.CI;
+const env = { PLAYWRIGHT: "1" }; // Tells the Vite configs to disable file watching, see frameworks/vite.shared.ts
 
 export default defineConfig({
 	testDir: "./packages",
@@ -77,11 +78,13 @@ export default defineConfig({
 			command: "npm run dev -- --host",
 			url: "http://127.0.0.1:5173",
 			reuseExistingServer,
+			env,
 		},
 		...Object.entries(FRAMEWORKS).map(([name, port]) => ({
 			command: `npx vite --config=frameworks/${name}/vite.config.ts --host --port ${port} --strictPort`,
 			url: `http://127.0.0.1:${port}/test.u-combobox.html`,
 			reuseExistingServer,
+			env,
 		})),
 	],
 });

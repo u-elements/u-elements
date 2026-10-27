@@ -45,7 +45,7 @@ export const UHTMLDataListStyle = `${DISPLAY_BLOCK}
 ::slotted([role="option"][hidden]) { display: none !important }
 ::slotted([role="option"])::after{content:''/var(--sr-ios,"")}
 @supports(-webkit-touch-callout:none) {
-	::slotted([role="option"])::after { --sr-ios: ", "attr(data-sr-pos)" "var(--sr-of, "of")" "attr(aria-setsize,var(--sr-count, "")) }
+	::slotted([role="option"])::after { --sr-ios: ", "attr(data-sr-pos)" "var(--sr-of, "of")" "var(--sr-count, "") }
 	::slotted([role="option"][aria-setsize="-1"])::after { --sr-ios: ", "attr(data-sr-pos) }
 }`;
 

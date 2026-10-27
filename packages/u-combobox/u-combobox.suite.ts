@@ -2119,6 +2119,27 @@ export const comboboxSuite = (
 					await expect(input).toBeFocused();
 				});
 
+				test("stays visible with typed text, and yields to the clear button", async ({
+					page,
+				}) => {
+					test.skip(IS_NATIVE, "Toggle is hidden with native datalist");
+					await render(page, { toggle: true });
+					const input = page.locator("#input");
+					const toggle = page.locator("button[aria-expanded]");
+
+					await input.fill("Ber");
+					await expect(toggle).not.toHaveAttribute("hidden"); // No clear button, so the toggle is the only control
+
+					await update(page, { clear: true }); // Clear button added while there is text
+					await expect(
+						page.locator('button[type="reset"]'),
+					).not.toHaveAttribute("hidden");
+					await expect(toggle).toHaveAttribute("hidden", ""); // Clear takes the place of the toggle
+
+					await input.fill("");
+					await expect(toggle).not.toHaveAttribute("hidden");
+				});
+
 				test("opens and closes u-datalist on touch tap", async ({ page }) => {
 					// A tap dispatches mousedown, mouseup and click together after touchend, so the close can not rely on the blur from mousedown
 					test.skip(IS_NATIVE, "Toggle is hidden with native datalist");

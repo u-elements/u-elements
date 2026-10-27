@@ -576,7 +576,7 @@ const onMutations = (self: UHTMLComboboxElement, r?: MutationRecord[]) => {
 	if (isEdit || isInit || r?.some(isAdd, self._select?.[0])) syncSelect(self);
 	if (isEdit || isInit) {
 		const hint = `${multiple ? `${items.length ? srText(self, "found", "Navigate left to find %d selected").replace("%d", `${items.length}`) : srText(self, "empty", "No selected")}` : ""}`;
-		attr(control, "aria-description", hint); // Only when the count can have changed, as srText forces a style recalculation
+		attr(control, "aria-description", hint || null); // Only when the count can have changed, as srText forces a style recalculation
 	}
 	attr(_listbox, "hidden", items.length ? null : ""); // Avoid Siteimprove warning about empty role="listbox"
 	attr(control, "list", useId(list));
@@ -650,17 +650,18 @@ const syncOptions = ({ values, options }: UHTMLComboboxElement) => {
 
 const syncButtons = (self: UHTMLComboboxElement) => {
 	const { _listIsNative: isNative, clear, control, toggle, list } = self;
-	const x = clear && control?.value && !control.readOnly && !control.disabled; // Using .disabled since it is hidden by CSS when :disabled
+	const inert = control?.readOnly || control?.disabled; // Using .disabled since it is hidden by CSS when :disabled
+	const clearable = clear && control?.value;
 	if (clear) {
 		const focused = control?.value && clear === getFocused(self); // It is possible to tab to clear button
 		attr(clear, "aria-hidden", focused ? FALSE : IS_MOBILE); // Hide from screen readers to keep datalist open on mobile swipe right screen reader navigation
-		attr(clear, "hidden", x ? null : "");
+		attr(clear, "hidden", clearable && !inert ? null : "");
 		attr(clear, "tabindex", focused ? "0" : "-1");
 	}
 	if (toggle) {
 		attr(toggle, "aria-expanded", `${!isNative && list?.hidden === false}`);
 		attr(toggle, "aria-hidden", IS_MOBILE); // Hide from screen readers to keep datalist open on swipe right navigation
-		attr(toggle, "hidden", !list || x || isNative ? "" : null); // Hide toggle if native datalist
+		attr(toggle, "hidden", !list || clearable || inert || isNative ? "" : null); // Hide toggle if native datalist
 		attr(toggle, "tabindex", "-1");
 		attr(toggle, "type", "button"); // Prevent submit
 	}

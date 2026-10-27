@@ -157,7 +157,6 @@ Screen reader texts are set through CSS custom properties. They inherit, so a tr
 - `--sr-empty` announces no selected items. Defaults to `"No selected"`
 - `--sr-found` announces where to find amount of selected items. Defaults to `"Navigate left to find %d selected"`
 - `--sr-invalid` announces if trying to select invalid value. Defaults to `"Invalid value"`
-- `--sr-of` separates "number _of_ total" in announcements. Defaults to `"of"`
 - `--sr-items` aria-label for listbox containing selected items. Defaults to `"Selected"`
 - `--sr-clear` name of clear button. Defaults to `"Clear input"`
 - `--sr-toggle` name of toggle list button. Defaults to `"Options"`
@@ -199,7 +198,6 @@ If you are using a strict Content Security Policy (CSP), inline `style` HTML att
     --sr-found: "Naviger til venstre for å finne %d valgte";
     --sr-invalid: "Ugyldig verdi";
     --sr-items: "Valgte";
-    --sr-of: "av";
     --sr-plural: "%d smaker";
     --sr-remove: "Trykk for å fjerne";
     --sr-removed: "Fjernet";
@@ -608,7 +606,7 @@ const renderToStaticMarkup = (data: string, options: string) =>
   - Support for `<del>` clear button removed, please use `button[type="reset"]` instead.
   - `Enter` matches on `keyup` instead of `keydown`, as Safari writes a native `<datalist>` pick between the two
   - Requires `<u-datalist>` 3.0.0 or newer. Older versions write the option value of a pick through `HTMLInputElement.prototype.value`, which is cached as programmatic text, so the typed text would not be restored after the pick
-  - Screen reader texts are set through [`--sr-*` CSS custom properties](#screen-reader-texts) instead of `data-sr-*` attributes. They inherit, so a translation can be set once on `:root` or `:lang()`, and `--sr-of` is no longer forwarded to `<u-datalist>` as it reads the inherited property itself
+  - Screen reader texts are set through [`--sr-*` CSS custom properties](#screen-reader-texts) instead of `data-sr-*` attributes. They inherit, so a translation can be set once on `:root` or `:lang()`
   - Empty clear and toggle buttons are named through CSS alternative text, so no `aria-label` is written. A consumer `aria-label` is always respected, also when `--sr-clear` or `--sr-toggle` is set
   - Single mode only matches against present options on `Enter` and blur, never while typing
   - Single mode `Enter` no longer reverts the input when nothing matches. It announces `--sr-invalid` and keeps the typed text until blur

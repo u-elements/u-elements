@@ -386,6 +386,10 @@ export const ariaNotify = (text?: string) => {
 const RENDER_QUEUE: (() => void)[] = []; // One callback per posted message, so each keeps its own place after the renders queued before it
 let RENDER_PORT: MessagePort | undefined; // Shared channel, created on first use so SSR never touches MessageChannel, and closed once drained
 export const afterRender = (callback: () => void) => {
+	if (typeof MessageChannel === "undefined") {
+		Promise.resolve().then(() => setTimeout(callback)); // Fallback if JSDOM or environments without MessageChannel
+		return;
+	}
 	if (!RENDER_PORT) {
 		const { port1, port2 } = new MessageChannel();
 		port1.onmessage = () => {

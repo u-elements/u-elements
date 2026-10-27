@@ -151,7 +151,7 @@ const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
 const setActive = (self: UHTMLDataListElement, opt?: HTMLOptionElement) => {
 	if (self._control) attr(self._control, "aria-activedescendant", useId(opt));
 	for (const o of self.options) attr(o, DATA_ACTIVE, o === opt ? "" : null);
-	opt?.scrollIntoView({ block: "nearest" });
+	opt?.scrollIntoView?.({ block: "nearest" }); // Using ?. as JSDOM does not support scrollIntoView
 };
 
 const setInputAttributes = (
@@ -290,7 +290,7 @@ const getCount = (opts: HTMLOptionElement[]) => {
 const announce = (self: UHTMLDataListElement, hits: HTMLOptionElement[]) => {
 	if (self.hidden || self._control !== getFocused(self)) return;
 	const count = getCount(hits);
-	const hint = `${hits.some(({ value }) => value) ? srText(self, count === 1 ? "singular" : "plural", count === 1 ? "%d hit" : "%d hits").replace("%d", `${count}`) : self.innerText}`;
+	const hint = `${hits.some(({ value }) => value) ? srText(self, count === 1 ? "singular" : "plural", count === 1 ? "%d hit" : "%d hits").replace("%d", `${count}`) : (self.innerText ?? self.textContent)}`; // Fallback to textContent to support JSDOM
 	const announced = JSON.stringify([self._control?.value, count, hint]);
 	if (self._announced === announced) return; // Prevent re-announcing if same result
 	self._announced = announced;

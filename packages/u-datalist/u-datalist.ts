@@ -44,7 +44,10 @@ export const UHTMLDataListStyle = `${DISPLAY_BLOCK}
 ::slotted([role="option"][disabled]),
 ::slotted([role="option"][hidden]) { display: none !important }
 ::slotted([role="option"])::after{content:''/var(--sr-ios,"")}
-@supports(-webkit-touch-callout:none) {::slotted([role="option"])::after { --sr-ios: ", "attr(data-sr-pos)" "var(--sr-of, "of")" "attr(aria-setsize,var(--sr-count, "")) }}`;
+@supports(-webkit-touch-callout:none) {
+	::slotted([role="option"])::after { --sr-ios: ", "attr(data-sr-pos)" "var(--sr-of, "of")" "attr(aria-setsize,var(--sr-count, "")) }
+	::slotted([role="option"][aria-setsize="-1"])::after { --sr-ios: ", "attr(data-sr-pos) }
+}`;
 
 export const UHTMLDataListShadowRoot =
 	declarativeShadowRoot(UHTMLDataListStyle);
@@ -90,7 +93,14 @@ export class UHTMLDataListElement extends UHTMLElement {
 		);
 
 		this._umutate = onMutation(this, onMutations, {
-			attributeFilter: ["disabled", "hidden", "label", "value"], // Listening to hidden attribute to update on open
+			attributeFilter: [
+				"disabled",
+				"hidden",
+				"label",
+				"value",
+				"aria-posinset",
+				ARIA_SIZE,
+			], // Listening to hidden attribute to update on open
 			attributes: true,
 			characterData: true,
 			childList: true,
@@ -210,8 +220,8 @@ const onClick = (self: UHTMLDataListElement, event: Event) => {
 		if (opt.contains(event.target as Node)) {
 			self._control?.focus(); // Ensure input has focus to keep datalist open, also on pointerup
 			if (self._control) {
-				const inputEvent = { inputType: "insertReplacementText" };
-				setValue(self._control, opt.value, inputEvent, true); // Dispatch change like native <datalist>, unless an input handler reverted the value (i.e. <u-combobox>)
+				const inputType = "insertReplacementText";
+				setValue(self._control, opt.value, inputType, true); // Dispatch change like native <datalist>, unless an input handler reverted the value (i.e. <u-combobox>)
 			}
 			return setExpanded(self, attr(self, SAFE_MULTISELECTABLE) === "true");
 		}
@@ -284,7 +294,8 @@ const onMutations = (self: UHTMLDataListElement) => {
 
 const getCount = (opts: HTMLOptionElement[]) => {
 	const sized = opts.find((opt) => opt.hasAttribute(ARIA_SIZE));
-	return Number(sized?.getAttribute(ARIA_SIZE)) || opts.length;
+	const total = Number(sized?.getAttribute(ARIA_SIZE)) || opts.length;
+	return Number.isFinite(total) && total > 0 ? total : opts.length;
 };
 
 const announce = (self: UHTMLDataListElement, hits: HTMLOptionElement[]) => {

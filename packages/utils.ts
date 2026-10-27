@@ -230,18 +230,18 @@ export const dispatchChange = (input: HTMLInputElement) =>
 export const setValue = (
 	input: HTMLInputElement,
 	value: string,
-	inputEvent?: InputEventInit,
+	inputType?: string,
 	change?: boolean,
 ) => {
 	let last = input.value; // Text as of the last change, like the browser tracks it: the value before the write, or the value at a change dispatched by an input handler
 	const type = input.selectionEnd === null && input.type; // Input types without selection support (i.e. 'email', 'number', 'date') do not support setRangeText
-	const event = { bubbles: true, composed: true, data: value, ...inputEvent };
+	const event = { bubbles: true, composed: true, data: value, inputType };
 	const onChange = () => (last = input.value);
 
 	if (type) input.type = "text";
 	input.setRangeText(value, 0, input.value.length, "end"); // Using setRangeText to not touch HTMLInputElement.prototype, aligning with browser standard
 	if (type) input.type = type;
-	if (inputEvent) {
+	if (inputType) {
 		on(input, "change", onChange, true); // Capture, so a change stopped by a handler on the input still counts
 		input.dispatchEvent(new InputEvent("input", event));
 		off(input, "change", onChange, true);

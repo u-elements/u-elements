@@ -157,8 +157,8 @@ const syncList = (inst: Instance) => {
 		optionKeys.set(el, key);
 		const attrs = optionAttrs(option);
 		setAttr(el, "id", attrs.id);
-		setAttr(el, "value", attrs.value);
-		setAttr(el, "label", attrs.label);
+		setAttr(el, "value", attrs.value ?? null);
+		setAttr(el, "label", attrs.label ?? null);
 		if (el.hidden !== !!attrs.hidden) el.hidden = !!attrs.hidden;
 		if (el.textContent !== option.text) el.textContent = option.text;
 		return el;

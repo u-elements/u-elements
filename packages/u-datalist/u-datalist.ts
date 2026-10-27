@@ -33,6 +33,7 @@ declare global {
 	}
 }
 
+const CSS_SPECIAL = /([!"#$%&'()*+,./:;<=>?@[\\\]^`{|}~])/g; // jsdom does not support CSS.escape, so use regex to check CSS special characters
 const DATA_ACTIVE = "data-activedescendant";
 const ARIA_SIZE = "aria-setsize";
 const ARIA_HIDDEN = "aria-hidden";
@@ -113,8 +114,8 @@ export class UHTMLDataListElement extends UHTMLElement {
 			if (!open) this._announced = undefined; // Announce hits again next time the list opens
 			if (this.popover && this.isConnected) this.togglePopover(open); // Mirror Popover API if used
 		} else if (this.id) {
-			const selector = `input[list="${CSS.escape(this.id)}"]` as "input";
-			const input = getRoot(this).querySelector(selector);
+			const selector = `input[list="${this.id.replace(CSS_SPECIAL, "\\$1")}"]`;
+			const input = getRoot(this).querySelector(selector as "input");
 			if (input) setInputAttributes(this, input);
 		}
 	}
@@ -271,7 +272,7 @@ const onMutations = (self: UHTMLDataListElement) => {
 
 	clearTimeout(LIVE_TIMER); // Announce hits if real user has typed
 	LIVE_TIMER = setTimeout(announce, 500, self, show); // 500ms makes room for screen reader to announce the typed character, before announcing the hits count
-	self.style.setProperty("--sr-count", `'${getTotal(show)}'`);
+	self.style.setProperty("--sr-count", `'${getCount(show)}'`);
 
 	// onMutations, after the aria-hidden writes
 	if (IS_IOS)
@@ -281,20 +282,19 @@ const onMutations = (self: UHTMLDataListElement) => {
 	self._umutate?.takeRecords(); // Clear mutation records to prevent unwanted MutationObserver triggers when changing attributes in render
 };
 
-const getTotal = (opts: HTMLOptionElement[]) => {
+const getCount = (opts: HTMLOptionElement[]) => {
 	const sized = opts.find((opt) => opt.hasAttribute(ARIA_SIZE));
 	return Number(sized?.getAttribute(ARIA_SIZE)) || opts.length;
 };
 
 const announce = (self: UHTMLDataListElement, hits: HTMLOptionElement[]) => {
 	if (self.hidden || self._control !== getFocused(self)) return;
-	const total = getTotal(hits);
-	const announced = `${self._control?.value}|${total}`;
+	const count = getCount(hits);
+	const hint = `${hits.some(({ value }) => value) ? srText(self, count === 1 ? "singular" : "plural", count === 1 ? "%d hit" : "%d hits").replace("%d", `${count}`) : self.innerText}`;
+	const announced = JSON.stringify([self._control?.value, count, hint]);
 	if (self._announced === announced) return; // Prevent re-announcing if same result
 	self._announced = announced;
-	ariaNotify(
-		`${hits.some(({ value }) => value) ? srText(self, total === 1 ? "singular" : "plural", total === 1 ? "%d hit" : "%d hits").replace("%d", `${total}`) : self.innerText}`,
-	);
+	ariaNotify(hint);
 };
 
 // Polyfill input.list so it also receives u-datalist

@@ -742,6 +742,52 @@ export const comboboxSuite = (
 					await expect(input).toHaveValue("Same text");
 					expect(await logged(page, "comboboxbeforeselect")).toEqual([]);
 				});
+
+				test("Enter on the item text keeps the current item with equal labels", async ({
+					page,
+				}) => {
+					await render(page, {
+						options: [
+							{ label: "Same text", value: "same-1", text: "same-1" },
+							{ label: "Same text", value: "same-2", text: "same-2" },
+						],
+						items: [{ value: "same-2", label: "Same text" }],
+					});
+					const input = page.locator("#input");
+					const item = page.locator("u-combobox data");
+					await expect(input).toHaveValue("Same text");
+					await resetLog(page, "comboboxbeforeselect");
+
+					await input.click();
+					await input.press("Enter");
+					await expect(item).toHaveAttribute("value", "same-2"); // The item's own option wins the label tie, so the first option does not replace it
+					await expect(item).toHaveCount(1);
+					await expect(input).toHaveValue("Same text");
+					expect(await logged(page, "comboboxbeforeselect")).toEqual([]); // Already the item, so only the text is synced
+				});
+
+				test("Enter on a chip label with equal labels does not add the other option in multiple mode", async ({
+					page,
+				}) => {
+					await render(page, {
+						multiple: true,
+						options: [
+							{ label: "Same text", value: "same-1", text: "same-1" },
+							{ label: "Same text", value: "same-2", text: "same-2" },
+						],
+						items: [{ value: "same-2", label: "Same text" }],
+					});
+					const input = page.locator("#input");
+					const items = page.locator("u-combobox data");
+					await resetLog(page, "comboboxbeforeselect");
+
+					await input.click();
+					await input.fill("Same text");
+					await input.press("Enter");
+					await expect(items).toHaveCount(1); // Resolves to the chip's option, which Enter never re-adds
+					await expect(items.first()).toHaveAttribute("value", "same-2");
+					expect(await logged(page, "comboboxbeforeselect")).toEqual([]);
+				});
 			});
 
 			test.describe(name("events and state"), () => {
@@ -3146,6 +3192,52 @@ export const comboboxSuite = (
 				await expect(items).toHaveText(["Bergen", "Oslo"]);
 				await expect(input).toHaveValue("Oslo");
 			});
+
+			test("Enter on empty text keeps the item in single mode when creatable, as Enter only creates", async ({
+				page,
+			}) => {
+				await render(page, {
+					creatable: true,
+					options: null,
+					items: [BERGEN],
+					clear: true,
+				});
+				await resetLog(page, "comboboxbeforeselect");
+				const input = page.locator("#input");
+				const items = page.locator("u-combobox data");
+
+				await expect(input).toHaveValue(""); // Never synced to the item without a datalist
+				await input.focus();
+				await input.press("Enter");
+				await expect(items).toHaveText(["Bergen"]); // Not removed
+				expect(await logged(page, "comboboxbeforeselect")).toEqual([]);
+
+				await input.fill("Hello");
+				await page.locator('button[type="reset"]').click(); // The clear button is the way to remove the item
+				await expect(items).toHaveCount(0);
+				await expect(input).toHaveValue("");
+			});
+
+			for (const creatable of [false, true]) {
+				test(`blur on empty text keeps the item in single mode when ${creatable ? "creatable" : "not creatable"}`, async ({
+					page,
+				}) => {
+					await render(page, { creatable, options: null, items: [BERGEN] });
+					await resetLog(page, "comboboxbeforeselect");
+					await resetLog(page, "comboboxbeforematch");
+					const input = page.locator("#input");
+					const items = page.locator("u-combobox data");
+
+					await input.focus();
+					await expect(input).toHaveValue("");
+					await input.blur();
+					await page.waitForTimeout(50); // Blur commit is deferred one tick
+
+					await expect(items).toHaveText(["Bergen"]); // Blur does nothing without a datalist
+					expect(await logged(page, "comboboxbeforeselect")).toEqual([]);
+					expect(await logged(page, "comboboxbeforematch")).toEqual([]);
+				});
+			}
 		});
 	});
 };

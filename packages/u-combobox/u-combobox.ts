@@ -37,7 +37,8 @@ import { version } from "./package.json";
  * - option:       an <option> inside the <datalist> / <u-datalist>
  * - text:         the current input value
  * - cached text:  the last text seen before a option pick. Used to revert text after a datalist pick in multiple mode
- * - match:        dispatch comboboxbeforematch with the first enabled and non-hidden option whose label equals the trimmed text case-insensitive.
+ * - match:        dispatch comboboxbeforematch with the first enabled and non-hidden option whose label equals the trimmed text case-insensitive,
+ *                 preferring an option whose value is already an item when several labels are equal.
  *                 Prevented means custom matching: first option with option.selected is the result, so consumer should loop all options to pick or reject another option.
  *                 The result is the matched option, or a new item made from the text when creatable and no option matched (Enter only, never blur), or nothing.
  *                 Match is never dispatched for empty text, and never without a datalist (creatable still creates from the text on Enter)
@@ -74,7 +75,8 @@ import { version } from "./package.json";
  *
  * Enter in input (form submit is prevented when a datalist is present or creatable)
  * - Empty text
- *   - Single:   select to remove the item, if any. Accepted: remove and sync input. Prevented: nothing, the empty text stays until blur, which asks to remove again
+ *   - Single:   with a datalist, select to remove the item, if any. Accepted: remove and sync input. Prevented: nothing, the empty text stays until blur, which asks to remove again.
+ *               Without a datalist: nothing, as Enter only creates and the item is removed through the clear button
  *   - Multiple: nothing
  * - Text (also when equal to an item, as an item can only be removed through its option or chip)
  *   - Both:     match. No result: announce invalid, unless the text equals an item, as a confirmed item is never invalid
@@ -85,6 +87,7 @@ import { version } from "./package.json";
  * Blur (focus leaves <u-combobox>; a pointer down inside defers the check until the press ends, so a click can refocus first.
  *       In Samsung Internet, focus landing on <body> is not a blur, as it parks keyboard focus there while TalkBack is on the list, see onFocusLeave)
  * - Multiple: nothing
+ * - No datalist: nothing, as free text is never matched or synced
  * - Readonly: nothing, also when the text was set programmatically. A readonly input can be focused, so blur is gated like every other action
  * - Single + empty text:  select to remove the item, if any. Accepted: remove. Prevented: sync input
  * - Single + item text:   sync input, which only writes when the text differs from the item in surrounding whitespace
@@ -93,8 +96,10 @@ import { version } from "./package.json";
  *
  * Clear button (button[type="reset"])
  * - Both:     empty the text (dispatches input), focus input, re-open the list if it was open
- * - Single:   remember the text before the clear, then select to remove the item, if any. Accepted: remove. Prevented: set text back to the remembered text
- * - Multiple: the emptied text is cached like typing, and stays as nothing is selected or removed
+ * - Multiple: the emptied text is cached like typing, and change is dispatched at once, as nothing is selected or removed
+ * - Single:   remember the text before the clear, then select to remove the item, if any. No item: change is dispatched at once.
+ *             Accepted: remove, then dispatch change once settled. Prevented: set the text back to the remembered text, which dispatches input but not change.
+ *             Neither happens when the text was edited meanwhile, i.e. by an input handler, as that write is the consumer's commit
  *
  * Toggle button (button[aria-expanded])
  * - Both:     focus input, then open the list if it was closed, otherwise close it.
@@ -120,10 +125,11 @@ import { version } from "./package.json";
  *
  * Always
  * - Disabled or readonly input: every action above is ignored, blur included. Only the text of a sync or consumer write is still cached.
- * - No datalist: free text. Input is never synced, match is never dispatched.
- *                Enter or blur on empty text still removes the item in single mode, as empty text is no selection
+ * - No datalist: free text. Input is never synced, match is never dispatched, blur does nothing.
+ *                Enter only creates from the text when creatable, never removes on empty text, and submits when not creatable
  *
- * | Action       | Single                                                            | Multiple                                   |
+ * The table assumes a datalist. Without one, only Type applies, and Enter text creates when creatable
+ * | Action       | Single                                                           | Multiple                                   |
  * | :----------- | :---------------------------------------------------------------- | :----------------------------------------- |
  * | Pick         | Keep text -> replace -> sync input                                | Keep text -> toggle                        |
  * | Type         | Cache text                                                        | Cache text                                 |
@@ -167,19 +173,19 @@ export const UHTMLComboboxStyle = `${DISPLAY_BLOCK}
 ::slotted(button[aria-expanded]) { font:inherit;border:0;padding:0;background:none;color:inherit;cursor:pointer;text-decoration:none }
 ::slotted(data) { cursor:pointer;pointer-events:none }
 ::slotted(data)::before { content:''/var(${SR_ANNOUNCE},'') }
-::slotted(data)::after { padding-inline:.5ch;pointer-events:auto;content:var(--x,"\\00D7")/", "var(--sr-remove,"Press to remove")var(--sr-ios,"") }
-::slotted(button[type="reset"])::before { content:var(--x,"\\00D7")/var(--sr-clear,"Clear") }
-::slotted(button[type="reset"]:not(:empty))::before { ${SR_ONLY};--x:"" }
+::slotted(data)::after { padding-inline:.5ch;pointer-events:auto;content:var(--x,"\\00D7");content:var(--x,"\\00D7")/", "var(--sr-remove,"Press to remove")var(--sr-ios,"") }
+::slotted(button[type="reset"])::before { content:var(--x,"\\00D7");content:var(--x,"\\00D7")/var(--sr-clear,"Clear") }
+::slotted(button[type="reset"]:not(:empty))::before { ${SR_ONLY} }
 ::slotted(button[type="reset"]:disabled),
 ::slotted(button[aria-expanded]:disabled){display:none}
-::slotted(button[aria-expanded])::before { content:var(--toggle,"\\25BC")/var(--sr-toggle,"Options") }
+::slotted(button[aria-expanded])::before { content:var(--toggle,"\\25BC");content:var(--toggle,"\\25BC")/var(--sr-toggle,"Options") }
 ::slotted(button[aria-expanded="true"])::before { --toggle:"\\25B2" }
-::slotted(button[aria-expanded]:not(:empty))::before { ${SR_ONLY};--toggle:"" }
-#sr-items::before { ${SR_ONLY}/var(--sr-items, "selected") }
+::slotted(button[aria-expanded]:not(:empty))::before { ${SR_ONLY} }
+#sr-items::before { ${SR_ONLY};${SR_ONLY}/var(--sr-items, "selected") }
 @supports(-webkit-touch-callout:none) {
 	:host { counter-reset:sr-ios }
 	::slotted(data)::after { counter-increment:sr-ios;--sr-ios:", "counter(sr-ios)" "var(--sr-of,"of")" "var(--sr-count,"") }
-}`;
+}`; // Double content: declarations without alt text to support Safari before 17.4 and Firefox before 128
 
 export const UHTMLComboboxShadowRoot =
 	declarativeShadowRoot(UHTMLComboboxStyle);
@@ -318,9 +324,9 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	}
 	get options(): HTMLCollectionOf<HTMLOptionElement> {
 		const list = this.list; // Read first, as a replaced list resets the options cache
-		const name = !this._options && list?.children[0]?.nodeName; // Support renaming u-option element
-		if (name) this._options = list?.getElementsByTagName(name as "option");
-		return this._options || this.getElementsByTagName("-" as "option"); // Fallback when u-option is not initialized yet
+		const el = !this._options && list?.querySelector('option,[role="option"]'); // Support renaming u-option element
+		if (el) this._options = list?.getElementsByTagName(el.nodeName as "option");
+		return this._options || this.getElementsByTagName("-" as "option"); // Fallback when options are not initialized yet
 	}
 	get values(): string[] {
 		const values = Array.from(this.items, getValue);
@@ -362,21 +368,23 @@ const dispatchSelect = (
 };
 
 const dispatchMatch = (self: UHTMLComboboxElement, isBlur = false) => {
-	const { isConnected, control, items, list, options, multiple } = self;
+	const { isConnected, control, items, list, options, multiple, values } = self;
 	const inert = !control || control.readOnly || control.matches(":disabled");
-	if (!isConnected || inert || (isBlur && multiple)) return;
+	if (!isConnected || inert || (isBlur && (multiple || !list))) return; // Blur only commits in single mode with a datalist, as free text is never matched or synced
 
 	const settle = isBlur ? () => syncInputSingleMode(self, true) : undefined;
 	const value = control.value.trim();
+	const first = items[0];
 	const isItem = multiple
 		? Array.from(items, getText).includes(value)
-		: getText(items[0]) === value;
+		: getText(first) === value;
 
 	if (!value) {
-		if (!multiple && items[0]) dispatchSelect(self, items[0], false, settle);
+		if (!multiple && first && list) dispatchSelect(self, first, false, settle);
 		else if (isBlur) syncInputSingleMode(self, true); // Sync input to trim input value
 	} else if (!isBlur || !isItem) {
-		let match = Array.prototype.find.call(options, isMatch, value);
+		const matches = Array.prototype.filter.call(options, isMatch, value);
+		let match = matches.find((o) => values.includes(getValue(o))) || matches[0]; // Prefer an option that is already an item, so Enter on the item text with equal labels confirms the item instead of swapping to the first label match
 		const e = { bubbles: true, cancelable: true, detail: match };
 		if (list && !self.dispatchEvent(new CustomEvent("comboboxbeforematch", e)))
 			match = Array.prototype.find.call(options, isSelected);
@@ -388,7 +396,7 @@ const dispatchMatch = (self: UHTMLComboboxElement, isBlur = false) => {
 		if (match && !(multiple && self.values.includes(match.value)))
 			dispatchSelect(self, match, true, settle);
 		else if (isBlur) syncInputSingleMode(self, true);
-		else if (!match && !isItem && !list?.ariaBusy)
+		else if (!match && !isItem && list?.ariaBusy !== "true")
 			ariaNotify(srText(self, "invalid", "Invalid value")); // No match on Enter keeps the typed text
 	} else syncInputSingleMode(self, true); // Blur on the item text only trims surrounding whitespace, as the item is a confirmed selection
 };
@@ -430,13 +438,13 @@ const onClick = (self: UHTMLComboboxElement, e: MouseEvent) => {
 
 	if (clear?.contains(target as Node) && control) {
 		e.preventDefault(); // Prevent button[type="reset"]
-		const clear = !multiple && items[0]; // Used to check if consumer removed <data> in their input handler
+		const first = !multiple && items[0]; // Used to check if consumer removed <data> in their input handler
 		const value = control.value;
 
 		setValue(control, "", { inputType: "deleteContentBackward" });
-		if (!clear || !self.contains(clear)) dispatchChange(control);
+		if (!first || !self.contains(first)) dispatchChange(control);
 		else
-			dispatchSelect(self, clear, false, () => {
+			dispatchSelect(self, first, false, () => {
 				if (!items[0]) return control.value || dispatchChange(control); // No change event if value was edited during input handler
 				control.value || setValue(control, value, { inputType: "insertText" }); // If comboboxbeforeselect was prevented, and still no value, restore value
 			});
@@ -446,7 +454,7 @@ const onClick = (self: UHTMLComboboxElement, e: MouseEvent) => {
 	}
 
 	for (const item of items) {
-		if (item.contains(target as Node)) return dispatchSelect(self, item); // Only keyboard and screen reader can set target to element with pointer-events: none
+		if (item.contains(target as Node)) return dispatchSelect(self, item);
 		const rect = isSelf ? item.getBoundingClientRect() : ({} as DOMRect);
 		const { y: t, right: r, bottom: b, x: l, width: w, height: h } = rect; // Use coordinates to inside since pointer-events: none will prevent correct event.target
 		if (w && h && y >= t && y <= b && x >= l && x <= r) return item.focus(); // If item is larger than 0x0 and click is inside inside, focus it
@@ -490,7 +498,7 @@ const onKeyDownControl = (self: UHTMLComboboxElement, e: KeyboardEvent) => {
 	const { clear, control, creatable, items, list } = self;
 	const { isComposing, key: k, keyCode, repeat } = e;
 
-	if (isComposing || keyCode === 229) return; // The IME owns Enter and arrows while composing. Chrome has isComposing false on the keydown starting a composition, but keyCode 229
+	if (isComposing || keyCode === 229 || control?.readOnly) return; // The IME owns Enter and arrows while composing. Chrome has isComposing false on the keydown starting a composition, but keyCode 229
 	if ((k === "ArrowLeft" || k === "Backspace") && control?.selectionEnd === 0) {
 		items[items.length - 1]?.focus(FOCUS);
 		e.preventDefault(); // Prevent sideways scroll
@@ -510,18 +518,19 @@ const onKeyDownControl = (self: UHTMLComboboxElement, e: KeyboardEvent) => {
 
 const onKeyDownItems = (self: UHTMLComboboxElement, e: KeyboardEvent) => {
 	const { clear, control, items } = self;
-	const { key, repeat, target } = e;
+	const { key: k, repeat, target } = e;
 	const index = Array.prototype.indexOf.call(items, target);
 
-	if ((key === " " || key === "Enter") && (items[index] || target === clear)) {
+	if ((k === " " || k === "Enter") && (items[index] || target === clear)) {
 		if (!repeat) (items[index] || clear)?.click();
 		return e.preventDefault(); // Prevent scrolling or submitting
 	}
 	if (!items[index]) return;
-	if (key.startsWith("Arrow") || key === "Backspace") e.preventDefault(); // Prevent scroll and navigation
-	if (key === "ArrowLeft") return items[index - 1]?.focus(FOCUS);
-	if (key === "ArrowRight") return (items[index + 1] || control)?.focus(FOCUS);
-	if (key === "Backspace") return repeat || dispatchSelect(self, items[index]);
+	if (k.startsWith("Arrow") || k === "Backspace" || k === "Tab")
+		e.preventDefault(); // Prevent scroll and navigation
+	if (k === "ArrowLeft") return items[index - 1]?.focus(FOCUS);
+	if (k === "ArrowRight") return (items[index + 1] || control)?.focus(FOCUS);
+	if (k === "Backspace") return repeat || dispatchSelect(self, items[index]);
 	control?.focus(); // Move focus when typing any character
 };
 
@@ -532,7 +541,7 @@ const onMutations = (self: UHTMLComboboxElement, r?: MutationRecord[]) => {
 
 	const keys = Array.from(items, (el) => JSON.stringify(getItem(el))); // Use keys instead of nodes, as some frameworks re-render DOM nodes
 	const prev = self._serialized || keys;
-	const hint = `${items.length ? srText(self, "found", "Navigate left to find %d selected").replace("%d", `${items.length}`) : srText(self, "empty", "No selected")}`;
+	const hint = `${multiple ? `${items.length ? srText(self, "found", "Navigate left to find %d selected").replace("%d", `${items.length}`) : srText(self, "empty", "No selected")}` : ""}`;
 	const isInit = !r || r.some(isAdd, control) || r.some(isListOrMode, self);
 	const isEdit = `${prev}` !== `${keys}`;
 
@@ -552,7 +561,7 @@ const onMutations = (self: UHTMLComboboxElement, r?: MutationRecord[]) => {
 	if (isInit || isEdit || r?.some(isAdd, self._select?.[0])) syncSelect(self);
 	if (list) attr(list, SAFE_MULTISELECTABLE, `${multiple}`);
 	attr(_listbox, "hidden", items.length ? null : ""); // Avoid Siteimprove warning about empty role="listbox"
-	attr(control, "aria-description", multiple ? hint : null);
+	attr(control, "aria-description", hint || null);
 	attr(control, "list", useId(list));
 	syncButtons(self);
 	self._umutate?.takeRecords(); // Clear mutations caused by our attribute writes, before dispatching events, so consumer mutations made in event handlers are kept
@@ -586,10 +595,11 @@ const announceItemChange = (
 	clearTimeout(_announce?.reset);
 	const label = _announce ? _announce.label : attr(control, ARIA_LABEL);
 	const hint = `${srText(self, item ? "added" : "removed", item ? "Added" : "Removed")} ${item ? getText(item) : JSON.parse(remove[0]).label}, `;
+	const css = hint.replace(/\s+/g, " ").replace(/[\\']/g, "\\$&"); // Collapse newlines and escape backslash and quote, as either would end the CSS string
 	if (_announce) attr(control, ARIA_LABEL, label); // Restore before reading the accessible name
 	if (!self._commit?.focus) setTimeout(() => ariaNotify(hint.slice(0, -2))); // Aria-live when no focus move belongs to the pending commit, remove trailing comma, setTimeout to take presence
 	self._announce = { label, reset: setTimeout(announceReset, 300, self) }; // 300ms delay so screen readers announces new aria-label. Note: Causes short double/hiccup announce in NVDA Firefox
-	self.style.setProperty(SR_ANNOUNCE, `'${hint}'`);
+	self.style.setProperty(SR_ANNOUNCE, `'${css}'`);
 	attr(control, ARIA_LABEL, `${hint}${getInputLabel(control)}`); // Make sure control also can aria-label-announce
 };
 
@@ -623,7 +633,7 @@ const syncOptions = ({ values, options }: UHTMLComboboxElement) => {
 
 const syncButtons = (self: UHTMLComboboxElement) => {
 	const { _listIsNative: isNative, clear, control, toggle, list } = self;
-	const inert = control?.disabled || control?.readOnly;
+	const inert = control?.disabled || control?.readOnly; // Using .disabled since it is hidden by CSS when :disabled
 	const value = control?.value;
 	if (clear) {
 		const focused = value && clear === getFocused(self); // It is possible to tab to clear button

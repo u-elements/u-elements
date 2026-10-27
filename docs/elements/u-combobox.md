@@ -93,7 +93,7 @@ bun add -S @u-elements/u-combobox
   - `UHTMLComboboxElement.control` returns `HTMLInputElement | null`
   - `UHTMLComboboxElement.items` returns `HTMLCollectionOf<HTMLDataElement>`
   - `UHTMLComboboxElement.list` returns `HTMLDataListElement | null`
-  - `UHTMLComboboxElement.options` returns `HTMLCollectionOf<HTMLOptionElement> | undefined`
+  - `UHTMLComboboxElement.options` returns `HTMLCollectionOf<HTMLOptionElement>`
   - `UHTMLComboboxElement.values` returns `string[]` with `value` of each item
 
 ### `<data>`
@@ -143,7 +143,6 @@ myCombobox.addEventListener('comboboxbeforematch', (event) => {
 - `<u-combobox>` renders as `display: block`, while `<data>` renders as `display: inline-block` with a `::after` element to render the removal `×`.
 - Customize or hide the removal `×` via `--x: ''` on `<u-combobox>`; don’t change CSS `content`, as this can break screen reader announcements
 - Style the wrapper around `<data>`-elements can be styled using `::part(items)`.
-- `<data>` elements get `aria-disabled="true"` while the `<input>` is `disabled` or `readonly`
 - `<data>` elements uses a `::before` with `position: absolute` for screen reader announcements
 - If `<button type="reset">` is empty, a `×` renders with `::before`
 - If `<button aria-expanded="false"></button>` is empty, a `▼` renders with `::before`
@@ -593,7 +592,7 @@ const renderToStaticMarkup = (data: string, options: string) =>
 
 ## Notes
 - `<datalist>` or `<u-datalist>` must be a child of `<u-combobox>`. The `list` attribute on `<input>` is managed automatically
-- Without a datalist, single mode is free text: the input is never overwritten
+- Without a datalist, single mode is free text: the input is never overwritten, blur does nothing, and `Enter` only creates an item when `data-creatable` is set. The item is removed through the clear button
 - Single mode acts on the first `<data>` only
 - The toggle button is hidden when using native `<datalist>`, as the native suggestion popup can not be detected programmatically
 - In controlled mode, `change` is dispatched by the input sync that follows the `<data>` change. A deferred render (i.e. React `startTransition`, a debounced state update) is treated as a programmatic `<data>` change and dispatches `input` but not `change`
@@ -611,6 +610,7 @@ const renderToStaticMarkup = (data: string, options: string) =>
   - Empty clear and toggle buttons are named through CSS alternative text, so no `aria-label` is written. A consumer `aria-label` is always respected, also when `--sr-clear` or `--sr-toggle` is set
   - Single mode only matches against present options on `Enter` and blur, never while typing
   - Single mode `Enter` no longer reverts the input when nothing matches. It announces `--sr-invalid` and keeps the typed text until blur
+  - Without a datalist, blur does nothing and `Enter` on empty text no longer removes the item, as free text is never matched or synced. `Enter` only creates when `data-creatable` is set
   - Single mode with datalist always syncs `input.value` to the `<data>`, also on mount
   - Single mode correctly dispatches `input` after option `click`
   - `change` is only dispatched when the input sync follows a user commit (option pick, `Enter`, blur, clear or item removal), never on mount, programmatic `<data>` changes or form reset
@@ -639,7 +639,6 @@ const renderToStaticMarkup = (data: string, options: string) =>
   - `Enter` is ignored while composing with an Input Method Editor (IME), so confirming a composition does not match or select
   - Pending commits are settled by identity, so a later commit with the same text is never expired by an earlier one
   - The `comboboxprogrammaticinput` event is removed
-  - Items get `aria-disabled="true"` and lose `tabindex` while the input is `disabled` or `readonly`, so a press can not focus an item that can not be removed. Style with `data[aria-disabled="true"]`
   - Replacing options (i.e. async search results) only re-syncs the option selection, instead of a full state sync
   - Samsung Internet parking keyboard focus on `<body>` while TalkBack is on the list is no longer treated as blur, so the typed text is kept while browsing suggestions
 - **2.1.5:** Fix state handling when mode is multiple and controlled (i.e. React)

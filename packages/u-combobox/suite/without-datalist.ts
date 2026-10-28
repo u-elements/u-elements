@@ -1,7 +1,7 @@
 // Without a datalist: free text, so nothing is matched or synced and Enter only creates. Part of the shared u-combobox suite, see ../u-combobox.suite.ts.
 // Runs once, as the behaviour does not depend on the list tag
 import type { Page } from "@playwright/test";
-import { logged, resetLog } from "../../suite";
+import { logged, resetLog, settled } from "../../suite";
 import { expect, test } from "../../test";
 import type { HarnessPatch } from "../u-combobox.harness";
 import { BERGEN, renderHarness } from "./context";
@@ -94,7 +94,7 @@ export const withoutDatalistTests = (defaults: HarnessPatch) => {
 				await input.focus();
 				await expect(input).toHaveValue("");
 				await input.blur();
-				await page.waitForTimeout(50); // Blur commit is deferred one tick
+				await settled(page); // Blur commit is deferred one tick
 
 				await expect(items).toHaveText(["Bergen"]); // Blur does nothing without a datalist
 				expect(await logged(page, "comboboxbeforeselect")).toEqual([]);

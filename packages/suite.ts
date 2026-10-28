@@ -82,3 +82,17 @@ export const afterRendered = (page: Page) =>
 				Promise.resolve().then(() => port2.postMessage(0));
 			}),
 	);
+
+// Resolves once every channel the components and frameworks schedule through has had a turn: afterRendered for the
+// microtask and MessageChannel renders, then an animation frame and a macrotask, as zoneless Angular renders in a race
+// between requestAnimationFrame and setTimeout, and the components defer blur and announcements with setTimeout.
+// For negative assertions, where a wrongly triggered sync, select or render must have had its chance to land, instead of an arbitrary timeout
+export const settled = async (page: Page) => {
+	await afterRendered(page);
+	await page.evaluate(
+		() =>
+			new Promise<void>((resolve) =>
+				requestAnimationFrame(() => setTimeout(resolve)),
+			),
+	);
+};

@@ -114,7 +114,7 @@ Screen reader texts are set through CSS custom properties. They inherit, so a tr
 - If `<u-datalist>` has no options, visible text will be announced instead (i.e. No results)
 
 ::: tip Note:
-If you are using a strict Content Security Policy (CSP), inline `style` HTML attributes are blocked. Set the properties in your CSS, or through `element.style.setProperty('"New string"')` (note that the string must be quoted) or a framework `style` binding.
+If you are using a strict Content Security Policy (CSP), inline `style` HTML attributes are blocked. Set the properties in your CSS, or through `element.style.setProperty('--sr-of', '"New string"')` (note that the string must be quoted) or a framework `style` binding.
 :::
 
 ### Styling with the display property

@@ -1,5 +1,5 @@
 // Multiple mode: pick, Enter, blur, creatable and filtering. Part of the shared u-combobox suite, see ../u-combobox.suite.ts
-import { logged, resetLog } from "../../suite";
+import { logged, resetLog, settled } from "../../suite";
 import { expect, test } from "../../test";
 import { BERGEN, type SuiteContext, update } from "./context";
 
@@ -120,7 +120,7 @@ export const multipleTests = ({
 			expect(await logged(page, "comboboxbeforematch")).toHaveLength(1);
 
 			await input.press("Enter");
-			await page.waitForTimeout(100);
+			await settled(page);
 			await expect(items).toHaveText(["Bergen"]); // Still matched, but already an item, so Enter only adds and never toggles off
 			await expect(input).toHaveValue("bergen");
 			await expect(live).not.toHaveText(/Invalid value/); // A matched option is never invalid
@@ -138,7 +138,7 @@ export const multipleTests = ({
 
 			await input.fill("Oslo");
 			await input.press("Enter");
-			await page.waitForTimeout(100);
+			await settled(page);
 			await expect(items).toHaveText(["Bergen", "Oslo"]); // Same text as the item still goes through the option, and is kept
 			expect(await logged(page, "comboboxbeforematch")).toHaveLength(4);
 			expect(await logged(page, "comboboxbeforeselect")).toHaveLength(2);
@@ -162,13 +162,13 @@ export const multipleTests = ({
 			await input.fill("Nope");
 			await input.press("Enter");
 			expect(await logged(page, "comboboxbeforematch")).toHaveLength(1); // Matching still runs, so a consumer can match or create
-			await page.waitForTimeout(100); // Announcements are deferred
+			await settled(page); // Announcements are deferred
 			await expect(live).toHaveText(""); // Options are loading, so nothing to announce
 
 			await update(page, { multiple: false }); // Syncs the input to no item
 			await input.fill("Nope");
 			await input.press("Enter");
-			await page.waitForTimeout(100);
+			await settled(page);
 			await expect(input).toHaveValue("Nope");
 			await expect(live).toHaveText(""); // Also in single mode
 
@@ -219,7 +219,7 @@ export const multipleTests = ({
 			await expect(live).toHaveText(""); // Cleared after the announcement
 			await input.fill("");
 			await input.press("Enter");
-			await page.waitForTimeout(100); // Announcements are deferred
+			await settled(page); // Announcements are deferred
 			await expect(live).toHaveText(""); // Empty text is nothing in multiple mode
 			expect(await logged(page, "comboboxbeforematch")).toHaveLength(1); // Empty text never matches
 			expect(await logged(page, "comboboxbeforeselect")).toEqual([]);

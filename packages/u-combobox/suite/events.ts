@@ -1,5 +1,5 @@
 // Events and state: which input and change events a pick, commit, blur and programmatic item change dispatch. Part of the shared u-combobox suite, see ../u-combobox.suite.ts
-import { afterRendered, docLogged, resetDocLog } from "../../suite";
+import { afterRendered, docLogged, resetDocLog, settled } from "../../suite";
 import { expect, test } from "../../test";
 import { BERGEN, OSLO, type SuiteContext, update } from "./context";
 
@@ -163,7 +163,7 @@ export const eventsTests = ({
 			await selectOption(input, page.locator(OPT_TAG, { hasText: "Bergen" }));
 			await expect(page.locator("u-combobox data")).toHaveText(["Bergen"]);
 			await expect(input).toHaveValue("Ber");
-			await page.waitForTimeout(50);
+			await settled(page);
 			expect(await docLogged(page, "input")).toEqual(["B", "Be", "Ber"]); // The click input is stopped, and the reverted text dispatches nothing
 		});
 

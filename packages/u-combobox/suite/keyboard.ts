@@ -1,5 +1,5 @@
 // Keyboard: IME composition, item navigation, removal and key repeat. Part of the shared u-combobox suite, see ../u-combobox.suite.ts
-import { logged, resetLog } from "../../suite";
+import { logged, resetLog, settled } from "../../suite";
 import { expect, test } from "../../test";
 import type { UHTMLComboboxElement } from "../u-combobox";
 import { ITEMS } from "../u-combobox.harness";
@@ -51,7 +51,7 @@ export const keyboardTests = ({
 			if (!IS_NATIVE) await input.press("ArrowDown"); // Activate an option in <u-datalist>, which Enter would otherwise pick
 			await input.evaluate(composingEnter, { isComposing: true }); // Confirming a composition, as in Firefox and Safari
 			await input.evaluate(composingEnter, { keyCode: 229 }); // As in Chrome, where isComposing can be false with keyCode 229
-			await page.waitForTimeout(100); // Give a wrongly handled Enter time to surface
+			await settled(page); // Give a wrongly handled Enter its chance to surface
 			await expect(items).toHaveCount(0);
 			await expect(input).toHaveValue("Custom");
 			expect(await logged(page, "comboboxbeforematch")).toEqual([]);

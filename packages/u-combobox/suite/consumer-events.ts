@@ -1,5 +1,5 @@
 // Consumer events: preventing comboboxbeforeselect, custom matching through comboboxbeforematch and consumer writes in handlers. Part of the shared u-combobox suite, see ../u-combobox.suite.ts
-import { logged, resetLog } from "../../suite";
+import { logged, resetLog, settled } from "../../suite";
 import { expect, test } from "../../test";
 import type { UHTMLComboboxElement } from "../u-combobox";
 import { BERGEN, OSLO, type SuiteContext, update } from "./context";
@@ -100,7 +100,7 @@ export const consumerEventsTests = ({
 
 			await input.fill("osl");
 			await input.press("Enter");
-			await page.waitForTimeout(100);
+			await settled(page);
 			await expect(items).toHaveText(["Oslo", "Trondheim"]); // Custom match of an existing item is kept, as Enter only adds
 			await expect(oslo).toHaveAttribute("selected");
 			await expect(trondheim).toHaveAttribute("selected");
@@ -149,7 +149,7 @@ export const consumerEventsTests = ({
 				await input.click();
 				await input.fill("bergen"); // Would match Bergen without the prevent
 				await input.press("Enter");
-				await page.waitForTimeout(100);
+				await settled(page);
 				await expect(items).toHaveText(["Oslo"]); // Not Bergen, and the existing item is not taken for the custom match
 				await expect(input).toHaveValue("bergen"); // Typed text stays until blur
 				await expect(live).toHaveText(/Invalid value/); // Rejected is no match
@@ -183,13 +183,13 @@ export const consumerEventsTests = ({
 			await input.click();
 			await input.fill("oslo");
 			await input.press("Enter");
-			await page.waitForTimeout(100);
+			await settled(page);
 			await expect(items).toHaveCount(0); // Hidden option is not offered, so it is not matched
 			await expect(live).toHaveText(/Invalid value/);
 
 			await input.fill("bergen");
 			await input.press("Enter");
-			await page.waitForTimeout(100);
+			await settled(page);
 			await expect(items).toHaveCount(0); // Disabled option is not matched
 
 			await input.fill("trondheim");

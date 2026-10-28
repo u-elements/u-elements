@@ -1,5 +1,5 @@
 // Mount: the sync on connect, items and lists rendered or replaced by the framework, and remount. Part of the shared u-combobox suite, see ../u-combobox.suite.ts
-import { docLogged, logged, resetDocLog, resetLog } from "../../suite";
+import { docLogged, logged, resetDocLog, resetLog, settled } from "../../suite";
 import { expect, test } from "../../test";
 import type { Option } from "../u-combobox.harness";
 import { BERGEN, OSLO, type SuiteContext, update } from "./context";
@@ -76,7 +76,7 @@ export const mountTests = ({
 			const input = page.locator("#input");
 
 			await expect(input).toHaveValue("Draft"); // Filter text is never overwritten in multiple mode
-			await page.waitForTimeout(100); // Allow the deferred mount sync to run
+			await settled(page); // Allow the deferred mount sync to run
 			expect(await docLogged(page, "input")).toEqual([]); // No sync dispatched on mount
 			expect(await docLogged(page, "change")).toEqual([]);
 		});

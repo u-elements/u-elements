@@ -582,8 +582,10 @@ const onMutations = (self: UHTMLComboboxElement, r?: MutationRecord[]) => {
 	if (isEdit || isInit || (list && r?.some(isInside, list))) syncOptions(self);
 	if (isEdit || isInit || r?.some(isAdd, self._select?.[0])) syncSelect(self);
 	if (isEdit || isInit) {
-		const hint = `${multiple ? `${items.length ? srText(self, "found", "Navigate left to find %d selected").replace("%d", `${items.length}`) : srText(self, "empty", "No selected")}` : ""}`;
-		attr(control, "aria-description", hint || null); // Only when the count can have changed, as srText forces a style recalculation
+		const hint = multiple
+			? `${items.length ? srText(self, "found", "Navigate left to find %d selected").replace("%d", `${items.length}`) : srText(self, "empty", "No selected")}`
+			: null;
+		attr(control, "aria-description", hint); // Only when the count can have changed, as srText forces a style recalculation
 	}
 	attr(_listbox, "hidden", items.length ? null : ""); // Avoid Siteimprove warning about empty role="listbox"
 	attr(control, "list", useId(list));

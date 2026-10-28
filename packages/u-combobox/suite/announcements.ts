@@ -1,6 +1,6 @@
 // Announcements: --sr-* texts, the live region and aria-label announcements. Part of the shared u-combobox suite, see ../u-combobox.suite.ts
 import type { Page } from "@playwright/test";
-import { afterRendered } from "../../suite";
+import { afterRendered, settled } from "../../suite";
 import { expect, test } from "../../test";
 import { ITEMS } from "../u-combobox.harness";
 import { BERGEN, OSLO, type SuiteContext, update } from "./context";
@@ -53,7 +53,7 @@ export const announcementsTests = ({ name, render }: SuiteContext) => {
 			await input.blur();
 			await expect(live).toHaveText(""); // Cleared after announcement
 			await update(page, { items: [BERGEN, OSLO] });
-			await page.waitForTimeout(500);
+			await settled(page); // The announcement is deferred with setTimeout
 			await expect(live).toHaveText(""); // Nothing announced while blurred
 		});
 

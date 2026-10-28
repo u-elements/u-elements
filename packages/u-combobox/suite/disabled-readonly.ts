@@ -1,5 +1,5 @@
 // Disabled and readonly: every action is ignored, and the buttons re-sync when the state changes. Part of the shared u-combobox suite, see ../u-combobox.suite.ts
-import { logged, resetLog } from "../../suite";
+import { logged, resetLog, settled } from "../../suite";
 import { expect, test } from "../../test";
 import { BERGEN, type SuiteContext, update } from "./context";
 
@@ -148,7 +148,7 @@ export const disabledReadonlyTests = ({
 			});
 			await input.focus();
 			await input.blur();
-			await page.waitForTimeout(50); // Blur commit is deferred one tick
+			await settled(page); // Blur commit is deferred one tick
 
 			await expect(items).toHaveText(["Bergen"]); // Not replaced
 			await expect(input).toHaveValue("Oslo"); // Not synced back to the item

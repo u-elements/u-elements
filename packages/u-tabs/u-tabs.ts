@@ -171,7 +171,7 @@ export class UHTMLTabElement extends UHTMLElement {
 		if (!findSelected(this.parentElement?.children)) setSelected(this); // Ensure at least one tab is selected, but checking findSelected onall children since u-tab might not have been connected
 	}
 	attributeChangedCallback() {
-		if (!SKIP_TABS_UPDATE.has(this.parentElement as Element) && this.selected)
+		if (!SKIP_UPDATE.has(this.parentElement as Element) && this.selected)
 			setSelected(this);
 	}
 	get tabsElement(): UHTMLTabsElement | null {
@@ -268,13 +268,19 @@ const syncPanel = (panel: Element, tab?: Element, show = false) => {
 	if (tab && show && isSelected(tab)) attr(panel, SAFE_LABELLEDBY, useId(tab));
 };
 
-const SKIP_TABS_UPDATE = new WeakSet<Element>(); // Instance-scoped via WeakSet to avoid cross-instance suppression, without pinning removed tablists
+// Nesting depth per tablist, as a sync can run inside another: useId writing a panel id from setSelected re-enters syncTabPanel through attributeChangedCallback
+const SKIP_UPDATE = new WeakMap<Element, number>();
 const skipTabsUpdate = (tab: Element | undefined, fn: () => void) => {
 	const tablist = tab?.parentElement as UHTMLTabListElement | null;
-	if (tablist) SKIP_TABS_UPDATE.add(tablist);
-	fn();
-	if (tablist) SKIP_TABS_UPDATE.delete(tablist);
-	tablist?._umutate?.takeRecords(); // Prevent infinite mutation loop that would be caused by updating aria-selected
+	const depth = (tablist && SKIP_UPDATE.get(tablist)) || 0;
+	if (tablist) SKIP_UPDATE.set(tablist, depth + 1);
+	try {
+		fn(); // Consumer code can throw if attributeChangedCallback of a custom element used as tab runs inside the attr writes
+	} finally {
+		if (tablist && depth) SKIP_UPDATE.set(tablist, depth);
+		else if (tablist) SKIP_UPDATE.delete(tablist);
+		tablist?._umutate?.takeRecords(); // Prevent infinite mutation loop that would be caused by updating aria-selected
+	}
 };
 
 const isEnabled = (el: Element) => attr(el, ARIA_DISABLED) !== "true";

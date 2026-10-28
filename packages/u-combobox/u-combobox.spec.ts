@@ -1,4 +1,5 @@
 import type { Page } from "@playwright/test";
+import { settled } from "../suite";
 import { expect, test } from "../test";
 import { comboboxSuite } from "./u-combobox.suite";
 
@@ -93,7 +94,7 @@ test.describe("DOM", () => {
 					.evaluate((el) => {
 						el.setAttribute("value", el.getAttribute("value") || "");
 					});
-				await page.waitForTimeout(100); // Give a wrongly triggered sync time to run
+				await settled(page); // Give a wrongly triggered sync its chance to run
 				await expect(input).toHaveValue("bergen"); // Neither write is a state change, so a sync must not revert the typed text
 			});
 

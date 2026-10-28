@@ -5,6 +5,7 @@ import {
 	logged,
 	resetDocLog,
 	resetLog,
+	settled,
 } from "../../suite";
 import { expect, test } from "../../test";
 import { OPTIONS } from "../u-combobox.harness";
@@ -185,7 +186,7 @@ export const singleTests = ({
 				await input.click();
 				await input.fill("Custom");
 				await input.press("Enter");
-				await page.waitForTimeout(100);
+				await settled(page);
 				await expect(items).toHaveText(["Custom"]); // Unchanged
 				await expect(input).toHaveValue("Custom");
 				await expect(live).not.toHaveText(/Invalid value/); // A confirmed item is never invalid

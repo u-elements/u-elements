@@ -153,7 +153,11 @@ export const getInputLabel = (el: Element) => {
 		...labels.map((id) => getRoot(el).getElementById(id.trim() || "-")), // Get all labelledby elements
 		...Array.from((el as HTMLInputElement).labels || []), // Get all <label> elements
 	]
-		.reduce((acc, el) => acc || el?.innerText?.trim() || "", label)
+		.reduce(
+			// biome-ignore lint: using innerText to only get visual text
+			(acc, el) => acc || el?.innerText?.trim() || "",
+			label,
+		)
 		.trim();
 };
 

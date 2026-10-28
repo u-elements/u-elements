@@ -661,6 +661,7 @@ const renderToStaticMarkup = (data: string, options: string) =>
   - The `comboboxprogrammaticinput` event is removed
   - Replacing options (i.e. async search results) only re-syncs the option selection, instead of a full state sync
   - Samsung Internet parking keyboard focus on `<body>` while TalkBack is on the list is no longer treated as blur, so the typed text is kept while browsing suggestions
+  - Framework typings: Qwik 1 and 2 are typed through `HTMLElementTagNameMap` instead of a JSX augmentation that overrode the element type, and the Preact type supports Preact 11
 - **2.1.5:** Fix state handling when mode is multiple and controlled (i.e. React)
 - **2.1.4:** Fix internal state when preventing a selection or setting value programmatically
 - **2.1.3:** Fix issue where item behind datalist could receive focus

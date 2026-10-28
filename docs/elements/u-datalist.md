@@ -324,6 +324,7 @@ const renderToStaticMarkup = (options: string) =>
   - Pressing inside the list keeps focus on the input, aligning with native browser behavior.
   - A pick dispatches `change` only if the value is still changed after the `input` event.
   - Keys are ignored while composing with an Input Method Editor (IME), except that the list still opens.
+  - Framework typings: Qwik 1 and 2 are typed through `HTMLElementTagNameMap` instead of a JSX augmentation that overrode the element type, and the Preact type supports Preact 11
 - **2.0.3:** Allow `Shift` key events combined with a letter to open datalist
 - **2.0.2:** Instant setup `aria-expanded` attribute to make AXE tests happy
 - **2.0.1:** Use document.activeElement instead of .matches(":focus-within") for JSDOM testing compatibility

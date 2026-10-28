@@ -221,6 +221,7 @@ const renderToStaticMarkup = (tabs: string[], panels[]) =>
   - `selectedIndex` can be read and written before the element is connected, as frameworks set properties on a detached tree (i.e. React and Vue)
   - `<u-tabpanel>` re-associates with its `<u-tab>` when `id` is written after connect (i.e. Angular binds attributes after inserting the element)
   - Tabs, tablists and panels are also matched by instance, so custom tag names extending the classes work before connect
+  - Framework typings: Qwik 1 and 2 are typed through `HTMLElementTagNameMap` instead of a JSX augmentation that overrode the element type, and the Preact type supports Preact 11
 - **1.0.4:** Allow no tab to be selected for better React async render compatibility
 - **1.0.3:** Fix issue where aria-controls combined with aria-selected was not repspected on initial mount
 - **1.0.2:** Performance optimizations

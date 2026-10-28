@@ -25,7 +25,6 @@ import {
 	UHTMLElement,
 	useId,
 } from "../utils";
-import { version } from "./package.json";
 
 declare global {
 	interface HTMLElementTagNameMap {
@@ -68,7 +67,6 @@ export class UHTMLDataListElement extends UHTMLElement {
 	_unfocus?: ReturnType<typeof onFocusLeave>;
 	_umutate?: ReturnType<typeof onMutation>;
 
-	version = version; // Expose version for easier debugging
 	static get observedAttributes() {
 		return ["hidden", "id"]; // Using ES2015 syntax for backwards compatibility
 	}
@@ -301,6 +299,7 @@ const getCount = (opts: HTMLOptionElement[]) => {
 const announce = (self: UHTMLDataListElement, hits: HTMLOptionElement[]) => {
 	if (self.hidden || self._control !== getFocused(self)) return;
 	const count = getCount(hits);
+	// biome-ignore lint: using innerText to only get visual text
 	const hint = `${hits.some(({ value }) => value) ? srText(self, count === 1 ? "singular" : "plural", count === 1 ? "%d hit" : "%d hits").replace("%d", `${count}`) : (self.innerText ?? self.textContent)}`; // Fallback to textContent to support JSDOM
 	const announced = JSON.stringify([self._control?.value, count, hint]);
 	if (self._announced === announced) return; // Prevent re-announcing if same result

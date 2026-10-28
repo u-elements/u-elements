@@ -65,8 +65,8 @@ export class UHTMLProgressElement extends UHTMLElement {
 			if (prop === ARIA_LABELLEDBY) this._labelledby = next;
 		}
 		if (this._skipAttrChange || !this.hasAttribute("role")) return; // Prevent infinite loop when updating ARIA attributes
-		if (!this._afterRender) {
-			this._afterRender = true; // Sync again once frameworks have rendered, as labels and ids referenced by aria-labelledby may be written after this element (i.e. Angular and Qwik)
+		if (!this._afterRender && prop !== VALUE && prop !== MAX) {
+			this._afterRender = true; // Sync again once frameworks have rendered, as labels and ids referenced by aria-labelledby may be written after this element (i.e. Angular and Qwik). Not for value and max, as they never affect the label and a progress bar can update every frame
 			afterRender(() => {
 				if (this.isConnected) this.attributeChangedCallback();
 				this._afterRender = false; // Important to run last
@@ -126,7 +126,11 @@ const getLabel = (self: UHTMLProgressElement) => {
 		...ids.map((id) => root.getElementById(id.trim() || "-")),
 		...Array.from(self.labels),
 	]
-		.reduce((acc, el) => acc || el?.innerText?.trim() || "", self._label || "")
+		.reduce(
+			// biome-ignore lint: using innerText to only get visual text
+			(acc, el) => acc || el?.innerText?.trim() || "",
+			self._label || "",
+		)
 		.trim();
 };
 

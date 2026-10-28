@@ -55,10 +55,10 @@ function Combobox({ cfg, patch }: HarnessProps<HarnessConfig>) {
 					oncomboboxbeforematch={(event: Event) =>
 						log("comboboxbeforematch", event)
 					}
-					oninput={(event: Event) =>
+					onInput={(event: Event) =>
 						handleInput(event, cfg, (options) => patch({ options }))
 					}
-					onchange={(event: Event) => log("change", event)}
+					onChange={(event: Event) => log("change", event)}
 				>
 					{cfg.select && <select name={cfg.select} hidden />}
 					{cfg.items.map((item) => (

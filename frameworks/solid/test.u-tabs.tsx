@@ -41,13 +41,12 @@ const Nested = () => (
 // <For> keys by identity, so iterate the keys to reuse elements across updates that carry new objects
 const keys = (items: { key: string }[]) => items.map((item) => item.key);
 
-function Tabs(props: HarnessProps<HarnessConfig>) {
-	const tab = (key: string) =>
-		props.cfg.tabs.find((tab) => tab.key === key) as Tab;
+// Module level, as a component defined inside another is re-created on every call
+const Panels = (props: HarnessProps<HarnessConfig>) => {
 	const panel = (key: string) =>
 		props.cfg.panels.find((panel) => panel.key === key) as Panel;
 
-	const Panels = () => (
+	return (
 		<For each={keys(visiblePanels(props.cfg))}>
 			{(key) => (
 				<UTabpanel {...attrs(panelAttrs(panel(key), props.cfg))}>
@@ -59,6 +58,11 @@ function Tabs(props: HarnessProps<HarnessConfig>) {
 			)}
 		</For>
 	);
+};
+
+function Tabs(props: HarnessProps<HarnessConfig>) {
+	const tab = (key: string) =>
+		props.cfg.tabs.find((tab) => tab.key === key) as Tab;
 
 	return (
 		<Show when={props.cfg.mounted}>
@@ -84,11 +88,11 @@ function Tabs(props: HarnessProps<HarnessConfig>) {
 					</For>
 				</UTablist>
 				<Show when={!props.cfg.panelsOutside}>
-					<Panels />
+					<Panels cfg={props.cfg} patch={props.patch} />
 				</Show>
 			</UTabs>
 			<Show when={props.cfg.panelsOutside}>
-				<Panels />
+				<Panels cfg={props.cfg} patch={props.patch} />
 			</Show>
 		</Show>
 	);

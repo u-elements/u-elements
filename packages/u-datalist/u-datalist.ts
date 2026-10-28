@@ -213,11 +213,12 @@ const onMousedown = (self: UHTMLDataListElement, event: Event) => {
 };
 
 const onClick = (self: UHTMLDataListElement, event: Event) => {
-	if (isInput(event.target)) onFocus(self, event); // Make sure we potentially connect, in case focus happens before u-datalist connectedCallback has run
-	if (self._control === event.target) return setExpanded(self, true);
-	if (!self.contains(event.target as Node)) return onBlurred(self);
+	const el = event.target as Node;
+	if (isInput(el)) onFocus(self, event); // Make sure we potentially connect, in case focus happens before u-datalist connectedCallback has run
+	if (self._control === el) return setExpanded(self, true);
+	if (!self.contains(el) || !self._control?.isConnected) return onBlurred(self); // Firefox and WebKit dispatch no focusout for a removed focused input, so release it on the first pick instead
 	for (const opt of self.options)
-		if (opt.contains(event.target as Node)) {
+		if (opt.contains(el)) {
 			self._control?.focus(); // Ensure input has focus to keep datalist open, also on pointerup
 			if (self._control) {
 				const inputType = "insertReplacementText";

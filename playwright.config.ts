@@ -1,7 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
+import type { Framework, TestOptions } from "./packages/test";
 
-// Framework harness pages, each served by its own Vite dev server (see frameworks/<name>/test.u-combobox.html)
-const FRAMEWORKS = {
+// Framework harness pages, each served by its own Vite dev server (see frameworks/<name>/test.html)
+const FRAMEWORKS: Record<Exclude<Framework, "vanilla">, number> = {
 	react: 5174,
 	vue: 5175,
 	svelte: 5176,
@@ -10,12 +11,11 @@ const FRAMEWORKS = {
 	qwik: 5179,
 	preact: 5180,
 };
-const FRAMEWORK_SPECS =
-	/\.(react|vue|svelte|angular|solid|qwik|preact)\.spec\.ts$/;
+const FRAMEWORK_SPECS = /\.frameworks\.spec\.ts$/; // Shared suites run against every framework page, see packages/test.ts
 const reuseExistingServer = !process.env.CI;
 const env = { PLAYWRIGHT: "1" }; // Tells the Vite configs to disable file watching, see frameworks/vite.shared.ts
 
-export default defineConfig({
+export default defineConfig<TestOptions>({
 	testDir: "./packages",
 	fullyParallel: true,
 	forbidOnly: !!process.env.CI,
@@ -24,6 +24,7 @@ export default defineConfig({
 	reporter: "html",
 	use: {
 		baseURL: "http://127.0.0.1:5173",
+		framework: "vanilla",
 		trace: "on-first-retry", // See https://playwright.dev/docs/trace-viewer
 		timezoneId: "Europe/Berlin", // Avoid any time-zone shift when testing Zulu dates
 	},
@@ -66,10 +67,11 @@ export default defineConfig({
 		// Framework harness pages, Chromium only as browser differences are covered above
 		...Object.entries(FRAMEWORKS).map(([name, port]) => ({
 			name: name[0].toUpperCase() + name.slice(1),
-			testMatch: new RegExp(`\\.${name}\\.spec\\.ts$`),
+			testMatch: FRAMEWORK_SPECS,
 			use: {
 				...devices["Desktop Chrome"],
 				baseURL: `http://127.0.0.1:${port}`,
+				framework: name as Framework,
 			},
 		})),
 	],
@@ -82,7 +84,7 @@ export default defineConfig({
 		},
 		...Object.entries(FRAMEWORKS).map(([name, port]) => ({
 			command: `npx vite --config=frameworks/${name}/vite.config.ts --host --port ${port} --strictPort`,
-			url: `http://127.0.0.1:${port}/test.u-combobox.html`,
+			url: `http://127.0.0.1:${port}/test.html`,
 			reuseExistingServer,
 			env,
 		})),

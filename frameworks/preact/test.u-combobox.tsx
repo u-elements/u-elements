@@ -1,27 +1,22 @@
 // Preact harness page for the shared u-combobox suite (packages/u-combobox/u-combobox.suite.ts).
 // Items are rendered from state (controlled), the input value is a controlled input,
 // and all combobox events are bound with lowercase on* props, which Preact attaches directly to the custom element.
-import { render } from "preact";
-import { useState } from "preact/hooks";
 import "../../packages/u-datalist/u-datalist";
 import "../../packages/u-combobox/u-combobox";
+import { log } from "../../packages/harness";
 import {
 	comboboxAttrs,
-	createHarness,
+	DEFAULTS,
 	type HarnessConfig,
-	type HarnessPatch,
 	handleBeforeSelect,
 	handleInput,
 	handleSubmit,
 	listId,
-	log,
 	optionAttrs,
 	optionKey,
 	optionTag,
 } from "../../packages/u-combobox/u-combobox.harness";
-
-let setConfigs: (cfgs: HarnessConfig[]) => void = () => {};
-let patchConfig: (patch: HarnessPatch, index: number) => void = () => {};
+import { type HarnessProps, mountHarness } from "./harness";
 
 const FormFields = () => (
 	<>
@@ -30,13 +25,7 @@ const FormFields = () => (
 	</>
 );
 
-function Combobox({
-	cfg,
-	patch,
-}: {
-	cfg: HarnessConfig;
-	patch: (patch: HarnessPatch) => void;
-}) {
+function Combobox({ cfg, patch }: HarnessProps<HarnessConfig>) {
 	if (!cfg.mounted) return null;
 	const ListTag = cfg.listTag as "datalist";
 	const OptTag = optionTag(cfg) as "option";
@@ -113,40 +102,4 @@ function Combobox({
 	);
 }
 
-function App() {
-	const [cfgs, setCfgs] = useState<HarnessConfig[]>([]);
-	setConfigs = setCfgs;
-	patchConfig = (patch, index) =>
-		setCfgs((prev) =>
-			prev.map((cfg, i) => (i === index ? { ...cfg, ...patch } : cfg)),
-		);
-
-	return (
-		<>
-			{cfgs.map((cfg, index) => (
-				<Combobox
-					// biome-ignore lint/suspicious/noArrayIndexKey: Instances are positional
-					key={index}
-					cfg={cfg}
-					patch={(patch) => patchConfig(patch, index)}
-				/>
-			))}
-		</>
-	);
-}
-
-render(<App />, document.getElementById("root") as HTMLElement);
-
-// Preact re-renders in a microtask after a state change, so a macrotask is enough to see the DOM updated
-const rendered = () => new Promise((resolve) => setTimeout(resolve));
-
-createHarness({
-	render: async (cfgs) => {
-		setConfigs(cfgs);
-		await rendered();
-	},
-	update: async (patch, index) => {
-		patchConfig(patch, index);
-		await rendered();
-	},
-});
+mountHarness(DEFAULTS, Combobox);

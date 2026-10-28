@@ -1,12 +1,14 @@
 /**
- * Shared browser-side harness for the framework test pages (frameworks/<name>/test.u-combobox.html).
+ * Harness config for the u-combobox framework test pages (frameworks/<name>/test.html?component=u-combobox).
  *
  * Each framework page renders <u-combobox> from a HarnessConfig using its own idioms
- * (controlled items from state, bound input value, framework event handlers) and exposes
- * `window.harness` so the shared Playwright suite (u-combobox.suite.ts) can drive it.
+ * (controlled items from state, bound input value, framework event handlers), see packages/harness.ts
+ * for the window.harness contract the shared Playwright suite (u-combobox.suite.ts) drives.
  *
  * Top level must stay free of DOM access, as the suite imports the presets in Node.
  */
+
+import { defined, log } from "../harness";
 
 export type ListTag = "u-datalist" | "datalist";
 export type Item = { value: string; label: string };
@@ -79,32 +81,11 @@ export const DEFAULTS: HarnessConfig = {
 	mounted: false,
 };
 
-export type Harness = {
-	render(cfg: HarnessPatch | HarnessPatch[]): Promise<void>;
-	update(patch: HarnessPatch, index?: number): Promise<void>;
-	resetLog(type: string): void;
-	resetDocLog(): void;
-};
-
-declare global {
-	interface Window {
-		__log?: Record<string, string[]>;
-		__doclog?: Record<string, string[]>;
-		harness: Harness;
-	}
-}
-
 export const listId = (cfg: HarnessConfig) => `${cfg.id}-list`;
 export const optionTag = (cfg: HarnessConfig) =>
 	cfg.listTag === "u-datalist" ? "u-option" : "option";
 export const optionKey = (option: Option) =>
 	option.id ?? option.value ?? option.text;
-
-// Strip undefined keys, as frameworks differ in how they treat undefined on custom element properties (i.e. id = "undefined")
-export const defined = <T extends Record<string, unknown>>(obj: T) =>
-	Object.fromEntries(
-		Object.entries(obj).filter(([, value]) => value !== undefined),
-	) as Partial<T>;
 
 // Attributes for <u-option> and <option>. hidden is boolean so React and Svelte set the property correctly on <u-option>
 export const optionAttrs = (option: Option) =>
@@ -121,16 +102,6 @@ export const comboboxAttrs = (cfg: HarnessConfig) => ({
 	"data-creatable": cfg.creatable ? "" : null,
 	...cfg.attrs,
 });
-
-// Log an event under its type, storing the target value at the time of the event (like a consumer would read it)
-export const log = (type: string, event: Event) => {
-	const target = event.target as HTMLInputElement | null;
-	const value = typeof target?.value === "string" ? target.value : "";
-	window.__log = window.__log || {};
-	const logs = window.__log;
-	logs[type] = logs[type] || [];
-	logs[type].push(value);
-};
 
 // Controlled mode, as recommended in the docs: prevent the component and derive the next items from the event
 export const nextItems = (
@@ -174,47 +145,4 @@ export const handleInput = (
 export const handleSubmit = (event: Event) => {
 	event.preventDefault();
 	log("submit", event);
-};
-
-const DOC_EVENTS = ["input", "change"];
-
-/**
- * Wire window.harness. The framework supplies render and update, which must apply the
- * configs to its state and flush so the DOM is updated when the returned promise resolves.
- */
-export const createHarness = (impl: {
-	render(cfgs: HarnessConfig[]): void | Promise<void>;
-	update(patch: HarnessPatch, index: number): void | Promise<void>;
-}) => {
-	// Document level log installed before anything renders, to catch events dispatched during mount
-	window.__doclog = Object.fromEntries(DOC_EVENTS.map((type) => [type, []]));
-	for (const type of DOC_EVENTS)
-		document.addEventListener(type, (event) => {
-			const target = event.target as HTMLElement;
-			const input = (target.querySelector?.("input") ||
-				target) as HTMLInputElement;
-			if (input.id === "input") window.__doclog?.[type].push(input.value);
-		});
-
-	window.harness = {
-		async render(cfg) {
-			const cfgs = (Array.isArray(cfg) ? cfg : [cfg]).map((c) => ({
-				...DEFAULTS,
-				mounted: true,
-				...c,
-			}));
-			await impl.render(cfgs);
-		},
-		async update(patch, index = 0) {
-			await impl.update(patch, index);
-		},
-		resetLog(type) {
-			window.__log = { ...window.__log, [type]: [] };
-		},
-		resetDocLog() {
-			window.__doclog = Object.fromEntries(
-				DOC_EVENTS.map((type) => [type, []]),
-			);
-		},
-	};
 };

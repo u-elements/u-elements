@@ -1,9 +1,4 @@
 import react from "@vitejs/plugin-react";
-import { server } from "../vite.shared";
+import { frameworkConfig } from "../vite.shared.ts";
 
-export default {
-	root: import.meta.dirname,
-	server,
-	cacheDir: `${import.meta.dirname}/../../node_modules/.vite/react`, // Own cache, as concurrent dev servers sharing one cache invalidate each other
-	plugins: [react()],
-};
+export default frameworkConfig(import.meta.dirname, { plugins: [react()] });

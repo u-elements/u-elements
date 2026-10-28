@@ -33,6 +33,7 @@
 		"dev:angular": "vite --config=frameworks/angular/vite.config.ts",
 		"test": "playwright test",
 		"test:frameworks": "playwright test --project=React --project=Vue --project=Svelte --project=Angular --project=Solid --project=Qwik --project=Preact",
+		"test:vanilla": "playwright test --project=Chromium --project=Firefox --project=Webkit --project=\"Microsoft Edge\" --project=\"Mobile Chrome\" --project=\"Mobile Safari\"",
 		"test:update": "npm run test -- --update-snapshots"
 	},
 	"devDependencies": {

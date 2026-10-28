@@ -48,6 +48,7 @@ watch(code, () => {
   .demo-view { border-bottom: inherit; min-height: 200px; padding: 1rem; margin: -2px }
   .demo-view :where(button:not([type="reset"]):not([aria-expanded]),input) { all: revert } /* Fix Vitepress styling overwrite */
 	.demo-view data::after { padding-inline: .5ch } /* Fix Vitepress styling overwrite */
+	.demo u-progress { border: 1px solid } /* Fix Vitepress styling overwrite */
 </style>
 <template>
   <pre hidden><slot></slot></pre>

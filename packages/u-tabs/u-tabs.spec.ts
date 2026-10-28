@@ -1,15 +1,26 @@
-import { expect, test } from "@playwright/test";
-import type { UHTMLTabElement, UHTMLTabsElement } from "./u-tabs";
+import { countCalls } from "../suite";
+import { expect, test } from "../test";
+import type {
+	UHTMLTabElement,
+	UHTMLTabListElement,
+	UHTMLTabsElement,
+} from "./u-tabs";
+import { tabsSuite } from "./u-tabs.suite";
+
+// Runs the shared suite (u-tabs.suite.ts) against the vanilla DOM harness page (frameworks/vanilla/test.html?component=u-tabs).
+// The tests below need raw DOM access and have no equivalent in the harness
+tabsSuite({ url: "frameworks/vanilla/test.html?component=u-tabs" });
 
 const attrLabelledby = () => {
 	const IS_ANDROID = test.info().project.name === "Mobile Chrome";
 	return IS_ANDROID ? "data-labelledby" : "aria-labelledby";
 };
 
-test.beforeEach(async ({ page }) => {
-	await page.goto("test.html");
-	await page.evaluate(() => {
-		document.body.innerHTML = `<u-tabs>
+test.describe("u-tabs", () => {
+	test.beforeEach(async ({ page }) => {
+		await page.goto("test.html");
+		await page.evaluate(() => {
+			document.body.innerHTML = `<u-tabs>
       <u-tablist>
         <u-tab>Tab 1</u-tab>
         <u-tab>Tab 2</u-tab>
@@ -17,10 +28,9 @@ test.beforeEach(async ({ page }) => {
       <u-tabpanel>Panel 1</u-tabpanel>
       <u-tabpanel>Panel 2</u-tabpanel>
     </u-tabs>`;
+		});
 	});
-});
 
-test.describe("u-tabs", () => {
 	test("matches snapshot", async ({ page }) => {
 		await page.evaluate(() => {
 			document.body.innerHTML = `<u-tabs>
@@ -598,6 +608,62 @@ test.describe("u-tabs", () => {
 		await expect(uTab1).toHaveJSProperty("selected", true);
 	});
 
+	test("respects event.preventDefault from a delegated handler", async ({
+		page,
+	}) => {
+		// Frameworks such as React, Solid and Svelte listen on their root or document, so the tablist must run after those
+		await page.evaluate(() => {
+			document.body.innerHTML = `<u-tabs>
+        <u-tablist>
+          <u-tab>Tab 1</u-tab>
+          <u-tab aria-selected="true">Tab 2</u-tab>
+        </u-tablist>
+      </u-tabs>`;
+			document.addEventListener("click", (event) => event.preventDefault(), {
+				once: true,
+			});
+		});
+		const uTab0 = page.locator("u-tab").nth(0);
+		const uTab1 = page.locator("u-tab").nth(1);
+
+		await uTab0.click();
+		await expect(uTab1).toHaveJSProperty("selected", true);
+		await expect(uTab0).toHaveJSProperty("selected", false);
+
+		await uTab0.click(); // The listener is gone, so the next click selects
+		await expect(uTab0).toHaveJSProperty("selected", true);
+	});
+
+	test("works inside a shadow root", async ({ page }) => {
+		// Instances in ShadowDOM listen on their root instead of window, as a closed shadow tree is hidden from the window listener
+		await page.evaluate(() => {
+			const host = document.createElement("div");
+			host.attachShadow({ mode: "open" }).innerHTML = `<u-tabs>
+        <u-tablist>
+          <u-tab>Tab 1</u-tab>
+          <u-tab>Tab 2</u-tab>
+        </u-tablist>
+        <u-tabpanel>Panel 1</u-tabpanel>
+        <u-tabpanel>Panel 2</u-tabpanel>
+      </u-tabs>`;
+			document.body.replaceChildren(host);
+		});
+		const tabs = page.locator("u-tab");
+		const panels = page.locator("u-tabpanel");
+
+		await expect(tabs.nth(0)).toHaveAttribute("aria-selected", "true");
+		await tabs.nth(1).click();
+		await expect(tabs.nth(1)).toHaveAttribute("aria-selected", "true");
+		await expect(panels.nth(1)).toBeVisible();
+		await expect(panels.nth(0)).toBeHidden();
+
+		await tabs.nth(1).press("ArrowLeft");
+		await expect(tabs.nth(0)).toBeFocused();
+		await tabs.nth(0).press("Enter");
+		await expect(tabs.nth(0)).toHaveAttribute("aria-selected", "true");
+		await expect(panels.nth(0)).toBeVisible();
+	});
+
 	test("handles keyboard arrow navigation", async ({ page }) => {
 		await page.evaluate(() => {
 			document.body.innerHTML = `<u-tabs>
@@ -908,5 +974,145 @@ test.describe("u-tabs", () => {
 			() => document.querySelector("u-tablist")?.selectedIndex,
 		);
 		expect(updatedIndex).toBe(1);
+	});
+
+	test("re-associates a panel when its id is written after connect", async ({
+		page,
+	}) => {
+		// Tabs point at ids the panels do not have yet, like a framework that binds id after inserting the element
+		await page.evaluate(() => {
+			document.body.innerHTML = `<u-tabs>
+        <u-tablist>
+          <u-tab aria-controls="panel-2">Tab 1</u-tab>
+          <u-tab aria-controls="panel-1">Tab 2</u-tab>
+        </u-tablist>
+        <u-tabpanel>Panel 1</u-tabpanel>
+        <u-tabpanel>Panel 2</u-tabpanel>
+      </u-tabs>`;
+		});
+		const tabs = page.locator("u-tab");
+		const panels = page.locator("u-tabpanel");
+
+		await expect(panels.nth(0)).toBeHidden(); // No tab controls the generated ids
+		await expect(panels.nth(1)).toBeHidden();
+
+		await panels.nth(0).evaluate((el) => {
+			el.id = "panel-1";
+		});
+		await panels.nth(1).evaluate((el) => {
+			el.id = "panel-2";
+		});
+		await expect(panels.nth(1)).toBeVisible(); // Controlled by the selected first tab
+		await expect(panels.nth(0)).toBeHidden();
+		await expect(panels.nth(1)).toHaveAttribute(
+			attrLabelledby(),
+			(await tabs.nth(0).getAttribute("id")) || "",
+		);
+
+		await tabs.nth(1).click();
+		await expect(panels.nth(0)).toBeVisible();
+		await expect(panels.nth(1)).toBeHidden();
+	});
+
+	test("settles after mount and selection instead of re-syncing itself", async ({
+		page,
+	}) => {
+		// Panels and tabs write attributes on each other while associating, which must not re-enter their own callbacks forever
+		const panelCalls = await countCalls(
+			page,
+			"u-tabpanel",
+			"attributeChangedCallback",
+		);
+		const tabCalls = await countCalls(
+			page,
+			"u-tab",
+			"attributeChangedCallback",
+		);
+		await page.evaluate(() => {
+			document.body.innerHTML = `<u-tabs>
+        <u-tablist>
+          <u-tab>Tab 1</u-tab>
+          <u-tab>Tab 2</u-tab>
+        </u-tablist>
+        <u-tabpanel>Panel 1</u-tabpanel>
+        <u-tabpanel>Panel 2</u-tabpanel>
+      </u-tabs>`;
+		});
+		await page.waitForTimeout(100);
+		const mounted = [await panelCalls(), await tabCalls()];
+		expect(mounted[0]).toBeLessThan(50);
+		expect(mounted[1]).toBeLessThan(50);
+		await page.waitForTimeout(200);
+		expect([await panelCalls(), await tabCalls()]).toEqual(mounted); // Nothing scheduled itself again
+
+		await page.locator("u-tab").nth(1).click();
+		await page.waitForTimeout(100);
+		const selected = [await panelCalls(), await tabCalls()];
+		expect(selected[0] - mounted[0]).toBeLessThan(20);
+		expect(selected[1] - mounted[1]).toBeLessThan(20);
+		await page.waitForTimeout(200);
+		expect([await panelCalls(), await tabCalls()]).toEqual(selected);
+	});
+
+	test("works when extended with custom tag names", async ({ page }) => {
+		// Extending the classes under another tag name is supported (see changelog 0.1.0), so nothing may depend on the u-* tag names
+		const detached = await page.evaluate(() => {
+			const base = (name: string) =>
+				customElements.get(name) as CustomElementConstructor;
+			customElements.define("my-tabs", class extends base("u-tabs") {});
+			customElements.define("my-tablist", class extends base("u-tablist") {});
+			customElements.define("my-tab", class extends base("u-tab") {});
+			customElements.define("my-tabpanel", class extends base("u-tabpanel") {});
+
+			const tabs = document.createElement("my-tabs") as UHTMLTabsElement;
+			tabs.innerHTML = `<my-tablist>
+        <my-tab>Tab 1</my-tab>
+        <my-tab>Tab 2</my-tab>
+        <my-tab>Tab 3</my-tab>
+      </my-tablist>
+      <my-tabpanel>Panel 1</my-tabpanel>
+      <my-tabpanel>Panel 2</my-tabpanel>
+      <my-tabpanel>Panel 3</my-tabpanel>`;
+			tabs.selectedIndex = 1; // Written before connect, like React and Vue do
+			const detached = [tabs.selectedIndex, tabs.tabList?.localName]; // Readable before connect as well
+			document.body.replaceChildren(tabs);
+			return detached;
+		});
+		expect(detached).toEqual([1, "my-tablist"]);
+		const tabs = page.locator("my-tab");
+		const panels = page.locator("my-tabpanel");
+
+		await expect(page.locator("my-tablist")).toHaveAttribute("role", "tablist");
+		await expect(tabs.nth(1)).toHaveAttribute("aria-selected", "true");
+		await expect(panels.nth(1)).toBeVisible();
+		await expect(panels.nth(0)).toBeHidden();
+		expect(
+			await page
+				.locator("my-tabs")
+				.evaluate((el: UHTMLTabsElement) => [
+					el.selectedIndex,
+					el.tabs.length,
+					el.panels.length,
+					el.tabList?.tabs.length,
+				]),
+		).toEqual([1, 3, 3, 3]);
+
+		await tabs.nth(2).click();
+		await expect(tabs.nth(2)).toHaveAttribute("aria-selected", "true");
+		await expect(panels.nth(2)).toBeVisible();
+		await expect(panels.nth(2)).toHaveAttribute(
+			attrLabelledby(),
+			(await tabs.nth(2).getAttribute("id")) || "",
+		);
+
+		await tabs.nth(2).press("ArrowRight"); // Wraps around to the first tab
+		await expect(tabs.nth(0)).toBeFocused();
+
+		await page.locator("my-tablist").evaluate((el: UHTMLTabListElement) => {
+			el.selectedIndex = 0;
+		});
+		await expect(tabs.nth(0)).toHaveAttribute("aria-selected", "true");
+		await expect(panels.nth(0)).toBeVisible();
+		await expect(panels.nth(2)).toBeHidden();
 	});
 });

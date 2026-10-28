@@ -1,15 +1,28 @@
-import { expect, type Locator, type Page, test } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
+import {
+	afterRendered,
+	docLogged,
+	gotoHarness,
+	harnessHelpers,
+	logged,
+	resetDocLog,
+	resetLog,
+} from "../suite";
+import { expect, test } from "../test";
 import type { UHTMLComboboxElement } from "./u-combobox";
 import {
+	type HarnessConfig,
 	type HarnessPatch,
 	ITEMS,
 	OPTIONS,
 	type Option,
 } from "./u-combobox.harness";
 
+const { render: renderHarness, update } = harnessHelpers<HarnessConfig>();
+
 /**
  * Shared test suite for the harness pages (see u-combobox.harness.ts), run against
- * vanilla DOM (u-combobox.spec.ts) and each framework (u-combobox.<framework>.spec.ts).
+ * vanilla DOM (u-combobox.spec.ts) and each framework (u-combobox.frameworks.spec.ts).
  * Items are rendered from state, the input value is bound, and all events are handled
  * with the renderer's event bindings. Pure DOM tests (snapshot, shadow root host, moving
  * the element) live in u-combobox.spec.ts.
@@ -33,45 +46,12 @@ const setCaretStart = (input: Node) => {
 	).selectionEnd = 0;
 };
 
-const update = (page: Page, patch: HarnessPatch, index = 0) =>
-	page.evaluate(([patch, index]) => window.harness.update(patch, index), [
-		patch,
-		index,
-	] as const);
-
-const resetLog = (page: Page, type: string) =>
-	page.evaluate((type) => window.harness.resetLog(type), type);
-
-const logged = (page: Page, type: string) =>
-	page.evaluate((type) => window.__log?.[type] || [], type);
-
-const resetDocLog = (page: Page) =>
-	page.evaluate(() => window.harness.resetDocLog());
-
-const docLogged = (page: Page, type: string) =>
-	page.evaluate((type) => window.__doclog?.[type] || [], type);
-
-// Resolves after the component's afterRender callbacks have run (microtask, then MessageChannel).
-// Needed as Playwright evaluates run before pending MessageChannel tasks, so the next step would otherwise race them
-const afterRendered = (page: Page) =>
-	page.evaluate(
-		() =>
-			new Promise<void>((resolve) => {
-				const { port1, port2 } = new MessageChannel();
-				port1.onmessage = () => resolve(port1.close());
-				Promise.resolve().then(() => port2.postMessage(0));
-			}),
-	);
-
-export const comboboxSuite = (
-	framework: string,
-	{ url = "test.u-combobox.html", defaults = {} }: SuiteOptions = {},
-) => {
-	test.describe(framework, () => {
-		test.beforeEach(async ({ page }) => {
-			await page.goto(url);
-			await page.waitForFunction(() => !!window.harness);
-		});
+export const comboboxSuite = ({
+	url = "test.html?component=u-combobox",
+	defaults = {},
+}: SuiteOptions = {}) => {
+	test.describe("harness", () => {
+		test.beforeEach(({ page }) => gotoHarness(page, url));
 
 		for (const LIST_TAG of ["u-datalist", "datalist"] as const) {
 			const OPT_TAG = LIST_TAG === "u-datalist" ? "u-option" : "option";
@@ -79,15 +59,7 @@ export const comboboxSuite = (
 			const name = (group: string) => `${group} (${LIST_TAG})`;
 
 			const render = (page: Page, cfg: HarnessPatch | HarnessPatch[] = {}) =>
-				page.evaluate(
-					([cfg, listTag, defaults]) =>
-						window.harness.render(
-							Array.isArray(cfg)
-								? cfg.map((c) => ({ listTag, ...defaults, ...c }))
-								: { listTag, ...defaults, ...cfg },
-						),
-					[cfg, LIST_TAG, defaults] as const,
-				);
+				renderHarness(page, cfg, { listTag: LIST_TAG, ...defaults });
 
 			const selectOption = async (input: Locator, opt: Locator) => {
 				if (IS_NATIVE) {
@@ -1093,9 +1065,10 @@ export const comboboxSuite = (
 
 				test("datalist click reverts to value attribute present on mount", async ({
 					page,
+					framework,
 				}) => {
 					test.skip(
-						framework !== "Vanilla",
+						framework !== "vanilla",
 						"Frameworks write the bound value through the property setter, which is cached by u-combobox",
 					);
 					await render(page, {
@@ -1118,9 +1091,10 @@ export const comboboxSuite = (
 
 				test("datalist click reverts to value attribute set on a pristine input", async ({
 					page,
+					framework,
 				}) => {
 					test.skip(
-						framework !== "Vanilla",
+						framework !== "vanilla",
 						"Frameworks write the bound value through the property setter, so the input is never pristine",
 					);
 					await render(page, { multiple: true, clear: true, toggle: true });
@@ -2528,9 +2502,10 @@ export const comboboxSuite = (
 
 				test("hides clear button after form reset in multiple mode", async ({
 					page,
+					framework,
 				}) => {
 					test.skip(
-						framework === "React",
+						framework === "react",
 						"React keeps the value attribute of a controlled input in sync, so form.reset() restores the current value and there is nothing to sync",
 					);
 					await render(page, {
@@ -3164,10 +3139,7 @@ export const comboboxSuite = (
 		// Behaviour without a datalist does not depend on list type, so runs once
 		test.describe("without datalist", () => {
 			const render = (page: Page, cfg: HarnessPatch) =>
-				page.evaluate(
-					([cfg, defaults]) => window.harness.render({ ...defaults, ...cfg }),
-					[cfg, defaults] as const,
-				);
+				renderHarness(page, cfg, defaults);
 
 			test("hides toggle and removes list attribute", async ({ page }) => {
 				await render(page, { options: null, toggle: true });

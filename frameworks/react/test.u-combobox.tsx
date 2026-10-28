@@ -1,38 +1,28 @@
 // React harness page for the shared u-combobox suite (packages/u-combobox/u-combobox.suite.ts).
 // Items are rendered from state (controlled), the input value is a controlled input,
 // and all combobox events are bound with React 19 custom element event props.
-import { StrictMode, startTransition, useState } from "react";
-import { flushSync } from "react-dom";
-import { createRoot } from "react-dom/client";
+import { startTransition } from "react";
 import "../../packages/u-datalist/u-datalist";
 import "../../packages/u-combobox/u-combobox";
+import { log } from "../../packages/harness";
 import {
 	comboboxAttrs,
-	createHarness,
+	DEFAULTS,
 	type HarnessConfig,
-	type HarnessPatch,
 	handleBeforeSelect,
 	handleInput,
 	handleSubmit,
 	listId,
-	log,
 	optionAttrs,
 	optionKey,
 	optionTag,
 } from "../../packages/u-combobox/u-combobox.harness";
+import { customElement, type HarnessProps, mountHarness } from "./harness";
 
-type CustomElementProps = React.HTMLAttributes<HTMLElement> &
-	Record<string, unknown>;
-
-// Typed as a component to allow custom event props, React still renders the string as a custom element
-const UCombobox =
-	"u-combobox" as unknown as React.ComponentType<CustomElementProps>;
+const UCombobox = customElement("u-combobox");
 
 const onSubmit = (event: React.SubmitEvent<Element>) =>
 	handleSubmit(event.nativeEvent);
-
-let setConfigs: (cfgs: HarnessConfig[]) => void = () => {};
-let patchConfig: (patch: HarnessPatch, index: number) => void = () => {};
 
 const FormFields = () => (
 	<>
@@ -41,13 +31,7 @@ const FormFields = () => (
 	</>
 );
 
-function Combobox({
-	cfg,
-	patch,
-}: {
-	cfg: HarnessConfig;
-	patch: (patch: HarnessPatch) => void;
-}) {
+function Combobox({ cfg, patch }: HarnessProps<HarnessConfig>) {
 	if (!cfg.mounted) return null;
 	if (cfg.renderCost) {
 		const end = performance.now() + cfg.renderCost; // Simulate a slow render, longer than the scheduler's 5ms slice
@@ -132,34 +116,4 @@ function Combobox({
 	);
 }
 
-function App() {
-	const [cfgs, setCfgs] = useState<HarnessConfig[]>([]);
-	setConfigs = setCfgs;
-	patchConfig = (patch, index) =>
-		setCfgs((prev) =>
-			prev.map((cfg, i) => (i === index ? { ...cfg, ...patch } : cfg)),
-		);
-
-	return cfgs.map((cfg, index) => (
-		<Combobox
-			// biome-ignore lint/suspicious/noArrayIndexKey: Instances are positional
-			key={index}
-			cfg={cfg}
-			patch={(patch) => patchConfig(patch, index)}
-		/>
-	));
-}
-
-const root = createRoot(document.getElementById("root") as HTMLElement);
-flushSync(() =>
-	root.render(
-		<StrictMode>
-			<App />
-		</StrictMode>,
-	),
-);
-
-createHarness({
-	render: (cfgs) => flushSync(() => setConfigs(cfgs)),
-	update: (patch, index) => flushSync(() => patchConfig(patch, index)),
-});
+mountHarness(DEFAULTS, Combobox);

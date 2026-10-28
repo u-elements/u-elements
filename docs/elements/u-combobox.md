@@ -593,11 +593,31 @@ const renderToStaticMarkup = (data: string, options: string) =>
 - Without a datalist, single mode is free text: the input is never overwritten, blur does nothing, and `Enter` only creates an item when `data-creatable` is set. The item is removed through the clear button
 - Single mode acts on the first `<data>` only
 - The toggle button is hidden when using native `<datalist>`, as the native suggestion popup can not be detected programmatically
-- In controlled mode, `change` is dispatched by the input sync that follows the `<data>` change. A deferred render (i.e. React `startTransition`, a debounced state update) is treated as a programmatic `<data>` change and dispatches `input` but not `change`
+- In controlled mode, `change` is dispatched by the input sync that follows the `<data>` change. A deferred render (i.e. React `startTransition`, a debounced state update) still dispatches `change` when it renders the item the user picked or matched. On blur, the input shows the previous item until the deferred render lands, as a prevented match can not be told apart from a deferred one
 - ARC Toolkit incorrectly reports `aria-description` as an invalid ARIA-attribute
 - ARC Toolkit does not correctly read the relation between items with `role="option"` and the ShadowDOM wrapping container `role="listbox"`
 - See full behavior spec in [u-combobox source](https://github.com/u-elements/u-elements/blob/main/packages/u-combobox/u-combobox.ts)
 
+## Upgrading to 3.0.0
+
+- Update `@u-elements/u-datalist` to 3.0.0 or newer. Older versions write a pick through `HTMLInputElement.prototype.value`, which is cached as programmatic text, so the typed text is not restored after the pick
+- Make `<input>` a direct child of `<u-combobox>`, as the owning `<u-combobox>` is resolved from the input's parent
+- Replace a `<del>` clear button with `<button type="reset"></button>`
+- Replace `data-sr-*` attributes with [`--sr-*` CSS custom properties](#screen-reader-texts), also on `<u-datalist>`. They inherit, so a translation can be set once on `:root` or `:lang()`:
+  ```html
+  <!-- 2.x -->
+  <u-combobox data-sr-clear="Tøm" data-sr-removed="Fjernet">
+  <!-- 3.0 -->
+  <u-combobox style="--sr-clear: 'Tøm'; --sr-removed: 'Fjernet'">
+  ```
+- Remove listeners for `comboboxprogrammaticinput`. Programmatic `input.value` writes are handled internally, and there is no replacement event
+- Empty clear and toggle buttons are named through `--sr-clear` and `--sr-toggle`, so no `aria-label` is written. A consumer `aria-label` is still respected
+- Review code relying on these behavior changes:
+  - `Enter` with no match keeps the typed text and announces `--sr-invalid`, instead of reverting the input
+  - Without a datalist, blur does nothing and `Enter` on empty text no longer removes the item
+  - Single mode with a datalist syncs `input.value` to the `<data>` on mount, so a prefilled value without a `<data>` is cleared
+  - `change` is only dispatched on a user commit (pick, `Enter`, blur, clear, item removal), never on mount, programmatic `<data>` changes or form reset
+  - `values` returns at most one value in single mode, and `<select>` mirrors only the first `<data>`
 
 ## Changelog
 

@@ -1,9 +1,9 @@
 import {
+	afterRender,
 	attachStyle,
 	attr,
 	customElements,
 	declarativeShadowRoot,
-	getInputLabel,
 	getRoot,
 	IS_IOS,
 	UHTMLElement,
@@ -16,6 +16,8 @@ declare global {
 	}
 }
 
+const ARIA_LABEL = "aria-label";
+const ARIA_LABELLEDBY = "aria-labelledby";
 const VALUE = "value";
 const MAX = "max";
 
@@ -33,14 +35,17 @@ export const UHTMLProgressShadowRoot =
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/progress)
  */
 export class UHTMLProgressElement extends UHTMLElement {
-	_skipAttrChange = false;
+	_afterRender = false; // A re-sync is scheduled, see attributeChangedCallback
 	_internals?: ElementInternals;
+	_label?: string | null; // aria-label as written by the consumer, as the computed label is written to the same attribute
+	_labelledby?: string | null; // aria-labelledby as written by the consumer, as it is resolved into aria-label and removed
+	_skipAttrChange = false;
 
 	// Prevent Chrome DevTools warning about <label for=""> pointing to <u-progress>
 	static formAssociated = true;
 
 	static get observedAttributes() {
-		return ["aria-label", "aria-labelledby", VALUE, MAX]; // Using ES2015 syntax for backwards compatibility
+		return [ARIA_LABEL, ARIA_LABELLEDBY, "id", VALUE, MAX]; // Using ES2015 syntax for backwards compatibility. id as <label for> is matched by id
 	}
 
 	constructor() {
@@ -54,8 +59,19 @@ export class UHTMLProgressElement extends UHTMLElement {
 		attr(this, "role", IS_IOS ? "img" : "progressbar");
 		this.attributeChangedCallback();
 	}
-	attributeChangedCallback() {
+	attributeChangedCallback(prop?: string, _?: string, next?: string | null) {
+		if (!this._skipAttrChange) {
+			if (prop === ARIA_LABEL) this._label = next;
+			if (prop === ARIA_LABELLEDBY) this._labelledby = next;
+		}
 		if (this._skipAttrChange || !this.hasAttribute("role")) return; // Prevent infinite loop when updating ARIA attributes
+		if (!this._afterRender) {
+			this._afterRender = true; // Sync again once frameworks have rendered, as labels and ids referenced by aria-labelledby may be written after this element (i.e. Angular and Qwik)
+			afterRender(() => {
+				if (this.isConnected) this.attributeChangedCallback();
+				this._afterRender = false; // Important to run last
+			});
+		}
 		this._skipAttrChange = true;
 		const position = this.position;
 		const percentage = Math.max(0, Math.round(position * 100));
@@ -63,15 +79,15 @@ export class UHTMLProgressElement extends UHTMLElement {
 		// Write CSS variable before getLabel (innerText triggers style recalc)
 		this.style.setProperty("--percentage", `${percentage}%`);
 
-		let label = getInputLabel(this);
+		let label = getLabel(this);
 		if (IS_IOS)
 			label = `${label.replace(/\(\d+%\)$/, "")} (${percentage}%)`.trim(); // Always use percentage as iOS role="img"
 
 		// Set ARIA attributes
 		attr(this, "aria-busy", `${position === -1}`);
-		attr(this, "aria-label", label); // Must use aria-label to include percentage value
-		attr(this, "aria-labelledby", null);
 		attr(this, "aria-valuenow", position === -1 ? null : `${percentage}`);
+		attr(this, ARIA_LABEL, label); // Must use aria-label to include percentage value
+		attr(this, ARIA_LABELLEDBY, null);
 		this._skipAttrChange = false;
 	}
 	get labels(): NodeListOf<HTMLLabelElement> {
@@ -102,6 +118,18 @@ export class UHTMLProgressElement extends UHTMLElement {
 	}
 }
 
+// Like getInputLabel, but from the aria-label and aria-labelledby the consumer wrote, as the element rewrites both
+const getLabel = (self: UHTMLProgressElement) => {
+	const root = getRoot(self);
+	const ids = self._labelledby?.split(" ") || [];
+	return [
+		...ids.map((id) => root.getElementById(id.trim() || "-")),
+		...Array.from(self.labels),
+	]
+		.reduce((acc, el) => acc || el?.innerText?.trim() || "", self._label || "")
+		.trim();
+};
+
 const getNumber = (el: Element, key: string, min = 0) => {
 	const value = attr(el, key);
 	const float = Number(value);
@@ -110,6 +138,7 @@ const getNumber = (el: Element, key: string, min = 0) => {
 };
 
 const setNumber = (el: Element, key: string, value: unknown, min = 0) => {
+	if (value === null || value === undefined) return attr(el, key, null); // Frameworks write null and undefined through the property, so remove the attribute like they would for a native element (i.e. value={undefined} for indeterminate)
 	const float = Number(value);
 	if (Number.isFinite(float))
 		return attr(el, key, `${Math.max(min, float) || min}`);

@@ -1,58 +1,26 @@
 // Angular harness page for the shared u-combobox suite (packages/u-combobox/u-combobox.suite.ts).
-// Standalone component compiled JIT in the browser (no Angular CLI), zoneless change detection.
 // Items are rendered from a signal (controlled), the input uses ngModel,
 // and all combobox events are bound with Angular event bindings. disabled goes through ngModel,
 // as Angular Forms removes a plain disabled attribute when it initializes the control.
 import "@angular/compiler"; // Must be imported before @angular/core for JIT
 import { NgTemplateOutlet } from "@angular/common";
-import {
-	Component,
-	CUSTOM_ELEMENTS_SCHEMA,
-	Directive,
-	ElementRef,
-	Input,
-	inject,
-	type OnChanges,
-	provideZonelessChangeDetection,
-	signal,
-} from "@angular/core";
+import { Component, CUSTOM_ELEMENTS_SCHEMA } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { bootstrapApplication } from "@angular/platform-browser";
 import "../../packages/u-datalist/u-datalist";
 import "../../packages/u-combobox/u-combobox";
+import { log } from "../../packages/harness";
 import {
 	comboboxAttrs,
-	createHarness,
+	DEFAULTS,
 	type HarnessConfig,
-	type HarnessPatch,
 	handleBeforeSelect,
 	handleInput,
 	handleSubmit,
 	listId,
-	log,
 	type Option,
 	optionKey,
 } from "../../packages/u-combobox/u-combobox.harness";
-
-// Angular templates can not spread attributes, so apply an attribute map through a directive
-@Directive({ selector: "[attrs]", standalone: true })
-class AttrsDirective implements OnChanges {
-	@Input() attrs: Record<string, string | null | undefined> = {};
-	private el = inject(ElementRef).nativeElement as HTMLElement;
-	private applied = new Set<string>(); // Only remove attributes set by this directive, as elements like <u-option> manage their own id
-
-	ngOnChanges() {
-		for (const [name, value] of Object.entries(this.attrs)) {
-			if (value == null) {
-				if (this.applied.delete(name)) this.el.removeAttribute(name);
-			} else {
-				this.applied.add(name);
-				if (this.el.getAttribute(name) !== value)
-					this.el.setAttribute(name, value); // Only write on change to avoid MutationObserver noise
-			}
-		}
-	}
-}
+import { AttrsDirective, bootstrapHarness, HarnessComponent } from "./harness";
 
 @Component({
 	selector: "app-root",
@@ -128,8 +96,7 @@ class AttrsDirective implements OnChanges {
 		</ng-template>
 	`,
 })
-class App {
-	cfgs = signal<HarnessConfig[]>([]);
+class App extends HarnessComponent<HarnessConfig> {
 	comboboxAttrs = comboboxAttrs;
 	listId = listId;
 	log = log;
@@ -143,12 +110,6 @@ class App {
 		hidden: option.hidden ? "" : null,
 	});
 
-	patch(index: number, patch: HarnessPatch) {
-		this.cfgs.update((all) =>
-			all.map((cfg, i) => (i === index ? { ...cfg, ...patch } : cfg)),
-		);
-	}
-
 	onBeforeSelect(event: Event, cfg: HarnessConfig, index: number) {
 		handleBeforeSelect(event, cfg, (items) => this.patch(index, { items }));
 	}
@@ -158,18 +119,4 @@ class App {
 	}
 }
 
-bootstrapApplication(App, {
-	providers: [provideZonelessChangeDetection()],
-}).then((ref) => {
-	const app = ref.components[0].instance as App;
-	createHarness({
-		render: (cfgs) => {
-			app.cfgs.set(cfgs);
-			ref.tick();
-		},
-		update: (patch, index) => {
-			app.patch(index, patch);
-			ref.tick();
-		},
-	});
-});
+bootstrapHarness(App, DEFAULTS);

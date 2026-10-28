@@ -1,38 +1,16 @@
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
+import { expect, test } from "../test";
+import { datalistSuite, opened, recordSpoken } from "./u-datalist.suite";
 
-test.beforeEach(async ({ page }) => {
-	await page.goto("test.html");
-});
+// Runs the shared suite (u-datalist.suite.ts) against the vanilla DOM harness page (frameworks/vanilla/test.html?component=u-datalist).
+// The tests below need raw DOM access and have no equivalent in the harness
+datalistSuite({ url: "frameworks/vanilla/test.html?component=u-datalist" });
 
 const mount = async (page: Page, html: string) => {
 	await page.evaluate((markup) => {
 		document.body.innerHTML = markup;
 	}, html);
 };
-
-// Record every announcement, as the live region is cleared again shortly after speaking.
-// Install after focusing the input, as the live region is created on focus.
-// Resolves to the spoken texts in order, without the clears and the alternating non-breaking space, which trim strips
-const recordSpoken = async (page: Page) => {
-	const live = page.locator("[aria-live='assertive']");
-	await live.evaluate((el) => {
-		new MutationObserver(() => {
-			el.dataset.spoken = `${el.dataset.spoken || ""}|${el.textContent}`;
-		}).observe(el, { childList: true, characterData: true, subtree: true });
-	});
-	return () =>
-		live.evaluate((el) =>
-			(el.dataset.spoken || "")
-				.split("|")
-				.map((text) => text.trim())
-				.filter(Boolean),
-		);
-};
-
-// Opening the list clears a pending announcement in a timeout, which keys or mutations dispatched without a gap would precede.
-// A timeout queued after it resolves once it has run, also when the browser defers timers after input
-const opened = (page: Page) =>
-	page.evaluate(() => new Promise((resolve) => setTimeout(resolve)));
 
 const DEFAULT = `<form>
       <label>
@@ -47,6 +25,10 @@ const DEFAULT = `<form>
     </form>`;
 
 test.describe("HTMLDataListElement", () => {
+	test.beforeEach(async ({ page }) => {
+		await page.goto("test.html");
+	});
+
 	test("matches snapshot", async ({ page }) => {
 		await mount(page, DEFAULT);
 		expect(await page.locator("body").innerHTML()).toMatchSnapshot(

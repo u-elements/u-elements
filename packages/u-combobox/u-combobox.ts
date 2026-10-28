@@ -54,7 +54,8 @@ import { version } from "./package.json";
  * - commit:       a select from a user action. The item change that follows syncs the input with change and settles it, also when the consumer
  *                 prevented and renders the item itself (controlled mode). Otherwise it settles after the render opportunity (one microtask, then one MessageChannel task).
  *                 Settling runs the blur or clear fallback, and a later programmatic item change then dispatches no change.
- *                 A consumer deferring the render beyond that (i.e. React startTransition, a debounced state update) is a programmatic item change
+ *                 Except when a prevented add expires unrendered: the next item change rendering exactly that item completes the expired commit (i.e. React startTransition,
+ *                 a debounced state update) and still syncs with change, so the last change carries the final text. Any other item change or typing drops the expired commit
  *
  * Mount and item mutations (connectedCallback, <data> added/removed/changed, <input> replaced, data-multiple changed)
  * - Single:   sync input. The first sync after mount is deferred one microtask so frameworks can write their bound value first.
@@ -75,7 +76,7 @@ import { version } from "./package.json";
  *
  * Enter in input (form submit is prevented on keydown when a datalist is present or creatable)
  * - The match runs on keyup, and only when the keydown reached the input and no pick followed. Safari dispatches a native <datalist> pick
- *   between the keydown and the keyup, and other browsers and <u-datalist> stops the keydown for Enter when a picking.
+ *   between the keydown and the keyup, and other browsers and <u-datalist> stops the keydown for Enter when picking.
  * - Empty text
  *   - Single:   with a datalist, select to remove the item, if any. Accepted: remove and sync input. Prevented: nothing, the empty text stays until blur, which asks to remove again.
  *               Without a datalist: nothing, as Enter only creates and the item is removed through the clear button
@@ -153,12 +154,14 @@ declare global {
 	}
 }
 
+const VERSION = `_uComboboxes${version}` as const; // Resolve programmatic input.value changes with multi-version support
 const VERSIONS = (isBrowser() ? window : {}) as Record<
 	typeof VERSION,
 	WeakSet<UHTMLComboboxElement>
 >;
 const ARIA_LABEL = "aria-label";
 const ATTR_MULTI = "data-multiple";
+const DATALIST = "DATALIST";
 const EVENTS = "focus click keydown keyup mousedown"; // blur and pointerdown are handled by onFocusLeave, input by onWindowInput or connectedCallback
 const FALSE = "false";
 const FOCUS = { focusVisible: true };
@@ -166,7 +169,6 @@ const IS_MOBILE = `${IS_IOS || IS_ANDROID}`;
 const NO_OPTIONS = isBrowser() && document.getElementsByTagName("-");
 const SR_ANNOUNCE = "--sr-announce";
 const SR_ONLY = 'position:absolute;pointer-events:none;content:"\\00A0"'; // Used to ensure announcement from CSS
-const VERSION = `_uComboboxes${version}` as const; // Resolve programmatic input.value changes with multi-version support
 
 export const UHTMLComboboxStyle = `${DISPLAY_BLOCK}
 [part="items"]:not([hidden]) { display:inline-flex;flex-wrap:wrap } /* Can not be "contents" as this confuses VoiceOver */
@@ -209,9 +211,9 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	_toggle?: HTMLElement | null;
 
 	_enter?: boolean; // Enter keydown reached the input and no pick followed, so its keyup runs the match
-	_listIsNative?: boolean;
 	_serialized?: string[]; // Key of every item as of the last sync, to detect item changes and diff added and removed items. Only valid inside onMutations, as the DOM may change before the observer runs
 	_value?: string; // Cached text, to revert a datalist pick
+	_expired?: string; // Key of the item an expired commit asked to add, so a deferred render of exactly that item still dispatches change
 	_commit?: {
 		focus: boolean; // Focus moved to a neighbour before the select, so a removal announces through aria-label instead of the live region
 		value: string; // Input text at the select, so the sync following an item change dispatches change only while the text is still this
@@ -222,7 +224,6 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		reset: ReturnType<typeof setTimeout>; // Pending announceReset
 	};
 
-	version = version; // Expose version for easier debugging
 	constructor() {
 		super();
 		const root = attachStyle(this, UHTMLComboboxStyle);
@@ -273,7 +274,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 		this._unfocus?.();
 		this._umutate?.();
 		// biome-ignore format: next-line
-		this._commit = this._root = this._umutate = this._unfocus = this._clear = this._toggle = this._control = this._options = this._list = this._value = this._serialized = this._enter = undefined;
+		this._commit = this._root = this._umutate = this._unfocus = this._clear = this._toggle = this._control = this._options = this._list = this._value = this._serialized = this._enter = this._expired = undefined;
 	}
 	handleEvent(e: Event): void {
 		const { type, target } = e;
@@ -308,7 +309,6 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	get list(): HTMLDataListElement | null {
 		if (!this._list?.isConnected) {
 			this._list = this.querySelector('datalist,u-datalist,[role="listbox"]'); // Can not use this.control.list as it might not be connected yet
-			this._listIsNative = this._list?.nodeName === "DATALIST";
 			this._options = undefined; // Reset options cache as list might be changed
 		}
 		return this._list; // Inspired by https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/list
@@ -363,8 +363,13 @@ const dispatchSelect = (
 	const accept = self.dispatchEvent(new CustomEvent("comboboxbeforeselect", e));
 	const commit = { focus: !!focus, value: control?.value || "", settle }; // After dispatch to respect consumer changes
 	self._commit = commit;
+	self._expired = undefined; // A new commit replaces an expired one
 
-	afterRender(() => settleCommit(self, commit)); // Settle after framework re-renders, as consumer may change value or items
+	afterRender(() => {
+		if (self._commit === commit && !accept && !remove)
+			self._expired = JSON.stringify(getItem(add)); // Expired before the consumer rendered the item it was asked to add, see Commit
+		settleCommit(self, commit); // Settle after framework re-renders, as consumer may change value or items
+	});
 	if (!accept) return;
 	if (!multiple) for (const el of [...items]) el.remove(); // Spread, as items is live
 	remove ? remove.remove() : control?.insertAdjacentElement("beforebegin", add);
@@ -431,14 +436,14 @@ const onMousedown = ({ clear, toggle }: UHTMLComboboxElement, e: Event) => {
 
 const onClick = (self: UHTMLComboboxElement, e: MouseEvent) => {
 	const { clientX: x, clientY: y, target } = e;
-	const { _listIsNative, clear, control, items, list, toggle, multiple } = self;
+	const { clear, control, items, list, toggle, multiple } = self;
 	const isListHidden = list?.hidden; // Read before focusing the input, as Android opens <u-datalist> on focus. Live state is reliable, as onMousedown keeps focus on the input while pressing the toggle or clear button
 	const isSelf = target === self;
 
 	if (toggle?.contains(target as Node) && list) {
 		control?.focus();
 		if (isListHidden) control?.click();
-		else if (!_listIsNative) list.hidden = true;
+		else if (list.nodeName !== DATALIST) list.hidden = true;
 	}
 
 	if (clear?.contains(target as Node) && control) {
@@ -475,17 +480,19 @@ const onWindowInput = (e: Event) => {
 };
 
 const onInput = (self: UHTMLComboboxElement, e: Partial<InputEvent>) => {
-	const { _listIsNative, control, options } = self;
+	const { control, options, list } = self;
 	if (e.composedPath?.()[0] !== control) return; // Check real target since it might trigger from window
 	const value = control.value;
 	const isReplace = e.inputType === "insertReplacementText";
-	const isPick = _listIsNative
-		? isReplace || (e.isTrusted && !e.inputType && value) // Native <datalist> picks with a trusted event: Firefox an InputEvent with insertReplacementText, WebKit and Chrome a plain Event without inputType
-		: isReplace && !e.isTrusted; // An untrusted InputEvent with insertReplacementText is used by <u-datalist>
+	const isPick =
+		list?.nodeName === DATALIST
+			? isReplace || (e.isTrusted && !e.inputType && value) // Native <datalist> picks with a trusted event: Firefox an InputEvent with insertReplacementText, WebKit and Chrome a plain Event without inputType
+			: isReplace && !e.isTrusted; // An untrusted InputEvent with insertReplacementText is used by <u-datalist>
 	const option =
 		isPick && Array.prototype.find.call(options, (o) => getValue(o) === value);
 
 	self._enter = false; // The pick replaces the pending Enter match
+	if (e.isTrusted) self._expired = undefined; // Typing drops an expired commit, as the text no longer asks for that item
 	if (option && !control.readOnly && !control.matches(":disabled")) {
 		e.stopImmediatePropagation?.(); // Stop the input event, as dispatchSelect syncs the input if needed
 		setValue(control, self._value || "");
@@ -560,7 +567,7 @@ const onMutations = (self: UHTMLComboboxElement, r?: MutationRecord[]) => {
 	const isInit = !r || r.some(isAdd, control) || r.some(isListOrMode, self);
 	const isEdit = `${prev}` !== `${keys}`;
 
-	self._value = control.value; // Also catche value attribute writes
+	self._value = control.value; // Also cache value attribute writes
 	self._serialized = keys;
 
 	for (const item of items) {
@@ -585,10 +592,14 @@ const onMutations = (self: UHTMLComboboxElement, r?: MutationRecord[]) => {
 
 	if (!multiple && list) {
 		const isPureCommit = self._commit?.value === control.value; // Dispatch change on pure user commit
+		const isExpired = !!self._expired && keys[0] === self._expired; // The item an expired commit asked for, so the deferred render still carries change
 		if (isInit) Promise.resolve().then(() => syncInputSingleMode(self));
-		else if (isEdit) syncInputSingleMode(self, isPureCommit); // Only inital sync is deferred as frameworks write their bound input value after insertion
+		else if (isEdit) syncInputSingleMode(self, isPureCommit || isExpired); // Only inital sync is deferred as frameworks write their bound input value after insertion
 	}
-	if (isEdit) settleCommit(self); // An item change settles the pending commit, also by a consumer in controlled mode, so a later programmatic item change neither dispatches change nor announces through aria-label
+	if (isEdit) {
+		self._expired = undefined; // Any item change resolves an expired commit, so an unrelated later change dispatches no change
+		settleCommit(self); // An item change settles the pending commit, also by a consumer in controlled mode, so a later programmatic item change neither dispatches change nor announces through aria-label
+	}
 };
 
 // Announce an added or removed item through aria-label when focus moved (chip removal), otherwise through the live region.
@@ -649,7 +660,7 @@ const syncOptions = ({ values, options }: UHTMLComboboxElement) => {
 };
 
 const syncButtons = (self: UHTMLComboboxElement) => {
-	const { _listIsNative: isNative, clear, control, toggle, list } = self;
+	const { clear, control, toggle, list } = self;
 	const inert = control?.readOnly || control?.disabled; // Using .disabled since it is hidden by CSS when :disabled
 	const clearable = clear && control?.value;
 	if (clear) {
@@ -659,6 +670,7 @@ const syncButtons = (self: UHTMLComboboxElement) => {
 		attr(clear, "tabindex", focused ? "0" : "-1");
 	}
 	if (toggle) {
+		const isNative = list?.nodeName === DATALIST;
 		attr(toggle, "aria-expanded", `${!isNative && list?.hidden === false}`);
 		attr(toggle, "aria-hidden", IS_MOBILE); // Hide from screen readers to keep datalist open on swipe right navigation
 		attr(toggle, "hidden", !list || clearable || inert || isNative ? "" : null); // Hide toggle if native datalist
@@ -694,7 +706,7 @@ function isExpanded(this: UHTMLComboboxElement, r: MutationRecord) {
 	return isButton && r.attributeName === "aria-expanded";
 }
 function isListOrMode(this: UHTMLComboboxElement, r: MutationRecord) {
-	if (isAdd.call(this.list, r)) return true; // A datalist is addeed
+	if (isAdd.call(this.list, r)) return true; // A datalist is added
 	if (r.target !== this || r.attributeName !== ATTR_MULTI) return false;
 	return ((r.oldValue ?? FALSE) !== FALSE) !== this.multiple; // Ignore writes that do not change mode (i.e. null to "false" from frameworks)
 }

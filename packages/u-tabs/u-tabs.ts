@@ -5,6 +5,7 @@ import {
 	DISPLAY_BLOCK,
 	declarativeShadowRoot,
 	getRoot,
+	isBrowser,
 	off,
 	on,
 	onMutation,
@@ -12,6 +13,7 @@ import {
 	UHTMLElement,
 	useId,
 } from "../utils";
+import { version } from "./package.json";
 
 declare global {
 	interface HTMLElementTagNameMap {
@@ -26,6 +28,11 @@ const ARIA_CONTROLS = "aria-controls";
 const ARIA_DISABLED = "aria-disabled";
 const ARIA_SELECTED = "aria-selected";
 const TABINDEX = "tabindex";
+const VERSION = `_uTabLists${version}` as const; // Shared window click listener with multi-version support
+const VERSIONS = (isBrowser() ? window : {}) as Record<
+	typeof VERSION,
+	WeakSet<UHTMLTabListElement>
+>;
 
 export const UHTMLTabsStyle = DISPLAY_BLOCK;
 export const UHTMLTabPanelStyle = DISPLAY_BLOCK;
@@ -50,16 +57,14 @@ export class UHTMLTabsElement extends UHTMLElement {
 		attachStyle(this, UHTMLTabsStyle);
 	}
 	get tabList(): UHTMLTabListElement | null {
-		return this.querySelector<UHTMLTabListElement>(
-			'[role="tablist"]:not(:scope [role="tabpanel"] [role="tablist"])',
-		);
+		return getTabList(this) as UHTMLTabListElement | null; // By instance, so it also resolves before connect like the selectedIndex setter
 	}
 	get selectedIndex(): number {
 		const tabs = getTabs(this.tabList);
 		return tabs.indexOf(findSelected(tabs) as Element);
 	}
 	set selectedIndex(index: number) {
-		setSelected(this.tabs[index]);
+		setSelected(getTabs(this.tabList)[index]); // By instance, as frameworks write selectedIndex before connecting (i.e. React and Vue set props on a detached tree)
 	}
 	get tabs(): NodeListOf<Element> {
 		return this.querySelectorAll(
@@ -78,6 +83,7 @@ export class UHTMLTabsElement extends UHTMLElement {
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/tablist_role)
  */
 export class UHTMLTabListElement extends UHTMLElement {
+	_root?: Document | ShadowRoot; // Root at connect, as click inside ShadowDOM is handled by the root and not onWindowClick
 	_umutate?: ReturnType<typeof onMutation>; // Using underscore instead of private fields for backwards compatibility
 
 	constructor() {
@@ -85,8 +91,11 @@ export class UHTMLTabListElement extends UHTMLElement {
 		attachStyle(this, UHTMLTabListStyle);
 	}
 	connectedCallback() {
+		VERSIONS[VERSION]?.add(this);
+		this._root = getRoot(this);
 		attr(this, "role", "tablist");
-		on(this, "click keydown", this); // Listen for tab events on tablist to minimize amount of listeners
+		on(this, "keydown", this); // Listen for tab events on tablist to minimize amount of listeners
+		if (this._root instanceof ShadowRoot) on(this._root, "click", this); // If inside ShadowDOM. LightDOM is handled by onWindowClick
 		this._umutate = onMutation(this, onMutations, {
 			attributeFilter: ["id", "role", ARIA_CONTROLS, ARIA_SELECTED], // Needed if role="tab|tabpanel" and not u-tab|u-tabpanel is used
 			attributes: true,
@@ -95,9 +104,11 @@ export class UHTMLTabListElement extends UHTMLElement {
 		});
 	}
 	disconnectedCallback() {
-		off(this, "click keydown", this);
+		if (this._root) off(this._root, "click", this);
+		off(this, "keydown", this);
+		VERSIONS[VERSION]?.delete(this);
 		this._umutate?.();
-		this._umutate = undefined;
+		this._umutate = this._root = undefined;
 	}
 	handleEvent(event: Partial<KeyboardEvent>) {
 		const { key, type, target } = event;
@@ -141,7 +152,7 @@ export class UHTMLTabListElement extends UHTMLElement {
 		return tabs.indexOf(findSelected(tabs) as Element);
 	}
 	set selectedIndex(index: number) {
-		setSelected(this.tabs[index]);
+		setSelected(getTabs(this)[index]); // By instance, as frameworks write selectedIndex before connecting (i.e. React and Vue set props on a detached tree)
 	}
 }
 
@@ -192,19 +203,21 @@ export class UHTMLTabElement extends UHTMLElement {
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/tabpanel_role)
  */
 export class UHTMLTabPanelElement extends UHTMLElement {
+	static get observedAttributes() {
+		return ["id"]; // Using ES2015 syntax for backwards compatibility
+	}
 	constructor() {
 		super();
 		attachStyle(this, UHTMLTabPanelStyle);
 	}
 	connectedCallback() {
 		attr(this, "role", "tabpanel"); // Must register role before checking hidden state
-		const tabs = new Set(this.tabs);
-		const root = getTabsElement(this);
-		const idx = root?.tabs[Array.prototype.indexOf.call(root?.panels, this)]; // Try to find associated tab via index
-		if (idx && !idx.hasAttribute(ARIA_CONTROLS)) tabs.add(idx); // Only add index based tab if not already owning other panel
-
-		const tab = findSelected(tabs) || tabs.values().next().value;
-		skipTabsUpdate(tab, () => syncPanel(this, tab, !!tab && isSelected(tab))); // Sync panel with tab to set initial visibility
+		syncTabPanel(this);
+	}
+	attributeChangedCallback() {
+		// Re-associate when a framework writes the id after connect (i.e. Angular binds attributes after inserting the element).
+		// role is set by connectedCallback, so an id parsed from markup is left to the sync run from there
+		if (this.isConnected && this.hasAttribute("role")) syncTabPanel(this);
 	}
 	get tabsElement(): UHTMLTabsElement | null {
 		return getTabsElement(this);
@@ -230,6 +243,23 @@ const onMutations = (
 	//if (!selected && !findSelected(tabs)) selected = tabs.find(isEnabled); // Fallback to first enabled tab if no selected element exists
 	setSelected(selected);
 };
+// Associate a panel with its tab by aria-controls, or by index, to set its visibility
+const SYNCING_PANELS = new WeakSet<Element>(); // Panels being associated, as the generated id written by useId re-enters attributeChangedCallback
+const syncTabPanel = (panel: UHTMLTabPanelElement) => {
+	if (SYNCING_PANELS.has(panel)) return;
+	SYNCING_PANELS.add(panel);
+	const tabs = new Set(panel.tabs);
+	const root = getTabsElement(panel);
+	const idx =
+		root &&
+		getTabs(getTabList(root))[Array.prototype.indexOf.call(root.panels, panel)]; // Try to find associated tab via index, by instance as the tabs might not be connected yet
+	if (idx && !idx.hasAttribute(ARIA_CONTROLS)) tabs.add(idx); // Only add index based tab if not already owning other panel
+
+	const tab = findSelected(tabs) || tabs.values().next().value;
+	skipTabsUpdate(tab, () => syncPanel(panel, tab, !!tab && isSelected(tab))); // Sync panel with tab to set initial visibility
+	SYNCING_PANELS.delete(panel);
+};
+
 const syncPanel = (panel: Element, tab?: Element, show = false) => {
 	attr(panel, "aria-hidden", `${!show}`); // Safari 18.6 has a bug where hidden alone is not enough to prevent screen readers focus
 	attr(panel, "hidden", show ? null : "");
@@ -238,7 +268,7 @@ const syncPanel = (panel: Element, tab?: Element, show = false) => {
 	if (tab && show && isSelected(tab)) attr(panel, SAFE_LABELLEDBY, useId(tab));
 };
 
-const SKIP_TABS_UPDATE = new Set<Element>(); // Instance-scoped via Set to avoid cross-instance suppression
+const SKIP_TABS_UPDATE = new WeakSet<Element>(); // Instance-scoped via WeakSet to avoid cross-instance suppression, without pinning removed tablists
 const skipTabsUpdate = (tab: Element | undefined, fn: () => void) => {
 	const tablist = tab?.parentElement as UHTMLTabListElement | null;
 	if (tablist) SKIP_TABS_UPDATE.add(tablist);
@@ -253,11 +283,29 @@ const findSelected = (elems: Iterable<Element> = []) => {
 	for (const el of elems) if (isSelected(el)) return el;
 };
 
+// Matching by instance (for frameworks writes before customElement connect)
+// as well as role (supporting custom <a role="tab"></a> etc.)
+const isTabList = (el: Element) =>
+	attr(el, "role") === "tablist" || el instanceof UHTMLTabListElement;
+const isTabPanel = (el: Element) =>
+	attr(el, "role") === "tabpanel" || el instanceof UHTMLTabPanelElement;
+
 const getTabs = (tablist?: Element | null): Element[] => {
 	const tabs = [];
 	for (const el of tablist?.children || [])
-		if (el.getAttribute("role") === "tab") tabs.push(el);
+		if (attr(el, "role") === "tab" || el instanceof UHTMLTabElement)
+			tabs.push(el);
 	return tabs;
+};
+
+// Like the tabList getter, but also before connect: first tablist in document order, skipping nested tabs inside panels
+const getTabList = (el: Element): Element | null => {
+	for (const child of el.children) {
+		if (isTabList(child)) return child;
+		const nested = isTabPanel(child) ? null : getTabList(child);
+		if (nested) return nested;
+	}
+	return null;
 };
 
 const getPanel = (tab: Element, panel: Element | null = null) => {
@@ -287,6 +335,20 @@ const setSelected = (selected?: Element | null) =>
 			if (panel) syncPanel(panel, tab, panel === nextPanel);
 		}
 	});
+
+// Shared window listener for all instances in light DOM, in the bubble phase so it runs after frameworks that delegate
+// click to their root or document (i.e. React, Solid and Svelte), letting a preventDefault in their handlers cancel the selection.
+// Instances in ShadowDOM listen on their root instead, and are never reached from here as the target is retargeted to the host
+const onWindowClick = (e: Event) => {
+	for (let el = e.target as Node | null; el; el = el.parentNode)
+		if (VERSIONS[VERSION].has(el as UHTMLTabListElement))
+			(el as UHTMLTabListElement).handleEvent(e);
+};
+
+if (isBrowser() && !VERSIONS[VERSION]) {
+	VERSIONS[VERSION] = new WeakSet(); // Support hot module reload, and several versions on same page
+	on(window, "click", onWindowClick);
+}
 
 customElements.define("u-tabs", UHTMLTabsElement);
 customElements.define("u-tablist", UHTMLTabListElement);

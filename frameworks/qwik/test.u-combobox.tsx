@@ -1,39 +1,23 @@
 // Qwik harness page for the shared u-combobox suite (packages/u-combobox/u-combobox.suite.ts).
 // Items are rendered from a store (controlled), the input value is bound to the store,
-// and all combobox events are bound with Qwik on*$ event props. Qwik dispatches those from a
-// document level listener in the capture phase, so handlers run before the element's own listeners.
-import "@qwik.dev/core/qwikloader.js";
-import {
-	$,
-	component$,
-	Fragment,
-	type QRL,
-	render,
-	useStore,
-	useVisibleTask$,
-} from "@qwik.dev/core";
-import { _getDomContainer, _waitUntilRendered } from "@qwik.dev/core/internal"; // Internal, but the only way to await a scheduled render
+// and all combobox events are bound with Qwik on*$ event props, see ./harness.tsx for the dispatch order.
+import { $, component$, Fragment } from "@qwik.dev/core";
 import "../../packages/u-datalist/u-datalist";
 import "../../packages/u-combobox/u-combobox";
+import { log } from "../../packages/harness";
 import {
 	comboboxAttrs,
-	createHarness,
+	DEFAULTS,
 	type HarnessConfig,
 	handleBeforeSelect,
 	handleInput,
 	handleSubmit,
 	listId,
-	log,
 	optionAttrs,
 	optionKey,
 	optionTag,
 } from "../../packages/u-combobox/u-combobox.harness";
-
-// Qwik loads a handler on its first dispatch, which runs it asynchronously and too late to preventDefault.
-// Every handler is resolved up front and awaited by the harness, so dispatch is synchronous from the first event
-export const resolved: Promise<unknown>[] = [];
-const resolve = (...qrls: QRL<unknown>[]) =>
-	resolved.push(...qrls.map((qrl) => qrl.resolve()));
+import { type HarnessProps, mountHarness, resolve } from "./harness";
 
 const FormFields = () => (
 	<>
@@ -42,7 +26,7 @@ const FormFields = () => (
 	</>
 );
 
-const Combobox = component$(({ cfg }: { cfg: HarnessConfig }) => {
+const Combobox = component$(({ cfg }: HarnessProps<HarnessConfig>) => {
 	const onBeforeSelect = $((event: Event) =>
 		handleBeforeSelect(event, cfg, (items) => {
 			cfg.items = items;
@@ -149,36 +133,4 @@ const Combobox = component$(({ cfg }: { cfg: HarnessConfig }) => {
 	);
 });
 
-const App = component$(() => {
-	const state = useStore<{ cfgs: HarnessConfig[] }>({ cfgs: [] });
-
-	// Store writes schedule a render, so wait for the container to settle and the handlers to resolve
-	useVisibleTask$(() => {
-		const root = document.getElementById("root") as HTMLElement;
-		const rendered = async () => {
-			await _waitUntilRendered(_getDomContainer(root));
-			await Promise.all(resolved);
-		};
-		createHarness({
-			render: async (cfgs) => {
-				state.cfgs = cfgs;
-				await rendered();
-			},
-			update: async (patch, index) => {
-				Object.assign(state.cfgs[index], patch);
-				await rendered();
-			},
-		});
-	});
-
-	return (
-		<div>
-			{state.cfgs.map((cfg, index) => (
-				// biome-ignore lint/suspicious/noArrayIndexKey: Instances are positional
-				<Combobox key={index} cfg={cfg} />
-			))}
-		</div>
-	);
-});
-
-render(document.getElementById("root") as HTMLElement, <App />);
+mountHarness(DEFAULTS, Combobox);

@@ -18,5 +18,5 @@
 		"isolatedModules": true,
 		"types": ["vite/client", "node", "svelte"]
 	},
-	"include": ["index.ts", "test.u-combobox.ts", "*.svelte", "vite.config.ts"]
+	"include": ["*.ts", "*.svelte"]
 }

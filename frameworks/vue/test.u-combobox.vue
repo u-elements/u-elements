@@ -2,35 +2,24 @@
 // Vue harness page for the shared u-combobox suite (packages/u-combobox/u-combobox.suite.ts).
 // Items are rendered from reactive state (controlled), the input uses v-model,
 // and all combobox events are bound with Vue event listeners.
-import { nextTick, reactive } from "vue";
 import "../../packages/u-datalist/u-datalist";
 import "../../packages/u-combobox/u-combobox";
+import { log } from "../../packages/harness";
 import {
 	comboboxAttrs,
-	createHarness,
+	DEFAULTS,
 	type HarnessConfig,
 	handleBeforeSelect,
 	handleInput,
 	handleSubmit,
 	listId,
-	log,
 	optionAttrs,
 	optionKey,
 	optionTag,
 } from "../../packages/u-combobox/u-combobox.harness";
+import { harnessState } from "./harness";
 
-const state = reactive<{ cfgs: HarnessConfig[] }>({ cfgs: [] });
-
-createHarness({
-	render: async (cfgs) => {
-		state.cfgs = cfgs;
-		await nextTick();
-	},
-	update: async (patch, index) => {
-		Object.assign(state.cfgs[index], patch);
-		await nextTick();
-	},
-});
+const state = harnessState(DEFAULTS);
 
 const inputAttrs = (cfg: HarnessConfig) => ({
 	type: cfg.inputAttrs.type,

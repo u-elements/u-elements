@@ -70,7 +70,7 @@ bun add -S @u-elements/u-tabs
 - **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
 - **DOM interface:** `UHTMLTabsElement` extends [`HTMLElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement)
   - `UHTMLTabsElement.tabList` returns the contained `UHTMLTabListElement`
-  - `UHTMLTabsElement.selectedIndex` sets or gets a `number` reflecting the index of the first selected `<u-tab>` element. Will ignore invalid indexes.
+  - `UHTMLTabsElement.selectedIndex` sets or gets a `number` reflecting the index of the first selected `<u-tab>` element. Will ignore invalid indexes. Setting it before the tabs exist is ignored like on a native `<select>`, so when rendering from state, use `aria-selected="true"` on the `<u-tab>` instead.
   - `UHTMLTabsElement.tabs` returns a `NodeListOf<UHTMLTabElement>`
   - `UHTMLTabsElement.panels` returns a `NodeListOf<UHTMLTabPanelElement>`
 
@@ -78,8 +78,8 @@ bun add -S @u-elements/u-tabs
 - **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
 - **DOM interface:** `UHTMLTabListElement` extends [`HTMLElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement)
   - `UHTMLTabListElement.tabsElement` returns the parent `UHTMLTabsElement`
-  - `UHTMLTabsElement.selectedIndex` sets or gets a `number` reflecting the index of the first selected `<u-tab>` element. Will ignore invalid indexes.
-  - `UHTMLTabsElement.tabs` returns a `NodeListOf<UHTMLTabElement>`
+  - `UHTMLTabListElement.selectedIndex` sets or gets a `number` reflecting the index of the first selected `<u-tab>` element. Will ignore invalid indexes. Setting it before the tabs exist is ignored like on a native `<select>`, so when rendering from state, use `aria-selected="true"` on the `<u-tab>` instead.
+  - `UHTMLTabListElement.tabs` returns a `NodeListOf<UHTMLTabElement>`
 
 ### `<u-tab>`
 - **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`

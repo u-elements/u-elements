@@ -1,15 +1,16 @@
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
+import { expect, test } from "../test";
 import { comboboxSuite } from "./u-combobox.suite";
 
 /**
  * Runs the shared suite (u-combobox.suite.ts) against the vanilla DOM harness page
- * (frameworks/vanilla/test.u-combobox.html), uncontrolled by default so the component
+ * (frameworks/vanilla/test.html?component=u-combobox), uncontrolled by default so the component
  * manages its own <data> items, as controlled mode is covered by every framework suite.
  *
  * The tests below need raw DOM access and have no equivalent in the harness.
  */
-comboboxSuite("Vanilla", {
-	url: "frameworks/vanilla/test.u-combobox.html",
+comboboxSuite({
+	url: "frameworks/vanilla/test.html?component=u-combobox",
 	defaults: { controlled: false },
 });
 

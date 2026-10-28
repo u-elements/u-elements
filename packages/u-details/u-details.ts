@@ -1,3 +1,4 @@
+// Note: This file is deprecated and not maintained
 import {
 	attachStyle,
 	attr,

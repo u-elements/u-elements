@@ -1,10 +1,7 @@
 import vue from "@vitejs/plugin-vue";
-import { server } from "../vite.shared";
+import { frameworkConfig } from "../vite.shared.ts";
 
-export default {
-	root: import.meta.dirname,
-	server,
-	cacheDir: `${import.meta.dirname}/../../node_modules/.vite/vue`, // Own cache, as concurrent dev servers sharing one cache invalidate each other
+export default frameworkConfig(import.meta.dirname, {
 	plugins: [
 		vue({
 			template: {
@@ -14,4 +11,4 @@ export default {
 			},
 		}),
 	],
-};
+});

@@ -1,8 +1,11 @@
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
+import { countCalls } from "../suite";
+import { expect, test } from "../test";
+import { progressSuite } from "./u-progress.suite";
 
-test.beforeEach(async ({ page }) => {
-	await page.goto("test.html");
-});
+// Runs the shared suite (u-progress.suite.ts) against the vanilla DOM harness page (frameworks/vanilla/test.html?component=u-progress).
+// The tests below need raw DOM access and have no equivalent in the harness
+progressSuite({ url: "frameworks/vanilla/test.html?component=u-progress" });
 
 const mount = async (page: Page, html: string) => {
 	await page.evaluate((markup) => {
@@ -11,6 +14,10 @@ const mount = async (page: Page, html: string) => {
 };
 
 test.describe("UHTMLProgressElement", () => {
+	test.beforeEach(async ({ page }) => {
+		await page.goto("test.html");
+	});
+
 	test("matches snapshot", async ({ page }) => {
 		await mount(
 			page,
@@ -138,6 +145,59 @@ test.describe("UHTMLProgressElement", () => {
 		await expect(progress).toHaveJSProperty("value", 5);
 		await expect(progress).toHaveJSProperty("max", 10);
 		await expect(progress).toHaveAttribute("aria-valuenow", "50");
+	});
+
+	test("removes value and max when set to null or undefined", async ({
+		page,
+	}) => {
+		await mount(page, `<u-progress value="5" max="10"></u-progress>`);
+		const progress = page.locator("u-progress");
+
+		await progress.evaluate((node) => {
+			const el = node as HTMLProgressElement;
+			el.value = null as never; // Frameworks write null and undefined through the property, i.e. value={undefined} for indeterminate
+		});
+		await expect(progress).not.toHaveAttribute("value");
+		await expect(progress).toHaveJSProperty("position", -1);
+		await expect(progress).toHaveAttribute("aria-busy", "true");
+		await expect(progress).not.toHaveAttribute("aria-valuenow");
+
+		await progress.evaluate((node) => {
+			const el = node as HTMLProgressElement;
+			el.max = undefined as never;
+		});
+		await expect(progress).not.toHaveAttribute("max");
+		await expect(progress).toHaveJSProperty("max", 1);
+	});
+
+	test("settles after mount and after a change instead of re-syncing itself", async ({
+		page,
+	}) => {
+		// The element re-syncs once after frameworks have rendered (see afterRender in attributeChangedCallback).
+		// That re-sync must not schedule itself again, which would keep every connected element busy forever
+		const calls = await countCalls(
+			page,
+			"u-progress",
+			"attributeChangedCallback",
+		);
+		await mount(
+			page,
+			`<label for="p">Loading</label><u-progress id="p" value="5" max="10"></u-progress>`,
+		);
+		await page.waitForTimeout(100); // Past the scheduled re-sync
+		const mounted = await calls();
+		expect(mounted).toBeLessThan(20); // Upgrade, connect, the attributes the element writes itself and one re-sync
+		await page.waitForTimeout(200);
+		expect(await calls()).toBe(mounted); // Nothing scheduled itself again
+
+		await page.locator("u-progress").evaluate((node) => {
+			(node as HTMLProgressElement).value = 7;
+		});
+		await page.waitForTimeout(100);
+		const changed = await calls();
+		expect(changed - mounted).toBeLessThan(10);
+		await page.waitForTimeout(200);
+		expect(await calls()).toBe(changed);
 	});
 
 	test("coerces numeric strings", async ({ page }) => {

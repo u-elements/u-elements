@@ -60,6 +60,10 @@ bun add -S @u-elements/u-progress
   - `HTMLProgressElement.value` returns `number` reflecting `value` value attribute
   - `HTMLProgressElement.labels` returns `NodeListOf<HTMLLabelElement>`
 
+::: warning Using Preact?
+Setting the `value` property to `null` does not remove the `value` attribute in Preact. Remove through a `ref` instead: `ref={(el) => value === null && el?.removeAttribute("value")}`
+:::
+
 ## Styling
 
 ### Styling the value bar

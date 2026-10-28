@@ -1,9 +1,4 @@
 import solid from "vite-plugin-solid";
-import { server } from "../vite.shared";
+import { frameworkConfig } from "../vite.shared.ts";
 
-export default {
-	root: import.meta.dirname,
-	server,
-	cacheDir: `${import.meta.dirname}/../../node_modules/.vite/solid`, // Own cache, as concurrent dev servers sharing one cache invalidate each other
-	plugins: [solid()],
-};
+export default frameworkConfig(import.meta.dirname, { plugins: [solid()] });

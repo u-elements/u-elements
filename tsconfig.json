@@ -20,6 +20,6 @@
 		"noUnusedParameters": true,
 		"noFallthroughCasesInSwitch": true
 	},
-	"exclude": ["dist", "node_modules"],
+	"exclude": ["**/dist", "node_modules"],
 	"include": ["*.ts", "*.tsx", "packages/**/*.ts"]
 }

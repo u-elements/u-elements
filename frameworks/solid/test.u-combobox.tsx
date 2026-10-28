@@ -2,29 +2,22 @@
 // Items are rendered from a store (controlled), the input value is bound to the store,
 // and all combobox events are bound with Solid native event listeners (on:*).
 import { For, Show } from "solid-js";
-import { createStore } from "solid-js/store";
-import { Dynamic, render } from "solid-js/web";
+import { Dynamic } from "solid-js/web";
 import "../../packages/u-datalist/u-datalist";
 import "../../packages/u-combobox/u-combobox";
+import { log } from "../../packages/harness";
 import {
 	comboboxAttrs,
-	createHarness,
+	DEFAULTS,
 	type HarnessConfig,
-	type HarnessPatch,
 	handleBeforeSelect,
 	handleInput,
 	handleSubmit,
 	listId,
-	log,
 	optionAttrs,
 	optionTag,
 } from "../../packages/u-combobox/u-combobox.harness";
-
-const [state, setState] = createStore<{ cfgs: HarnessConfig[] }>({ cfgs: [] });
-
-// Solid sets spread props on custom elements as properties, so prefix with attr: to write attributes (null removes)
-const attrs = (obj: Record<string, unknown>) =>
-	Object.fromEntries(Object.entries(obj).map(([k, v]) => [`attr:${k}`, v]));
+import { attrs, type HarnessProps, mountHarness } from "./harness";
 
 const FormFields = () => (
 	<>
@@ -33,10 +26,7 @@ const FormFields = () => (
 	</>
 );
 
-function Combobox(props: {
-	cfg: HarnessConfig;
-	patch: (patch: HarnessPatch) => void;
-}) {
+function Combobox(props: HarnessProps<HarnessConfig>) {
 	const list = () => listId(props.cfg);
 
 	return (
@@ -132,22 +122,4 @@ function Combobox(props: {
 	);
 }
 
-render(
-	() => (
-		<For each={state.cfgs}>
-			{(cfg, index) => (
-				<Combobox
-					cfg={cfg}
-					patch={(patch) => setState("cfgs", index(), patch)}
-				/>
-			)}
-		</For>
-	),
-	document.getElementById("root") as HTMLElement,
-);
-
-// Store writes update the DOM synchronously, so nothing to flush
-createHarness({
-	render: (cfgs) => setState("cfgs", cfgs),
-	update: (patch, index) => setState("cfgs", index, patch),
-});
+mountHarness(DEFAULTS, Combobox);

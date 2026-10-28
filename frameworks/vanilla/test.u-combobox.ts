@@ -1,107 +1,75 @@
-// Vanilla harness page for the shared u-combobox suite (packages/u-combobox/u-combobox.suite.ts).
-// Renders the HarnessConfig with plain DOM APIs and patches the DOM in place on update, like a
-// framework would (keyed items and options, attribute writes only when changed), so the component
-// is never remounted unless `mounted` changes. Unlike the frameworks, state changes made from event
-// handlers are applied synchronously, as a plain DOM consumer would do.
-// Served by the root Vite dev server: frameworks/vanilla/test.u-combobox.html
+// Vanilla harness page for the shared u-combobox suite (packages/u-combobox/u-combobox.suite.ts),
+// see ./harness.ts for how the DOM is patched in place like a framework would.
 import "../../packages/u-datalist/u-datalist";
 import "../../packages/u-combobox/u-combobox";
+import { log } from "../../packages/harness";
 import {
 	comboboxAttrs,
-	createHarness,
+	DEFAULTS,
 	type HarnessConfig,
-	type HarnessPatch,
 	handleBeforeSelect,
 	handleInput,
 	handleSubmit,
 	listId,
-	log,
 	optionAttrs,
 	optionKey,
 	optionTag,
 } from "../../packages/u-combobox/u-combobox.harness";
+import {
+	create,
+	type Instance,
+	mountHarness,
+	reconcile,
+	setAttr,
+} from "./harness";
 
-type Instance = {
-	cfg: HarnessConfig;
-	anchor: Comment; // Keeps the position of the instance in the root between unmount and mount
-	nodes: Element[]; // Top level nodes of the instance
+type State = {
 	combobox: HTMLElement | null;
 	input: HTMLInputElement | null;
 	listKey: number;
 };
+type Inst = Instance<HarnessConfig, State>;
 
-// Keys that only change the initial markup; patching them re-creates the instance
-const STRUCTURAL = ["id", "label", "form", "inputAttrs", "listTag"];
 const optionKeys = new WeakMap<Element, string>(); // Options may lack id and value, so keys can not be read back from the DOM
-
-const root = document.getElementById("app") as HTMLElement;
-let instances: Instance[] = [];
-
-// Set or remove an attribute only when it changes, like frameworks do. undefined leaves the attribute alone
-const setAttr = (el: Element, name: string, value?: string | null) => {
-	if (value === undefined) return;
-	if (value === null) {
-		if (el.hasAttribute(name)) el.removeAttribute(name);
-	} else if (el.getAttribute(name) !== value) el.setAttribute(name, value);
-};
-
-const create = (
-	tag: string,
-	attrs: Record<string, string | null | undefined> = {},
-	text?: string,
-) => {
-	const el = document.createElement(tag);
-	for (const [name, value] of Object.entries(attrs)) setAttr(el, name, value);
-	if (text !== undefined) el.textContent = text;
-	return el;
-};
-
-// Place nodes in order before `end`, moving only the nodes that are out of place
-const order = (parent: Node, nodes: Element[], end: Node | null) => {
-	let ref = end;
-	for (let i = nodes.length - 1; i >= 0; i--) {
-		if (nodes[i].parentNode !== parent || nodes[i].nextSibling !== ref)
-			parent.insertBefore(nodes[i], ref);
-		ref = nodes[i];
-	}
-};
 
 const formFields = () => [
 	create("input", { id: "other", name: "other", value: "keep" }),
 	create("button", { type: "submit" }, "Send"),
 ];
 
-const syncValue = ({ cfg, input }: Instance) => {
+const syncValue = ({ cfg, input }: Inst) => {
 	if (input && input.value !== cfg.value) input.value = cfg.value;
 };
 
-const syncAttrs = ({ cfg, combobox }: Instance) => {
+const syncAttrs = ({ cfg, combobox }: Inst) => {
 	if (!combobox) return;
 	for (const [name, value] of Object.entries(comboboxAttrs(cfg)))
 		setAttr(combobox, name, value);
 };
 
 // Items are keyed by value, so existing <data> elements (also those added by the component in uncontrolled mode) are reused
-const syncItems = ({ cfg, combobox, input }: Instance) => {
+const syncItems = ({ cfg, combobox, input }: Inst) => {
 	if (!combobox || !input) return;
 	const existing = new Map(
 		[...combobox.querySelectorAll(":scope > data")].map((el) => [
-			el.getAttribute("value"),
+			el.getAttribute("value") || "",
 			el,
 		]),
 	);
-	const items = cfg.items.map((item) => {
-		const el =
-			existing.get(item.value) || create("data", { value: item.value });
-		existing.delete(item.value);
-		if (el.textContent !== item.label) el.textContent = item.label;
-		return el;
-	});
-	for (const el of existing.values()) el.remove();
-	order(combobox, items, input);
+	reconcile(
+		combobox,
+		existing,
+		cfg.items,
+		(item) => item.value,
+		(item, el = create("data", { value: item.value })) => {
+			if (el.textContent !== item.label) el.textContent = item.label;
+			return el;
+		},
+		input,
+	);
 };
 
-const syncControls = ({ cfg, combobox, input }: Instance) => {
+const syncControls = ({ cfg, combobox, input }: Inst) => {
 	if (!combobox || !input) return;
 	const select = combobox.querySelector(":scope > select");
 	if (cfg.select && !select)
@@ -129,7 +97,7 @@ const syncControls = ({ cfg, combobox, input }: Instance) => {
 };
 
 // The list is re-created when listKey changes, options are keyed like the frameworks key them
-const syncList = (inst: Instance) => {
+const syncList = (inst: Inst) => {
 	const { cfg, combobox } = inst;
 	if (!combobox) return;
 	let list = combobox.querySelector(":scope > datalist, :scope > u-datalist");
@@ -148,122 +116,87 @@ const syncList = (inst: Instance) => {
 	setAttr(list, "data-nofilter", cfg.nofilter ? "" : null);
 
 	const existing = new Map(
-		[...list.children].map((el) => [optionKeys.get(el), el]),
+		[...list.children].map((el) => [optionKeys.get(el) || "", el]),
 	);
-	const options = cfg.options.map((option) => {
-		const key = optionKey(option);
-		const el = (existing.get(key) || create(optionTag(cfg))) as HTMLElement;
-		existing.delete(key);
-		optionKeys.set(el, key);
+	reconcile(list, existing, cfg.options, optionKey, (option, el) => {
+		const opt = (el || create(optionTag(cfg))) as HTMLElement;
+		optionKeys.set(opt, optionKey(option));
 		const attrs = optionAttrs(option);
-		setAttr(el, "id", attrs.id);
-		setAttr(el, "value", attrs.value ?? null);
-		setAttr(el, "label", attrs.label ?? null);
-		if (el.hidden !== !!attrs.hidden) el.hidden = !!attrs.hidden;
-		if (el.textContent !== option.text) el.textContent = option.text;
-		return el;
+		setAttr(opt, "id", attrs.id);
+		setAttr(opt, "value", attrs.value ?? null);
+		setAttr(opt, "label", attrs.label ?? null);
+		if (opt.hidden !== !!attrs.hidden) opt.hidden = !!attrs.hidden;
+		if (opt.textContent !== option.text) opt.textContent = option.text;
+		return opt;
 	});
-	for (const el of existing.values()) el.remove();
-	order(list, options, null);
 };
 
-const unmount = (inst: Instance) => {
-	for (const node of inst.nodes) node.remove();
-	inst.nodes = [];
-	inst.combobox = inst.input = null;
-};
-
-const mount = (inst: Instance) => {
-	const { cfg } = inst;
-	const patch = (patch: HarnessPatch) => update(inst, patch);
-	const combobox = create("u-combobox");
-	const input = create("input", {
-		id: cfg.id,
-		list: listId(cfg),
-		form: cfg.form === "outside" ? "form" : undefined,
-		type: cfg.inputAttrs.type,
-		readonly: cfg.inputAttrs.readonly,
-		disabled: cfg.inputAttrs.disabled,
-		value: cfg.inputAttrs.value, // HTML attribute, as opposed to cfg.value which is written through the property
-	}) as HTMLInputElement;
-
-	combobox.addEventListener("comboboxbeforeselect", (event) =>
-		handleBeforeSelect(event, inst.cfg, (items) => patch({ items })),
-	);
-	combobox.addEventListener("comboboxafterselect", (event) =>
-		log("comboboxafterselect", event),
-	);
-	combobox.addEventListener("comboboxbeforematch", (event) =>
-		log("comboboxbeforematch", event),
-	);
-	combobox.addEventListener("input", (event) =>
-		handleInput(event, inst.cfg, (options) => patch({ options })),
-	);
-	combobox.addEventListener("change", (event) => log("change", event));
-	combobox.append(input);
-
-	inst.combobox = combobox;
-	inst.input = input;
-	inst.listKey = cfg.listKey;
-	syncAttrs(inst);
-	syncItems(inst);
-	syncControls(inst);
-	syncList(inst);
-	syncValue(inst);
-
-	const wrapper = create(cfg.form === true ? "form" : "div", {
-		id: cfg.form === true ? "form" : undefined,
-	});
-	wrapper.addEventListener("submit", handleSubmit);
-	wrapper.append(combobox, ...(cfg.form === true ? formFields() : []));
-
-	const nodes: Element[] = [];
-	if (cfg.label) nodes.push(create("label", { for: cfg.id }, "Label"));
-	if (cfg.form === "outside") {
-		const form = create("form", { id: "form" });
-		form.addEventListener("submit", handleSubmit);
-		form.append(...formFields());
-		nodes.push(form);
-	}
-	nodes.push(wrapper);
-	inst.nodes = nodes;
-	const fragment = document.createDocumentFragment();
-	fragment.append(...nodes); // Insert as one tree, like frameworks commit a render
-	root.insertBefore(fragment, inst.anchor);
-};
-
-const update = (inst: Instance, patch: HarnessPatch) => {
-	Object.assign(inst.cfg, patch);
-	const has = (...keys: string[]) => keys.some((key) => key in patch);
-	if (has("mounted", ...STRUCTURAL)) {
-		unmount(inst);
-		if (inst.cfg.mounted) mount(inst);
-		return;
-	}
-	if (has("multiple", "creatable", "attrs")) syncAttrs(inst);
-	if (has("items")) syncItems(inst);
-	if (has("select", "toggle", "clear")) syncControls(inst);
-	if (has("options", "listKey", "nofilter")) syncList(inst);
-	if (has("value")) syncValue(inst);
-};
-
-createHarness({
-	render: (cfgs) => {
-		root.replaceChildren();
-		instances = cfgs.map((cfg) => {
-			const anchor = document.createComment("u-combobox");
-			root.append(anchor);
-			const inst: Instance = {
-				cfg,
-				anchor,
-				nodes: [],
-				combobox: null,
-				input: null,
-				listKey: cfg.listKey,
-			};
-			if (cfg.mounted) mount(inst);
-			return inst;
-		});
+mountHarness<HarnessConfig, State>(DEFAULTS, {
+	structural: ["id", "label", "form", "inputAttrs", "listTag"],
+	init: (cfg) => ({ combobox: null, input: null, listKey: cfg.listKey }),
+	unmount: (inst) => {
+		inst.combobox = inst.input = null;
 	},
-	update: (patch, index) => update(instances[index], patch),
+	mount: (inst, patch) => {
+		const { cfg } = inst;
+		const combobox = create("u-combobox");
+		const input = create("input", {
+			id: cfg.id,
+			list: listId(cfg),
+			form: cfg.form === "outside" ? "form" : undefined,
+			type: cfg.inputAttrs.type,
+			readonly: cfg.inputAttrs.readonly,
+			disabled: cfg.inputAttrs.disabled,
+			value: cfg.inputAttrs.value, // HTML attribute, as opposed to cfg.value which is written through the property
+		}) as HTMLInputElement;
+
+		combobox.addEventListener("comboboxbeforeselect", (event) =>
+			handleBeforeSelect(event, inst.cfg, (items) => patch({ items })),
+		);
+		combobox.addEventListener("comboboxafterselect", (event) =>
+			log("comboboxafterselect", event),
+		);
+		combobox.addEventListener("comboboxbeforematch", (event) =>
+			log("comboboxbeforematch", event),
+		);
+		combobox.addEventListener("input", (event) =>
+			handleInput(event, inst.cfg, (options) => patch({ options })),
+		);
+		combobox.addEventListener("change", (event) => log("change", event));
+		combobox.append(input);
+
+		inst.combobox = combobox;
+		inst.input = input;
+		inst.listKey = cfg.listKey;
+		syncAttrs(inst);
+		syncItems(inst);
+		syncControls(inst);
+		syncList(inst);
+		syncValue(inst);
+
+		const wrapper = create(cfg.form === true ? "form" : "div", {
+			id: cfg.form === true ? "form" : undefined,
+		});
+		wrapper.addEventListener("submit", handleSubmit);
+		wrapper.append(combobox, ...(cfg.form === true ? formFields() : []));
+
+		const nodes: Element[] = [];
+		if (cfg.label) nodes.push(create("label", { for: cfg.id }, "Label"));
+		if (cfg.form === "outside") {
+			const form = create("form", { id: "form" });
+			form.addEventListener("submit", handleSubmit);
+			form.append(...formFields());
+			nodes.push(form);
+		}
+		nodes.push(wrapper);
+		return nodes;
+	},
+	update: (inst, patch) => {
+		const has = (...keys: string[]) => keys.some((key) => key in patch);
+		if (has("multiple", "creatable", "attrs")) syncAttrs(inst);
+		if (has("items")) syncItems(inst);
+		if (has("select", "toggle", "clear")) syncControls(inst);
+		if (has("options", "listKey", "nofilter")) syncList(inst);
+		if (has("value")) syncValue(inst);
+	},
 });

@@ -1,5 +1,5 @@
 import type { UserConfig } from "vite";
-import { server } from "./frameworks/vite.shared";
+import { server } from "./frameworks/vite.shared.ts";
 // import csp from "vite-plugin-csp-guard";
 
 export default {

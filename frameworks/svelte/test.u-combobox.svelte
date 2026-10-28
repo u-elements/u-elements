@@ -1,39 +1,29 @@
+<svelte:options runes={true} />
+<!-- Runes mode, as the component itself uses no rune and would otherwise compile in legacy mode, where every state write re-renders the whole block -->
 <script lang="ts">
 // Svelte harness page for the shared u-combobox suite (packages/u-combobox/u-combobox.suite.ts).
 // Items are rendered from $state (controlled), the input uses bind:value,
 // and all combobox events are bound with Svelte event attributes.
-import { flushSync } from "svelte";
 import "../../packages/u-datalist/u-datalist";
 import "../../packages/u-combobox/u-combobox";
+import { log } from "../../packages/harness";
 import {
 	comboboxAttrs,
-	createHarness,
-	type HarnessConfig,
+	DEFAULTS,
 	handleBeforeSelect,
 	handleInput,
 	handleSubmit,
 	listId,
-	log,
 	optionAttrs,
 	optionKey,
 	optionTag,
 } from "../../packages/u-combobox/u-combobox.harness";
+import { harnessState } from "./harness.svelte";
 
-let cfgs = $state<HarnessConfig[]>([]);
-
-createHarness({
-	render: (next) => {
-		cfgs = next;
-		flushSync();
-	},
-	update: (patch, index) => {
-		Object.assign(cfgs[index], patch);
-		flushSync();
-	},
-});
+const harness = harnessState(DEFAULTS);
 </script>
 
-{#each cfgs as cfg, index (index)}
+{#each harness.cfgs as cfg, index (index)}
 	{#if cfg.mounted}
 		{#if cfg.label}<label for={cfg.id}>Label</label>{/if}
 		{#if cfg.form === "outside"}

@@ -216,6 +216,11 @@ const renderToStaticMarkup = (tabs: string[], panels[]) =>
 
 ## Changelog
 
+- **1.1.0:** Framework compatibility:
+  - Click is handled by one shared `window` listener in the bubble phase, instead of a listener on each `<u-tablist>`. This runs after frameworks that delegate events to their root or `document` (i.e. React, Solid and Svelte), so `event.preventDefault()` in a framework click handler cancels the selection. Note that `event.stopPropagation()` in such a handler now also prevents the selection, as the event never reaches `window`. Instances inside ShadowDOM listen on their shadow root instead
+  - `selectedIndex` can be read and written before the element is connected, as frameworks set properties on a detached tree (i.e. React and Vue)
+  - `<u-tabpanel>` re-associates with its `<u-tab>` when `id` is written after connect (i.e. Angular binds attributes after inserting the element)
+  - Tabs, tablists and panels are also matched by instance, so custom tag names extending the classes work before connect
 - **1.0.4:** Allow no tab to be selected for better React async render compatibility
 - **1.0.3:** Fix issue where aria-controls combined with aria-selected was not repspected on initial mount
 - **1.0.2:** Performance optimizations

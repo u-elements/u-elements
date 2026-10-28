@@ -287,9 +287,8 @@ const onMutations = (self: UHTMLDataListElement) => {
 
 	// onMutations, after the aria-hidden writes
 	if (IS_IOS)
-		show.map((opt, index) =>
-			attr(opt, "data-sr-pos", attr(opt, "aria-posinset") || `${index + 1}`),
-		);
+		for (const [index, opt] of show.entries())
+			attr(opt, "data-sr-pos", attr(opt, "aria-posinset") || `${index + 1}`);
 	self._umutate?.takeRecords(); // Clear mutation records to prevent unwanted MutationObserver triggers when changing attributes in render
 };
 

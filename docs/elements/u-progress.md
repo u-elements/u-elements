@@ -146,6 +146,11 @@ const renderToStaticMarkup = (value?: number, max?: number) =>
 
 ## Changelog
 
+- **1.1.0:** Framework compatibility:
+  - Setting `value` or `max` to `null` or `undefined` removes the attribute, like frameworks expect for a native element (i.e. `value={undefined}` for indeterminate)
+  - `aria-labelledby` is resolved into `aria-label` from the attributes written by the consumer, so re-renders that rewrite `aria-label` or `aria-labelledby` keep the correct name
+  - The label is synced once more after frameworks have rendered, as `<label for>` and elements referenced by `aria-labelledby` may be written after the element (i.e. Angular and Qwik)
+  - `id` is observed, so a `<label for>` matching an `id` written after connect is picked up
 - **1.0.1:** Use `attachInternals` when supported by the current browser and speed up attribute assignment
 - **1.0.0:** Plays nice with strict CSP, and renders attributes in consistent order
 - **0.0.7:** Uses `role="progress"` also in Firefox who now has sufficient support

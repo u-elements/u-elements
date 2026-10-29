@@ -110,7 +110,7 @@ document.addEventListener('click', ({ target }) => {
 })
 ```
 
-Selection runs when the `click` reaches `window`, after your handlers. Call `event.preventDefault()` in a `click` handler to cancel the tab change. Calling `event.stopPropagation()` on the tab or any of its ancestors (i.e. a clickable card or a modal) also cancels it, as the event never reaches `window`.
+Selection runs when the `click` reaches `window`, after your handlers. Call `event.preventDefault()` in a `click` handler to cancel the tab change. Note that calling `event.stopPropagation()` on a tab or any of its ancestors also cancels the tab change.
 
 ## Styling
 
@@ -219,7 +219,8 @@ const renderToStaticMarkup = (tabs: string[], panels[]) =>
 ## Changelog
 
 - **1.1.0:** Framework compatibility:
-  - Click is handled on `window`, so frameworks using event delegation (i.e. React, Solid and Svelte) safely can use `event.preventDefault()`
+  - Click is handled on `window` or relevant `ShadowRoot`, so frameworks using event delegation (i.e. React, Solid and Svelte) safely can use `event.preventDefault()`
+  - **Important:** `event.stopPropagation()` on a tab or an ancestor will cancel tab change
   - `selectedIndex` can be read and written before the element is connected, as frameworks set properties on a detached tree (i.e. React and Vue)
   - `<u-tabpanel>` re-associates with its `<u-tab>` when `id` is written after connect (i.e. Angular binds attributes after inserting the element)
   - Tabs, tablists and panels are also matched by instance, so custom tag names extending the classes work before connect

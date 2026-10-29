@@ -43,7 +43,7 @@ export const UHTMLDataListStyle = `${DISPLAY_BLOCK}
 ::slotted([role="option"][hidden]) { display: none !important }
 ::slotted([role="option"])::after{content:''/var(--sr-ios,"")}
 @supports(-webkit-touch-callout:none) {
-	::slotted([role="option"])::after { --sr-ios: ", "attr(data-sr-pos)" "var(--sr-of, "of")" "var(--sr-count, "") }
+	::slotted([role="option"])::after { --sr-ios: ", "attr(data-posint)" "var(--sr-of, "of")" "attr(data-sizeset) }
 	::slotted([role="option"][aria-setsize="-1"])::after { --sr-ios: ", "attr(data-sr-pos) }
 }`;
 
@@ -280,12 +280,15 @@ const onMutations = (self: UHTMLDataListElement) => {
 
 	clearTimeout(LIVE_TIMER); // Announce hits if real user has typed
 	LIVE_TIMER = setTimeout(announce, 500, self, show); // 500ms makes room for screen reader to announce the typed character, before announcing the hits count
-	self.style.setProperty("--sr-count", `'${getCount(show)}'`);
 
-	// onMutations, after the aria-hidden writes
-	if (IS_IOS)
-		for (const [index, opt] of show.entries())
-			attr(opt, "data-sr-pos", attr(opt, "aria-posinset") || `${index + 1}`);
+	// onMutations, after the aria-hidden writes. On the options, not the host style, so a consumer style binding can not overwrite it
+	if (IS_IOS) {
+		const count = `${getCount(show)}`;
+		for (const [index, opt] of show.entries()) {
+			attr(opt, "data-posint", attr(opt, "aria-posinset") || `${index + 1}`);
+			attr(opt, "data-sizeset", count);
+		}
+	}
 	self._umutate?.takeRecords(); // Clear mutation records to prevent unwanted MutationObserver triggers when changing attributes in render
 };
 

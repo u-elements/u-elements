@@ -199,7 +199,7 @@ export const eventsTests = ({
 			await input.pressSequentially("B");
 			await selectOption(input, page.locator(OPT_TAG, { hasText: "Bergen" }));
 			await expect(items).toHaveText(["Bergen"]);
-			await expect(input).toHaveValue("B"); // Reverted through the native setter, as setRangeText is not supported
+			await expect(input).toHaveValue("B");
 
 			await update(page, { multiple: false });
 			await expect(input).toHaveValue("Bergen"); // Synced through the native setter

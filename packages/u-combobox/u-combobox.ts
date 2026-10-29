@@ -635,7 +635,7 @@ const announceItemChange = (
 	if (_announce) attr(control, ARIA_LABEL, label); // Restore before reading the accessible name
 	if (!self._commit?.focus) setTimeout(() => ariaNotify(hint.slice(0, -2))); // Aria-live when no focus move belongs to the pending commit, remove trailing comma, setTimeout to take presence
 	self._announce = { label, reset: setTimeout(announceReset, 300, self) }; // 300ms delay so screen readers announces new aria-label. Note: Causes short double/hiccup announce in NVDA Firefox
-	self.style.setProperty(SR_ANNOUNCE, `'${css}'`);
+	self._listbox.style.setProperty(SR_ANNOUNCE, `'${css}'`); // On the listbox, as slotted items inherit from it, and the host style belongs to the consumer
 	attr(control, ARIA_LABEL, `${hint}${getInputLabel(control)}`); // Make sure control also can aria-label-announce
 };
 
@@ -643,7 +643,7 @@ const announceReset = (self: UHTMLComboboxElement) => {
 	if (!self._announce) return; // Nothing to revert
 	if (self.control) attr(self.control, ARIA_LABEL, self._announce.label); // Revert aria-label to original value after announcement
 	clearTimeout(self._announce.reset);
-	self.style.removeProperty(SR_ANNOUNCE);
+	self._listbox.style.removeProperty(SR_ANNOUNCE);
 	self._announce = undefined;
 };
 

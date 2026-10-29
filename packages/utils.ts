@@ -6,8 +6,8 @@ export const isBrowser = () =>
 // Bad, but needed
 const IS_BROWSER = isBrowser(); // Cache this since it's used in many places and can be dynamic in tests
 const AGENT = IS_BROWSER ? navigator.userAgent : "";
+const IS_SAMSUNGINTERNET = /samsungbrowser/i.test(AGENT); // Samsung Internet on Android
 export const IS_ANDROID = /android/i.test(AGENT);
-export const IS_SAMSUNGINTERNET = /samsungbrowser/i.test(AGENT); // Samsung Internet on Android
 export const IS_FIREFOX = /firefox/i.test(AGENT);
 export const IS_IOS = /iPad|iPhone|iPod/.test(AGENT);
 export const IS_SAFARI = /^((?!chrome|android).)*safari/i.test(AGENT);

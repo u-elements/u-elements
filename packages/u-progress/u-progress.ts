@@ -68,27 +68,33 @@ export class UHTMLProgressElement extends UHTMLElement {
 		if (!this._afterRender && prop !== VALUE && prop !== MAX) {
 			this._afterRender = true; // Sync again once frameworks have rendered, as labels and ids referenced by aria-labelledby may be written after this element (i.e. Angular and Qwik). Not for value and max, as they never affect the label and a progress bar can update every frame
 			afterRender(() => {
-				if (this.isConnected) this.attributeChangedCallback();
-				this._afterRender = false; // Important to run last
+				try {
+					if (this.isConnected) this.attributeChangedCallback();
+				} finally {
+					this._afterRender = false; // Important to run last, so the re-sync does not schedule itself again. In finally, so a throw does not block later re-syncs
+				}
 			});
 		}
 		this._skipAttrChange = true;
-		const position = this.position;
-		const percentage = Math.max(0, Math.round(position * 100));
+		try {
+			const position = this.position;
+			const percentage = Math.max(0, Math.round(position * 100));
 
-		// Write CSS variable before getLabel (innerText triggers style recalc)
-		this.style.setProperty("--percentage", `${percentage}%`);
+			// Write CSS variable before getLabel (innerText triggers style recalc)
+			this.style.setProperty("--percentage", `${percentage}%`);
 
-		let label = getLabel(this);
-		if (IS_IOS)
-			label = `${label.replace(/\(\d+%\)$/, "")} (${percentage}%)`.trim(); // Always use percentage as iOS role="img"
+			let label = getLabel(this);
+			if (IS_IOS)
+				label = `${label.replace(/\(\d+%\)$/, "")} (${percentage}%)`.trim(); // Always use percentage as iOS role="img"
 
-		// Set ARIA attributes
-		attr(this, "aria-busy", `${position === -1}`);
-		attr(this, "aria-valuenow", position === -1 ? null : `${percentage}`);
-		attr(this, ARIA_LABEL, label); // Must use aria-label to include percentage value
-		attr(this, ARIA_LABELLEDBY, null);
-		this._skipAttrChange = false;
+			// Set ARIA attributes
+			attr(this, "aria-busy", `${position === -1}`);
+			attr(this, "aria-valuenow", position === -1 ? null : `${percentage}`);
+			attr(this, ARIA_LABEL, label); // Must use aria-label to include percentage value
+			attr(this, ARIA_LABELLEDBY, null);
+		} finally {
+			this._skipAttrChange = false; // In finally, so a throw does not leave every later attribute change ignored
+		}
 	}
 	get labels(): NodeListOf<HTMLLabelElement> {
 		const labels = this._internals?.labels;

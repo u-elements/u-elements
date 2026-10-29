@@ -120,6 +120,47 @@ export const tabsSuite = ({
 			expect(await selectedIndex(page)).toBe(0);
 		});
 
+		test("respects aria-selected=false on every tab from state", async ({
+			page,
+		}) => {
+			await render(page, { controlled: true, selected: null });
+			const tabs = page.locator("u-tab");
+			const panels = page.locator("u-tabpanel");
+
+			for (const index of [0, 1, 2]) {
+				await expect(tabs.nth(index)).toHaveAttribute("aria-selected", "false"); // Not selected automatically, as every tab specifies aria-selected
+				await expect(panels.nth(index)).toBeHidden();
+			}
+			await expect(tabs.nth(0)).toHaveAttribute("tabindex", "0"); // Reachable by keyboard without being selected
+			await expect(tabs.nth(1)).toHaveAttribute("tabindex", "-1");
+			await expect(tabs.nth(2)).toHaveAttribute("tabindex", "-1");
+			expect(await selectedIndex(page)).toBe(-1);
+
+			await tabs.nth(1).click(); // Handler writes state, the framework renders aria-selected
+			await expect(tabs.nth(1)).toHaveAttribute("aria-selected", "true");
+			await expect(tabs.nth(1)).toHaveAttribute("tabindex", "0");
+			await expect(tabs.nth(0)).toHaveAttribute("tabindex", "-1");
+			await expect(panels.nth(1)).toBeVisible();
+		});
+
+		test("deselects every tab when state clears the selection", async ({
+			page,
+		}) => {
+			await render(page, { controlled: true, selected: "b" });
+			const tabs = page.locator("u-tab");
+			const panels = page.locator("u-tabpanel");
+			await expect(panels.nth(1)).toBeVisible();
+
+			await update(page, { selected: null }); // Only the selected tab is re-rendered, with aria-selected="false"
+			for (const index of [0, 1, 2]) {
+				await expect(tabs.nth(index)).toHaveAttribute("aria-selected", "false");
+				await expect(panels.nth(index)).toBeHidden();
+			}
+			await expect(tabs.nth(0)).toHaveAttribute("tabindex", "0"); // The first enabled tab stays reachable by keyboard
+			await expect(tabs.nth(1)).toHaveAttribute("tabindex", "-1");
+			expect(await selectedIndex(page)).toBe(-1);
+		});
+
 		test("selects with Enter and Space through the framework handler in controlled mode", async ({
 			page,
 		}) => {

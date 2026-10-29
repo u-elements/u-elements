@@ -375,6 +375,98 @@ test.describe("u-tabs", () => {
 		}
 	});
 
+	test("respects aria-selected=false on all tabs", async ({ page }) => {
+		await page.evaluate(() => {
+			document.body.innerHTML = `<button id="before">Before</button><u-tabs>
+        <u-tablist>
+          <u-tab aria-selected="false">Tab 1</u-tab>
+          <u-tab aria-selected="false">Tab 2</u-tab>
+        </u-tablist>
+        <u-tabpanel>Panel 1</u-tabpanel>
+        <u-tabpanel>Panel 2</u-tabpanel>
+      </u-tabs>`;
+		});
+		const tabs = page.locator("u-tab");
+		const panels = page.locator("u-tabpanel");
+
+		await expect(tabs.nth(0)).toHaveAttribute("aria-selected", "false");
+		await expect(tabs.nth(1)).toHaveAttribute("aria-selected", "false");
+		await expect(panels.nth(0)).toBeHidden();
+		await expect(panels.nth(1)).toBeHidden();
+		await expect(tabs.nth(0)).toHaveAttribute("tabindex", "0"); // Reachable by keyboard without being selected
+		await expect(tabs.nth(1)).toHaveAttribute("tabindex", "-1");
+		expect(
+			await page
+				.locator("u-tabs")
+				.evaluate((el: UHTMLTabsElement) => el.selectedIndex),
+		).toBe(-1);
+
+		await page.locator("#before").focus();
+		await page.keyboard.press("Tab");
+		await expect(tabs.nth(0)).toBeFocused();
+		await page.keyboard.press("Enter");
+		await expect(tabs.nth(0)).toHaveAttribute("aria-selected", "true");
+		await expect(panels.nth(0)).toBeVisible();
+	});
+
+	test("selects the first tab only when no tab specifies aria-selected", async ({
+		page,
+	}) => {
+		await page.evaluate(() => {
+			document.body.innerHTML = `<u-tabs>
+        <u-tablist>
+          <u-tab>Tab 1</u-tab>
+          <u-tab aria-selected="false">Tab 2</u-tab>
+          <u-tab>Tab 3</u-tab>
+        </u-tablist>
+        <u-tabpanel>Panel 1</u-tabpanel>
+        <u-tabpanel>Panel 2</u-tabpanel>
+        <u-tabpanel>Panel 3</u-tabpanel>
+      </u-tabs>`;
+		});
+		const tabs = page.locator("u-tab");
+		const panels = page.locator("u-tabpanel");
+
+		for (const index of [0, 1, 2]) {
+			await expect(tabs.nth(index)).toHaveAttribute("aria-selected", "false"); // One tab specifies aria-selected, so none is selected automatically
+			await expect(panels.nth(index)).toBeHidden();
+		}
+		await expect(tabs.nth(0)).toHaveAttribute("tabindex", "0");
+
+		await page.evaluate(() => {
+			document.body.innerHTML = `<u-tabs>
+        <u-tablist>
+          <u-tab>Tab 1</u-tab>
+          <u-tab>Tab 2</u-tab>
+        </u-tablist>
+        <u-tabpanel>Panel 1</u-tabpanel>
+        <u-tabpanel>Panel 2</u-tabpanel>
+      </u-tabs>`;
+		});
+		await expect(tabs.nth(0)).toHaveAttribute("aria-selected", "true"); // No tab specifies aria-selected, so the first is selected
+		await expect(panels.nth(0)).toBeVisible();
+	});
+
+	test("keeps the first enabled tab reachable when no tab is selected", async ({
+		page,
+	}) => {
+		await page.evaluate(() => {
+			document.body.innerHTML = `<u-tabs>
+        <u-tablist>
+          <u-tab aria-selected="false" aria-disabled="true">Tab 1</u-tab>
+          <u-tab aria-selected="false">Tab 2</u-tab>
+        </u-tablist>
+        <u-tabpanel>Panel 1</u-tabpanel>
+        <u-tabpanel>Panel 2</u-tabpanel>
+      </u-tabs>`;
+		});
+		const tabs = page.locator("u-tab");
+
+		await expect(tabs.nth(0)).toHaveAttribute("tabindex", "-1");
+		await expect(tabs.nth(1)).toHaveAttribute("tabindex", "0");
+		await expect(tabs.nth(1)).toHaveAttribute("aria-selected", "false");
+	});
+
 	test("respects id attributes", async ({ page }) => {
 		await page.evaluate(() => {
 			document.body.innerHTML = `<u-tabs>
@@ -922,18 +1014,32 @@ test.describe("u-tabs", () => {
 	});
 
 	test("handles dynamically removed tabs", async ({ page }) => {
+		await page.evaluate(() =>
+			document.body.insertAdjacentHTML(
+				"afterbegin",
+				'<button id="before">Before</button>',
+			),
+		);
 		const uTab = page.locator("u-tab");
 		const uTabpanel = page.locator("u-tabpanel");
 
 		await expect(uTab.nth(0)).toHaveAttribute("aria-selected", "true");
 		await expect(uTabpanel.nth(0)).toHaveJSProperty("hidden", false);
 
-		// Remove the selected (first) tab — another tab should become selected
+		// Remove the selected (first) tab and its panel. No other tab is selected automatically (see changelog 1.0.4)
 		await page.evaluate(() => {
 			document.querySelector("u-tab")?.remove();
+			document.querySelector("u-tabpanel")?.remove();
 		});
 
 		await expect(uTab).toHaveCount(1);
+		await expect(uTab).toHaveAttribute("aria-selected", "false");
+		await expect(uTabpanel).toBeHidden();
+		await expect(uTab).toHaveAttribute("tabindex", "0"); // Still reachable by keyboard
+
+		await page.locator("#before").focus();
+		await page.keyboard.press("Tab");
+		await expect(uTab).toBeFocused();
 	});
 
 	test("UHTMLTabListElement selectedIndex and tabs", async ({ page }) => {

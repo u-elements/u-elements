@@ -18,7 +18,6 @@ import {
 	on,
 	onFocusLeave,
 	onMutation,
-	preventSubmit,
 	SAFE_MULTISELECTABLE,
 	setValue,
 	srText,
@@ -262,7 +261,7 @@ const onKeyDown = (self: UHTMLDataListElement, event: KeyboardEvent) => {
 	}
 	if (isEnter && opts[next]) {
 		event.stopImmediatePropagation(); // Native datalist does not trigger Enter on keydown on item, but instead a input event
-		preventSubmit(self._control); // Prevent form submit on enter if "focus" is inside datalist, also on key repeat
+		event.preventDefault(); // Prevent form submit on enter if "focus" is inside datalist, also on key repeat
 		if (!repeat) opts[next].click(); // Holding Enter picks once, so a multiselect option does not toggle on every repeat
 	} else setActive(self, opts[next]);
 };

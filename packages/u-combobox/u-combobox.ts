@@ -14,12 +14,12 @@ import {
 	getText,
 	IS_ANDROID,
 	IS_IOS,
+	IS_SAFARI,
 	isBrowser,
 	off,
 	on,
 	onFocusLeave,
 	onMutation,
-	preventSubmit,
 	SAFE_MULTISELECTABLE,
 	setValue,
 	srText,
@@ -519,8 +519,14 @@ const onKeyDownControl = (self: UHTMLComboboxElement, e: KeyboardEvent) => {
 		e.preventDefault(); // Prevent sideways scroll
 	}
 	if (k === "Enter" && control && (list || creatable)) {
-		preventSubmit(control); // On keydown, as this is what submits
+		const isNativeSafari = IS_SAFARI && list?.nodeName === DATALIST;
+		const form = attr(control, "form");
+
 		self._enter = true; // Match on keyup, see onKeyUp
+		if (!isNativeSafari) return e.preventDefault(); // Safari stops datalist pick if click is prevented
+		if (form === "#") return; // If holding Enter, avoid restoring # value
+		attr(control, "form", "#"); // Temporarily remove form association to prevent submit on enter
+		setTimeout(() => attr(control, "form", form));
 	}
 	if (k === "Tab" && control?.value) {
 		if (!clear?.clientHeight || !clear.clientWidth) return; // Stop if clear is hidden

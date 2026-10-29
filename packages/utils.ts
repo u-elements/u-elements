@@ -315,21 +315,6 @@ export const declarativeShadowRoot = (style: string, slot = "<slot></slot>") =>
 	`<template shadowrootmode="open">${slot}<style>${style}</style></template>`;
 
 /**
- * preventSubmit
- * @description Temporarily removes form association on input to prevent form submission, without preventing event.
- * Note: input.form is null while the association is removed (16ms). This is intentional, as Firefox submits if restored earlier
- * @param {HTMLInputElement} input Input element to prevent submit on
- */
-export const preventSubmit = (input: HTMLInputElement) => {
-	const form = attr(input, "form");
-	if (form === "#") return; // If holding Enter, avoid restoring # value
-	attr(input, "form", "#"); // Temporarily remove form association to prevent submit on enter
-	setTimeout(restoreSubmit, 16, input, form); // Restore form association on after 16ms (Firefox needs the delay)
-};
-const restoreSubmit = (input: HTMLInputElement, form: string | null) =>
-	attr(input, "form", form);
-
-/**
  * getText
  * @description Get text content of a node, trimmed and with fallback to empty string
  * @param {Node | null | undefined} el Element to get text from

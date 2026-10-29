@@ -61,7 +61,7 @@ export class UHTMLTabsElement extends UHTMLElement {
 	}
 	get selectedIndex(): number {
 		const tabs = getTabs(this.tabList);
-		return tabs.indexOf(findSelected(tabs) as Element);
+		return tabs.indexOf(getSelected(tabs) as Element);
 	}
 	set selectedIndex(index: number) {
 		setSelected(getTabs(this.tabList)[index]); // By instance, as frameworks write selectedIndex before connecting (i.e. React and Vue set props on a detached tree)
@@ -132,7 +132,7 @@ export class UHTMLTabListElement extends UHTMLElement {
 			else if (key === "End") next = tabs.length - 1;
 			else if (key === "Home") next = 0;
 			else if (key === "Tab" && !isSelected(tabs[prev])) {
-				const selected = findSelected(tabs);
+				const selected = getSelected(tabs);
 				if (selected) attr(selected, TABINDEX, "-1"); // Prevent Tab-key moving to the selected tab
 				return selected && setTimeout(() => attr(selected, TABINDEX, "0")); // Restore tabindex after focus has moved to allow tabbing back to selected tab
 			} else return; // Do not hijack other keys
@@ -149,7 +149,7 @@ export class UHTMLTabListElement extends UHTMLElement {
 	}
 	get selectedIndex(): number {
 		const tabs = getTabs(this);
-		return tabs.indexOf(findSelected(tabs) as Element);
+		return tabs.indexOf(getSelected(tabs) as Element);
 	}
 	set selectedIndex(index: number) {
 		setSelected(getTabs(this)[index]); // By instance, as frameworks write selectedIndex before connecting (i.e. React and Vue set props on a detached tree)
@@ -165,10 +165,16 @@ export class UHTMLTabElement extends UHTMLElement {
 		return ["id", ARIA_SELECTED, ARIA_CONTROLS]; // Using ES2015 syntax for backwards compatibility
 	}
 	connectedCallback() {
+		const siblings = this.parentElement?.children || []; // All children, not getTabs, as sibling u-tabs might not be upgraded yet
 		attr(this, "role", "tab");
-		attr(this, ARIA_SELECTED, `${this.selected}`); // Setup attributes on connectedCallback since initial onMutation has already run
+		if (this.hasAttribute(ARIA_SELECTED))
+			attr(this, ARIA_SELECTED, `${this.selected}`); // Normalize the consumer value, i.e. "" to "false"
+		else setSelectedByUtabs(this, false); // Setup attributes on connectedCallback since initial onMutation has already run
 		attr(this, TABINDEX, this.selected ? "0" : "-1");
-		if (!findSelected(this.parentElement?.children)) setSelected(this); // Ensure at least one tab is selected, but checking findSelected onall children since u-tab might not have been connected
+		if (getSelected(siblings)) return;
+		if (Array.prototype.some.call(siblings, isSetByConsumer))
+			renderTabs(this.parentElement); // Respect aria-selected="false" from the consumer
+		else setSelected(this); // Select the first tab only when no tab has aria-selected from the consumer
 	}
 	attributeChangedCallback() {
 		if (!SKIP_UPDATE.has(this.parentElement as Element) && this.selected)
@@ -229,19 +235,12 @@ export class UHTMLTabPanelElement extends UHTMLElement {
 	}
 }
 
-const onMutations = (
-	_self: UHTMLTabListElement,
-	records: MutationRecord[] = [],
-) => {
+const onMutations = (self: UHTMLTabListElement, r: MutationRecord[] = []) => {
 	let selected: Element | undefined;
-	// const tabs = getTabs(self);
-	for (const { target: el } of records) {
-		const tab = el instanceof Element && attr(el, "role") === "tab";
-		if (tab && isSelected(el)) selected = el; // Pluck the newly selected tab from mutations
-	}
-	// Checking findSelected on all children since u-tab might not have been connected
-	//if (!selected && !findSelected(tabs)) selected = tabs.find(isEnabled); // Fallback to first enabled tab if no selected element exists
-	setSelected(selected);
+	for (const { target: el } of r)
+		if (isTab(el) && isSelected(el)) selected = el; // Pluck the newly selected tab from mutations
+	if (selected && isEnabled(selected)) return setSelected(selected);
+	if (!getSelected(getTabs(self))) renderTabs(self); // No tab is selected (i.e. aria-selected="false" written on the selected tab, or the selected tab removed), so hide all panels
 };
 // Associate a panel with its tab by aria-controls, or by index, to set its visibility
 const SYNCING_PANELS = new WeakSet<Element>(); // Panels being associated, as the generated id written by useId re-enters attributeChangedCallback
@@ -255,7 +254,7 @@ const syncTabPanel = (panel: UHTMLTabPanelElement) => {
 		getTabs(getTabList(root))[Array.prototype.indexOf.call(root.panels, panel)]; // Try to find associated tab via index, by instance as the tabs might not be connected yet
 	if (idx && !idx.hasAttribute(ARIA_CONTROLS)) tabs.add(idx); // Only add index based tab if not already owning other panel
 
-	const tab = findSelected(tabs) || tabs.values().next().value;
+	const tab = getSelected(tabs) || tabs.values().next().value;
 	skipTabsUpdate(tab, () => syncPanel(panel, tab, !!tab && isSelected(tab))); // Sync panel with tab to set initial visibility
 	SYNCING_PANELS.delete(panel);
 };
@@ -285,22 +284,17 @@ const skipTabsUpdate = (tab: Element | undefined, fn: () => void) => {
 
 const isEnabled = (el: Element) => attr(el, ARIA_DISABLED) !== "true";
 const isSelected = (el: Element) => attr(el, ARIA_SELECTED) === "true";
-const findSelected = (elems: Iterable<Element> = []) => {
-	for (const el of elems) if (isSelected(el)) return el;
-};
-
-// Matching by instance (for frameworks writes before customElement connect)
-// as well as role (supporting custom <a role="tab"></a> etc.)
 const isTabList = (el: Element) =>
-	attr(el, "role") === "tablist" || el instanceof UHTMLTabListElement;
+	el instanceof UHTMLTabListElement || attr(el, "role") === "tablist"; // Matches both before connect, and when other DOM elements
 const isTabPanel = (el: Element) =>
-	attr(el, "role") === "tabpanel" || el instanceof UHTMLTabPanelElement;
+	el instanceof UHTMLTabPanelElement || attr(el, "role") === "tabpanel";
+const isTab = (el: Node): el is Element =>
+	el instanceof UHTMLTabElement ||
+	(el as Element).getAttribute?.("role") === "tab";
 
 const getTabs = (tablist?: Element | null): Element[] => {
 	const tabs = [];
-	for (const el of tablist?.children || [])
-		if (attr(el, "role") === "tab" || el instanceof UHTMLTabElement)
-			tabs.push(el);
+	for (const el of tablist?.children || []) if (isTab(el)) tabs.push(el);
 	return tabs;
 };
 
@@ -326,21 +320,48 @@ const getTabsElement = (self: Node | null): UHTMLTabsElement | null => {
 	return null;
 };
 
-const setSelected = (selected?: Element | null) =>
-	selected &&
-	isEnabled(selected) &&
+const getSelected = (elems: Iterable<Element> = []) => {
+	for (const el of elems) if (isSelected(el)) return el;
+};
+
+const UTABS_SELECTED = new WeakMap<Element, string>(); // aria-selected as last written by the component, to tell it apart from aria-selected written by the consumer
+const isSetByConsumer = (tab: Element) =>
+	tab.hasAttribute(ARIA_SELECTED) &&
+	attr(tab, ARIA_SELECTED) !== UTABS_SELECTED.get(tab);
+
+const setSelectedByUtabs = (tab: Element, selected: boolean) => {
+	UTABS_SELECTED.set(tab, `${selected}`);
+	attr(tab, ARIA_SELECTED, `${selected}`);
+};
+
+// Select a tab: write aria-selected on every tab in its tablist, then render
+const setSelected = (selected?: Element | null) => {
+	const tablist = selected?.parentElement;
+	if (!tablist || !isEnabled(selected)) return;
 	skipTabsUpdate(selected, () => {
-		const tabs = getTabs(selected.parentElement);
-		const panels = getTabsElement(selected)?.panels || [];
-		const nextPanel = getPanel(selected, panels?.[tabs.indexOf(selected)]);
+		for (const el of getTabs(tablist)) setSelectedByUtabs(el, el === selected);
+	});
+	renderTabs(tablist);
+};
+
+// Render tabindex and panels from aria-selected, without changing it. Without a selected tab every panel is hidden,
+// and the first enabled tab keeps tabindex="0" so the tablist stays reachable by keyboard
+const renderTabs = (tablist: Element | null) => {
+	const tabs = getTabs(tablist);
+	const selected = getSelected(tabs);
+	const focusable = selected || tabs.find(isEnabled);
+	const panels = getTabsElement(tablist)?.panels || [];
+	const nextPanel =
+		selected && getPanel(selected, panels[tabs.indexOf(selected)]);
+	skipTabsUpdate(tabs[0], () => {
 		let idx = 0;
 		for (const tab of tabs) {
 			const panel = getPanel(tab, panels[idx++]);
-			attr(tab, ARIA_SELECTED, `${tab === selected}`);
-			attr(tab, TABINDEX, tab === selected ? "0" : "-1");
+			attr(tab, TABINDEX, tab === focusable ? "0" : "-1");
 			if (panel) syncPanel(panel, tab, panel === nextPanel);
 		}
 	});
+};
 
 // Shared window listener for all instances in light DOM, in the bubble phase so it runs after frameworks that delegate
 // click to their root or document (i.e. React, Solid and Svelte), letting a preventDefault in their handlers cancel the selection.

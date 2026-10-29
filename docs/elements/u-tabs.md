@@ -11,7 +11,7 @@ import { data } from '../filesize.data.ts'
 **Quick intro:**
 - Use `<u-tabs>` to group all tabbing-elements
 - Use `<u-tablist>` around multiple `<u-tab>` direct children - these are the labels
-- Use `<u-tab aria-selected="true">` to set the open tab (defaults to first tab)
+- Use `<u-tab aria-selected="true">` to set the open tab (defaults to first tab, unless any tab has `aria-selected`)
 - Use `<u-tab aria-controls="id-of-panel">` if you need panels outside `<u-tabs>`
 - Use `<u-tabpanel>`s after  `<u-tablist>` - these hide/show content of related `<u-tab>`
 - **ARIA Authoring Practices Guide Docs:** [Tabs](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)
@@ -83,7 +83,7 @@ bun add -S @u-elements/u-tabs
 
 ### `<u-tab>`
 - **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
-  - `aria-selected` can contain `"true"` or `"false"` to set the currently selected tab 
+  - `aria-selected` can contain `"true"` or `"false"` to set the currently selected tab. The first tab is only selected automatically when no tab has `aria-selected`, so `aria-selected="false"` on every tab shows no panel. When no tab is selected, the first enabled tab can still be reached with the keyboard
   - `aria-controls` can contain ID the `<u-tabpanel>` to control
 - **DOM interface:** `UHTMLTabElement` extends [`HTMLElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement)
   - `UHTMLTabElement.tabsElement` returns the parent `UHTMLTabsElement`
@@ -222,6 +222,9 @@ const renderToStaticMarkup = (tabs: string[], panels[]) =>
   - `<u-tabpanel>` re-associates with its `<u-tab>` when `id` is written after connect (i.e. Angular binds attributes after inserting the element)
   - Tabs, tablists and panels are also matched by instance, so custom tag names extending the classes work before connect
   - Framework typings: Qwik 1 and 2 are typed through `HTMLElementTagNameMap` instead of a JSX augmentation that overrode the element type, and the Preact type supports Preact 11
+  - `aria-selected="false"` on every tab is respected, so no tab is selected and every panel is hidden. The first tab is only selected automatically when no tab has `aria-selected`
+  - Writing `aria-selected="false"` on the selected tab, or removing it, hides its panel instead of leaving it visible
+  - When no tab is selected, the first enabled tab keeps `tabindex="0"`, so the tablist can still be reached with the keyboard
 - **1.0.4:** Allow no tab to be selected for better React async render compatibility
 - **1.0.3:** Fix issue where aria-controls combined with aria-selected was not repspected on initial mount
 - **1.0.2:** Performance optimizations

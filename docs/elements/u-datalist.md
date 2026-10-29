@@ -315,16 +315,14 @@ const renderToStaticMarkup = (options: string) =>
 ## Changelog
 
 - **3.0.0:**
-  - Screen reader texts are set through `--sr-singular`, `--sr-plural` and `--sr-of` CSS custom properties instead of `data-sr-*` attributes. They inherit, so a translation can be set once on `:root` or `:lang()`.
-  - Options and screen reader announcements now support and respect `aria-posinset` and `aria-setsize`.
-  - No longer uses `HTMLInputElement.prototype` to update the input value, aligning with native browser behavior.
-  - A pick no longer dispatches `beforeinput` before writing the option value, aligning with native browser behavior.
-  - Writing the `hidden` attribute now syncs `aria-expanded` and `aria-activedescendant`.
-  - Holding `Enter` on an active option picks it once instead of on every key repeat.
-  - Pressing inside the list keeps focus on the input, aligning with native browser behavior.
-  - A pick dispatches `change` only if the value is still changed after the `input` event.
-  - Keys are ignored while composing with an Input Method Editor (IME), except that the list still opens.
-  - Framework typings: Qwik 1 and 2 are typed through `HTMLElementTagNameMap` instead of a JSX augmentation that overrode the element type, and the Preact type supports Preact 11
+  - Screen reader texts are set through `--sr-*` CSS instead of `data-sr-*` attributes
+  - `aria-posinset` and `aria-setsize` on options is now supported
+  - Alignment with native `<datalist>`:
+    - `HTMLInputElement.prototype` is no longer used to update the input value
+    - `beforeinput` is no longer dispatched when picking
+    - Pressing inside the list keeps focus on the input
+    - Holding `Enter` on an option picks it once instead of on every key repeat
+  - Framework typings for Qwik 1, Qwik 2 and Preact 11 uses `HTMLElementTagNameMap`
 - **2.0.3:** Allow `Shift` key events combined with a letter to open datalist
 - **2.0.2:** Instant setup `aria-expanded` attribute to make AXE tests happy
 - **2.0.1:** Use document.activeElement instead of .matches(":focus-within") for JSDOM testing compatibility

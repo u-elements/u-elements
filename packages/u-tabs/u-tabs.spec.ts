@@ -726,6 +726,34 @@ test.describe("u-tabs", () => {
 		await expect(uTab0).toHaveJSProperty("selected", true);
 	});
 
+	test("respects event.stopPropagation from an ancestor", async ({ page }) => {
+		// Selection runs on window, so a click stopped on its way there (i.e. by a card or modal) does not select
+		await page.evaluate(() => {
+			document.body.innerHTML = `<div>
+        <u-tabs>
+          <u-tablist>
+            <u-tab>Tab 1</u-tab>
+            <u-tab aria-selected="true">Tab 2</u-tab>
+          </u-tablist>
+        </u-tabs>
+      </div>`;
+			document.body.firstElementChild?.addEventListener(
+				"click",
+				(event) => event.stopPropagation(),
+				{ once: true },
+			);
+		});
+		const uTab0 = page.locator("u-tab").nth(0);
+		const uTab1 = page.locator("u-tab").nth(1);
+
+		await uTab0.click();
+		await expect(uTab1).toHaveJSProperty("selected", true);
+		await expect(uTab0).toHaveJSProperty("selected", false);
+
+		await uTab0.click(); // The listener is gone, so the next click selects
+		await expect(uTab0).toHaveJSProperty("selected", true);
+	});
+
 	test("works inside a shadow root", async ({ page }) => {
 		// Instances in ShadowDOM listen on their root instead of window, as a closed shadow tree is hidden from the window listener
 		await page.evaluate(() => {

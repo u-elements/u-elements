@@ -346,7 +346,7 @@ const dispatchSelect = (
 ) => {
 	const { control, items, multiple, values } = self;
 	settleCommit(self); // A superseded commit settles first, so a pending blur or clear fallback runs before this select reads the text. The fallback would otherwise rewrite the input after the new commit recorded its text, and the sync that follows would skip change
-	if (control?.readOnly || control?.matches(":disabled")) return; // Prevent actions when inert
+	if (!control || control.readOnly || control.matches(":disabled")) return; // Prevent actions when inert, or without an input to insert items before
 	const elem = item.nodeName === "DATA" && (item as HTMLDataElement);
 	const remove = elem || items[values.indexOf(item.value)];
 	const index = Array.prototype.indexOf.call(items, remove);
@@ -361,7 +361,7 @@ const dispatchSelect = (
 	const add = tag("data", { value: item.value }, item.label || item.value);
 	const e = { bubbles: true, cancelable: true, detail: remove || add };
 	const accept = self.dispatchEvent(new CustomEvent("comboboxbeforeselect", e));
-	const commit = { focus: !!focus, value: control?.value || "", settle }; // After dispatch to respect consumer changes
+	const commit = { focus: !!focus, value: control.value, settle }; // After dispatch to respect consumer changes
 	self._commit = commit;
 	self._expired = undefined; // A new commit replaces an expired one
 
@@ -372,7 +372,7 @@ const dispatchSelect = (
 	});
 	if (!accept) return;
 	if (!multiple) for (const el of [...items]) el.remove(); // Spread, as items is live
-	remove ? remove.remove() : control?.insertAdjacentElement("beforebegin", add);
+	remove ? remove.remove() : control.insertAdjacentElement("beforebegin", add);
 	self.dispatchEvent(new CustomEvent("comboboxafterselect", e));
 };
 

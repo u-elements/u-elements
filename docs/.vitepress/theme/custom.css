@@ -202,3 +202,20 @@ mark[aria-description]::after {
 	max-width: 25em;
 	z-index: 9000;
 }
+
+.update {
+	background: var(--vp-custom-block-tip-bg);
+	border-radius: .5rem;
+	color: var(--vp-custom-block-tip-text);
+	font-size: 1rem;
+	margin-top: .5em;
+	padding: 1em;
+}
+.update a {
+	color: var(--vp-c-brand-1);
+	text-decoration: underline;
+}
+.update mark::before {
+	background: var(--vp-c-brand-soft);
+	color: var(--vp-c-brand-1);
+}

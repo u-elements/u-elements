@@ -110,6 +110,8 @@ document.addEventListener('click', ({ target }) => {
 })
 ```
 
+Selection runs when the `click` reaches `window`, after your handlers. Call `event.preventDefault()` in a `click` handler to cancel the tab change. Calling `event.stopPropagation()` on the tab or any of its ancestors (i.e. a clickable card or a modal) also cancels it, as the event never reaches `window`.
+
 ## Styling
 
 `<u-tabs>`, `<u-tablist>` and `<u-tabpanel>` renders as `display: block`, while `<u-tab>` renders as `display: inline-block`.
@@ -217,14 +219,12 @@ const renderToStaticMarkup = (tabs: string[], panels[]) =>
 ## Changelog
 
 - **1.1.0:** Framework compatibility:
-  - Click is handled by one shared `window` listener in the bubble phase, instead of a listener on each `<u-tablist>`. This runs after frameworks that delegate events to their root or `document` (i.e. React, Solid and Svelte), so `event.preventDefault()` in a framework click handler cancels the selection. Note that `event.stopPropagation()` in such a handler now also prevents the selection, as the event never reaches `window`. Instances inside ShadowDOM listen on their shadow root instead
+  - Click is handled on `window`, so frameworks using event delegation (i.e. React, Solid and Svelte) safely can use `event.preventDefault()`
   - `selectedIndex` can be read and written before the element is connected, as frameworks set properties on a detached tree (i.e. React and Vue)
   - `<u-tabpanel>` re-associates with its `<u-tab>` when `id` is written after connect (i.e. Angular binds attributes after inserting the element)
   - Tabs, tablists and panels are also matched by instance, so custom tag names extending the classes work before connect
-  - Framework typings: Qwik 1 and 2 are typed through `HTMLElementTagNameMap` instead of a JSX augmentation that overrode the element type, and the Preact type supports Preact 11
-  - `aria-selected="false"` on every tab is respected, so no tab is selected and every panel is hidden. The first tab is only selected automatically when no tab has `aria-selected`
-  - Writing `aria-selected="false"` on the selected tab, or removing it, hides its panel instead of leaving it visible
-  - When no tab is selected, the first enabled tab keeps `tabindex="0"`, so the tablist can still be reached with the keyboard
+  - If `aria-selected="false"` is set on every tab, every panel is hidden
+  - Framework typings for Qwik 1, Qwik 2 and Preact 11 uses `HTMLElementTagNameMap`
 - **1.0.4:** Allow no tab to be selected for better React async render compatibility
 - **1.0.3:** Fix issue where aria-controls combined with aria-selected was not repspected on initial mount
 - **1.0.2:** Performance optimizations

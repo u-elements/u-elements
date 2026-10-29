@@ -73,7 +73,7 @@ Add a `u-` to the relevant HTML tags in your markup.
 ## Usage in a framework
 
 Works with [every framework supporting CustomElements](https://custom-elements-everywhere.com/) (even React as we do not need any CustomEvents).
-As an added bonus; All `u-elements` ships with Typescript definitions for  React, Svelte, Vue, Solid and Qwick.
+As an added bonus; All `u-elements` ships with Typescript definitions for  React, Svelte, Vue, Solid and Qwik.
 
 :::warning Using React 18 or older?
 React 18 and lower does not support [`className` on CustomElements](https://github.com/facebook/react/issues/4933),

@@ -598,70 +598,33 @@ const renderToStaticMarkup = (data: string, options: string) =>
 - ARC Toolkit does not correctly read the relation between items with `role="option"` and the ShadowDOM wrapping container `role="listbox"`
 - See full behavior spec in [u-combobox source](https://github.com/u-elements/u-elements/blob/main/packages/u-combobox/u-combobox.ts)
 
-## Upgrading to 3.0.0
-
-- Update `@u-elements/u-datalist` to 3.0.0 or newer. Older versions write a pick through `HTMLInputElement.prototype.value`, which is cached as programmatic text, so the typed text is not restored after the pick
-- Make `<input>` a direct child of `<u-combobox>`, as the owning `<u-combobox>` is resolved from the input's parent
-- Replace a `<del>` clear button with `<button type="reset"></button>`
-- Replace `data-sr-*` attributes with [`--sr-*` CSS custom properties](#screen-reader-texts), also on `<u-datalist>`. They inherit, so a translation can be set once on `:root` or `:lang()`:
-  ```html
-  <!-- 2.x -->
-  <u-combobox data-sr-clear="Tøm" data-sr-removed="Fjernet">
-  <!-- 3.0 -->
-  <u-combobox style="--sr-clear: 'Tøm'; --sr-removed: 'Fjernet'">
-  ```
-- Remove listeners for `comboboxprogrammaticinput`. Programmatic `input.value` writes are handled internally, and there is no replacement event
-- Empty clear and toggle buttons are named through `--sr-clear` and `--sr-toggle`, so no `aria-label` is written. A consumer `aria-label` is still respected
-- Review code relying on these behavior changes:
-  - `Enter` with no match keeps the typed text and announces `--sr-invalid`, instead of reverting the input
-  - Without a datalist, blur does nothing and `Enter` on empty text no longer removes the item
-  - Single mode with a datalist syncs `input.value` to the `<data>` on mount, so a prefilled value without a `<data>` is cleared
-  - `change` is only dispatched on a user commit (pick, `Enter`, blur, clear, item removal), never on mount, programmatic `<data>` changes or form reset
-  - `values` returns at most one value in single mode, and `<select>` mirrors only the first `<data>`
-
 ## Changelog
 
-- **3.0.0:** Framework compatibility and matching changes:
-  - Test suite for u-combobox now runs in vanilla JS, React, Angular, Svelte, Vue, Solid, Qwik and Preact to ensure framework compatibility
-  - Support for `<del>` clear button removed, please use `button[type="reset"]` instead.
-  - `Enter` matches on `keyup` instead of `keydown`, as Safari writes a native `<datalist>` pick between the two
-  - Requires `<u-datalist>` 3.0.0 or newer. Older versions write the option value of a pick through `HTMLInputElement.prototype.value`, which is cached as programmatic text, so the typed text would not be restored after the pick
-  - Screen reader texts are set through [`--sr-*` CSS custom properties](#screen-reader-texts) instead of `data-sr-*` attributes. They inherit, so a translation can be set once on `:root` or `:lang()`
-  - Empty clear and toggle buttons are named through CSS alternative text, so no `aria-label` is written. A consumer `aria-label` is always respected, also when `--sr-clear` or `--sr-toggle` is set
-  - Single mode only matches against present options on `Enter` and blur, never while typing
-  - Single mode `Enter` no longer reverts the input when nothing matches. It announces `--sr-invalid` and keeps the typed text until blur
-  - Without a datalist, blur does nothing and `Enter` on empty text no longer removes the item, as free text is never matched or synced. `Enter` only creates when `data-creatable` is set
-  - Single mode with datalist always syncs `input.value` to the `<data>`, also on mount
-  - Single mode correctly dispatches `input` after option `click`
-  - `change` is only dispatched when the input sync follows a user commit (option pick, `Enter`, blur, clear or item removal), never on mount, programmatic `<data>` changes or form reset
-  - Single mode holds at most one `<data>`. A select removes every `<data>` before adding the new item, so extra `<data>` kept from a switch out of multiple mode are dropped on the first select
-  - One shared `input` listener on `window` for all instances, instead of one per instance
-  - `<input>` must be a direct child of `<u-combobox>`, as the owning `<u-combobox>` is resolved from the input's parent
-  - Single mode mirrors only the first `<data>` into `<select>` and option selection, so the submitted value matches the input
-  - `values` returns at most one value in single mode, matching the mirrored `<data>`
-  - `Enter` with text equal to an item no longer announces `--sr-invalid` when no option matches, as the item is a confirmed selection
-  - `Enter` in multiple mode only adds. A matched option that is already an item is kept, as removal is intended through a pick or an item
-  - Hidden and disabled options are never matched on `Enter` or blur
-  - Single mode clear button no longer caches the emptied text, so a prevented removal reverts the input to the text before the clear
-  - Runtime toggle `data-multiple` and `data-creatable` syncs correctly
-  - Toggle button is hidden when the input is `disabled` or `readonly`, and both buttons re-sync when these attributes change at runtime
-  - An option pick is detected through its `input` event, as no browser dispatches `beforeinput` for a pick. Trusted `insertReplacementText` and `inputType`-less `input` events (Firefox spell check, autofill) are only taken for a pick with native `<datalist>`, while a `<u-datalist>` pick is the untrusted `insertReplacementText` it dispatches
-  - Programmatic item changes announce through the live region also after a prevented removal moved focus
-  - Synthetic `InputEvent` without `inputType` (i.e. testing-library) does not cause incorrect option click
-  - `form.reset()` syncs the clear and toggle buttons, and restores the item text in single mode
-  - Toggle button closes `<u-datalist>` explicitly when open, instead of relying on the blur from mousedown, which does not happen on touch
-  - Holding `Enter` in the input, or `Enter` or `Space` on an item, commits once instead of on every key repeat
-  - Blur is handled after a press inside `<u-combobox>` that is released outside without a click, instead of being skipped
-  - Firefox spell check and autofill replacements that are not an option value are treated as typing instead of reverted
-  - Attribute writes that do not change a value (i.e. Vue re-setting option `value`, React syncing input `value`) do not trigger a state sync
-  - The `input` event of an option pick is intercepted in the capture phase on `window`, so frameworks delegating events from `document` (i.e. Qwik) read the reverted text instead of the option value
-  - Input sync after a prevented `comboboxbeforeselect` on blur is deferred, so frameworks rendering `<data>` asynchronously do not see the previous value flash
-  - `Enter` is ignored while composing with an Input Method Editor (IME), so confirming a composition does not match or select
-  - Pending commits are settled by identity, so a later commit with the same text is never expired by an earlier one
-  - The `comboboxprogrammaticinput` event is removed
-  - Replacing options (i.e. async search results) only re-syncs the option selection, instead of a full state sync
-  - Samsung Internet parking keyboard focus on `<body>` while TalkBack is on the list is no longer treated as blur, so the typed text is kept while browsing suggestions
-  - Framework typings: Qwik 1 and 2 are typed through `HTMLElementTagNameMap` instead of a JSX augmentation that overrode the element type, and the Preact type supports Preact 11
+- **3.0.0:** Framework compatibility and matching changes
+  - **How to upgrade:**
+    - Update `@u-elements/u-datalist` to 3.0.0 or newer
+    - Ensure `<input>` a direct child of `<u-combobox>`
+    - Ensure clear button is a `<button type="reset"></button>`
+    - Replace `data-sr-*` attributes with [`--sr-*` CSS custom properties](#screen-reader-texts)
+    - Remove `comboboxprogrammaticinput` listeners - the event is removed
+  - **Changes in both single and multiple mode:**
+    - Better support for async rendering and events in frameworks
+    - Better performance when frameworks syncs attributes
+    - `change` is only dispatched when the input sync follows a user commit (option pick, `Enter`, blur, clear or item removal), never on mount, programmatic `<data>` changes or form reset, aligning with  conventions from other native elements
+    - `Enter` match on `keyup` instead of `keydown` to support native datalist in Safari
+    - `form.reset()` syncs the clear and toggle buttons
+    - Toggle button is hidden when the input is `disabled` or `readonly`
+    - Firefox spell check and autofill are not seen as option-picks
+    - Synthetic `InputEvent` (i.e. testing-library) does not cause incorrect option click
+    - Framework typings for Qwik 1, Qwik 2 and Preact 11 uses `HTMLElementTagNameMap`
+  - **Single mode:**
+    - **Important:** No longer matches while typing, only on `Enter` and blur
+    - `Enter` no longer reverts text on match; text is kept until blur
+    - `input.value` is only synced to the `<data>` if a datalist is present
+    - `values` returns at most one value, matching the mirrored `<data>`
+    - Mirrors only the first `<data>` into `<select>`, so submitted value matches the input
+  - **Multiple mode:**
+    - `Enter` only adds. A matched option that is already an item is kept, as removal is intended through a pick or an explicit item removal
 - **2.1.5:** Fix state handling when mode is multiple and controlled (i.e. React)
 - **2.1.4:** Fix internal state when preventing a selection or setting value programmatically
 - **2.1.3:** Fix issue where item behind datalist could receive focus

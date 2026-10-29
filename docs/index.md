@@ -4,7 +4,7 @@ layout: home
 hero:
   name: "u-elements"
   text: "HTML tags, just truly accessible"
-  tagline: CustomElement implementations of modern HTML tags, ensuring outstanding accessibility.
+  tagline: CustomElement implementations of modern HTML tags, ensuring outstanding accessibility. <br /><div class="update"><mark data-badge="New"></mark> <a href="/u-elements/elements/u-combobox#changelog">u-combobox@3</a> and <a href="/u-elements/elements/u-datalist#changelog">u-datalist@3</a> available</div>
   image:
       src: /logo.svg
       alt: 

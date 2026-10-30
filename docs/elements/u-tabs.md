@@ -222,6 +222,7 @@ const renderToStaticMarkup = (tabs: string[], panels[]) =>
 
 - **2.0.0:**
   - `aria-selected="false"` on every tab now shows no panel
+  - `aria-disabled="true"` only blocks user selection (click and keyboard). `aria-selected`, `selected` and `selectedIndex` can select a disabled tab, like a disabled `<option>`, so only one tab is ever selected
   - `selectedIndex` can be read and written before the element is connected, as frameworks set properties on a detached tree (i.e. React and Vue)
   - `<u-tabpanel>` re-associates with its `<u-tab>` when `id` is written after connect (i.e. Angular binds attributes after inserting the element)
   - Tabs, tablists and panels are also matched by instance, so custom tag names extending the classes work before connect

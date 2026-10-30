@@ -670,15 +670,15 @@ test.describe("HTMLDataListElement", () => {
 		page.on("pageerror", (error) => errors.push(error));
 		await mount(
 			page,
-			`<label>Search here <input type="text" list='a"b\\c' /></label>
-			<u-datalist id='a"b\\c'>
+			`<label>Search here <input type="text" list='a"b\\c\nd' /></label>
+			<u-datalist id='a"b\\c\nd'>
 			  <u-option>Option 1</u-option>
 			</u-datalist>`,
-		); // Only " and \ can end or break the quoted attribute selector
+		); // Only " and \ can end or break the quoted attribute selector, and a line break is invalid in a CSS string
 		const input = page.locator("input");
 
 		await expect(input).toHaveRole("combobox"); // Connected by attributeChangedCallback, before focus
-		await expect(input).toHaveAttribute("aria-controls", 'a"b\\c');
+		await expect(input).toHaveAttribute("aria-controls", 'a"b\\c\nd');
 		await input.click();
 		await expect(page.locator("u-datalist")).toBeVisible();
 		expect(errors).toEqual([]);

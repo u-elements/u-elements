@@ -4,6 +4,7 @@ import {
 	attr,
 	customElements,
 	declarativeShadowRoot,
+	getInputLabel,
 	getRoot,
 	IS_IOS,
 	UHTMLElement,
@@ -38,7 +39,7 @@ export class UHTMLProgressElement extends UHTMLElement {
 	_afterRender = false; // A re-sync is scheduled, see attributeChangedCallback
 	_internals?: ElementInternals;
 	_label?: string | null; // aria-label as written by the consumer, as the computed label is written to the same attribute
-	_labelledby?: string | null; // aria-labelledby as written by the consumer, as it is resolved into aria-label and removed
+	_labelledby?: string | null; // aria-labelledby as written by the consumer, as it is resolved into aria-label and replaced by a self-reference
 	_skipAttrChange = false;
 
 	// Prevent Chrome DevTools warning about <label for=""> pointing to <u-progress>
@@ -83,7 +84,11 @@ export class UHTMLProgressElement extends UHTMLElement {
 			// Write CSS variable before getLabel (innerText triggers style recalc)
 			this.style.setProperty("--percentage", `${percentage}%`);
 
-			let label = getLabel(this);
+			let label = getInputLabel(
+				this,
+				this._label ?? null,
+				this._labelledby ?? null,
+			); // From what the consumer wrote, as the element rewrites both aria-label and aria-labelledby
 			if (IS_IOS)
 				label = `${label.replace(/\(\d+%\)$/, "")} (${percentage}%)`.trim(); // Always use percentage as iOS role="img"
 
@@ -91,7 +96,7 @@ export class UHTMLProgressElement extends UHTMLElement {
 			attr(this, "aria-busy", `${position === -1}`);
 			attr(this, "aria-valuenow", position === -1 ? null : `${percentage}`);
 			attr(this, ARIA_LABEL, label); // Must use aria-label to include percentage value
-			attr(this, ARIA_LABELLEDBY, null);
+			attr(this, ARIA_LABELLEDBY, this._labelledby ? useId(this) : null); // Point at itself while the consumer has aria-labelledby, as a self-reference names from aria-label, and keeping the attribute makes a consumer removal fire attributeChangedCallback
 		} finally {
 			this._skipAttrChange = false; // In finally, so a throw does not leave every later attribute change ignored
 		}
@@ -123,22 +128,6 @@ export class UHTMLProgressElement extends UHTMLElement {
 		setNumber(this, MAX, max, 1);
 	}
 }
-
-// Like getInputLabel, but from the aria-label and aria-labelledby the consumer wrote, as the element rewrites both
-const getLabel = (self: UHTMLProgressElement) => {
-	const root = getRoot(self);
-	const ids = self._labelledby?.split(" ") || [];
-	return [
-		...ids.map((id) => root.getElementById(id.trim() || "-")),
-		...Array.from(self.labels),
-	]
-		.reduce(
-			// biome-ignore lint: using innerText to only get visual text
-			(acc, el) => acc || el?.innerText?.trim() || "",
-			self._label || "",
-		)
-		.trim();
-};
 
 const getNumber = (el: Element, key: string, min = 0) => {
 	const value = attr(el, key);

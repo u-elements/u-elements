@@ -953,12 +953,65 @@ test.describe("u-tabs", () => {
 		await expect(uTabpanel0).toHaveJSProperty("hidden", false);
 		await expect(uTabpanel1).toHaveJSProperty("hidden", true);
 
-		// Setting selected=true on a disabled tab should also be ignored
+		// Setting selected=true on a disabled tab selects it, like a disabled <option>
 		await uTab1.evaluate<void, UHTMLTabElement>((el) => {
 			(el as UHTMLTabElement).selected = true;
 		});
-		await expect(uTab0).toHaveAttribute("aria-selected", "true");
-		await expect(uTab1).toHaveAttribute("aria-selected", "false");
+		await expect(uTab0).toHaveAttribute("aria-selected", "false");
+		await expect(uTab1).toHaveAttribute("aria-selected", "true");
+		await expect(uTabpanel0).toHaveJSProperty("hidden", true);
+		await expect(uTabpanel1).toHaveJSProperty("hidden", false);
+	});
+
+	test("selects a disabled tab from aria-selected, keeping a single selected tab", async ({
+		page,
+	}) => {
+		await page.evaluate(() => {
+			document.body.innerHTML = `<u-tabs>
+        <u-tablist>
+          <u-tab>Tab 1</u-tab>
+          <u-tab aria-disabled="true">Tab 2</u-tab>
+        </u-tablist>
+        <u-tabpanel>Panel 1</u-tabpanel>
+        <u-tabpanel>Panel 2</u-tabpanel>
+      </u-tabs>`;
+		});
+		const tabs = page.locator("u-tab");
+		const panels = page.locator("u-tabpanel");
+
+		await tabs
+			.nth(1)
+			.evaluate((el) => el.setAttribute("aria-selected", "true"));
+		await expect(tabs.nth(0)).toHaveAttribute("aria-selected", "false");
+		await expect(tabs.nth(1)).toHaveAttribute("aria-selected", "true");
+		await expect(tabs.nth(1)).toHaveAttribute("tabindex", "0");
+		await expect(panels.nth(0)).toBeHidden();
+		await expect(panels.nth(1)).toBeVisible();
+		expect(
+			await page.evaluate(
+				() => document.querySelector("u-tabs")?.selectedIndex,
+			),
+		).toBe(1);
+	});
+
+	test("skips a disabled first tab when selecting by default", async ({
+		page,
+	}) => {
+		await page.evaluate(() => {
+			document.body.innerHTML = `<u-tabs>
+        <u-tablist>
+          <u-tab aria-disabled="true">Tab 1</u-tab>
+          <u-tab>Tab 2</u-tab>
+        </u-tablist>
+        <u-tabpanel>Panel 1</u-tabpanel>
+        <u-tabpanel>Panel 2</u-tabpanel>
+      </u-tabs>`;
+		});
+		const tabs = page.locator("u-tab");
+
+		await expect(tabs.nth(0)).toHaveAttribute("aria-selected", "false");
+		await expect(tabs.nth(1)).toHaveAttribute("aria-selected", "true");
+		await expect(page.locator("u-tabpanel").nth(1)).toBeVisible();
 	});
 
 	test("handles Tab key to avoid focus trapping", async ({ page }) => {

@@ -149,6 +149,8 @@ const renderToStaticMarkup = (value?: number, max?: number) =>
 - **1.1.0:** Framework compatibility:
   - Setting `value` or `max` properties to `null` or `undefined` removes the attribute, like frameworks expect for a native element (i.e. `value={undefined}` for indeterminate)
   - Better handling of `aria-labelledby` and `aria-label` written by the consumer
+  - `aria-labelledby` takes precedence over `aria-label`, then `<label>`, like the accessible name computation
+  - `aria-labelledby` is replaced by a reference to the element itself instead of removed, so removing it later falls back to `aria-label` or `<label>`
   - Label is re-synced after framework-rendering, as `<label for>` or `aria-labelledby` references may be available async (i.e. Angular and Qwik)
   - `id` is observed, so a `<label for>` matching an `id` written after connect is found
   - Framework typings for Qwik 1, Qwik 2 and Preact 11 uses `HTMLElementTagNameMap`

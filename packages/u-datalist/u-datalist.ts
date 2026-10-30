@@ -31,7 +31,7 @@ declare global {
 	}
 }
 
-const CSS_SPECIAL = /([!"#$%&'()*+,./:;<=>?@[\\\]^`{|}~])/g; // jsdom does not support CSS.escape, so use regex to check CSS special characters
+const CSS_SPECIAL = /["\\\n\r\f]/g; // Only " and \ end or break a quoted attribute selector, and line breaks are invalid in a CSS string. Using regex as jsdom does not support CSS.escape
 const DATA_ACTIVE = "data-activedescendant";
 const ARIA_INSET = "aria-posinset";
 const DATA_INSET = "data-posinset";
@@ -121,7 +121,7 @@ export class UHTMLDataListElement extends UHTMLElement {
 			if (!open) this._announced = undefined; // Announce hits again next time the list opens
 			if (this.popover && this.isConnected) this.togglePopover(open); // Mirror Popover API if used
 		} else if (this.id) {
-			const selector = `input[list="${this.id.replace(CSS_SPECIAL, "\\$1")}"]`;
+			const selector = `input[list="${this.id.replace(CSS_SPECIAL, (c) => `\\${c.charCodeAt(0).toString(16)} `)}"]`;
 			const input = getRoot(this).querySelector(selector as "input");
 			if (input) setInputAttributes(this, input);
 		}

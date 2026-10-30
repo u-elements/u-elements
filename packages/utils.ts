@@ -144,23 +144,29 @@ export const getFocused = (node: Node) => getRoot(node).activeElement;
 
 /**
  * getInputLabel
- * @description Get the screen reader label or an element from aria-label, aria-labelledby or <label> elements
+ * @description Get the screen reader label of an element from aria-labelledby, aria-label or <label> elements, in that order like the accessible name computation
  * @param element The target element to get accessible label from
+ * @param label Optional aria-label to use instead of the attribute, i.e. when the element rewrites it. Pass null for none
+ * @param labelledby Optional aria-labelledby to use instead of the attribute, i.e. when the element removes it. Pass null for none
  * @return string
  */
-export const getInputLabel = (el: Element) => {
-	const label = attr(el, "aria-label") || "";
-	const labels = attr(el, "aria-labelledby")?.split(" ") || [];
+export const getInputLabel = (
+	el: Element,
+	label = attr(el, "aria-label"),
+	labelledby = attr(el, "aria-labelledby"),
+) => {
+	const root = getRoot(el);
+	const ids = labelledby?.split(" ") || [];
 	return [
-		...labels.map((id) => getRoot(el).getElementById(id.trim() || "-")), // Get all labelledby elements
+		...ids.map((id) => root.getElementById(id.trim() || "-")), // Get all labelledby elements
+		label,
 		...Array.from((el as HTMLInputElement).labels || []), // Get all <label> elements
-	]
-		.reduce(
+	].reduce<string>(
+		(acc, src) =>
 			// biome-ignore lint: using innerText to only get visual text
-			(acc, el) => acc || el?.innerText?.trim() || "",
-			label,
-		)
-		.trim();
+			acc || (typeof src === "string" ? src : src?.innerText)?.trim() || "",
+		"",
+	);
 };
 
 /**

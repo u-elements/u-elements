@@ -114,7 +114,13 @@ export const progressSuite = ({
 				await update(page, { label, text: `Label ${label}` }); // The label element is replaced, so the name is read from the new one
 				await expect(progress).toHaveAccessibleName(name(`Label ${label}`));
 				await expect(progress).toHaveAttribute("aria-label", /^Label/);
-				await expect(progress).not.toHaveAttribute("aria-labelledby"); // Resolved to aria-label, as iOS needs the percentage in the name
+				expect(
+					await progress.evaluate(
+						(el) => el.getAttribute("aria-labelledby") === el.id,
+					),
+				).toBe(label === "aria-labelledby"); // Resolved to aria-label, as iOS needs the percentage in the name, and replaced by a self-reference so a removal is noticed
+				if (label !== "aria-labelledby")
+					await expect(progress).not.toHaveAttribute("aria-labelledby");
 			}
 
 			await update(page, { label: "aria-label", text: "Changed" }); // Only the attribute changes

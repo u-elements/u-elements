@@ -249,6 +249,72 @@ test.describe("UHTMLProgressElement", () => {
 		);
 	});
 
+	test("prefers aria-labelledby over aria-label over <label>", async ({
+		page,
+	}) => {
+		const progress = page.locator("u-progress");
+		const isIOS = test.info().project.name === "Mobile Safari";
+		const cases = [
+			['aria-label="Aria" aria-labelledby="heading"', "Heading"],
+			['aria-label="Aria"', "Aria"],
+			["", "Label"],
+		];
+
+		for (const [attrs, name] of cases) {
+			await mount(
+				page,
+				`<h2 id="heading">Heading</h2>
+				<label for="p">Label</label>
+				<u-progress id="p" value="5" max="10" ${attrs}></u-progress>`,
+			); // Separate mounts, so each case is read from markup
+			await expect(progress).toHaveAccessibleName(
+				isIOS ? `${name} (50%)` : name,
+			);
+		}
+	});
+
+	test("falls back when aria-labelledby is removed or changed", async ({
+		page,
+	}) => {
+		await mount(
+			page,
+			`<h2 id="heading">Heading</h2>
+			<h3 id="other">Other</h3>
+			<label for="p">Label</label>
+			<u-progress id="p" value="5" max="10" aria-label="Aria" aria-labelledby="heading"></u-progress>`,
+		);
+		const progress = page.locator("u-progress");
+		const isIOS = test.info().project.name === "Mobile Safari";
+		const name = (text: string) => (isIOS ? `${text} (50%)` : text);
+
+		await expect(progress).toHaveAccessibleName(name("Heading"));
+		await expect(progress).toHaveAttribute("aria-labelledby", "p"); // Self-reference, so the name comes from aria-label
+		await progress.evaluate((el) =>
+			el.setAttribute("aria-labelledby", "other"),
+		);
+		await expect(progress).toHaveAccessibleName(name("Other"));
+		await progress.evaluate((el) => el.removeAttribute("aria-labelledby")); // The referenced elements stay, so only the removal can change the name
+		await expect(progress).toHaveAccessibleName(name("Aria"));
+		await expect(progress).not.toHaveAttribute("aria-labelledby");
+		await progress.evaluate((el) => el.removeAttribute("aria-label"));
+		await expect(progress).toHaveAccessibleName(name("Label"));
+	});
+
+	test("keeps the self-reference when the id changes", async ({ page }) => {
+		await mount(
+			page,
+			`<h2 id="heading">Heading</h2>
+			<u-progress id="p" value="5" max="10" aria-labelledby="heading"></u-progress>`,
+		);
+		const progress = page.locator("u-progress");
+
+		await progress.evaluate((el) => {
+			el.id = "renamed";
+		});
+		await expect(progress).toHaveAttribute("aria-labelledby", "renamed");
+		await expect(progress).toHaveAccessibleName(/^Heading/);
+	});
+
 	test("normalizes invalid max to the default", async ({ page }) => {
 		await mount(page, `<u-progress max="0"></u-progress>`);
 

@@ -105,7 +105,7 @@ export class UHTMLTabListElement extends UHTMLElement {
 		let next = prev;
 
 		if (event.defaultPrevented || prev === -1) return; // Event prevented or not a tab
-		if (type === "click") setSelected(tabs[prev]); // Note: Frameworks using event delegation need to prevent events in capture phase to stop this
+		if (type === "click" && isEnabled(tabs[prev])) setSelected(tabs[prev]); // Only user selection respects aria-disabled, like a disabled <option> can still be selected programmatically. Note: Frameworks using event delegation need to prevent events in capture phase to stop this
 		if (type === "keydown") {
 			if (isKeyClick) {
 				event.preventDefault?.(); // Prevent scroll
@@ -161,7 +161,7 @@ export class UHTMLTabElement extends UHTMLElement {
 		if (getSelected(siblings)) return;
 		if (Array.prototype.some.call(siblings, isSetByConsumer))
 			renderTabs(this.parentElement); // Respect aria-selected="false" from the consumer
-		else setSelected(this); // Select the first tab only when no tab has aria-selected from the consumer
+		else if (isEnabled(this)) setSelected(this); // Select the first enabled tab only when no tab has aria-selected from the consumer
 	}
 	attributeChangedCallback() {
 		if (!SKIP_UPDATE.has(this.parentElement as Element) && this.selected)
@@ -226,7 +226,7 @@ const onMutations = (self: UHTMLTabListElement, r: MutationRecord[] = []) => {
 	let selected: Element | undefined;
 	for (const { target: el } of r)
 		if (isTab(el) && isSelected(el)) selected = el; // Pluck the newly selected tab from mutations
-	if (selected && isEnabled(selected)) return setSelected(selected);
+	if (selected) return setSelected(selected); // Also a disabled tab, as aria-selected from the consumer is programmatic
 	if (!getSelected(getTabs(self))) renderTabs(self); // No tab is selected (i.e. aria-selected="false" written on the selected tab, or the selected tab removed), so hide all panels
 };
 // Associate a panel with its tab by aria-controls, or by index, to set its visibility
@@ -323,10 +323,10 @@ const setSelectedByUtabs = (tab: Element, selected: boolean) => {
 	attr(tab, ARIA_SELECTED, `${selected}`);
 };
 
-// Select a tab: write aria-selected on every tab in its tablist, then render
+// Select a tab: write aria-selected on every tab in its tablist, then render. Also a disabled tab, so user actions must check isEnabled first
 const setSelected = (selected?: Element | null) => {
 	const tablist = selected?.parentElement;
-	if (!tablist || !isEnabled(selected)) return;
+	if (!selected || !tablist) return;
 	skipTabsUpdate(selected, () => {
 		for (const el of getTabs(tablist)) setSelectedByUtabs(el, el === selected);
 	});

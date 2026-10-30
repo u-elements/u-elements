@@ -44,10 +44,8 @@ export const UHTMLDataListStyle = `${DISPLAY_BLOCK}
 ::slotted([role="option"][${ARIA_HIDDEN}="true"]),
 ::slotted([role="option"][disabled]),
 ::slotted([role="option"][hidden]) { display: none !important }
-@supports(-webkit-touch-callout:none) {
-	::slotted([role="option"])::after { content: ""/", "attr(${DATA_INSET})" "var(--sr-of, "of")" "attr(${DATA_SIZE}) }
-	::slotted([role="option"][aria-setsize="-1"])::after { content: ""/", "attr(${DATA_INSET})" }
-}`;
+::slotted([role="option"][${DATA_INSET}])::after { content: ""/", "attr(${DATA_INSET})" "var(--sr-of, "of")" "attr(${DATA_SIZE}) }
+::slotted([role="option"][${DATA_INSET}][aria-setsize="-1"])::after { content: ""/", "attr(${DATA_INSET})" }`;
 
 export const UHTMLDataListShadowRoot =
 	declarativeShadowRoot(UHTMLDataListStyle);
@@ -237,7 +235,8 @@ const onKeyDown = (self: UHTMLDataListElement, event: KeyboardEvent) => {
 	if (key === "Escape" && !self.hidden && !isComposing) event.preventDefault(); // Prevent Safari from minimizing the window and <dialog> from closing
 
 	const isEnter = key === "Enter";
-	if (!repeat) setExpanded(self, isComposing || key !== "Escape"); // Close on ESC but show on other keys, except a held Enter, which must not re-open after the pick closed the list
+	if (!repeat && !(isComposing && key === "Escape"))
+		setExpanded(self, key !== "Escape"); // Close on ESC but show on other keys, except a held Enter, which must not re-open after the pick closed the list, and ESC while composing, which only cancels the composition
 	if (isComposing) return; // The IME owns Enter, Escape and arrows while composing, so only open the list
 	const active = attr(self._control, "aria-activedescendant");
 	const opts: HTMLOptionElement[] = [];

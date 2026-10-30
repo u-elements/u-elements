@@ -296,6 +296,32 @@ test.describe("HTMLDataListElement", () => {
 		await expect(datalist).toBeHidden();
 	});
 
+	test("keeps the open state on Escape while composing", async ({ page }) => {
+		await mount(page, DEFAULT);
+		const datalist = page.locator("u-datalist");
+		const input = page.locator("input");
+		const composeEscape = (el: HTMLInputElement) =>
+			el.dispatchEvent(
+				new KeyboardEvent("keydown", {
+					bubbles: true,
+					cancelable: true,
+					isComposing: true,
+					key: "Escape",
+				}),
+			);
+
+		await input.focus();
+		await input.press("ArrowDown");
+		await expect(datalist).toBeVisible();
+		await input.evaluate(composeEscape); // Cancels the composition, so the list stays open
+		await expect(datalist).toBeVisible();
+
+		await input.press("Escape");
+		await expect(datalist).toBeHidden();
+		await input.evaluate(composeEscape); // Cancels the composition, so the list stays closed
+		await expect(datalist).toBeHidden();
+	});
+
 	test("ignores keystrokes with meta keys", async ({ page }) => {
 		await mount(page, DEFAULT);
 		const input = page.locator("input");
@@ -411,8 +437,15 @@ test.describe("HTMLDataListElement", () => {
 		await expect.poll(spoken).toEqual(["120 hits"]); // The total, not the 3 rendered options and not the hidden option's 7
 
 		if (test.info().project.name === "Mobile Safari")
-			for (const [index, pos] of ["41", "42", "43"].entries())
-				await expect(options.nth(index)).toHaveAttribute("data-posinset", pos); // iOS reads the position from aria-posinset instead of the rendered index
+			for (const [index, pos] of ["41", "42", "43"].entries()) {
+				const option = options.nth(index);
+				await expect(option).toHaveAttribute("data-posinset", pos); // iOS reads the position from aria-posinset instead of the rendered index
+				await expect(option).toHaveAttribute("data-setsize", "120");
+				const content = await option.evaluate(
+					(el) => getComputedStyle(el, "::after").content,
+				);
+				expect(content).toContain(`${pos} of 120`); // The CSS reads the same attributes as written
+			}
 	});
 
 	test("picks singular or plural from the aria-setsize total", async ({

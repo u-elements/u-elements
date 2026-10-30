@@ -9,8 +9,10 @@ const AGENT = IS_BROWSER ? navigator.userAgent : "";
 const IS_SAMSUNGINTERNET = /samsungbrowser/i.test(AGENT); // Samsung Internet on Android
 export const IS_ANDROID = /android/i.test(AGENT);
 export const IS_FIREFOX = /firefox/i.test(AGENT);
-export const IS_IOS = /iPad|iPhone|iPod/.test(AGENT);
 export const IS_SAFARI = /^((?!chrome|android).)*safari/i.test(AGENT);
+export const IS_IOS =
+	/iPad|iPhone|iPod/.test(AGENT) ||
+	(/Macintosh/.test(AGENT) && IS_BROWSER && navigator.maxTouchPoints > 1); // iPadOS 13+ sends a Mac user agent by default
 export const IS_MAC =
 	IS_BROWSER &&
 	// @ts-expect-error Typescript has not implemented userAgentData yet https://stackoverflow.com/a/71392474
@@ -229,7 +231,7 @@ export const dispatchChange = (input: HTMLInputElement) =>
  * @param {HTMLInputElement} input Input element to set value on
  * @param {string} value The new value
  * @param {InputEventInit} [inputEvent] Omit to never trigger input event
- * @param {boolean} [change] Whether to dispatch change after input, but is skippped if input is reverted
+ * @param {boolean} [change] Whether to dispatch change after input, but is skipped if input is reverted
  */
 export const setValue = (
 	input: HTMLInputElement,
@@ -242,7 +244,7 @@ export const setValue = (
 	const event = { bubbles: true, composed: true, data: value, inputType };
 	const onChange = () => (last = input.value);
 
-	if (type) input.type = "text";
+	if (type) input.type = "text"; // Intended: switching type keeps the value, and switching back sanitizes it like the browser does for the native type (i.e. non-numeric text becomes "" on type="number")
 	input.setRangeText(value, 0, input.value.length, "end"); // Using setRangeText to not touch HTMLInputElement.prototype, aligning with browser standard
 	if (type) input.type = type;
 	if (inputType) {

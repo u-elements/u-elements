@@ -412,7 +412,7 @@ test.describe("HTMLDataListElement", () => {
 
 		if (test.info().project.name === "Mobile Safari")
 			for (const [index, pos] of ["41", "42", "43"].entries())
-				await expect(options.nth(index)).toHaveAttribute("data-sr-pos", pos); // iOS reads the position from aria-posinset instead of the rendered index
+				await expect(options.nth(index)).toHaveAttribute("data-posinset", pos); // iOS reads the position from aria-posinset instead of the rendered index
 	});
 
 	test("picks singular or plural from the aria-setsize total", async ({

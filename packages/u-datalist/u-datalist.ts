@@ -33,7 +33,10 @@ declare global {
 
 const CSS_SPECIAL = /([!"#$%&'()*+,./:;<=>?@[\\\]^`{|}~])/g; // jsdom does not support CSS.escape, so use regex to check CSS special characters
 const DATA_ACTIVE = "data-activedescendant";
+const ARIA_INSET = "aria-posinset";
+const DATA_INSET = "data-posinset";
 const ARIA_SIZE = "aria-setsize";
+const DATA_SIZE = "data-setsize";
 const ARIA_HIDDEN = "aria-hidden";
 export const UHTMLDataListStyle = `${DISPLAY_BLOCK}
 ::slotted([role="option"]) { display:block;cursor:pointer }
@@ -42,8 +45,8 @@ export const UHTMLDataListStyle = `${DISPLAY_BLOCK}
 ::slotted([role="option"][disabled]),
 ::slotted([role="option"][hidden]) { display: none !important }
 @supports(-webkit-touch-callout:none) {
-	::slotted([role="option"])::after { content: ""/", "attr(data-posinset)" "var(--sr-of, "of")" "attr(data-sizeset) }
-	::slotted([role="option"][aria-setsize="-1"])::after { content: ""/", "attr(data-posinset)" }
+	::slotted([role="option"])::after { content: ""/", "attr(${DATA_INSET})" "var(--sr-of, "of")" "attr(${DATA_SIZE}) }
+	::slotted([role="option"][aria-setsize="-1"])::after { content: ""/", "attr(${DATA_INSET})" }
 }`;
 
 export const UHTMLDataListShadowRoot =
@@ -94,7 +97,7 @@ export class UHTMLDataListElement extends UHTMLElement {
 				"hidden",
 				"label",
 				"value",
-				"aria-posinset",
+				ARIA_INSET,
 				ARIA_SIZE,
 			], // Listening to hidden attribute to update on open
 			attributes: true,
@@ -284,8 +287,8 @@ const onMutations = (self: UHTMLDataListElement) => {
 	if (IS_IOS) {
 		const count = `${getCount(show)}`;
 		for (const [index, opt] of show.entries()) {
-			attr(opt, "data-posinset", attr(opt, "aria-posinset") || `${index + 1}`);
-			attr(opt, "data-sizeset", count);
+			attr(opt, DATA_INSET, attr(opt, ARIA_INSET) || `${index + 1}`);
+			attr(opt, DATA_SIZE, count);
 		}
 	}
 	self._umutate?.takeRecords(); // Clear mutation records to prevent unwanted MutationObserver triggers when changing attributes in render

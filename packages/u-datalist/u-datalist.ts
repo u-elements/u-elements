@@ -42,8 +42,8 @@ export const UHTMLDataListStyle = `${DISPLAY_BLOCK}
 ::slotted([role="option"][disabled]),
 ::slotted([role="option"][hidden]) { display: none !important }
 @supports(-webkit-touch-callout:none) {
-	::slotted([role="option"])::after { content:: ""/", "attr(data-posinset)" "var(--sr-of, "of")" "attr(data-sizeset) }
-	::slotted([role="option"][aria-setsize="-1"])::after { content:: ""/", "attr(data-posinset)" }
+	::slotted([role="option"])::after { content: ""/", "attr(data-posinset)" "var(--sr-of, "of")" "attr(data-sizeset) }
+	::slotted([role="option"][aria-setsize="-1"])::after { content: ""/", "attr(data-posinset)" }
 }`;
 
 export const UHTMLDataListShadowRoot =

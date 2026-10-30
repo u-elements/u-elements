@@ -279,6 +279,8 @@ export class UHTMLComboboxElement extends UHTMLElement {
 	}
 	handleEvent(e: Event): void {
 		const { type, target } = e;
+		if (type === "focus" || type === "keydown" || type === "mousedown")
+			syncValue(this);
 		if (type === "click") onClick(this, e as MouseEvent);
 		if (type === "focus") ariaNotify(); // Prepare for aria-live announcements
 		if (type === "input") onInput(this, e);
@@ -419,6 +421,12 @@ const settleCommit = (self: UHTMLComboboxElement, commit = self._commit) => {
 	commit.settle?.();
 };
 
+// Fix maybe stale _value (can happen when user runs setRangeText or u-combobox is loaded after React had mounted the input)
+const syncValue = (self: UHTMLComboboxElement) => {
+	const value = self.control?.value;
+	if (value !== undefined && value !== self._value) onProgrammatic(self);
+};
+
 const onProgrammatic = (self: UHTMLComboboxElement) => {
 	if (window._uSetValue) return; // Skip writes by setValue, as they dispatch their own input event, or revert a pick and must keep the cached text
 	self._value = self.control?.value;
@@ -450,6 +458,7 @@ const onClick = (self: UHTMLComboboxElement, e: MouseEvent) => {
 
 	if (clear?.contains(target as Node) && control) {
 		e.preventDefault(); // Prevent button[type="reset"]
+		if (control.readOnly || control.matches(":disabled")) return; // No clear if inert
 		const first = !multiple && items[0]; // Used to check if consumer removed <data> in their input handler
 		const value = control.value;
 

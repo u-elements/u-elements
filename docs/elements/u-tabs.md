@@ -110,7 +110,9 @@ document.addEventListener('click', ({ target }) => {
 })
 ```
 
-Selection runs when the `click` reaches `window`, after your handlers. Call `event.preventDefault()` in a `click` handler to cancel the tab change. Note that calling `event.stopPropagation()` on a tab or any of its ancestors also cancels the tab change.
+::: warning Important:
+If you're using a framework that delegates click events, call `event.preventDefault()` during the capture phase to prevent the tab from changing. For example, use `onClickCapture` in React and Solid, `capture:click` in Qwik, and `onclickcapture` in Svelte.
+:::
 
 ## Styling
 
@@ -218,13 +220,11 @@ const renderToStaticMarkup = (tabs: string[], panels[]) =>
 
 ## Changelog
 
-- **1.1.0:** Framework compatibility:
-  - Click is handled on `window` or relevant `ShadowRoot`, so frameworks using event delegation (i.e. React, Solid and Svelte) safely can use `event.preventDefault()`
-  - **Important:** `event.stopPropagation()` on a tab or an ancestor will cancel tab change
+- **1.1.0:**
+  - `aria-selected="false"` on every tab now shows no panel
   - `selectedIndex` can be read and written before the element is connected, as frameworks set properties on a detached tree (i.e. React and Vue)
   - `<u-tabpanel>` re-associates with its `<u-tab>` when `id` is written after connect (i.e. Angular binds attributes after inserting the element)
   - Tabs, tablists and panels are also matched by instance, so custom tag names extending the classes work before connect
-  - If `aria-selected="false"` is set on every tab, every panel is hidden
   - Framework typings for Qwik 1, Qwik 2 and Preact 11 uses `HTMLElementTagNameMap`
 - **1.0.4:** Allow no tab to be selected for better React async render compatibility
 - **1.0.3:** Fix issue where aria-controls combined with aria-selected was not repspected on initial mount

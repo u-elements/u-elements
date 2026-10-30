@@ -614,4 +614,102 @@ test.describe("HTMLDataListElement", () => {
 		await expect(input).toHaveAttribute("data-input");
 		await expect(input).toHaveAttribute("data-change");
 	});
+
+	test("syncs the input when a consumer writes hidden", async ({ page }) => {
+		await mount(page, DEFAULT);
+		const datalist = page.locator("u-datalist");
+		const input = page.locator("input");
+		const option0 = page.locator("u-option").nth(0);
+
+		await input.click();
+		await input.press("ArrowDown");
+		await expect(input).toHaveAttribute("aria-expanded", "true");
+		await expect(input).toHaveAttribute("aria-activedescendant");
+		await expect(option0).toHaveAttribute("data-activedescendant");
+
+		await datalist.evaluate((el: HTMLElement) => {
+			el.hidden = true; // Like the <u-combobox> toggle button
+		});
+		await expect(datalist).toBeHidden();
+		await expect(input).toHaveAttribute("aria-expanded", "false");
+		await expect(input).not.toHaveAttribute("aria-activedescendant");
+		await expect(option0).not.toHaveAttribute("data-activedescendant");
+
+		await datalist.evaluate((el: HTMLElement) => {
+			el.hidden = false;
+		});
+		await expect(datalist).toBeVisible();
+		await expect(input).toHaveAttribute("aria-expanded", "true");
+	});
+
+	test("mirrors a consumer written hidden to the Popover API", async ({
+		page,
+	}) => {
+		await mount(page, DEFAULT.replace("<u-datalist", "<u-datalist popover"));
+		const datalist = page.locator("u-datalist");
+		const isOpen = () => datalist.evaluate((el) => el.matches(":popover-open"));
+
+		await page.locator("input").click();
+		expect(await isOpen()).toBe(true);
+
+		await datalist.evaluate((el: HTMLElement) => {
+			el.hidden = true;
+		});
+		expect(await isOpen()).toBe(false);
+
+		await datalist.evaluate((el: HTMLElement) => {
+			el.hidden = false;
+		});
+		expect(await isOpen()).toBe(true);
+	});
+
+	test("connects an input when the id has CSS special characters", async ({
+		page,
+	}) => {
+		const errors: Error[] = [];
+		page.on("pageerror", (error) => errors.push(error));
+		await mount(
+			page,
+			`<label>Search here <input type="text" list='a"b\\c' /></label>
+			<u-datalist id='a"b\\c'>
+			  <u-option>Option 1</u-option>
+			</u-datalist>`,
+		); // Only " and \ can end or break the quoted attribute selector
+		const input = page.locator("input");
+
+		await expect(input).toHaveRole("combobox"); // Connected by attributeChangedCallback, before focus
+		await expect(input).toHaveAttribute("aria-controls", 'a"b\\c');
+		await input.click();
+		await expect(page.locator("u-datalist")).toBeVisible();
+		expect(errors).toEqual([]);
+	});
+
+	test("keeps focus on the input while pressing an option", async ({
+		page,
+	}) => {
+		await mount(page, DEFAULT);
+		const datalist = page.locator("u-datalist");
+		const input = page.locator("input");
+		const option1 = page.locator("u-option").nth(1);
+
+		await input.evaluate((el: HTMLInputElement) => {
+			el.addEventListener("change", () => {
+				el.dataset.changes = `${el.dataset.changes || ""}[${el.value}]`;
+			});
+		});
+		await input.click();
+		await input.fill("Option");
+		const box = await option1.boundingBox();
+		if (!box) throw new Error("Option is not rendered");
+
+		await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+		await page.mouse.down();
+		await expect(input).toBeFocused(); // mousedown is cancelled, so the press does not blur
+		await expect(datalist).toBeVisible();
+
+		await page.mouse.up();
+		await expect(input).toHaveValue("Option 2");
+		await expect(input).toBeFocused();
+		await expect(input).toHaveAttribute("data-changes", "[Option 2]"); // No change with the typed text before the pick
+	});
 });

@@ -83,7 +83,6 @@ export class UHTMLTabsElement extends UHTMLElement {
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/tablist_role)
  */
 export class UHTMLTabListElement extends UHTMLElement {
-	_root?: Document | ShadowRoot; // Root at connect, as click inside ShadowDOM is handled by the root and not onWindowClick
 	_umutate?: ReturnType<typeof onMutation>; // Using underscore instead of private fields for backwards compatibility
 
 	constructor() {
@@ -92,10 +91,8 @@ export class UHTMLTabListElement extends UHTMLElement {
 	}
 	connectedCallback() {
 		VERSIONS[VERSION]?.add(this);
-		this._root = getRoot(this);
 		attr(this, "role", "tablist");
-		on(this, "keydown", this); // Listen for tab events on tablist to minimize amount of listeners
-		if (this._root instanceof ShadowRoot) on(this._root, "click", this); // If inside ShadowDOM. LightDOM is handled by onWindowClick
+		on(this, "click keydown", this); // Listen for tab events on tablist to minimize amount of listeners
 		this._umutate = onMutation(this, onMutations, {
 			attributeFilter: ["id", "role", ARIA_CONTROLS, ARIA_SELECTED], // Needed if role="tab|tabpanel" and not u-tab|u-tabpanel is used
 			attributes: true,
@@ -104,11 +101,10 @@ export class UHTMLTabListElement extends UHTMLElement {
 		});
 	}
 	disconnectedCallback() {
-		if (this._root) off(this._root, "click", this);
 		off(this, "keydown", this);
 		VERSIONS[VERSION]?.delete(this);
 		this._umutate?.();
-		this._umutate = this._root = undefined;
+		this._umutate = undefined;
 	}
 	handleEvent(event: Partial<KeyboardEvent>) {
 		const { key, type, target } = event;
@@ -118,7 +114,7 @@ export class UHTMLTabListElement extends UHTMLElement {
 		let next = prev;
 
 		if (event.defaultPrevented || prev === -1) return; // Event prevented or not a tab
-		if (type === "click") setSelected(tabs[prev]);
+		if (type === "click") setSelected(tabs[prev]); // Note: Frameworks using event delegation need to prevet events in capture phase to stop this
 		if (type === "keydown") {
 			if (isKeyClick) {
 				event.preventDefault?.(); // Prevent scroll
@@ -364,20 +360,6 @@ const renderTabs = (tablist: Element | null) => {
 		}
 	});
 };
-
-// Shared window listener for all instances in light DOM, in the bubble phase so it runs after frameworks that delegate
-// click to their root or document (i.e. React, Solid and Svelte), letting a preventDefault in their handlers cancel the selection.
-// Instances in ShadowDOM listen on their root instead, and are never reached from here as the target is retargeted to the host
-const onWindowClick = (e: Event) => {
-	for (let el = e.target as Node | null; el; el = el.parentNode)
-		if (VERSIONS[VERSION].has(el as UHTMLTabListElement))
-			(el as UHTMLTabListElement).handleEvent(e);
-};
-
-if (isBrowser() && !VERSIONS[VERSION]) {
-	VERSIONS[VERSION] = new WeakSet(); // Support hot module reload, and several versions on same page
-	on(window, "click", onWindowClick);
-}
 
 customElements.define("u-tabs", UHTMLTabsElement);
 customElements.define("u-tablist", UHTMLTabListElement);

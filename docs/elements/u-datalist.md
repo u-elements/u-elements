@@ -316,6 +316,9 @@ const renderToStaticMarkup = (options: string) =>
 - DOM interface: [HTMLOptionElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLOptionElement)
 - HTML Standard: [The &lt;option&gt; element](https://html.spec.whatwg.org/multipage/form-elements.html#the-option-element)
 
+## Notes
+- Input value is written with `setRangeText`, like the browser does on user input. Input types without `setRangeText` support (i.e. `email`, `number` and `date`) will therefore briefly switch to `text` and back during the write
+
 ## Changelog
 
 - **3.0.0:**

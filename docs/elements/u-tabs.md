@@ -220,7 +220,7 @@ const renderToStaticMarkup = (tabs: string[], panels[]) =>
 
 ## Changelog
 
-- **1.1.0:**
+- **2.0.0:**
   - `aria-selected="false"` on every tab now shows no panel
   - `selectedIndex` can be read and written before the element is connected, as frameworks set properties on a detached tree (i.e. React and Vue)
   - `<u-tabpanel>` re-associates with its `<u-tab>` when `id` is written after connect (i.e. Angular binds attributes after inserting the element)

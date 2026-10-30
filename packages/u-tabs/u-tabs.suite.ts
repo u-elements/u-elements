@@ -304,16 +304,26 @@ export const tabsSuite = ({
 			await expect(page.locator("#panel-a")).toBeHidden();
 		});
 
-		test("prevents selection from the click handler", async ({ page }) => {
-			// The tablist handles click from a window listener, so the consumer's handler runs first and can prevent the
-			// selection even when the framework delegates click to its root or document (i.e. React, Solid and Svelte)
+		test("prevents selection from the click handler", async ({
+			page,
+			framework,
+		}) => {
+			// The tablist handles click on itself, so a handler attached to the element prevents the selection. React, Solid and
+			// Svelte delegate click to their root or document, which in bubble phase runs after the tablist, so they must use capture
+			const isDelegated = ["react", "solid", "svelte"].includes(framework);
 			await render(page, { preventClick: true });
 			const tabs = page.locator("u-tab");
 
 			await tabs.nth(1).click();
 			await afterRendered(page);
-			await expect(tabs.nth(1)).toHaveAttribute("aria-selected", "false");
-			await expect(tabs.nth(0)).toHaveAttribute("aria-selected", "true");
+			await expect(tabs.nth(1)).toHaveAttribute(
+				"aria-selected",
+				`${isDelegated}`,
+			);
+			await expect(tabs.nth(0)).toHaveAttribute(
+				"aria-selected",
+				`${!isDelegated}`,
+			);
 		});
 
 		test("ignores unchanged attributes rewritten by a re-render", async ({

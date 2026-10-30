@@ -114,7 +114,7 @@ export class UHTMLDataListElement extends UHTMLElement {
 	}
 	attributeChangedCallback(prop?: string, _prev?: string, next?: string) {
 		if (prop === "hidden") {
-			// hidden is the open state, so keep the input in sync also when written by a consumer (i.e. <u-combobox> toggle button). No-op when written by setExpanded
+			// hidden is the open state, and this is the single place it is applied, whether written by setExpanded or a consumer (i.e. <u-combobox> toggle button)
 			const open = next === null;
 			if (this._control) attr(this._control, "aria-expanded", `${open}`);
 			if (!open) setActive(this); // Clear activedescendant when closing
@@ -147,12 +147,10 @@ const isVisible = (el: Element) =>
 	attr(el, ARIA_HIDDEN) !== "true" && el.clientHeight;
 
 const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
-	if (self._control) attr(self._control, "aria-expanded", `${open}`);
+	if (self._control) attr(self._control, "aria-expanded", `${open}`); // Also when unchanged, i.e. when a new input connects
 	if (!self.isConnected || self.hidden !== open) return; // No change needed
-	if (!open) setActive(self); // Clear activedescendant when closing
-	if (self.popover) self.togglePopover(open); // Mirror Popover API if used
 	if (open) setTimeout(() => clearTimeout(LIVE_TIMER)); // Prevent announcing hits on open
-	self.hidden = !open; // NOTE: This triggers MutationObserver, updating options state as well
+	self.hidden = !open; // attributeChangedCallback applies the open state, and MutationObserver updates options state
 };
 
 const setActive = (self: UHTMLDataListElement, opt?: HTMLOptionElement) => {

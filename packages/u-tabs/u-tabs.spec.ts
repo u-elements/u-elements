@@ -700,34 +700,43 @@ test.describe("u-tabs", () => {
 		await expect(uTab1).toHaveJSProperty("selected", true);
 	});
 
-	test("respects event.preventDefault from a delegated handler", async ({
+	test("respects event.preventDefault from a delegated handler in capture phase", async ({
 		page,
 	}) => {
-		// Frameworks such as React, Solid and Svelte listen on their root or document, so the tablist must run after those
+		// Frameworks such as React, Solid and Svelte listen on their root or document, which in bubble phase runs after the tablist
 		await page.evaluate(() => {
 			document.body.innerHTML = `<u-tabs>
         <u-tablist>
           <u-tab>Tab 1</u-tab>
           <u-tab aria-selected="true">Tab 2</u-tab>
+          <u-tab>Tab 3</u-tab>
         </u-tablist>
       </u-tabs>`;
-			document.addEventListener("click", (event) => event.preventDefault(), {
+			const prevent = (event: Event) => event.preventDefault();
+			document.addEventListener("click", prevent, {
+				capture: true,
 				once: true,
 			});
 		});
 		const uTab0 = page.locator("u-tab").nth(0);
 		const uTab1 = page.locator("u-tab").nth(1);
+		const uTab2 = page.locator("u-tab").nth(2);
 
 		await uTab0.click();
 		await expect(uTab1).toHaveJSProperty("selected", true);
 		await expect(uTab0).toHaveJSProperty("selected", false);
 
-		await uTab0.click(); // The listener is gone, so the next click selects
-		await expect(uTab0).toHaveJSProperty("selected", true);
+		await page.evaluate(() =>
+			document.addEventListener("click", (event) => event.preventDefault(), {
+				once: true,
+			}),
+		);
+		await uTab2.click(); // Bubble phase is too late, as the tablist has already selected
+		await expect(uTab2).toHaveJSProperty("selected", true);
 	});
 
-	test("respects event.stopPropagation from an ancestor", async ({ page }) => {
-		// Selection runs on window, so a click stopped on its way there (i.e. by a card or modal) does not select
+	test("ignores event.stopPropagation from an ancestor", async ({ page }) => {
+		// Selection runs on the tablist, so a click stopped further up (i.e. by a card or modal) still selects
 		await page.evaluate(() => {
 			document.body.innerHTML = `<div>
         <u-tabs>
@@ -747,15 +756,11 @@ test.describe("u-tabs", () => {
 		const uTab1 = page.locator("u-tab").nth(1);
 
 		await uTab0.click();
-		await expect(uTab1).toHaveJSProperty("selected", true);
-		await expect(uTab0).toHaveJSProperty("selected", false);
-
-		await uTab0.click(); // The listener is gone, so the next click selects
 		await expect(uTab0).toHaveJSProperty("selected", true);
+		await expect(uTab1).toHaveJSProperty("selected", false);
 	});
 
 	test("works inside a shadow root", async ({ page }) => {
-		// Instances in ShadowDOM listen on their root instead of window, as a closed shadow tree is hidden from the window listener
 		await page.evaluate(() => {
 			const host = document.createElement("div");
 			host.attachShadow({ mode: "open" }).innerHTML = `<u-tabs>

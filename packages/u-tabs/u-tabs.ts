@@ -5,7 +5,6 @@ import {
 	DISPLAY_BLOCK,
 	declarativeShadowRoot,
 	getRoot,
-	isBrowser,
 	off,
 	on,
 	onMutation,
@@ -13,7 +12,6 @@ import {
 	UHTMLElement,
 	useId,
 } from "../utils";
-import { version } from "./package.json";
 
 declare global {
 	interface HTMLElementTagNameMap {
@@ -28,11 +26,6 @@ const ARIA_CONTROLS = "aria-controls";
 const ARIA_DISABLED = "aria-disabled";
 const ARIA_SELECTED = "aria-selected";
 const TABINDEX = "tabindex";
-const VERSION = `_uTabLists${version}` as const; // Shared window click listener with multi-version support
-const VERSIONS = (isBrowser() ? window : {}) as Record<
-	typeof VERSION,
-	WeakSet<UHTMLTabListElement>
->;
 
 export const UHTMLTabsStyle = DISPLAY_BLOCK;
 export const UHTMLTabPanelStyle = DISPLAY_BLOCK;
@@ -90,7 +83,6 @@ export class UHTMLTabListElement extends UHTMLElement {
 		attachStyle(this, UHTMLTabListStyle);
 	}
 	connectedCallback() {
-		VERSIONS[VERSION]?.add(this);
 		attr(this, "role", "tablist");
 		on(this, "click keydown", this); // Listen for tab events on tablist to minimize amount of listeners
 		this._umutate = onMutation(this, onMutations, {
@@ -101,8 +93,7 @@ export class UHTMLTabListElement extends UHTMLElement {
 		});
 	}
 	disconnectedCallback() {
-		off(this, "keydown", this);
-		VERSIONS[VERSION]?.delete(this);
+		off(this, "click keydown", this);
 		this._umutate?.();
 		this._umutate = undefined;
 	}
@@ -114,7 +105,7 @@ export class UHTMLTabListElement extends UHTMLElement {
 		let next = prev;
 
 		if (event.defaultPrevented || prev === -1) return; // Event prevented or not a tab
-		if (type === "click") setSelected(tabs[prev]); // Note: Frameworks using event delegation need to prevet events in capture phase to stop this
+		if (type === "click") setSelected(tabs[prev]); // Note: Frameworks using event delegation need to prevent events in capture phase to stop this
 		if (type === "keydown") {
 			if (isKeyClick) {
 				event.preventDefault?.(); // Prevent scroll

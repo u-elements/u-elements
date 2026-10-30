@@ -586,7 +586,7 @@ const onMutations = (self: UHTMLComboboxElement, r?: MutationRecord[]) => {
 	if (list) attr(list, SAFE_MULTISELECTABLE, `${multiple}`);
 	if (isEdit) announceItemChange(self, prev, keys);
 	if (isEdit || isInit || (list && r?.some(isInside, list))) syncOptions(self);
-	if (isEdit || isInit || r?.some(isAdd, self._select?.[0])) syncSelect(self);
+	if (isEdit || isInit || r?.some(isAdd, self._select[0])) syncSelect(self);
 	if (isEdit || isInit) {
 		const hint = multiple
 			? `${items.length ? srText(self, "found", "Navigate left to find %d selected").replace("%d", `${items.length}`) : srText(self, "empty", "No selected")}`
@@ -602,7 +602,7 @@ const onMutations = (self: UHTMLComboboxElement, r?: MutationRecord[]) => {
 		const isPureCommit = self._commit?.value === control.value; // Dispatch change on pure user commit
 		const isExpired = !!self._expired && keys[0] === self._expired; // The item an expired commit asked for, so the deferred render still carries change
 		if (isInit) Promise.resolve().then(() => syncInputSingleMode(self));
-		else if (isEdit) syncInputSingleMode(self, isPureCommit || isExpired); // Only inital sync is deferred as frameworks write their bound input value after insertion
+		else if (isEdit) syncInputSingleMode(self, isPureCommit || isExpired); // Only initial sync is deferred as frameworks write their bound input value after insertion
 	}
 	if (isEdit) {
 		self._expired = undefined; // Any item change resolves an expired commit, so an unrelated later change dispatches no change

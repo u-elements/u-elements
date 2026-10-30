@@ -60,8 +60,8 @@ import { version } from "./package.json";
  * Mount and item mutations (connectedCallback, <data> added/removed/changed, <input> replaced, data-multiple changed)
  * - Single:   sync input. The first sync after mount is deferred one microtask so frameworks can write their bound value first.
  *             A prefilled text without an item is therefore cleared on mount
- * - Multiple: text is kept as filter text
- * - Both:     option.selected mirrors the items, <select> (if present) mirrors the items, added/removed items are announced
+ * - Multiple: text is kept as filter text, added/removed items are announced
+ * - Both:     option.selected mirrors the items, <select> (if present) mirrors the items
  *
  * Typing and programmatic text (input event, value attribute, value property)
  * - Both:     cache text, sync clear and toggle buttons. Never match, never select
@@ -462,7 +462,7 @@ const onClick = (self: UHTMLComboboxElement, e: MouseEvent) => {
 		const first = !multiple && items[0]; // Used to check if consumer removed <data> in their input handler
 		const value = control.value;
 
-		setValue(control, null, "deleteContentBackward");
+		setValue(control, "", "deleteContentBackward");
 		if (!first || !self.contains(first))
 			control.value || dispatchChange(control); // No change event if value was edited during input handler
 		else

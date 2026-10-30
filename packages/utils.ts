@@ -244,12 +244,13 @@ declare global {
 
 export const setValue = (
 	input: HTMLInputElement,
-	value: string | null,
+	value: string,
 	inputType?: string,
 	change?: boolean,
 ) => {
 	let last = input.value; // Text as of the last change, like the browser tracks it: the value before the write, or the value at a change dispatched by an input handler
-	const event = { bubbles: true, composed: true, data: value, inputType };
+	const data = inputType === "insertText" ? value : null; // Align with web standard
+	const event = { bubbles: true, composed: true, data, inputType };
 	const proto = HTMLInputElement.prototype; // Using the prototype setter, as React tracks writes to input.value and would then skip onChange (https://stackoverflow.com/a/46012210)
 	const onChange = () => (last = input.value);
 

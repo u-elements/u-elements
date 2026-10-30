@@ -35,6 +35,7 @@ declare global {
 
 const CSS_SPECIAL = /["\\\n\r\f]/g; // Only " and \ end or break a quoted attribute selector, and line breaks are invalid in a CSS string. Using regex as jsdom does not support CSS.escape
 const DATA_ACTIVE = "data-activedescendant";
+const ARIA_EXPANDED = "aria-expanded";
 const ARIA_INSET = "aria-posinset";
 const DATA_INSET = "data-posinset";
 const ARIA_SIZE = "aria-setsize";
@@ -120,7 +121,7 @@ export class UHTMLDataListElement extends UHTMLElement {
 		if (prop === "hidden") {
 			// hidden is the open state, and this is the single place it is applied, whether written by setExpanded or a consumer (i.e. <u-combobox> toggle button)
 			const open = next === null;
-			if (this._control) attr(this._control, "aria-expanded", `${open}`);
+			if (this._control) attr(this._control, ARIA_EXPANDED, `${open}`);
 			if (!open) setActive(this); // Clear activedescendant when closing
 			if (!open) this._announced = undefined; // Announce hits again next time the list opens
 			if (this.popover && this.isConnected) this.togglePopover(open); // Mirror Popover API if used
@@ -151,7 +152,7 @@ const isVisible = (el: Element) =>
 	attr(el, ARIA_HIDDEN) !== "true" && el.clientHeight;
 
 const setExpanded = (self: UHTMLDataListElement, open: boolean) => {
-	if (self._control) attr(self._control, "aria-expanded", `${open}`); // Also when unchanged, i.e. when a new input connects
+	if (self._control) attr(self._control, ARIA_EXPANDED, `${open}`); // Also when unchanged, i.e. when a new input connects
 	if (!self.isConnected || self.hidden !== open) return; // No change needed
 	if (open) setTimeout(() => clearTimeout(LIVE_TIMER)); // Prevent announcing hits on open
 	self.hidden = !open; // attributeChangedCallback applies the open state, and MutationObserver updates options state
@@ -195,19 +196,21 @@ const setInputAttr = (
 	}
 	attr(input, "aria-autocomplete", set("list"));
 	attr(input, "aria-controls", set(useId(self)));
-	attr(input, "aria-expanded", set(`${!hidden}`));
+	attr(input, ARIA_EXPANDED, set(`${!hidden}`));
 	attr(input, "autocomplete", set("off"));
 	attr(input, "enterkeyhint", set("done"));
 	attr(input, "role", set("combobox"));
 };
 
 const onFocus = (self: UHTMLDataListElement, { target: el }: Event) => {
-	if (self._control === el) return; // Connected to the current target
-	if (isInput(el) && el.getAttribute("list") === self.id) {
-		setInputAttr(self, self._control, false); // Reset previous input
+	const { _control: prev, _root, id } = self;
+	if (prev === el) return; // Connected to the current target
+	if (isInput(el) && el.getAttribute("list") === id) {
+		if (prev && attr(prev, "list") !== id) setInputAttr(self, prev, false);
+		else if (prev) attr(prev, ARIA_EXPANDED, "false"); // Only the focused input owns the open list
 		setInputAttr(self, el); // Ensure attributes
 		if (el.readOnly || el.matches(":disabled")) return; // Do not open if disabled or readOnly
-		if (self._root) on(self._root, EVENTS_ACTIVE_BUBBLE, self); // Listen to input events to update the list
+		if (_root) on(_root, EVENTS_ACTIVE_BUBBLE, self); // Listen to input events to update the list
 		attr(self, "aria-label", getInputLabel(el) || null);
 		ariaNotify(); // Prepare for aria-live announcements
 		self._control = el;
@@ -270,7 +273,7 @@ const onKeyDown = (self: UHTMLDataListElement, event: KeyboardEvent) => {
 		}
 
 	if (!altKey && key === "ArrowDown") next = (prev + 1) % opts.length;
-	if (!altKey && key === "ArrowUp") next = (prev || opts.length) - 1;
+	if (!altKey && key === "ArrowUp") next = (prev > 0 ? prev : opts.length) - 1; // Wrap to the last option, also without an active option like native <datalist>
 	if (~prev) {
 		if (key === "Home" || key === "PageUp") next = 0;
 		if (key === "End" || key === "PageDown") next = opts.length - 1;

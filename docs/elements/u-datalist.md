@@ -326,7 +326,9 @@ const renderToStaticMarkup = (options: string) =>
   - Alignment with native `<datalist>`:
     - `beforeinput` is no longer dispatched when picking
     - Holding `Enter` on an option picks it once instead of on every key repeat
+    - `ArrowUp` without an active option moves to the last option
     - Pressing inside the list keeps focus on the input, so focusable elements inside the list do not receive focus on click
+    - Inputs sharing a list keep their combobox attributes when focus moves between them
   - Framework typings for Qwik 1, Qwik 2 and Preact 11 uses `HTMLElementTagNameMap`
 - **2.0.3:** Allow `Shift` key events combined with a letter to open datalist
 - **2.0.2:** Instant setup `aria-expanded` attribute to make AXE tests happy

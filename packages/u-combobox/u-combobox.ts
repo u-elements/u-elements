@@ -128,6 +128,7 @@ import { version } from "./package.json";
  *
  * Always
  * - Disabled or readonly input: every action above is ignored, blur included. Only the text of a sync or consumer write is still cached.
+ * - Prevented keydown (i.e. by a consumer capture listener): ignored, so a prevented Enter never matches on keyup
  * - No datalist: free text. Input is never synced, match is never dispatched, blur does nothing.
  *                Enter only creates from the text when creatable, never removes on empty text, and submits when not creatable
  *
@@ -505,6 +506,7 @@ const onInput = (self: UHTMLComboboxElement, e: Partial<InputEvent>) => {
 
 const onKeyDown = (self: UHTMLComboboxElement, e: KeyboardEvent) => {
 	self._enter = false; // Only the keydown right before the keyup can arm the match, so a keydown that moved focus or a modifier press never leaves it armed
+	if (e.defaultPrevented) return; // Respect a keydown prevented by an earlier listener, i.e. a consumer capture listener or <u-datalist> navigating options
 	if (e.ctrlKey || e.metaKey || e.shiftKey || e.key === "Alt") return; // Firefox sets altKey: false when VO key in VoiceOver
 	if (self.control === e.target) onKeyDownControl(self, e);
 	else onKeyDownItems(self, e);

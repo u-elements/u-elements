@@ -221,6 +221,11 @@ test.describe("HTMLDataListElement", () => {
 
 		await input.press("ArrowUp");
 		await expect(option0).not.toHaveAttribute("data-activedescendant");
+		await expect(option2).toHaveAttribute("data-activedescendant"); // Wraps to the last option
+
+		await input.press("Escape"); // Closing clears the active option
+		await input.press("ArrowUp"); // Like native <datalist>, ArrowUp without an active option moves to the last option
+		await expect(option2).toHaveAttribute("data-activedescendant");
 
 		await input.press("End");
 		await expect(option2).toHaveAttribute("data-activedescendant");

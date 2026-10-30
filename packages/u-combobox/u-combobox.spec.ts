@@ -59,6 +59,74 @@ test.describe("DOM", () => {
 		);
 	});
 
+	test("works alongside another version on the same page", async ({ page }) => {
+		// Load a second copy of the package with its own utils, version and tag, like two separately bundled versions.
+		// Vite serves a URL with a query as its own module instance
+		const missing: string[] = [];
+		const url = "/packages/u-combobox/u-combobox.ts?version=2";
+		await page.route(`**${url}`, async (route) => {
+			const response = await route.fetch();
+			let body = await response.text();
+			for (const [from, to] of [
+				['from "/packages/utils.ts"', 'from "/packages/utils.ts?version=2"'],
+				["`_uComboboxes", "`_uComboboxes-2-"],
+				['define("u-combobox"', 'define("u-combobox-2"'],
+			]) {
+				if (!body.includes(from)) missing.push(from);
+				body = body.replace(from, to);
+			}
+			await route.fulfill({ response, body });
+		});
+		await page.evaluate(async (url) => {
+			await import(url);
+		}, url);
+		expect(missing).toEqual([]); // Fails loudly if the served module changed shape, instead of testing one version twice
+
+		const combobox = (tag: string, n: number) => `
+			<${tag} data-multiple>
+				<input id="input-${n}" list="list-${n}">
+				<u-datalist id="list-${n}">
+					<u-option>Oslo</u-option>
+					<u-option>Bergen</u-option>
+				</u-datalist>
+				<button type="reset"></button>
+			</${tag}>`;
+		await mount(page, combobox("u-combobox", 1) + combobox("u-combobox-2", 2));
+		const input1 = page.locator("#input-1");
+		const input2 = page.locator("#input-2");
+		const items1 = page.locator("u-combobox data");
+		const items2 = page.locator("u-combobox-2 data");
+
+		// <u-datalist> picks through the shared utils copy, while version 2 has its own. A pick must keep the
+		// typed text in both, which breaks if a version mistakes the setValue write for a programmatic one
+		await input1.pressSequentially("Os");
+		await page.locator("#list-1 u-option", { hasText: "Oslo" }).click();
+		await expect(items1).toHaveText(["Oslo"]);
+		await expect(input1).toHaveValue("Os");
+		await expect(items2).toHaveCount(0);
+		await expect(input2).toHaveValue("");
+
+		await input2.pressSequentially("Be");
+		await page.locator("#list-2 u-option", { hasText: "Bergen" }).click();
+		await expect(items2).toHaveText(["Bergen"]);
+		await expect(input2).toHaveValue("Be");
+		await expect(items1).toHaveText(["Oslo"]);
+		await expect(input1).toHaveValue("Os");
+
+		// Programmatic writes pass through both patched value setters, and only reach the owning version
+		const clear1 = page.locator('u-combobox button[type="reset"]');
+		const clear2 = page.locator('u-combobox-2 button[type="reset"]');
+		await input1.evaluate((el: HTMLInputElement) => {
+			el.value = "";
+		});
+		await expect(clear1).toBeHidden();
+		await expect(clear2).toBeVisible();
+		await input2.evaluate((el: HTMLInputElement) => {
+			el.value = "";
+		});
+		await expect(clear2).toBeHidden();
+	});
+
 	for (const [LIST_TAG, OPT_TAG] of [
 		["u-datalist", "u-option"],
 		["datalist", "option"],

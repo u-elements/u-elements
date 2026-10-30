@@ -412,7 +412,9 @@ export const datalistSuite = ({
 			await second.click();
 			await expect(datalist).toBeVisible();
 			await expect(second).toHaveAttribute("aria-controls", "list");
-			await expect(first).not.toHaveAttribute("aria-controls");
+			await expect(first).toHaveAttribute("aria-controls", "list"); // Inputs sharing the list keep their combobox setup
+			await expect(first).toHaveAttribute("aria-expanded", "false");
+			await expect(first).toHaveAttribute("role", "combobox");
 			await page.locator("u-option").nth(2).click();
 			await expect(second).toHaveValue("Option 3");
 			await expect(first).toHaveValue("");

@@ -622,6 +622,7 @@ const renderToStaticMarkup = (data: string, options: string) =>
     - Better performance when frameworks syncs attributes
     - `change` is only dispatched when the input sync follows a user commit (option pick, `Enter`, blur, clear or item removal), never on mount, programmatic `<data>` changes or form reset, aligning with  conventions from other native elements
     - `Enter` match on `keyup` instead of `keydown` to support native datalist in Safari
+    - A prevented `keydown` is respected, so a prevented `Enter` never matches
     - `form.reset()` syncs the clear and toggle buttons
     - Toggle button is hidden when the input is `disabled` or `readonly`
     - Firefox spell check and autofill are not seen as option-picks

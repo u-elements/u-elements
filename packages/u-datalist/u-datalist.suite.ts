@@ -71,6 +71,49 @@ export const datalistSuite = ({
 			await expect(page.locator("u-option").nth(1)).toHaveText("Option 2");
 		});
 
+		test("follows its id when changed from state", async ({ page }) => {
+			await render(page);
+			const input = page.locator("#input");
+			const datalist = page.locator("u-datalist");
+
+			await input.click();
+			await expect(input).toHaveAttribute("aria-controls", "list");
+			await update(page, { listId: "renamed" }); // The input list follows, as list is null
+			await expect(datalist).toHaveAttribute("id", "renamed");
+			await expect(input).toHaveAttribute("list", "renamed");
+			await expect(input).toHaveAttribute("aria-controls", "renamed");
+			await expect(input).toHaveAttribute("role", "combobox");
+
+			await input.press("ArrowDown"); // Still connected, or connects again if the id was written before the list attribute
+			await expect(datalist).toBeVisible();
+			await expect(input).toHaveAttribute("aria-expanded", "true");
+		});
+
+		test("resets an input left pointing to its previous id", async ({
+			page,
+		}) => {
+			await render(page, { list: "list" });
+			const input = page.locator("#input");
+			const datalist = page.locator("u-datalist");
+
+			await input.click();
+			await expect(datalist).toBeVisible();
+			await update(page, { listId: "renamed" }); // The input keeps list="list"
+			await expect(datalist).toHaveAttribute("id", "renamed");
+			await expect(datalist).toBeHidden();
+			await expect(input).not.toHaveAttribute("aria-controls");
+			await expect(input).not.toHaveAttribute("aria-expanded");
+			await expect(input).not.toHaveAttribute("role");
+
+			await input.press("ArrowDown"); // No longer connected
+			await expect(datalist).toBeHidden();
+
+			await update(page, { list: "renamed" });
+			await input.press("ArrowDown"); // Connects again on interaction
+			await expect(datalist).toBeVisible();
+			await expect(input).toHaveAttribute("aria-controls", "renamed");
+		});
+
 		test("picks with click and keyboard, updating the bound value through the framework", async ({
 			page,
 		}) => {

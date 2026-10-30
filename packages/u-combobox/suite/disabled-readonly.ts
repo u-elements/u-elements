@@ -75,7 +75,7 @@ export const disabledReadonlyTests = ({
 			test(`caches the item text synced while ${state}, so a prevented pick or clear after enabling reverts to it`, async ({
 				page,
 			}) => {
-				// The sync writes the text with setRangeText and dispatches input, but handleEvent drops the event while inert, so the cache must be refreshed by the sync itself
+				// The sync writes the text and dispatches input, but handleEvent drops the event while inert, so the cache must be refreshed by the sync itself
 				await render(page, {
 					controlled: "manual", // Prevents every select
 					items: [BERGEN],

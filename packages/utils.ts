@@ -157,16 +157,14 @@ export const getInputLabel = (
 ) => {
 	const root = getRoot(el);
 	const ids = labelledby?.split(" ") || [];
-	return [
-		...ids.map((id) => root.getElementById(id.trim() || "-")), // Get all labelledby elements
-		label,
-		...Array.from((el as HTMLInputElement).labels || []), // Get all <label> elements
-	].reduce<string>(
-		(acc, src) =>
-			// biome-ignore lint: using innerText to only get visual text
-			acc || (typeof src === "string" ? src : src?.innerText)?.trim() || "",
-		"",
-	);
+	// biome-ignore lint: using innerText to only get visual text
+	const text = (el?: HTMLElement | null) => el?.innerText?.trim() || "";
+	const byIds = ids
+		.map((id) => text(root.getElementById(id.trim() || "-")))
+		.filter(Boolean)
+		.join(" "); // Join all labelledby elements, like the accessible name computation
+	const labels = Array.from((el as HTMLInputElement).labels || [], text); // Get all <label> elements
+	return [byIds, label?.trim(), ...labels].find(Boolean) || "";
 };
 
 /**
@@ -175,7 +173,7 @@ export const getInputLabel = (
  */
 declare global {
 	interface Window {
-		uElementsId?: Record<string, number>; // Use a global counter to ensure this works even when loading designsystemet multiple times
+		uElementsId?: Record<string, number>; // Use a global counter to ensure this works even when loading multiple packages
 	}
 }
 
@@ -236,9 +234,15 @@ export const dispatchChange = (input: HTMLInputElement) =>
  * @description Set input value like the browser does on user input
  * @param {HTMLInputElement} input Input element to set value on
  * @param {string} value The new value
- * @param {InputEventInit} [inputEvent] Omit to never trigger input event
+ * @param {string} [inputType] The inputType of the input event. Omit to never trigger input event
  * @param {boolean} [change] Whether to dispatch change after input, but is skipped if input is reverted
  */
+declare global {
+	interface Window {
+		_uSetValue?: boolean; // true while setValue writes, so u-combobox can tell it from a programmatic write. On window, as each package bundles its own utils.
+	}
+}
+
 export const setValue = (
 	input: HTMLInputElement,
 	value: string,
@@ -246,13 +250,16 @@ export const setValue = (
 	change?: boolean,
 ) => {
 	let last = input.value; // Text as of the last change, like the browser tracks it: the value before the write, or the value at a change dispatched by an input handler
-	const type = input.selectionEnd === null && input.type; // Input types without selection support (i.e. 'email', 'number', 'date') do not support setRangeText
 	const event = { bubbles: true, composed: true, data: value, inputType };
+	const proto = HTMLInputElement.prototype; // Using the prototype setter, as React tracks writes to input.value and would then skip onChange (https://stackoverflow.com/a/46012210)
 	const onChange = () => (last = input.value);
 
-	if (type) input.type = "text"; // Intended: switching type keeps the value, and switching back sanitizes it like the browser does for the native type (i.e. non-numeric text becomes "" on type="number")
-	input.setRangeText(value, 0, input.value.length, "end"); // Using setRangeText to not touch HTMLInputElement.prototype, aligning with browser standard
-	if (type) input.type = type;
+	window._uSetValue = true;
+	try {
+		Object.getOwnPropertyDescriptor(proto, "value")?.set?.call(input, value);
+	} finally {
+		window._uSetValue = false; // In finally, so a throw does not leave u-combobox ignoring every later programmatic write
+	}
 	if (inputType) {
 		on(input, "change", onChange, true); // Capture, so a change stopped by a handler on the input still counts
 		input.dispatchEvent(new InputEvent("input", event));

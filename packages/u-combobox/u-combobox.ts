@@ -419,6 +419,7 @@ const settleCommit = (self: UHTMLComboboxElement, commit = self._commit) => {
 };
 
 const onProgrammatic = (self: UHTMLComboboxElement) => {
+	if (window._uSetValue) return; // Skip writes by setValue, as they dispatch their own input event, or revert a pick and must keep the cached text
 	self._value = self.control?.value;
 	syncButtons(self);
 };

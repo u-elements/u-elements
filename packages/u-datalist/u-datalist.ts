@@ -2,6 +2,7 @@ export type { UHTMLOptionElement } from "./u-option";
 
 import "./u-option"; // Import to register u-option
 import {
+	afterRender,
 	ariaNotify,
 	attachStyle,
 	attr,
@@ -97,12 +98,13 @@ export class UHTMLDataListElement extends UHTMLElement {
 				"value",
 				ARIA_INSET,
 				ARIA_SIZE,
-			], // Listening to hidden attribute to update on open
+			],
 			attributes: true,
 			characterData: true,
 			childList: true,
 			subtree: true,
 		});
+		syncInputs(this);
 	}
 	disconnectedCallback() {
 		if (this._root) off(this._root, EVENTS_IDLE_CAPTURE, this, true); // Unbind capture
@@ -112,7 +114,7 @@ export class UHTMLDataListElement extends UHTMLElement {
 		this._umutate?.();
 		this._umutate = this._unfocus = this._root = this._control = undefined;
 	}
-	attributeChangedCallback(prop?: string, _prev?: string, next?: string) {
+	attributeChangedCallback(prop?: string, _?: string, next?: string) {
 		if (prop === "hidden") {
 			// hidden is the open state, and this is the single place it is applied, whether written by setExpanded or a consumer (i.e. <u-combobox> toggle button)
 			const open = next === null;
@@ -120,10 +122,9 @@ export class UHTMLDataListElement extends UHTMLElement {
 			if (!open) setActive(this); // Clear activedescendant when closing
 			if (!open) this._announced = undefined; // Announce hits again next time the list opens
 			if (this.popover && this.isConnected) this.togglePopover(open); // Mirror Popover API if used
-		} else if (this.id) {
-			const selector = `input[list="${this.id.replace(CSS_SPECIAL, (c) => `\\${c.charCodeAt(0).toString(16)} `)}"]`;
-			const input = getRoot(this).querySelector(selector as "input");
-			if (input) setInputAttributes(this, input);
+		} else if (this.isConnected) {
+			syncInputs(this);
+			afterRender(() => syncInputs(this)); // Sync again once frameworks have rendered, as the input list attribute may be written after the id
 		}
 	}
 	handleEvent(event: Event) {
@@ -157,6 +158,21 @@ const setActive = (self: UHTMLDataListElement, opt?: HTMLOptionElement) => {
 	if (self._control) attr(self._control, "aria-activedescendant", useId(opt));
 	for (const o of self.options) attr(o, DATA_ACTIVE, o === opt ? "" : null);
 	opt?.scrollIntoView?.({ block: "nearest" }); // Using ?. as JSDOM does not support scrollIntoView
+};
+
+const syncInputs = (self: UHTMLDataListElement) => {
+	if (!self._root) return;
+	const { _root, _control, id } = self;
+	const inputs = `input[list="${id.replace(CSS_SPECIAL, (c) => `\\${c.charCodeAt(0).toString(16)} `)}"]`;
+
+	if (_control && attr(_control, "list") !== id) {
+		setExpanded(self, false);
+		setInputAttributes(self, null); // Disconnect previous input
+		self._control = undefined;
+	}
+	if (id)
+		for (const input of _root.querySelectorAll(inputs as "input"))
+			setInputAttributes(self, input);
 };
 
 const setInputAttributes = (

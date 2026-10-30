@@ -127,6 +127,32 @@ export const progressSuite = ({
 			await expect(progress).toHaveAccessibleName(name("Changed"));
 		});
 
+		test("joins the text of every aria-labelledby id", async ({ page }) => {
+			await page.evaluate(() => {
+				const unit = Object.assign(document.createElement("span"), {
+					id: "progress-unit",
+					textContent: "files",
+				});
+				document.body.append(unit); // Outside the framework root, as the pages only render one label
+			});
+			await render(page, { label: "aria-labelledby" });
+			const progress = page.locator("u-progress");
+			const isIOS = test.info().project.name === "Mobile Safari";
+			const name = (text: string) => (isIOS ? `${text} (50%)` : text);
+
+			await expect(progress).toHaveAccessibleName(name("Loading"));
+			await update(page, {
+				attrs: { "aria-labelledby": "progress-label progress-unit" }, // Written by the framework from state
+			});
+			await expect(progress).toHaveAccessibleName(name("Loading files"));
+			await expect(progress).toHaveAttribute(
+				"aria-label",
+				name("Loading files"),
+			);
+			await update(page, { attrs: {} });
+			await expect(progress).toHaveAccessibleName(name("Loading"));
+		});
+
 		test("recomputes the label when the value changes", async ({ page }) => {
 			await render(page, { label: "aria-label", value: 2, max: 10 });
 			const progress = page.locator("u-progress");

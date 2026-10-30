@@ -1,6 +1,4 @@
-import { svelte } from '@sveltejs/vite-plugin-svelte'
+import { svelte } from "@sveltejs/vite-plugin-svelte";
+import { frameworkConfig } from "../vite.shared.ts";
 
-export default {
-  root: __dirname,
-  plugins: [svelte()]
-}
+export default frameworkConfig(import.meta.dirname, { plugins: [svelte()] });

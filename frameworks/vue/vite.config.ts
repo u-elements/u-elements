@@ -1,14 +1,14 @@
-import vue from '@vitejs/plugin-vue'
+import vue from "@vitejs/plugin-vue";
+import { frameworkConfig } from "../vite.shared.ts";
 
-export default {
-  root: __dirname,
-  plugins: [
-    vue({
-      template: {
-        compilerOptions: {
-          isCustomElement: (tag) => tag.startsWith('u-'),
-        }
-      }
-    })
-  ]
-}
+export default frameworkConfig(import.meta.dirname, {
+	plugins: [
+		vue({
+			template: {
+				compilerOptions: {
+					isCustomElement: (tag) => tag.startsWith("u-"),
+				},
+			},
+		}),
+	],
+});

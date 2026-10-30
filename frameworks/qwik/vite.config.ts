@@ -1,11 +1,6 @@
-import { qwikVite } from "@builder.io/qwik/optimizer";
+import { qwikVite } from "@qwik.dev/core/optimizer";
+import { frameworkConfig } from "../vite.shared.ts";
 
-export default {
-	root: __dirname,
-	plugins: [
-		qwikVite({
-			csr: true,
-			srcDir: "./",
-		}),
-	],
-};
+export default frameworkConfig(import.meta.dirname, {
+	plugins: [qwikVite({ csr: true, srcDir: "./" })],
+});

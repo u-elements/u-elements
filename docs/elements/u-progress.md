@@ -60,6 +60,10 @@ bun add -S @u-elements/u-progress
   - `HTMLProgressElement.value` returns `number` reflecting `value` value attribute
   - `HTMLProgressElement.labels` returns `NodeListOf<HTMLLabelElement>`
 
+::: warning Using Preact?
+Setting the `value` property to `null` does not remove the `value` attribute in Preact. Remove through a `ref` instead: `ref={(el) => value === null && el?.removeAttribute("value")}`
+:::
+
 ## Styling
 
 ### Styling the value bar
@@ -112,6 +116,8 @@ const renderToStaticMarkup = (value?: number, max?: number) =>
   </u-progress>`
 ```
 
+**Hydration:** Attributes are dynamically added in the browser, so the client DOM will differ from the server markup. Use `suppressHydrationWarning` in React, `data-allow-mismatch="attribute"` in Vue, or similar for your framework on these elements, to avoid hydration warnings.
+
 ## Accessibility
 
 | Screen reader | `<progress>` | `<u-progress>` |
@@ -142,6 +148,14 @@ const renderToStaticMarkup = (value?: number, max?: number) =>
 
 ## Changelog
 
+- **1.1.0:** Framework compatibility:
+  - Setting `value` or `max` properties to `null` or `undefined` removes the attribute, like frameworks expect for a native element (i.e. `value={undefined}` for indeterminate)
+  - Better handling of `aria-labelledby` and `aria-label` written by the consumer
+  - `aria-labelledby` takes precedence over `aria-label`, then `<label>`, like the accessible name computation
+  - `aria-labelledby` is replaced by a reference to the element itself instead of removed, so removing it later falls back to `aria-label` or `<label>`
+  - Label is re-synced after framework-rendering, as `<label for>` or `aria-labelledby` references may be available async (i.e. Angular and Qwik)
+  - `id` is observed, so a `<label for>` matching an `id` written after connect is found
+  - Framework typings for Qwik 1, Qwik 2 and Preact 11 uses `HTMLElementTagNameMap`
 - **1.0.1:** Use `attachInternals` when supported by the current browser and speed up attribute assignment
 - **1.0.0:** Plays nice with strict CSP, and renders attributes in consistent order
 - **0.0.7:** Uses `role="progress"` also in Firefox who now has sufficient support

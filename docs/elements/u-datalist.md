@@ -15,7 +15,7 @@ import { data } from '../filesize.data.ts'
 - Use `<u-option>` as direct child elements - these will show the suggestions while typing
 - Use matching `id` on `<u-datalist>` and `list` attribute on `<input>` to connect
 - Use `data-nofilter` to [prevent filtering](https://github.com/whatwg/html/issues/4882)
-- Use `data-*` attributes to translate screen reader announcements
+- Use `--sr-*` CSS custom properties to translate screen reader texts
 - Use `popover` attribute to activate [Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API)
 - **Want to show suggestions from a data source?** [See u-combobox &rarr;](/elements/u-combobox)
 - **MDN Web Docs:** [&lt;datalist&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/datalist) ([HTMLDatalistElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDatalistElement)) / [&lt;option&gt;](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/option) ([HTMLOptionElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLOptionElement))
@@ -28,7 +28,7 @@ import { data } from '../filesize.data.ts'
   Choose flavor of ice cream
 &lt;/label&gt;
 &lt;input id="my-input" list="my-list" /&gt;
-&lt;u-datalist id="my-list" data-sr-singular="%d flavor" data-sr-plural="%d flavours"&gt;
+&lt;u-datalist id="my-list" style="--sr-singular: '%d flavor'; --sr-plural: '%d flavours'"&gt;
   &lt;u-option&gt;Coconut&lt;/u-option&gt;
   &lt;u-option&gt;Strawberries&lt;/u-option&gt;
   &lt;u-option&gt;Chocolate&lt;/u-option&gt;
@@ -75,10 +75,6 @@ bun add -S @u-elements/u-datalist
 
 - **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
   - `id` must be identical to value of `list` attribute on associated `<input>`
-  - Screen reader attributes required to meet [WCAG §4.1.3](https://www.w3.org/TR/WCAG21/#status-messages): 
-    - `data-sr-singular="%d hit"` announces single hit
-    - `data-sr-plural="%d hits"` announces multiple hits
-    - ***Note:** If `<u-datalist>` has no options, visible text will be announced instead (i.e. No results)*
 - **DOM interface:** [`HTMLDataListElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDataListElement)
   - `HTMLDataListElement.options` returns `HTMLCollectionOf<HTMLOptionElement>`. However, note that there is inconsistency between Firefox and other browsers, regarding whether `disabled` options are included or not. To ensure access to all options, consider using `.children` instead.
 
@@ -104,9 +100,26 @@ While `<u-datalist>` support all events, *native* datalist does not as it is ren
 
 If you need to detect click on options or require a more fine-grained API — including `comboboxbeforeselect` and `comboboxafterselect` events — we recommend using [`<u-combobox>`](/elements/u-combobox), which extends `<u-datalist>` with [several useful features →](/elements/u-combobox)
 
+::: tip Note:
+Pressing inside `<u-datalist>` keeps focus on the `<input>`, like a native datalist, by cancelling `mousedown` inside the list. Focusable elements placed inside `<u-datalist>` (i.e. a "Load more" button) therefore do not receive focus on click, but still receive the `click` event.
+:::
+
 ## Styling
 
 While `<u-datalist>` and `<u-option>` are styleable, *native* datalist and option elements are currently not. However, there is a possibility that the [native elements may support styling in the future](https://open-ui.org/components/customizableselect/#rich-content-in-options).
+
+### Screen reader texts
+
+Screen reader texts are set through CSS custom properties. They inherit, so a translation can be set once for a page or a language, i.e. `:lang(nb) { --sr-plural: "%d treff" }`.
+
+- `--sr-singular` announces single hit. Defaults to `"%d hit"`
+- `--sr-plural` announces multiple hits. Defaults to `"%d hits"`
+- `--sr-of` separates "number _of_ total" in announcements. Defaults to `"of"`
+- If `<u-datalist>` has no options, visible text will be announced instead (i.e. No results)
+
+::: tip Note:
+If you are using a strict Content Security Policy (CSP), inline `style` HTML attributes are blocked. Set the properties in your CSS, or through `element.style.setProperty('--sr-of', '"New string"')` (note that the string must be quoted) or a framework `style` binding.
+:::
 
 ### Styling with the display property
 
@@ -126,7 +139,7 @@ u-option:not([hidden]) {
 ```
 
 ### Styling option focus and selected state
-`<u-option>` receive real focus on keyboard navigation, and a `selected` attribute on selection, which both can be utilized for styling:
+`<u-option>` receive a `data-activedescendant` attribute when active on keyboard navigation (focus stays on the `<input>`, using `aria-activedescendant`), and a `selected` attribute on selection, which both can be utilized for styling:
 
 ```css
 u-option[data-activedescendant] {
@@ -168,7 +181,7 @@ u-option:not([selected]) {
     border-bottom-right-radius: 0;
   }
   .my-input:focus-visible,
-  .my-list u-option:focus {
+  .my-list u-option[data-activedescendant] {
     box-shadow: 0 0 0 1px #fff,0 0 0 3px #6325e7,0 0 0 4px #fff;
     outline: none;
   }
@@ -190,7 +203,7 @@ u-option:not([selected]) {
     padding: .5em;
     transition: .2s;
   }
-  .my-list u-option:focus {
+  .my-list u-option[data-activedescendant] {
     background-color: #EBF0FA;
   }
   .my-list u-option[selected] {
@@ -202,7 +215,7 @@ u-option:not([selected]) {
   Choose flavor of ice cream
   &lt;input type="text" id="my-styling-input" class="my-input" list="my-styling" /&gt;
 &lt;/label&gt;
-&lt;u-datalist class="my-list" id="my-styling" data-sr-singular="%d flavor" data-sr-plural="%d flavours"&gt;
+&lt;u-datalist class="my-list" id="my-styling" style="--sr-singular: '%d flavor'; --sr-plural: '%d flavours'"&gt;
   &lt;u-option&gt;Coconut&lt;/u-option&gt;
   &lt;u-option&gt;Strawberries&lt;/u-option&gt;
   &lt;u-option&gt;Chocolate&lt;/u-option&gt;
@@ -221,7 +234,7 @@ Using [Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API
   Choose flavor of ice cream
   &lt;input type="text" id="my-popover-input" list="my-popover" /&gt;
 &lt;/label&gt;
-&lt;u-datalist popover id="my-popover" data-sr-singular="%d flavor" data-sr-plural="%d flavours"&gt;
+&lt;u-datalist popover id="my-popover" style="--sr-singular: '%d flavor'; --sr-plural: '%d flavours'"&gt;
   &lt;u-option&gt;Coconut&lt;/u-option&gt;
   &lt;u-option&gt;Strawberries&lt;/u-option&gt;
   &lt;u-option&gt;Chocolate&lt;/u-option&gt;
@@ -236,7 +249,7 @@ Using [Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API
 <pre hidden>
 &lt;label for="my-dynamic-input"&gt;Choose your email&lt;/label&gt;
 &lt;input type="text" id="my-dynamic-input" list="my-dynamic-list" placeholder="Type email..." /&gt;
-&lt;u-datalist id="my-dynamic-list" data-nofilter data-sr-singular="%d suggestion" data-sr-plural="%d suggestions"&gt;
+&lt;u-datalist id="my-dynamic-list" data-nofilter style="--sr-singular: '%d suggestion'; --sr-plural: '%d suggestions'"&gt;
 &lt;/u-datalist&gt;
 &lt;script type="module"&gt;
   const input = document.getElementById('my-dynamic-input');
@@ -273,6 +286,8 @@ const renderToStaticMarkup = (options: string) =>
   </u-datalist>`
 ```
 
+**Hydration:** Attributes are dynamically added in the browser, so the client DOM will differ from the server markup. Use `suppressHydrationWarning` in React, `data-allow-mismatch="attribute"` in Vue, or similar for your framework on these elements, to avoid hydration warnings.
+
 ## Accessibility
 
 | Screen reader | `<datalist>` | `<u-datalist>` |
@@ -305,6 +320,16 @@ const renderToStaticMarkup = (options: string) =>
 
 ## Changelog
 
+- **3.0.0:**
+  - Screen reader texts are set through `--sr-*` CSS instead of `data-sr-*` attributes
+  - `aria-posinset` and `aria-setsize` on options is now supported
+  - Alignment with native `<datalist>`:
+    - `beforeinput` is no longer dispatched when picking
+    - Holding `Enter` on an option picks it once instead of on every key repeat
+    - `ArrowUp` without an active option moves to the last option
+    - Pressing inside the list keeps focus on the input, so focusable elements inside the list do not receive focus on click
+    - Inputs sharing a list keep their combobox attributes when focus moves between them
+  - Framework typings for Qwik 1, Qwik 2 and Preact 11 uses `HTMLElementTagNameMap`
 - **2.0.3:** Allow `Shift` key events combined with a letter to open datalist
 - **2.0.2:** Instant setup `aria-expanded` attribute to make AXE tests happy
 - **2.0.1:** Use document.activeElement instead of .matches(":focus-within") for JSDOM testing compatibility

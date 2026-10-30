@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-import "../../packages/u-progress";
-import "../../packages/u-datalist";
-import "../../packages/u-combobox";
-import type { UHTMLComboboxElement } from "../../packages/u-combobox";
+import "../../packages/u-progress/u-progress";
+import "../../packages/u-datalist/u-datalist";
+import "../../packages/u-combobox/u-combobox";
+import type { UHTMLComboboxElement } from "../../packages/u-combobox/u-combobox";
 
 const count = ref(0);
 const value = ref("");
@@ -27,7 +27,7 @@ onMounted(() => console.log(tags.value?.items));
     <data>Banan</data>
     <data>Jordbær</data>
     <input type="text" />
-    <u-datalist data-sr-singular="%d hit" data-sr-plural="%d hits">
+    <u-datalist>
       <u-option value="test-1">Test 1</u-option>
       <u-option value="test-2">Test 2</u-option>
       <u-option value="test-3">Test 3</u-option>

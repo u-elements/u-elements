@@ -36,7 +36,7 @@ export default defineConfig({
 	target: "es6", // For backwards compatibility
 	treeshake: true,
 	dts: {
-		footer: modules.map(getFrameworkTypes).join(""),
+		footer: getFrameworkTypes(modules),
 	},
 	async onSuccess() {
 		const manifestFile = path.resolve(pkgPath, `dist/${pkgName}.manifest.json`);
@@ -49,74 +49,92 @@ export default defineConfig({
 	},
 });
 
-function getFrameworkTypes([_file, code]: string[], index: number) {
+// Element types are looked up in HTMLElementTagNameMap instead of imported, so the file has no
+// dependency on the bundled typings and can sit next to the package source as well as dist.
+// A plain lookup, as TypeScript rejects indexing inside a `'tag' extends keyof Map ? Map['tag'] : ...` conditional,
+// which skipLibCheck hides from consumers while leaving them with `any` for the element
+function getFrameworkTypes(modules: string[][]) {
 	const tagRexes = /['"](u-\S*?)['"]: (U?HTML[a-z]*Element)/gi;
-	const tagDefinitions = Array.from(code.matchAll(tagRexes));
-
-	const eventMap = `${code.match(/GlobalEventHandlersEventMap[^}]+/s) || ""}`;
 	const eventRexes = /['"]?(\S*?)['"]?: (CustomEvent(<[^>]+>)?)/gi;
-	const events = Array.from(eventMap.matchAll(eventRexes));
 
-	return `${
-		index
-			? "" // Only add once for each package, not for every file
-			: `import type * as PreactTypes from 'preact'
-import type * as ReactTypes from 'react'
-import type * as SvelteTypes from 'svelte/elements'
-import type * as VueJSX from '@vue/runtime-dom'
-import type { JSX as QwikJSX } from '@builder.io/qwik/jsx-runtime'
-import type { JSX as SolidJSX } from 'solid-js'`
-	}
+	const types = modules.flatMap(([_file, code]) => {
+		const eventMap = `${code.match(/GlobalEventHandlersEventMap[^}]+/s) || ""}`;
+		const events = Array.from(eventMap.matchAll(eventRexes));
+		const onEvents = (...prefixes: string[]) =>
+			prefixes
+				.flatMap((prefix) =>
+					events.map(
+						([, type, event]) =>
+							`"${prefix}${type}"?: (event: ${event}) => void`,
+					),
+				)
+				.join("; ");
 
-${tagDefinitions
-	.map(([, tag, domInterface]) => {
-		const isNative = domInterface.startsWith("HTML");
-		const tagNative = isNative ? tag.replace(/^u-/, "") : "div"; // Fallback to div for u-elements that does not correlate with a HTMLElement
-		const type = tag.replace(/\W/g, "").replace(/./, (m) => m.toUpperCase());
+		return Array.from(code.matchAll(tagRexes), ([, tag, domInterface]) => {
+			const isNative = domInterface.startsWith("HTML");
+			const tagNative = isNative ? tag.replace(/^u-/, "") : "div"; // Fallback to div for u-elements that does not correlate with a HTMLElement
+			const type = tag.replace(/\W/g, "").replace(/./, (m) => m.toUpperCase());
+			const element = `HTMLElementTagNameMap['${tag}']`;
 
-		return `
+			return `
+type ${type}Element = ${element}
 export type Preact${type} = ${
-			isNative
-				? `PreactTypes.JSX.IntrinsicElements['${tagNative}']`
-				: `PreactTypes.JSX.HTMLAttributes<${domInterface}> & { ${events
-						.map(([, type, event]) => `"on${type}"?: (event: ${event}) => void`)
-						.join("; ")} }`
-		}
+				isNative
+					? `PreactTypes.JSX.IntrinsicElements['${tagNative}']`
+					: `PreactTypes.HTMLAttributes<${type}Element> & { ${onEvents("on")} }` // Top level, as Preact 11 removed it from the JSX namespace while 10 and 11 both export it from the package root
+			}
 export type React${type} = ${
-			isNative
-				? `ReactTypes.JSX.IntrinsicElements['${tagNative}']`
-				: `ReactTypes.DetailedHTMLProps<ReactTypes.HTMLAttributes<${domInterface}>, ${domInterface}>`
-		} & { class?: string }
-export type Qwik${type} = QwikJSX.IntrinsicElements['${tagNative}']
+				isNative
+					? `ReactTypes.JSX.IntrinsicElements['${tagNative}']`
+					: `ReactTypes.DetailedHTMLProps<ReactTypes.HTMLAttributes<${type}Element>, ${type}Element> & { ${onEvents("on")} }`
+			} & { class?: string }
+export type Qwik${type} = QwikJSX.IntrinsicElements['${isNative ? tagNative : tag}']
+export type QwikV1${type} = QwikV1JSX.IntrinsicElements['${isNative ? tagNative : tag}']
 export type Vue${type} = ${isNative ? `VueJSX.IntrinsicElementAttributes['${tagNative}']` : "VueJSX.HTMLAttributes"}
 export type Svelte${type} = ${
-			isNative
-				? `SvelteTypes.SvelteHTMLElements['${tagNative}']`
-				: `SvelteTypes.HTMLAttributes<${domInterface}> & { ${events
-						.map(
-							([, type, event]) =>
-								`"on:${type}"?: (event: ${event}) => void, "on${type}"?: (event: ${event}) => void`,
-						)
-						.join("; ")} }`
-		}
+				isNative
+					? `SvelteTypes.SvelteHTMLElements['${tagNative}']`
+					: `SvelteTypes.HTMLAttributes<${type}Element> & { ${onEvents("on:", "on")} }`
+			}
 export type Solid${type} = ${
-			isNative
-				? `SolidJSX.HTMLElementTags['${tagNative}']`
-				: `SolidJSX.HTMLAttributes<${domInterface}>`
-		}
+				isNative
+					? `SolidJSX.HTMLElementTags['${tagNative}']`
+					: `SolidJSX.HTMLAttributes<${type}Element>`
+			}
 
 // Augmenting @vue/runtime-dom instead of vue directly to avoid interfering with React JSX
 declare global { namespace React.JSX { interface IntrinsicElements { '${tag}': React${type} } } }
-declare global { namespace preact.JSX { interface IntrinsicElements { '${tag}': Preact${type} } } }
-declare module '@builder.io/qwik/jsx-runtime' { export namespace JSX { export interface IntrinsicElements { '${tag}': Qwik${type} } } }
+declare module 'preact' { namespace JSX { interface IntrinsicElements { '${tag}': Preact${type} } } }${
+				isNative
+					? `
+declare module '@qwik.dev/core/jsx-runtime' { export namespace JSX { export interface IntrinsicElements { '${tag}': Qwik${type} } } }
+declare module '@builder.io/qwik/jsx-runtime' { export namespace JSX { export interface IntrinsicElements { '${tag}': QwikV1${type} } } }`
+					: ""
+			}
 declare module '@vue/runtime-dom' { export interface GlobalComponents { '${tag}': Vue${type} } }
 declare module 'svelte/elements' { interface SvelteHTMLElements { '${tag}': Svelte${type} } }
 declare module 'solid-js' {
-  namespace JSX {
-    interface IntrinsicElements { '${tag}': Solid${type} }
-    interface CustomEvents { ${events.map(([, type, event]) => `"${type}": (event: ${event}) => void`).join("; ")} }
-  }
-}`;
-	})
-	.join("")}`;
+	namespace JSX {
+		interface IntrinsicElements { '${tag}': Solid${type} }
+		interface CustomEvents { ${events.map(([, type, event]) => `"${type}": ${event}`).join("; ")} }
+	}
+}
+	`;
+		});
+	});
+
+	// Qwik 1 (@builder.io/qwik) and Qwik 2 (@qwik.dev/core) both type every tag in HTMLElementTagNameMap, which the global
+	// declaration above extends, so the custom tags are not augmented: an augmentation would only override the exact element type
+	// with a weaker one (i.e. a div ref). The tags mirroring a native element are augmented with the native tag's type, as Qwik widens
+	// its attributes (i.e. progress value accepts a string). A consumer has one Qwik at most, and the unresolved import of the other
+	// is ignored under skipLibCheck like the imports of every framework not installed
+	return `// Generated by tsup.config.ts, do not edit
+import type * as PreactTypes from 'preact'
+import type * as ReactTypes from 'react'
+import type * as SvelteTypes from 'svelte/elements'
+import type * as VueJSX from '@vue/runtime-dom'
+import type { JSX as QwikJSX } from '@qwik.dev/core/jsx-runtime'
+import type { JSX as QwikV1JSX } from '@builder.io/qwik/jsx-runtime'
+import type { JSX as SolidJSX } from 'solid-js'
+${types.join("")}`;
 }

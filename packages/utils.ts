@@ -6,10 +6,13 @@ export const isBrowser = () =>
 // Bad, but needed
 const IS_BROWSER = isBrowser(); // Cache this since it's used in many places and can be dynamic in tests
 const AGENT = IS_BROWSER ? navigator.userAgent : "";
+const IS_SAMSUNGINTERNET = /samsungbrowser/i.test(AGENT); // Samsung Internet on Android
 export const IS_ANDROID = /android/i.test(AGENT);
 export const IS_FIREFOX = /firefox/i.test(AGENT);
-export const IS_IOS = /iPad|iPhone|iPod/.test(AGENT);
 export const IS_SAFARI = /^((?!chrome|android).)*safari/i.test(AGENT);
+export const IS_IOS =
+	/iPad|iPhone|iPod/.test(AGENT) ||
+	(/Macintosh/.test(AGENT) && IS_BROWSER && navigator.maxTouchPoints > 1); // iPadOS 13+ sends a Mac user agent by default
 export const IS_MAC =
 	IS_BROWSER &&
 	// @ts-expect-error Typescript has not implemented userAgentData yet https://stackoverflow.com/a/71392474
@@ -132,29 +135,36 @@ export const getRoot = (node: Node): Document | ShadowRoot => {
 };
 
 /**
- * getFocusedElement
+ * getFocused
  * @description Helper to get focused element, since testing environments such as jest/jsdom does not support .matches(":focus") or .matches(":focus-within")
  * @param node The target node
  * @return The Element with focus in the current root
  */
-export const getFocusedElement = (node: Node) => getRoot(node).activeElement;
+export const getFocused = (node: Node) => getRoot(node).activeElement;
 
 /**
  * getInputLabel
- * @description Get the screen reader label or an element from aria-label, aria-labelledby or <label> elements
+ * @description Get the screen reader label of an element from aria-labelledby, aria-label or <label> elements, in that order like the accessible name computation
  * @param element The target element to get accessible label from
+ * @param label Optional aria-label to use instead of the attribute, i.e. when the element rewrites it. Pass null for none
+ * @param labelledby Optional aria-labelledby to use instead of the attribute, i.e. when the element removes it. Pass null for none
  * @return string
  */
-export const getInputLabel = (el: Element) => {
-	const label = attr(el, "aria-label") || "";
-	const labels = attr(el, "aria-labelledby")?.split(" ") || [];
-	return [
-		...labels.map((id) => document.getElementById(id.trim() || "-")), // Get all labelledby elements
-		...Array.from((el as HTMLInputElement).labels || []), // Get all <label> elements
-	]
-		.reduce((acc, el) => acc || el?.innerText?.trim() || "", label)
-		.trim();
-};
+export const getInputLabel = (
+	el: Element,
+	label = attr(el, "aria-label"),
+	by = attr(el, "aria-labelledby"),
+) =>
+	[
+		join(by?.split(" ").map((id) => text(getById(el, id)))),
+		label?.trim(),
+		join(Array.from((el as HTMLInputElement).labels || [], text)),
+	].find(Boolean) || "";
+// biome-ignore lint: using innerText to only get visual text
+const text = (el?: HTMLElement | null) => el?.innerText?.trim() || "";
+const join = (texts?: string[]) => texts?.filter(Boolean).join(" ");
+const getById = (el: Element, id: string) =>
+	getRoot(el).getElementById(id.trim() || "-");
 
 /**
  * useId
@@ -162,7 +172,7 @@ export const getInputLabel = (el: Element) => {
  */
 declare global {
 	interface Window {
-		uElementsId?: Record<string, number>; // Use a global counter to ensure this works even when loading designsystemet multiple times
+		uElementsId?: Record<string, number>; // Use a global counter to ensure this works even when loading multiple packages
 	}
 }
 
@@ -210,31 +220,103 @@ export const customElements = {
 		window.customElements.define(name, instance),
 };
 
-// Trigger value change in React compatible manor https://stackoverflow.com/a/46012210
-export const setValue = (input: HTMLInputElement, data: string, type = "") => {
-	const event = { bubbles: true, composed: true, data, inputType: type };
-	const proto = HTMLInputElement.prototype;
-
-	input.dispatchEvent(new InputEvent("beforeinput", event));
-	Object.getOwnPropertyDescriptor(proto, "value")?.set?.call(input, data);
-	input.dispatchEvent(new InputEvent("input", event));
+/**
+ * dispatchChange
+ * @description Dispatch change like the browser does when a user commits a value
+ * @param {HTMLInputElement} input Input element to dispatch change on
+ */
+export const dispatchChange = (input: HTMLInputElement) =>
 	input.dispatchEvent(new Event("change", { bubbles: true }));
+
+/**
+ * setValue
+ * @description Set input value like the browser does on user input
+ * @param {HTMLInputElement} input Input element to set value on
+ * @param {string} value The new value
+ * @param {string} [inputType] The inputType of the input event. Omit to never trigger input event
+ * @param {boolean} [change] Whether to dispatch change after input, but is skipped if input is reverted
+ */
+declare global {
+	interface Window {
+		_uSetValue?: boolean; // true while setValue writes, so u-combobox can tell it from a programmatic write. On window, as each package bundles its own utils.
+	}
+}
+
+export const setValue = (
+	input: HTMLInputElement,
+	value: string,
+	inputType?: string,
+	change?: boolean,
+) => {
+	let last = input.value; // Text as of the last change, like the browser tracks it: the value before the write, or the value at a change dispatched by an input handler
+	const data = inputType === "insertText" ? value : null; // Align with web standard
+	const event = { bubbles: true, composed: true, data, inputType };
+	const proto = HTMLInputElement.prototype; // Using the prototype setter, as React tracks writes to input.value and would then skip onChange (https://stackoverflow.com/a/46012210)
+	const onChange = () => (last = input.value);
+
+	window._uSetValue = true;
+	try {
+		Object.getOwnPropertyDescriptor(proto, "value")?.set?.call(input, value);
+	} finally {
+		window._uSetValue = false; // In finally, so a throw does not leave u-combobox ignoring every later programmatic write
+	}
+	if (inputType) {
+		on(input, "change", onChange, true); // Capture, so a change stopped by a handler on the input still counts
+		input.dispatchEvent(new InputEvent("input", event));
+		off(input, "change", onChange, true);
+	}
+	if (change && input.value !== last) dispatchChange(input); // Only if the value ended up changed, as an input handler may have reverted it, or already dispatched change for it
 };
 
 /**
- * isPointerDown
- * @description Prevent unwanted "blur" events when pressing something with tabIndex=-1
- * @param {Event} [event] Optional event to set mousedown/up state
- * @return {boolean} Whether mouse is currently down
+ * onFocusLeave
+ * @description Run callback once focus has left, also after a press inside that is released outside without a click.
+ * Pressing something inside with tabindex="-1" blurs before the click refocuses, so a press defers the check until
+ * pointerup or pointercancel, then one tick, letting the click refocus first. A drag out releases without a click and still runs the check.
+ * In Samsung Internet, focus landing on <body> does not count as leaving, as it moves keyboard focus to <body> while TalkBack is on a listbox.
+ * Not on all of Android, as a tap on dead space also lands on <body>, and that must still count as leaving in Chrome
+ * @param {Node} el Element or root to listen on. Also what counts as inside, unless isInside is given
+ * @param {Function} fn Runs when the focused element is no longer inside
+ * @param {Function} [isInside] Optional predicate, i.e. to also count a connected input outside el
+ * @return {Function} Cleanup function unbinding the listeners
  */
-// Prevent loosing focus on mousedown on <data> despite tabIndex -1
-const IS_PRESS = new WeakSet<Element>();
-export const isPointerDown = (el: Element, e?: Event) => {
-	if (e?.type === "pointerdown") {
-		IS_PRESS.add(el);
-		on(document, "pointerup", () => IS_PRESS.delete(el), EVENT_ONCE); // pointerup is "composed" so it also bubbles from ShadowDOM up to document
-	}
-	return IS_PRESS.has(el);
+export const onFocusLeave = (
+	el: Node,
+	fn: () => void,
+	isInside = (node: Node | null) => el.contains(node),
+) => {
+	let hasBlurred: true | undefined; // focusout inside happened while pressed, so check once the press ends
+	let pending: ReturnType<typeof setTimeout> | undefined; // One check per settle, as two focusouts inside one task must not run fn twice
+	let unPress: (() => void) | undefined; // Between pointerdown inside and pointerup or pointercancel
+	const check = () => {
+		clearTimeout(pending);
+		pending = setTimeout(() => {
+			pending = undefined;
+			if (isInside(getFocused(el))) return;
+			if (IS_SAMSUNGINTERNET && document.activeElement === document.body)
+				return; // Focus went nowhere, see description. document.activeElement, as getFocused returns null for a shadow root when focus is outside it
+			fn();
+		}, 0); // Delay to allow focus to be set on new element
+	};
+	const cancel = () => {
+		if (hasBlurred) check();
+		unPress?.();
+		unPress = hasBlurred = undefined;
+	};
+	const handle = (e: Event) => {
+		if (!isInside(e.target as Node)) return; // Only presses and blurs inside count
+		if (e.type === "focusout") {
+			if (!unPress) check();
+			else hasBlurred = true; // Defer check to the end of the press
+		} else if (!unPress)
+			unPress = on(document, "pointerup pointercancel", cancel, EVENT_ONCE);
+	};
+	const unHandle = on(el, "pointerdown focusout", handle, true); // Capture, as focusout of a descendant is handled before frameworks and the datalist
+	return () => {
+		unHandle();
+		unPress?.();
+		clearTimeout(pending);
+	};
 };
 
 /**
@@ -248,19 +330,6 @@ export const declarativeShadowRoot = (style: string, slot = "<slot></slot>") =>
 	`<template shadowrootmode="open">${slot}<style>${style}</style></template>`;
 
 /**
- * preventSubmit
- * @description Temporarily removes form association on input to prevent form submission, without preventing event
- * @param {HTMLInputElement} input Input element to prevent submit on
- */
-export const preventSubmit = (input: HTMLInputElement) => {
-	const form = attr(input, "form");
-	attr(input, "form", "#"); // Temporarily remove form association to prevent submit on enter
-	setTimeout(restoreSubmit, 0, input, form); // Restore form association on next macrotask
-};
-const restoreSubmit = (input: HTMLInputElement, form: string | null) =>
-	attr(input, "form", form);
-
-/**
  * getText
  * @description Get text content of a node, trimmed and with fallback to empty string
  * @param {Node | null | undefined} el Element to get text from
@@ -269,15 +338,28 @@ const restoreSubmit = (input: HTMLInputElement, form: string | null) =>
 export const getText = (el?: Node | null) => el?.textContent?.trim() || "";
 
 /**
- * speak
+ * srText
+ * @description Get a screen reader text from the --sr-<key> CSS custom property, so consumers can translate through CSS.
+ * Inherited, so a translation can be set once on :root or :lang(). The value must be a quoted string, as it is also used as alternative text in content.
+ * Read on demand, as the computed style can not be observed for changes
+ */
+export const srText = (el: Element, key: string, fallback: string): string => {
+	const value = getComputedStyle(el).getPropertyValue(`--sr-${key}`).trim();
+	const quote = value[0];
+	const quoted = (quote === '"' || quote === "'") && value.endsWith(quote);
+	const text = quoted ? value.slice(1, -1).replace(/\\(.)/g, "$1") : value; // Unquote and unescape \" \' and \\
+	return text || fallback;
+};
+
+/**
+ * ariaNotify
  * @description Creates a aria-live element for announcements. Needed since VO is flaky on announcing aria-live inside ShadowDOM
  * @param {string} text Optional text to announce
  */
 let LIVE: HTMLElement;
 let LIVE_SR_FIX = 0; // Ensure screen reader announcing by alternating non-breaking-space suffix
 let LIVE_CLEAR: ReturnType<typeof setTimeout> | number = 0;
-export const speak = (text?: string) => {
-	clearTimeout(LIVE_CLEAR);
+export const ariaNotify = (text?: string) => {
 	if (!LIVE) {
 		LIVE = tag("div", { "aria-live": "assertive" });
 		LIVE.style.overflow = "hidden";
@@ -286,11 +368,45 @@ export const speak = (text?: string) => {
 		LIVE.style.width = "1px";
 	}
 	if (!LIVE.isConnected) document.body.appendChild(LIVE);
+	if (text === undefined) return; // Only prepare the live region, keep any pending clear so a previous announcement does not stay in <body>
+	clearTimeout(LIVE_CLEAR);
 	if (text === "") LIVE.textContent = ""; // Clear announcement immediately if empty string
 	if (text) {
 		LIVE.textContent = `${text}${LIVE_SR_FIX++ % 2 ? "\u{A0}" : ""}`; // Non-breaking space to ensure screen reader announces
-		LIVE_CLEAR = setTimeout(speak, !IS_MAC && IS_FIREFOX ? 2000 : 300, ""); // Clear after 300ms to allow announcement, but prevent screen reader from finding the text in <body>
+		LIVE_CLEAR = setTimeout(ariaNotify, !IS_MAC && IS_FIREFOX ? 2000 : 300, ""); // Clear after 300ms to allow announcement, but prevent screen reader from finding the text in <body>
 	}
 	// Note: Narrator has a minor "hiccup" when using aria-live, as it starts announcing native commands first
 	// Note: Firefox with NVDA needs 2000ms to fully announce
+};
+
+/**
+ * afterRender
+ * @description Run after frameworks have rendered asynchronously.
+ * Vue, Svelte and Angular render in the next microtask, while React queue rendering by posting to MessageChannel in the next microtask.
+ * Waiting one microtask and then posting to MessageChannel, ensures compatibility with all frameworks.
+ * setTimeout and requestAnimationFrame does not guarantee ordering, and can therefore be unreliable with React.
+ * @param {void} callback
+ */
+const RENDER_QUEUE: (() => void)[] = []; // One callback per posted message, so each keeps its own place after the renders queued before it
+let RENDER_PORT: MessagePort | undefined; // Shared channel, created on first use so SSR never touches MessageChannel, and closed once drained
+export const afterRender = (callback: () => void) => {
+	if (typeof MessageChannel === "undefined") {
+		Promise.resolve().then(() => setTimeout(callback)); // Fallback if JSDOM or environments without MessageChannel
+		return;
+	}
+	if (!RENDER_PORT) {
+		const { port1, port2 } = new MessageChannel();
+		port1.onmessage = () => {
+			const callback = RENDER_QUEUE.shift();
+			if (!RENDER_QUEUE.length) {
+				port1.close(); // Cleanup before callback in case callback throws.
+				port2.close(); // Cleanup needed on Node (i.e. jsdom tests), as a started port keeps Node alive
+				RENDER_PORT = undefined;
+			}
+			callback?.();
+		};
+		RENDER_PORT = port2;
+	}
+	RENDER_QUEUE.push(callback);
+	Promise.resolve().then(() => RENDER_PORT?.postMessage(0));
 };

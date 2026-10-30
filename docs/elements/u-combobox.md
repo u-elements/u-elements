@@ -10,10 +10,10 @@ import { data } from '../filesize.data.ts'
 
 **Quick intro:**
 - Use `<data>` as direct child elements - these are the removable items
-- Use `<input>` and `<u-datalist>` to allow adding and suggesting items
+- Use `<input>` as direct child and `<u-datalist>` to allow adding and suggesting items
 - Use `data-multiple` to allow selecting multiple items
 - Use `data-creatable` to allow creating items not in the list
-- Use `data-sr-*` attributes to translate screen reader announcements
+- Use `--sr-*` CSS custom properties to translate screen reader texts
 - Use matching `id` on `<input>` and `for` attribute on `<label>` to connect
 - Optionally use `<select>` as child for `FormData` or form submission compatibility
 - Optionally use `<button type="reset">` after `input` to create a clear button
@@ -37,7 +37,7 @@ import { data } from '../filesize.data.ts'
   &lt;input id="my-input" list="my-list" /&gt;
   &lt;button type="button" aria-expanded="false"&gt;&lt;/button&gt;
   &lt;button type="reset"&gt;&lt;/button&gt;
-  &lt;u-datalist hidden id="my-list" data-sr-singular="%d flavor" data-sr-plural="%d flavours"&gt;
+  &lt;u-datalist hidden id="my-list" style="--sr-singular: '%d flavor'; --sr-plural: '%d flavours'"&gt;
     &lt;u-option&gt;Coconut&lt;/u-option&gt;
     &lt;u-option&gt;Strawberries&lt;/u-option&gt;
     &lt;u-option&gt;Chocolate&lt;/u-option&gt;
@@ -86,21 +86,14 @@ bun add -S @u-elements/u-combobox
 ### `<u-combobox>`
 
 - **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
-  - `data-sr-added` prefixes announcements about additions. Defaults to `"Added"`
-  - `data-sr-removed` prefixes announcements about removals. Defaults to `"Removed"`
-  - `data-sr-remove` announces ability to remove. Defaults to `"Press to remove"`
-  - `data-sr-empty` announces no selected items. Defaults to `"No selected"`
-  - `data-sr-found` announces where to find amount of selected items. Defaults to `"Navigate left to find %d selected"`
-  - `data-sr-invalid` announces if trying to select invalid value. Defaults to `"Invalid value""`
-  - `data-sr-of` separates "number _of_ total" in announcements. Defaults to `"of"`
-  - `data-sr-items` aria-label for listbox containing selected items. Defaults to `"Selected"`
-  - `data-sr-clear` aria-label of clear button. Defaults to `"Clear input"`
-  - `data-sr-toggle` aria-label of toggle list button. Defaults to `"Options"`
+  - `data-multiple` allows selecting multiple items
+  - `data-creatable` allows creating items not in the list
+- **Screen reader texts:** set through [`--sr-*` CSS custom properties](#screen-reader-texts)
 - **DOM interface:** `UHTMLComboboxElement` extends [`HTMLElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement)
   - `UHTMLComboboxElement.control` returns `HTMLInputElement | null`
   - `UHTMLComboboxElement.items` returns `HTMLCollectionOf<HTMLDataElement>`
   - `UHTMLComboboxElement.list` returns `HTMLDataListElement | null`
-  - `UHTMLComboboxElement.options` returns `HTMLCollectionOf<HTMLOptionElement> | undefined`
+  - `UHTMLComboboxElement.options` returns `HTMLCollectionOf<HTMLOptionElement>`
   - `UHTMLComboboxElement.values` returns `string[]` with `value` of each item
 
 ### `<data>`
@@ -133,6 +126,8 @@ myCombobox.addEventListener('comboboxafterselect', (event) => {
 ```
 
 ### `comboboxbeforematch`
+Dispatched on `Enter`, and in single mode also on blur, when the input has text and a datalist is present. Never dispatched while typing, when empty input or when missing datalist. Hidden and disabled options are not matched. Prevent the event and set `option.selected` on all options to change or reject match.
+
 ```js
 myCombobox.addEventListener('comboboxbeforematch', (event) => {
   event.target // UHTMLComboboxElement
@@ -142,21 +137,34 @@ myCombobox.addEventListener('comboboxbeforematch', (event) => {
 })
 ```
 
-### `comboboxprogrammaticinput`
-Triggers if `input.value` is programmatically set. Useful when extending `u-combobox` with custom functionality.
-```js
-myCombobox.addEventListener('comboboxprogrammaticinput', (event) => {
-  event.target // HTMLInputElement
-})
-```
-
 
 ## Styling
 
 - `<u-combobox>` renders as `display: block`, while `<data>` renders as `display: inline-block` with a `::after` element to render the removal `×`.
+- Customize or hide the removal `×` via `--x: ''` on `<u-combobox>`; don’t change CSS `content`, as this can break screen reader announcements
 - Style the wrapper around `<data>`-elements can be styled using `::part(items)`.
-- If the `<button type="reset">` is empty, a `×` icon is automaticallay rendered as `::before` pseudo-element.
-- If the `<button aria-expanded="false"></button>` is empty, a `▼` icon is automaticallay rendered as `::before` pseudo-element.
+- `<data>` elements uses a `::before` with `position: absolute` for screen reader announcements
+- If `<button type="reset">` is empty, a `×` renders with `::before`
+- If `<button aria-expanded="false"></button>` is empty, a `▼` renders with `::before`
+
+### Screen reader texts
+
+Screen reader texts are set through CSS custom properties. They inherit, so a translation can be set once for a page or a language, i.e. `:lang(nb) { --sr-clear: "Tøm" }`.
+
+- `--sr-added` prefixes announcements about additions. Defaults to `"Added"`
+- `--sr-removed` prefixes announcements about removals. Defaults to `"Removed"`
+- `--sr-remove` announces ability to remove. Defaults to `"Press to remove"`
+- `--sr-empty` announces no selected items. Defaults to `"No selected"`
+- `--sr-found` announces where to find amount of selected items. Defaults to `"Navigate left to find %d selected"`
+- `--sr-invalid` announces if trying to select invalid value. Defaults to `"Invalid value"`
+- `--sr-items` aria-label for listbox containing selected items. Defaults to `"Selected"`
+- `--sr-clear` name of clear button. Defaults to `"Clear input"`
+- `--sr-toggle` name of toggle list button. Defaults to `"Options"`
+- `--sr-singular` and `--sr-plural` announce hits, see [`<u-datalist>`](./u-datalist#attributes-and-props)
+
+::: tip Note:
+If you are using a strict Content Security Policy (CSP), inline `style` HTML attributes are blocked. Set the properties in your CSS, or through `element.style.setProperty('--sr-clear', '"New string"')` (note that the string must be quoted) or a framework `style` binding.
+:::
 
 ## Example: Norwegian
 
@@ -165,22 +173,12 @@ myCombobox.addEventListener('comboboxprogrammaticinput', (event) => {
 &lt;label for="my-norwegian-input"&gt;
   Velg type iskrem
 &lt;/label&gt;
-&lt;u-combobox
-  data-sr-added="La til"
-  data-sr-clear="Fjern tekst"
-  data-sr-empty="Ingen valgte"
-  data-sr-found="Naviger til venstre for å finne %d valgte"
-  data-sr-items="Valgte"
-  data-sr-of="av"
-  data-sr-remove="Trykk for å fjerne"
-  data-sr-removed="Fjernet"
-  data-sr-toggle="Valg"
-&gt;
+&lt;u-combobox id="my-norwegian"&gt;
   &lt;data&gt;Kokkos&lt;/data&gt;
   &lt;input id="my-norwegian-input" list="my-norwegian-list" /&gt;
   &lt;button type="button" aria-expanded="false"&gt;&lt;/button&gt;
   &lt;button type="reset"&gt;&lt;/button&gt;
-  &lt;u-datalist hidden id="my-norwegian-list" data-sr-singular="%d smak" data-sr-plural="%d smaker"&gt;
+  &lt;u-datalist hidden id="my-norwegian-list"&gt;
     &lt;u-option&gt;Kokkos&lt;/u-option&gt;
     &lt;u-option&gt;Jordbær&lt;/u-option&gt;
     &lt;u-option&gt;Sjokolade&lt;/u-option&gt;
@@ -192,6 +190,20 @@ myCombobox.addEventListener('comboboxprogrammaticinput', (event) => {
   &lt;/u-datalist&gt;
 &lt;/u-combobox&gt;
 &lt;style&gt;
+  /* Screen reader texts inherit, so they also apply to the u-datalist inside. Set them on :root or :lang() to translate a whole page */
+  #my-norwegian {
+    --sr-added: "La til";
+    --sr-clear: "Fjern tekst";
+    --sr-empty: "Ingen valgte";
+    --sr-found: "Naviger til venstre for å finne %d valgte";
+    --sr-invalid: "Ugyldig verdi";
+    --sr-items: "Valgte";
+    --sr-plural: "%d smaker";
+    --sr-remove: "Trykk for å fjerne";
+    --sr-removed: "Fjernet";
+    --sr-singular: "%d smak";
+    --sr-toggle: "Valg";
+  }
   /* Styling just for example: */
   u-combobox { border: 1px solid; display: flex; flex-wrap: wrap; gap: .5em; padding: .5em; position: relative }
   u-option[selected] { font-weight: bold }
@@ -399,7 +411,6 @@ Notice: `<u-datalist>` has `data-nofilter` to allow custom filtering
     const options = combobox.list.options;
     const add = options[options.length - 1];
     add.hidden = !value || combobox.values.includes(value);
-    console.log(combobox.values)
     add.value = value;
     add.label = value;
     add.textContent = `Add "${value}"`
@@ -495,7 +506,7 @@ if (typeof window !== 'undefined') {
   &lt;input id="my-controlled-input" list="my-controlled-list" /&gt;
   &lt;button type="button" aria-expanded="false"&gt;&lt;/button&gt;
   &lt;button type="reset"&gt;&lt;/button&gt;
-  &lt;u-datalist hidden id="my-controlled-list" data-nofilter&gt;
+  &lt;u-datalist hidden id="my-controlled-list"&gt;
     &lt;u-option&gt;Coconut&lt;/u-option&gt;
     &lt;u-option&gt;Strawberries&lt;/u-option&gt;
     &lt;u-option&gt;Chocolate&lt;/u-option&gt;
@@ -577,14 +588,47 @@ const renderToStaticMarkup = (data: string, options: string) =>
   </u-combobox>`
 ```
 
-## Notes
-- ARC Toolkit incorectly reports `aria-description` as an invalid ARIA-attribute
-- ARC Toolkit does not correcly read the relation between items with `role="option"` and the ShadowDoom wrapping container `role="listbox"`
+**Hydration:** Attributes are dynamically added in the browser, so the client DOM will differ from the server markup. Use `suppressHydrationWarning` in React, `data-allow-mismatch="attribute"` in Vue, or similar for your framework on these elements, to avoid hydration warnings.
 
+## Notes
+- `<datalist>` or `<u-datalist>` must be a child of `<u-combobox>`. The `list` attribute on `<input>` is managed automatically
+- Without a datalist, single mode is free text: the input is never overwritten, blur does nothing, and `Enter` only creates an item when `data-creatable` is set. The item is removed through the clear button
+- Single mode acts on the first `<data>` only
+- The toggle button is hidden when using native `<datalist>`, as the native suggestion popup can not be detected programmatically
+- In controlled mode, `change` is dispatched by the input sync that follows the `<data>` change. A deferred render (i.e. React `startTransition`, a debounced state update) still dispatches `change` when it renders the item the user picked or matched. On blur, the input shows the previous item until the deferred render lands, as a prevented match can not be told apart from a deferred one
+- ARC Toolkit incorrectly reports `aria-description` as an invalid ARIA-attribute
+- ARC Toolkit does not correctly read the relation between items with `role="option"` and the ShadowDOM wrapping container `role="listbox"`
+- See full behavior spec in [u-combobox source](https://github.com/u-elements/u-elements/blob/main/packages/u-combobox/u-combobox.ts)
 
 ## Changelog
 
-- **2.1.5:** Fix starte handling when multiple mode and controlled mode (i.e. React)
+- **3.0.0:** Framework compatibility and matching changes
+  - **How to upgrade:**
+    - Update `@u-elements/u-datalist` to 3.0.0 or newer
+    - Ensure `<input>` is a direct child of `<u-combobox>`
+    - Ensure clear button is a `<button type="reset"></button>`
+    - Replace `data-sr-*` attributes with [`--sr-*` CSS custom properties](#screen-reader-texts)
+    - Remove `comboboxprogrammaticinput` listeners - the event is removed
+  - **Single mode:**
+    - **Important:** No longer matches while typing, only on `Enter` and blur
+    - `Enter` no longer reverts text on match; text is kept until blur
+    - `input.value` is only synced to the `<data>` if a datalist is present
+    - `values` returns at most one value, matching the mirrored `<data>`
+    - Mirrors only the first `<data>` into `<select>`, so submitted value matches the input
+  - **Multiple mode:**
+    - `Enter` only adds. A matched option that is already an item is kept, as removal is intended through a pick or an explicit item removal
+  - **Changes in both single and multiple mode:**
+    - Better support for async rendering and events in frameworks
+    - Better performance when frameworks syncs attributes
+    - `change` is only dispatched when the input sync follows a user commit (option pick, `Enter`, blur, clear or item removal), never on mount, programmatic `<data>` changes or form reset, aligning with  conventions from other native elements
+    - `Enter` match on `keyup` instead of `keydown` to support native datalist in Safari
+    - A prevented `keydown` is respected, so a prevented `Enter` never matches
+    - `form.reset()` syncs the clear and toggle buttons
+    - Toggle button is hidden when the input is `disabled` or `readonly`
+    - Firefox spell check and autofill are not seen as option-picks
+    - Synthetic `InputEvent` (i.e. testing-library) does not cause incorrect option click
+    - Framework typings for Qwik 1, Qwik 2 and Preact 11 uses `HTMLElementTagNameMap`
+- **2.1.5:** Fix state handling when mode is multiple and controlled (i.e. React)
 - **2.1.4:** Fix internal state when preventing a selection or setting value programmatically
 - **2.1.3:** Fix issue where item behind datalist could receive focus
 - **2.1.2:** Prevent unnecessary matching after option `click` in single mode

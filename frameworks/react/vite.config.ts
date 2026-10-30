@@ -1,6 +1,4 @@
-import react from '@vitejs/plugin-react'
+import react from "@vitejs/plugin-react";
+import { frameworkConfig } from "../vite.shared.ts";
 
-export default {
-  root: __dirname,
-  plugins: [react()]
-}
+export default frameworkConfig(import.meta.dirname, { plugins: [react()] });

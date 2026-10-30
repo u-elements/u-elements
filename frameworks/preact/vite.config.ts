@@ -1,6 +1,4 @@
-import preact from '@preact/preset-vite'
+import preact from "@preact/preset-vite";
+import { frameworkConfig } from "../vite.shared.ts";
 
-export default {
-  root: __dirname,
-  plugins: [preact()]
-}
+export default frameworkConfig(import.meta.dirname, { plugins: [preact()] });

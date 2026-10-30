@@ -1,4 +1,5 @@
 import {
+	afterRender,
 	attachStyle,
 	attr,
 	customElements,
@@ -16,6 +17,8 @@ declare global {
 	}
 }
 
+const ARIA_LABEL = "aria-label";
+const ARIA_LABELLEDBY = "aria-labelledby";
 const VALUE = "value";
 const MAX = "max";
 
@@ -33,14 +36,17 @@ export const UHTMLProgressShadowRoot =
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/progress)
  */
 export class UHTMLProgressElement extends UHTMLElement {
-	_skipAttrChange = false;
+	_afterRender = false; // A re-sync is scheduled, see attributeChangedCallback
 	_internals?: ElementInternals;
+	_label?: string | null; // aria-label as written by the consumer, as the computed label is written to the same attribute
+	_labelledby?: string | null; // aria-labelledby as written by the consumer, as it is resolved into aria-label and replaced by a self-reference
+	_skipAttrChange = false;
 
 	// Prevent Chrome DevTools warning about <label for=""> pointing to <u-progress>
 	static formAssociated = true;
 
 	static get observedAttributes() {
-		return ["aria-label", "aria-labelledby", VALUE, MAX]; // Using ES2015 syntax for backwards compatibility
+		return [ARIA_LABEL, ARIA_LABELLEDBY, "id", VALUE, MAX]; // Using ES2015 syntax for backwards compatibility. id as <label for> is matched by id
 	}
 
 	constructor() {
@@ -54,25 +60,46 @@ export class UHTMLProgressElement extends UHTMLElement {
 		attr(this, "role", IS_IOS ? "img" : "progressbar");
 		this.attributeChangedCallback();
 	}
-	attributeChangedCallback() {
+	attributeChangedCallback(prop?: string, _?: string, next?: string | null) {
+		if (!this._skipAttrChange) {
+			if (prop === ARIA_LABEL) this._label = next;
+			if (prop === ARIA_LABELLEDBY) this._labelledby = next;
+		}
 		if (this._skipAttrChange || !this.hasAttribute("role")) return; // Prevent infinite loop when updating ARIA attributes
+		if (!this._afterRender && prop !== VALUE && prop !== MAX) {
+			this._afterRender = true; // Sync again once frameworks have rendered, as labels and ids referenced by aria-labelledby may be written after this element (i.e. Angular and Qwik). Not for value and max, as they never affect the label and a progress bar can update every frame
+			afterRender(() => {
+				try {
+					if (this.isConnected) this.attributeChangedCallback();
+				} finally {
+					this._afterRender = false; // Important to run last, so the re-sync does not schedule itself again. In finally, so a throw does not block later re-syncs
+				}
+			});
+		}
 		this._skipAttrChange = true;
-		const position = this.position;
-		const percentage = Math.max(0, Math.round(position * 100));
+		try {
+			const position = this.position;
+			const percentage = Math.max(0, Math.round(position * 100));
 
-		// Write CSS variable before getLabel (innerText triggers style recalc)
-		this.style.setProperty("--percentage", `${percentage}%`);
+			// Write CSS variable before getLabel (innerText triggers style recalc)
+			this.style.setProperty("--percentage", `${percentage}%`);
 
-		let label = getInputLabel(this);
-		if (IS_IOS)
-			label = `${label.replace(/\(\d+%\)$/, "")} (${percentage}%)`.trim(); // Always use percentage as iOS role="img"
+			let label = getInputLabel(
+				this,
+				this._label ?? null,
+				this._labelledby ?? null,
+			); // From what the consumer wrote, as the element rewrites both aria-label and aria-labelledby
+			if (IS_IOS)
+				label = `${label.replace(/\(\d+%\)$/, "")} (${percentage}%)`.trim(); // Always use percentage as iOS role="img"
 
-		// Set ARIA attributes
-		attr(this, "aria-busy", `${position === -1}`);
-		attr(this, "aria-label", label); // Must use aria-label to include percentage value
-		attr(this, "aria-labelledby", null);
-		attr(this, "aria-valuenow", position === -1 ? null : `${percentage}`);
-		this._skipAttrChange = false;
+			// Set ARIA attributes
+			attr(this, "aria-busy", `${position === -1}`);
+			attr(this, "aria-valuenow", position === -1 ? null : `${percentage}`);
+			attr(this, ARIA_LABEL, label); // Must use aria-label to include percentage value
+			attr(this, ARIA_LABELLEDBY, this._labelledby ? useId(this) : null); // Point at itself while the consumer has aria-labelledby, as a self-reference names from aria-label, and keeping the attribute makes a consumer removal fire attributeChangedCallback
+		} finally {
+			this._skipAttrChange = false; // In finally, so a throw does not leave every later attribute change ignored
+		}
 	}
 	get labels(): NodeListOf<HTMLLabelElement> {
 		const labels = this._internals?.labels;
@@ -110,6 +137,7 @@ const getNumber = (el: Element, key: string, min = 0) => {
 };
 
 const setNumber = (el: Element, key: string, value: unknown, min = 0) => {
+	if (value === null || value === undefined) return attr(el, key, null); // Frameworks write null and undefined through the property, so remove the attribute like they would for a native element (i.e. value={undefined} for indeterminate)
 	const float = Number(value);
 	if (Number.isFinite(float))
 		return attr(el, key, `${Math.max(min, float) || min}`);

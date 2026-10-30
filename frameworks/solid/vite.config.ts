@@ -1,6 +1,4 @@
-import solid from 'vite-plugin-solid'
+import solid from "vite-plugin-solid";
+import { frameworkConfig } from "../vite.shared.ts";
 
-export default {
-  root: __dirname,
-  plugins: [solid()]
-}
+export default frameworkConfig(import.meta.dirname, { plugins: [solid()] });

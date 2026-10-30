@@ -1,8 +1,10 @@
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
+import { expect, test } from "../test";
+import { datalistSuite, opened, recordSpoken } from "./u-datalist.suite";
 
-test.beforeEach(async ({ page }) => {
-	await page.goto("test.html");
-});
+// Runs the shared suite (u-datalist.suite.ts) against the vanilla DOM harness page (frameworks/vanilla/test.html?component=u-datalist).
+// The tests below need raw DOM access and have no equivalent in the harness
+datalistSuite({ url: "frameworks/vanilla/test.html?component=u-datalist" });
 
 const mount = async (page: Page, html: string) => {
 	await page.evaluate((markup) => {
@@ -23,6 +25,10 @@ const DEFAULT = `<form>
     </form>`;
 
 test.describe("HTMLDataListElement", () => {
+	test.beforeEach(async ({ page }) => {
+		await page.goto("test.html");
+	});
+
 	test("matches snapshot", async ({ page }) => {
 		await mount(page, DEFAULT);
 		expect(await page.locator("body").innerHTML()).toMatchSnapshot(
@@ -174,7 +180,7 @@ test.describe("HTMLDataListElement", () => {
 			page,
 			`
         <label>Search here <input type="text" list="datalist-1" /></label>
-        <u-datalist id="datalist-1" data-sr-singular="%d hit" data-sr-plural="%d hits">
+        <u-datalist id="datalist-1">
           <u-option>Option 1</u-option>
           <u-option>Option 2</u-option>
           <u-option>Option 3</u-option>
@@ -215,6 +221,11 @@ test.describe("HTMLDataListElement", () => {
 
 		await input.press("ArrowUp");
 		await expect(option0).not.toHaveAttribute("data-activedescendant");
+		await expect(option2).toHaveAttribute("data-activedescendant"); // Wraps to the last option
+
+		await input.press("Escape"); // Closing clears the active option
+		await input.press("ArrowUp"); // Like native <datalist>, ArrowUp without an active option moves to the last option
+		await expect(option2).toHaveAttribute("data-activedescendant");
 
 		await input.press("End");
 		await expect(option2).toHaveAttribute("data-activedescendant");
@@ -232,6 +243,87 @@ test.describe("HTMLDataListElement", () => {
 
 		await input.press("Enter");
 		await expect(input).toHaveValue((await option0.textContent()) || "");
+		await expect(datalist).toBeHidden();
+	});
+
+	test("picks the active option once on held Enter", async ({ page }) => {
+		// Multiselectable stays open with the option active after a pick, so a repeat would pick again on every keydown
+		await mount(
+			page,
+			DEFAULT.replace(
+				"<u-datalist",
+				'<u-datalist aria-multiselectable="true" data-multiselectable="true"', // data- variant is what Android reads, see SAFE_MULTISELECTABLE
+			),
+		);
+		const datalist = page.locator("u-datalist");
+		const input = page.locator("input");
+
+		await input.evaluate((el: HTMLInputElement) => {
+			let inputs = 0;
+			el.addEventListener("input", () =>
+				el.setAttribute("data-inputs", `${++inputs}`),
+			);
+			el.form?.addEventListener("submit", (e) => {
+				e.preventDefault();
+				el.setAttribute("data-submit", "");
+			});
+		});
+
+		await input.focus();
+		await input.press("ArrowDown");
+		await page.keyboard.down("Enter");
+		await page.keyboard.down("Enter"); // Playwright sets repeat: true on a second down without up, like a held key
+		await page.keyboard.down("Enter");
+		await page.keyboard.up("Enter");
+		await expect(input).toHaveValue("Option 1");
+		await expect(input).toHaveAttribute("data-inputs", "1"); // Picked once
+		await expect(datalist).toBeVisible();
+		await expect(input).not.toHaveAttribute("data-submit"); // Submit is still prevented on every repeat
+	});
+
+	test("does not re-open on held Enter after the pick closed the list", async ({
+		page,
+	}) => {
+		await mount(page, DEFAULT);
+		const datalist = page.locator("u-datalist");
+		const input = page.locator("input");
+
+		await input.evaluate((el: HTMLInputElement) =>
+			el.form?.addEventListener("submit", (e) => e.preventDefault()),
+		); // A held Enter on a closed list is a plain Enter in the input, so only keep the page from navigating
+
+		await input.focus();
+		await input.press("ArrowDown");
+		await page.keyboard.down("Enter");
+		await page.keyboard.down("Enter"); // repeat: true
+		await page.keyboard.up("Enter");
+		await expect(input).toHaveValue("Option 1");
+		await expect(datalist).toBeHidden();
+	});
+
+	test("keeps the open state on Escape while composing", async ({ page }) => {
+		await mount(page, DEFAULT);
+		const datalist = page.locator("u-datalist");
+		const input = page.locator("input");
+		const composeEscape = (el: HTMLInputElement) =>
+			el.dispatchEvent(
+				new KeyboardEvent("keydown", {
+					bubbles: true,
+					cancelable: true,
+					isComposing: true,
+					key: "Escape",
+				}),
+			);
+
+		await input.focus();
+		await input.press("ArrowDown");
+		await expect(datalist).toBeVisible();
+		await input.evaluate(composeEscape); // Cancels the composition, so the list stays open
+		await expect(datalist).toBeVisible();
+
+		await input.press("Escape");
+		await expect(datalist).toBeHidden();
+		await input.evaluate(composeEscape); // Cancels the composition, so the list stays closed
 		await expect(datalist).toBeHidden();
 	});
 
@@ -302,18 +394,167 @@ test.describe("HTMLDataListElement", () => {
 		await expect(datalist).toBeVisible();
 	});
 
+	test("announces hits with --sr-* custom properties", async ({ page }) => {
+		await mount(
+			page,
+			`<style>:root { --sr-singular: "%d treff"; --sr-plural: '%d treff' }</style>
+        <label>Search here <input type="text" list="datalist-1" /></label>
+        <u-datalist id="datalist-1">
+          <u-option>Option 1</u-option>
+          <u-option>Option 2</u-option>
+          <u-option>Option 3</u-option>
+        </u-datalist>`,
+		);
+		const input = page.locator("input").first();
+
+		await input.click();
+		const spoken = await recordSpoken(page);
+
+		await input.pressSequentially("Option 1", { delay: 50 }); // Like a user, as the list clears the pending announcement in a timeout when it opens, which keys dispatched without a gap would all precede
+		await expect.poll(spoken).toContain("1 treff");
+		await input.press("Backspace");
+		await input.press("Backspace");
+		await expect.poll(spoken).toContain("3 treff");
+	});
+
+	test("announces aria-setsize as the hit count for a virtualized window", async ({
+		page,
+	}) => {
+		// A consumer rendering a window of a larger result set sets aria-setsize on the rendered options
+		await mount(
+			page,
+			`<label>Search here <input type="text" list="datalist-1" /></label>
+        <u-datalist id="datalist-1" data-nofilter>
+          <u-option aria-setsize="7" hidden>Hidden</u-option>
+          <u-option aria-posinset="41" aria-setsize="120">Option 1</u-option>
+          <u-option aria-posinset="42" aria-setsize="120">Option 2</u-option>
+          <u-option aria-posinset="43" aria-setsize="120">Option 3</u-option>
+        </u-datalist>`,
+		);
+		const input = page.locator("input").first();
+		const options = page.locator("u-option:not([hidden])");
+
+		await input.click();
+		const spoken = await recordSpoken(page);
+		await opened(page);
+
+		await input.press("x");
+		await expect.poll(spoken).toEqual(["120 hits"]); // The total, not the 3 rendered options and not the hidden option's 7
+
+		if (test.info().project.name === "Mobile Safari")
+			for (const [index, pos] of ["41", "42", "43"].entries()) {
+				const option = options.nth(index);
+				await expect(option).toHaveAttribute("data-posinset", pos); // iOS reads the position from aria-posinset instead of the rendered index
+				await expect(option).toHaveAttribute("data-setsize", "120");
+				const content = await option.evaluate(
+					(el) => getComputedStyle(el, "::after").content,
+				);
+				expect(content).toContain(`${pos} of 120`); // The CSS reads the same attributes as written
+			}
+	});
+
+	test("picks singular or plural from the aria-setsize total", async ({
+		page,
+	}) => {
+		await mount(
+			page,
+			`<label>Search here <input type="text" list="datalist-1" /></label>
+        <u-datalist id="datalist-1" data-nofilter>
+          <u-option aria-posinset="1" aria-setsize="1">Option 1</u-option>
+        </u-datalist>`,
+		);
+		const input = page.locator("input").first();
+		const option = page.locator("u-option");
+		const setSize = (size: string) =>
+			option.evaluate(
+				(el, size) => el.setAttribute("aria-setsize", size),
+				size,
+			);
+
+		await input.click();
+		const spoken = await recordSpoken(page);
+		await opened(page);
+
+		await input.press("x");
+		await expect.poll(spoken).toEqual(["1 hit"]);
+
+		await setSize("5"); // One rendered option, but the total is plural
+		await expect.poll(spoken).toEqual(["1 hit", "5 hits"]);
+
+		await setSize("-1"); // Unknown total per ARIA, so fall back to the rendered count
+		await expect.poll(spoken).toEqual(["1 hit", "5 hits", "1 hit"]);
+
+		await setSize("2");
+		await expect.poll(spoken).toEqual(["1 hit", "5 hits", "1 hit", "2 hits"]);
+
+		await setSize("abc"); // Not a number, so fall back to the rendered count
+		await expect
+			.poll(spoken)
+			.toEqual(["1 hit", "5 hits", "1 hit", "2 hits", "1 hit"]);
+	});
+
+	test("does not re-announce when options are replaced with the same query and total", async ({
+		page,
+	}) => {
+		// A consumer fetching a window re-renders fresh option elements, which must not repeat the hit count
+		await mount(
+			page,
+			`<label>Search here <input type="text" list="datalist-1" /></label>
+        <u-datalist id="datalist-1" data-nofilter>
+          <u-option aria-posinset="1" aria-setsize="120">Option 1</u-option>
+          <u-option aria-posinset="2" aria-setsize="120">Option 2</u-option>
+          <u-option aria-posinset="3" aria-setsize="120">Option 3</u-option>
+        </u-datalist>`,
+		);
+		const input = page.locator("input").first();
+		const datalist = page.locator("u-datalist");
+		const replaceOptions = (size: string) =>
+			datalist.evaluate((el, size) => {
+				el.replaceChildren(
+					...["Option 1", "Option 2", "Option 3"].map((text, index) => {
+						const opt = document.createElement("u-option");
+						opt.setAttribute("aria-posinset", `${index + 1}`);
+						opt.setAttribute("aria-setsize", size);
+						opt.textContent = text;
+						return opt;
+					}),
+				);
+			}, size);
+
+		await input.click();
+		const spoken = await recordSpoken(page);
+		await opened(page);
+
+		await input.press("x");
+		await expect.poll(spoken).toEqual(["120 hits"]);
+
+		await replaceOptions("120");
+		await page.waitForTimeout(700); // Past the 500ms announcement timer
+		expect(await spoken()).toEqual(["120 hits"]); // Same query and total, so nothing new to announce
+
+		await replaceOptions("121");
+		await expect.poll(spoken).toEqual(["120 hits", "121 hits"]); // A new total is announced
+
+		await input.press("Escape");
+		await expect(datalist).toBeHidden();
+		await input.press("ArrowDown");
+		await expect(datalist).toBeVisible();
+		await opened(page);
+		await replaceOptions("121");
+		await expect.poll(spoken).toEqual(["120 hits", "121 hits", "121 hits"]); // Closing clears the last announcement, so the same result is announced again on the next open
+	});
 	test("handles multiple datalist on same page", async ({ page }) => {
 		await mount(
 			page,
 			`<form>
         <label>Search here<input type="text" list="datalist-1" /></label>
-        <u-datalist id="datalist-1" data-sr-singular="%d hit" data-sr-plural="%d hits">
+        <u-datalist id="datalist-1">
           <u-option>Option 1</u-option>
           <u-option>Option 2</u-option>
           <u-option>Option 3</u-option>
         </u-datalist>
         <label>Search here<input type="text" list="datalist-2" /></label>
-        <u-datalist id="datalist-2" data-sr-singular="%d hit" data-sr-plural="%d hits">
+        <u-datalist id="datalist-2">
           <u-option>Option 1</u-option>
           <u-option>Option 2</u-option>
           <u-option>Option 3</u-option>
@@ -343,7 +584,7 @@ test.describe("HTMLDataListElement", () => {
 			`<form>
         <label>Search here 1<input type="text" list="datalist-1" /></label>
         <label>Search here 2<input type="text" list="datalist-1" /></label>
-        <u-datalist id="datalist-1" data-sr-singular="%d hit" data-sr-plural="%d hits">
+        <u-datalist id="datalist-1">
           <u-option>Option 1</u-option>
           <u-option>Option 2</u-option>
           <u-option>Option 3</u-option>
@@ -377,5 +618,103 @@ test.describe("HTMLDataListElement", () => {
 		await option0.click();
 		await expect(input).toHaveAttribute("data-input");
 		await expect(input).toHaveAttribute("data-change");
+	});
+
+	test("syncs the input when a consumer writes hidden", async ({ page }) => {
+		await mount(page, DEFAULT);
+		const datalist = page.locator("u-datalist");
+		const input = page.locator("input");
+		const option0 = page.locator("u-option").nth(0);
+
+		await input.click();
+		await input.press("ArrowDown");
+		await expect(input).toHaveAttribute("aria-expanded", "true");
+		await expect(input).toHaveAttribute("aria-activedescendant");
+		await expect(option0).toHaveAttribute("data-activedescendant");
+
+		await datalist.evaluate((el: HTMLElement) => {
+			el.hidden = true; // Like the <u-combobox> toggle button
+		});
+		await expect(datalist).toBeHidden();
+		await expect(input).toHaveAttribute("aria-expanded", "false");
+		await expect(input).not.toHaveAttribute("aria-activedescendant");
+		await expect(option0).not.toHaveAttribute("data-activedescendant");
+
+		await datalist.evaluate((el: HTMLElement) => {
+			el.hidden = false;
+		});
+		await expect(datalist).toBeVisible();
+		await expect(input).toHaveAttribute("aria-expanded", "true");
+	});
+
+	test("mirrors a consumer written hidden to the Popover API", async ({
+		page,
+	}) => {
+		await mount(page, DEFAULT.replace("<u-datalist", "<u-datalist popover"));
+		const datalist = page.locator("u-datalist");
+		const isOpen = () => datalist.evaluate((el) => el.matches(":popover-open"));
+
+		await page.locator("input").click();
+		expect(await isOpen()).toBe(true);
+
+		await datalist.evaluate((el: HTMLElement) => {
+			el.hidden = true;
+		});
+		expect(await isOpen()).toBe(false);
+
+		await datalist.evaluate((el: HTMLElement) => {
+			el.hidden = false;
+		});
+		expect(await isOpen()).toBe(true);
+	});
+
+	test("connects an input when the id has CSS special characters", async ({
+		page,
+	}) => {
+		const errors: Error[] = [];
+		page.on("pageerror", (error) => errors.push(error));
+		await mount(
+			page,
+			`<label>Search here <input type="text" list='a"b\\c\nd' /></label>
+			<u-datalist id='a"b\\c\nd'>
+			  <u-option>Option 1</u-option>
+			</u-datalist>`,
+		); // Only " and \ can end or break the quoted attribute selector, and a line break is invalid in a CSS string
+		const input = page.locator("input");
+
+		await expect(input).toHaveRole("combobox"); // Connected by attributeChangedCallback, before focus
+		await expect(input).toHaveAttribute("aria-controls", 'a"b\\c\nd');
+		await input.click();
+		await expect(page.locator("u-datalist")).toBeVisible();
+		expect(errors).toEqual([]);
+	});
+
+	test("keeps focus on the input while pressing an option", async ({
+		page,
+	}) => {
+		await mount(page, DEFAULT);
+		const datalist = page.locator("u-datalist");
+		const input = page.locator("input");
+		const option1 = page.locator("u-option").nth(1);
+
+		await input.evaluate((el: HTMLInputElement) => {
+			el.addEventListener("change", () => {
+				el.dataset.changes = `${el.dataset.changes || ""}[${el.value}]`;
+			});
+		});
+		await input.click();
+		await input.fill("Option");
+		const box = await option1.boundingBox();
+		if (!box) throw new Error("Option is not rendered");
+
+		await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+		await page.mouse.down();
+		await expect(input).toBeFocused(); // mousedown is cancelled, so the press does not blur
+		await expect(datalist).toBeVisible();
+
+		await page.mouse.up();
+		await expect(input).toHaveValue("Option 2");
+		await expect(input).toBeFocused();
+		await expect(input).toHaveAttribute("data-changes", "[Option 2]"); // No change with the typed text before the pick
 	});
 });

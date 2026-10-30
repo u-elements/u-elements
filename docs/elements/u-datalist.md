@@ -110,7 +110,7 @@ While `<u-datalist>` and `<u-option>` are styleable, *native* datalist and optio
 
 ### Screen reader texts
 
-Screen reader texts are set through CSS custom properties. They inherit, so a translation can be set once for a page or a language, i.e.`:lang(nb) { --sr-plural: "%d treff" }`.
+Screen reader texts are set through CSS custom properties. They inherit, so a translation can be set once for a page or a language, i.e. `:lang(nb) { --sr-plural: "%d treff" }`.
 
 - `--sr-singular` announces single hit. Defaults to `"%d hit"`
 - `--sr-plural` announces multiple hits. Defaults to `"%d hits"`

@@ -10,7 +10,7 @@ import { data } from '../filesize.data.ts'
 
 **Quick intro:**
 - Use `<data>` as direct child elements - these are the removable items
-- Use `<input>` is direct child and `<u-datalist>` to allow adding and suggesting items
+- Use `<input>` as direct child and `<u-datalist>` to allow adding and suggesting items
 - Use `data-multiple` to allow selecting multiple items
 - Use `data-creatable` to allow creating items not in the list
 - Use `--sr-*` CSS custom properties to translate screen reader texts
@@ -605,7 +605,7 @@ const renderToStaticMarkup = (data: string, options: string) =>
 - **3.0.0:** Framework compatibility and matching changes
   - **How to upgrade:**
     - Update `@u-elements/u-datalist` to 3.0.0 or newer
-    - Ensure `<input>` a direct child of `<u-combobox>`
+    - Ensure `<input>` is a direct child of `<u-combobox>`
     - Ensure clear button is a `<button type="reset"></button>`
     - Replace `data-sr-*` attributes with [`--sr-*` CSS custom properties](#screen-reader-texts)
     - Remove `comboboxprogrammaticinput` listeners - the event is removed

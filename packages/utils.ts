@@ -153,16 +153,18 @@ export const getFocused = (node: Node) => getRoot(node).activeElement;
 export const getInputLabel = (
 	el: Element,
 	label = attr(el, "aria-label"),
-	by = attr(el, "aria-labelledby")?.split(" ") || [],
+	by = attr(el, "aria-labelledby"),
 ) =>
 	[
-		join(by.map((id) => text(getRoot(el).getElementById(id.trim() || "-")))),
+		join(by?.split(" ").map((id) => text(getById(el, id)))),
 		label?.trim(),
 		join(Array.from((el as HTMLInputElement).labels || [], text)),
 	].find(Boolean) || "";
 // biome-ignore lint: using innerText to only get visual text
 const text = (el?: HTMLElement | null) => el?.innerText?.trim() || "";
-const join = (texts: string[]) => texts.filter(Boolean).join(" ");
+const join = (texts?: string[]) => texts?.filter(Boolean).join(" ");
+const getById = (el: Element, id: string) =>
+	getRoot(el).getElementById(id.trim() || "-");
 
 /**
  * useId

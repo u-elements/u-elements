@@ -11,6 +11,7 @@ import {
 	declarativeShadowRoot,
 	FOCUS_OUTLINE,
 	getFocused,
+	getInputLabel,
 	getRoot,
 	IS_ANDROID,
 	IS_IOS,
@@ -196,7 +197,7 @@ const setInputAttr = (
 	attr(input, "aria-controls", set(useId(self)));
 	attr(input, "aria-expanded", set(`${!hidden}`));
 	attr(input, "autocomplete", set("off"));
-	attr(input, "enterkeyhint", "done");
+	attr(input, "enterkeyhint", set("done"));
 	attr(input, "role", set("combobox"));
 };
 
@@ -207,7 +208,7 @@ const onFocus = (self: UHTMLDataListElement, { target: el }: Event) => {
 		setInputAttr(self, el); // Ensure attributes
 		if (el.readOnly || el.matches(":disabled")) return; // Do not open if disabled or readOnly
 		if (self._root) on(self._root, EVENTS_ACTIVE_BUBBLE, self); // Listen to input events to update the list
-		attr(self, "aria-label", el.labels?.[0]?.textContent.trim() || null);
+		attr(self, "aria-label", getInputLabel(el) || null);
 		ariaNotify(); // Prepare for aria-live announcements
 		self._control = el;
 		if (IS_ANDROID) setExpanded(self, true); // Android TalkBack does not trigger click event on input, so expand right away

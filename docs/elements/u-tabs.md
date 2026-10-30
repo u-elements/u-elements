@@ -11,7 +11,7 @@ import { data } from '../filesize.data.ts'
 **Quick intro:**
 - Use `<u-tabs>` to group all tabbing-elements
 - Use `<u-tablist>` around multiple `<u-tab>` direct children - these are the labels
-- Use `<u-tab aria-selected="true">` to set the open tab (defaults to first tab, unless any tab has `aria-selected`)
+- Use `<u-tab aria-selected="true">` to set the open tab (defaults to first non-disabled tab, unless any tab has `aria-selected`)
 - Use `<u-tab aria-controls="id-of-panel">` if you need panels outside `<u-tabs>`
 - Use `<u-tabpanel>`s after  `<u-tablist>` - these hide/show content of related `<u-tab>`
 - **ARIA Authoring Practices Guide Docs:** [Tabs](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)
@@ -83,7 +83,7 @@ bun add -S @u-elements/u-tabs
 
 ### `<u-tab>`
 - **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
-  - `aria-selected` can contain `"true"` or `"false"` to set the currently selected tab. The first enabled tab is selected automatically, but existing  `aria-selected="false"` is respected.
+  - `aria-selected` can contain `"true"` or `"false"` to set the currently selected tab.  If no tab has `aria-selected`, the first non-disabled tab is selected automatically.
   - `aria-controls` can contain ID the `<u-tabpanel>` to control
 - **DOM interface:** `UHTMLTabElement` extends [`HTMLElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement)
   - `UHTMLTabElement.tabsElement` returns the parent `UHTMLTabsElement`

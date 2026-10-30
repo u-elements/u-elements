@@ -755,10 +755,10 @@ if (isBrowser() && !VERSIONS[VERSION]) {
 		Object.defineProperty(prototype, "value", {
 			...descriptor,
 			set(next: string) {
-				const prev = this.value;
+				const self = getCombobox(this); // Check ownership first, so inputs outside u-combobox skip the extra getter and compare
+				const prev = self && this.value; // Only evaluate .value if combobox found
 				descriptor.set?.call(this, next);
-				const owner = prev !== this.value && getCombobox(this);
-				if (owner) onProgrammatic(owner); // Respond to programmatic input.value changes
+				if (self && prev !== this.value) onProgrammatic(self); // Respond to programmatic input.value changes
 			},
 		});
 }

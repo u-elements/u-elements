@@ -643,7 +643,7 @@ function computeSupport(compat: CompatStatement): {
 
 	return {
 		requiredBrowsers,
-		globalSupportScore: Math.round(globalSupportScore * 10) / 10,
+		globalSupportScore: Math.round(globalSupportScore * 100) / 100,
 	};
 }
 

@@ -3,7 +3,9 @@ import path from "node:path";
 import type { CompatStatement } from "@mdn/browser-compat-data";
 import bcd from "@mdn/browser-compat-data/forLegacyNode";
 import caniuse from "caniuse-lite";
+// @ts-expect-error no types available
 import no from "caniuse-lite/data/regions/NO";
+// @ts-expect-error no types available
 import { JSHINT } from "jshint";
 
 const usageNorway = caniuse.region(no);
@@ -22,39 +24,6 @@ const agents: Record<
 		usage: Record<string, number | undefined>;
 	}
 > = {};
-
-function calculateFeatureSupport(featureName: string) {
-	console.log({ featureName });
-	const featureData = caniuse.feature(caniuse.features[featureName]);
-	if (!featureData) {
-		throw new Error(`Feature "${featureName}" not found.`);
-	}
-
-	const agents = caniuse.agents;
-	let totalSupportedGlobalUsage = 0;
-
-	// 3. Loop through every browser (e.g., chrome, safari, firefox)
-	Object.keys(featureData.stats).forEach((browserName) => {
-		const browserVersionsSupport = featureData.stats[browserName];
-		const agentInfo = agents[browserName];
-
-		if (!agentInfo?.usage_global) return;
-
-		// 4. Check each version's support status against global usage
-		Object.keys(browserVersionsSupport).forEach((version) => {
-			const supportStatus = browserVersionsSupport[version];
-			const globalUsagePercentage = agentInfo.usage_global[version] || 0;
-
-			// 'y' means fully supported, 'a' means partially supported
-			// You can adjust this condition based on your definition of "supported"
-			if (supportStatus.startsWith("y") || supportStatus.startsWith("a")) {
-				totalSupportedGlobalUsage += globalUsagePercentage;
-			}
-		});
-	});
-
-	return totalSupportedGlobalUsage;
-}
 
 for (const [agent, data] of Object.entries(caniuse.agents)) {
 	if (!data) continue;
@@ -108,8 +77,7 @@ function getBrowserSupport(feature: CompatStatement, region = {}) {
 				: versions[version as keyof typeof versions] === "n";
 
 			const supportKey = noSupport ? "no" : "yes";
-			let percentage = Number.parseFloat(usage[version]) || 0;
-			if (noSupport && percentage < 0.085) percentage = 0; // Ignore very small numbers for no support, as they are likely statistical noise
+			const percentage = Number.parseFloat(usage[version]) || 0;
 
 			total[supportKey] += percentage;
 			support[supportKey] += percentage;
@@ -283,12 +251,6 @@ export default {
 			.filter((val, idx, all) => all.indexOf(val) === idx) // Make unique
 			.sort();
 
-		console.log(
-			Object.keys(caniuse.features)
-				.filter((n) => n.includes("defineProperty"))
-				.slice(0, 100),
-		);
-
 		const found: [string, CompatStatement][] = [];
 		Object.keys(jshint.member).forEach((key) => {
 			for (const global of globals) {
@@ -306,8 +268,8 @@ export default {
 			// 	bcd.css.selectors.hostfunction.__compat as CompatStatement,
 			// 	bcd.css.selectors.scope.__compat as CompatStatement,
 			// )
-			.map(([name, feature]) => ({
-				world: calculateFeatureSupport(name.replaceAll(".", "-")),
+			.map(([, feature]) => ({
+				world: getBrowserSupport(feature),
 				norway: getBrowserSupport(feature, usageNorway),
 				name: getFeatureName(feature),
 			}));
@@ -325,7 +287,7 @@ export default {
 		return {
 			browsers,
 			features: features
-				.filter((feat) => feat.world.total < 99.9)
+				.filter((feat) => feat.world.total < 100)
 				.sort((a, b) => a.world.total - b.world.total),
 		};
 	},

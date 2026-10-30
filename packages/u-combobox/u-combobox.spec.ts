@@ -165,6 +165,39 @@ test.describe("DOM", () => {
 				await expect(input).toHaveValue("Oslo"); // Falls back to the item, as the match was rejected and the item is unchanged
 			});
 
+			test("dispatches input events shaped like the browser", async ({
+				page,
+			}) => {
+				await mount(
+					page,
+					combobox().replace(
+						"</u-combobox>",
+						'<button type="reset"></button></u-combobox>',
+					),
+				);
+				const input = page.locator("#input");
+				await input.evaluate((el) => {
+					window.__log = { input: [] };
+					el.addEventListener("input", (e) => {
+						const { inputType, data } = e as InputEvent;
+						window.__log?.input.push(`${inputType}:${data}`);
+					});
+				});
+
+				await input.fill("bergen");
+				await input.press("Enter"); // Matches, then the sync writes the item text
+				await expect(input).toHaveValue("Bergen");
+				const pick = await logged(page, "input");
+				expect(pick[pick.length - 1]).toBe("insertText:Bergen"); // Inserts carry the text
+
+				await page.locator('u-combobox button[type="reset"]').click();
+				await expect(page.locator("u-combobox data")).toHaveCount(0);
+				await expect(input).toHaveValue("");
+				expect((await logged(page, "input")).slice(pick.length)).toEqual([
+					"deleteContentBackward:null", // Deletions carry no data
+				]);
+			});
+
 			test("works after being moved in the DOM", async ({ page }) => {
 				await mount(page, `${combobox("data-multiple")}<div id="other"></div>`);
 				await listen(page, "comboboxbeforeselect");

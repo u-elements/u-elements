@@ -83,7 +83,7 @@ bun add -S @u-elements/u-tabs
 
 ### `<u-tab>`
 - **Attributes:** [all global HTML attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes) such as `id`, `class`, `data-`
-  - `aria-selected` can contain `"true"` or `"false"` to set the currently selected tab. The first tab is only selected automatically when no tab has `aria-selected`, so `aria-selected="false"` on every tab shows no panel. When no tab is selected, the first enabled tab can still be reached with the keyboard
+  - `aria-selected` can contain `"true"` or `"false"` to set the currently selected tab. The first enabled tab is selected automatically, but existing  `aria-selected="false"` is respected.
   - `aria-controls` can contain ID the `<u-tabpanel>` to control
 - **DOM interface:** `UHTMLTabElement` extends [`HTMLElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement)
   - `UHTMLTabElement.tabsElement` returns the parent `UHTMLTabsElement`
@@ -191,6 +191,8 @@ const renderToStaticMarkup = (tabs: string[], panels[]) =>
   </u-tabs>`
 ```
 
+**Hydration:** Attributes are dynamically added in the browser, so the client DOM will differ from the server markup. Use `suppressHydrationWarning` in React, `data-allow-mismatch="attribute"` in Vue, or similar for your framework on these elements, to avoid hydration warnings.
+
 ## Accessibility
 
 | Screen reader | `<u-tabs>` |
@@ -221,7 +223,7 @@ const renderToStaticMarkup = (tabs: string[], panels[]) =>
 ## Changelog
 
 - **2.0.0:**
-  - `aria-selected="false"` on every tab now shows no panel
+  - The first enabled tab is only selected by default when no tab has `aria-selected`. If any tab has `aria-selected` and none is `"true"` (i.e. `aria-selected="false"` on a single tab), no tab is selected and no panel is shown
   - `aria-disabled="true"` only blocks user selection (click and keyboard). `aria-selected`, `selected` and `selectedIndex` can select a disabled tab, like a disabled `<option>`, so only one tab is ever selected
   - `selectedIndex` can be read and written before the element is connected, as frameworks set properties on a detached tree (i.e. React and Vue)
   - `<u-tabpanel>` re-associates with its `<u-tab>` when `id` is written after connect (i.e. Angular binds attributes after inserting the element)

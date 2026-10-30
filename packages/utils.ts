@@ -153,19 +153,16 @@ export const getFocused = (node: Node) => getRoot(node).activeElement;
 export const getInputLabel = (
 	el: Element,
 	label = attr(el, "aria-label"),
-	labelledby = attr(el, "aria-labelledby"),
-) => {
-	const root = getRoot(el);
-	const ids = labelledby?.split(" ") || [];
-	// biome-ignore lint: using innerText to only get visual text
-	const text = (el?: HTMLElement | null) => el?.innerText?.trim() || "";
-	const byIds = ids
-		.map((id) => text(root.getElementById(id.trim() || "-")))
-		.filter(Boolean)
-		.join(" "); // Join all labelledby elements, like the accessible name computation
-	const labels = Array.from((el as HTMLInputElement).labels || [], text); // Get all <label> elements
-	return [byIds, label?.trim(), ...labels].find(Boolean) || "";
-};
+	by = attr(el, "aria-labelledby")?.split(" ") || [],
+) =>
+	[
+		join(by.map((id) => text(getRoot(el).getElementById(id.trim() || "-")))),
+		label?.trim(),
+		join(Array.from((el as HTMLInputElement).labels || [], text)),
+	].find(Boolean) || "";
+// biome-ignore lint: using innerText to only get visual text
+const text = (el?: HTMLElement | null) => el?.innerText?.trim() || "";
+const join = (texts: string[]) => texts.filter(Boolean).join(" ");
 
 /**
  * useId
@@ -245,7 +242,7 @@ declare global {
 
 export const setValue = (
 	input: HTMLInputElement,
-	value: string,
+	value: string | null,
 	inputType?: string,
 	change?: boolean,
 ) => {

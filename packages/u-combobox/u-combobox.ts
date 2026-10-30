@@ -452,7 +452,7 @@ const onClick = (self: UHTMLComboboxElement, e: MouseEvent) => {
 		const first = !multiple && items[0]; // Used to check if consumer removed <data> in their input handler
 		const value = control.value;
 
-		setValue(control, "", "deleteContentBackward");
+		setValue(control, null, "deleteContentBackward");
 		if (!first || !self.contains(first))
 			control.value || dispatchChange(control); // No change event if value was edited during input handler
 		else

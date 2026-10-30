@@ -286,6 +286,8 @@ const renderToStaticMarkup = (options: string) =>
   </u-datalist>`
 ```
 
+**Hydration:** Attributes are dynamically added in the browser, so the client DOM will differ from the server markup. Use `suppressHydrationWarning` in React, `data-allow-mismatch="attribute"` in Vue, or similar for your framework on these elements, to avoid hydration warnings.
+
 ## Accessibility
 
 | Screen reader | `<datalist>` | `<u-datalist>` |
@@ -322,10 +324,9 @@ const renderToStaticMarkup = (options: string) =>
   - Screen reader texts are set through `--sr-*` CSS instead of `data-sr-*` attributes
   - `aria-posinset` and `aria-setsize` on options is now supported
   - Alignment with native `<datalist>`:
-    - `HTMLInputElement.prototype` is no longer used to update the input value
     - `beforeinput` is no longer dispatched when picking
-    - Pressing inside the list keeps focus on the input, so focusable elements inside the list do not receive focus on click
     - Holding `Enter` on an option picks it once instead of on every key repeat
+    - Pressing inside the list keeps focus on the input, so focusable elements inside the list do not receive focus on click
   - Framework typings for Qwik 1, Qwik 2 and Preact 11 uses `HTMLElementTagNameMap`
 - **2.0.3:** Allow `Shift` key events combined with a letter to open datalist
 - **2.0.2:** Instant setup `aria-expanded` attribute to make AXE tests happy

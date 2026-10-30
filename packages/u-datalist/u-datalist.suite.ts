@@ -114,6 +114,36 @@ export const datalistSuite = ({
 			await expect(input).toHaveAttribute("aria-controls", "renamed");
 		});
 
+		test("resets an unfocused input left pointing to its previous id", async ({
+			page,
+		}) => {
+			await render(page, { list: "list", inputs: 2 });
+			const second = page.locator("#input-2");
+
+			await expect(second).toHaveAttribute("role", "combobox"); // Set up without focus
+			await update(page, { listId: "renamed" }); // The inputs keep list="list"
+			await expect(page.locator("u-datalist")).toHaveAttribute("id", "renamed");
+			await expect(second).not.toHaveAttribute("aria-controls");
+			await expect(second).not.toHaveAttribute("aria-expanded");
+			await expect(second).not.toHaveAttribute("role");
+		});
+
+		test("resets every input when the list is removed", async ({ page }) => {
+			await render(page, { inputs: 2 });
+			const first = page.locator("#input");
+			const second = page.locator("#input-2");
+
+			await first.click();
+			await expect(second).toHaveAttribute("role", "combobox");
+			await update(page, { options: null }); // Renders no datalist
+			await expect(page.locator("u-datalist")).toHaveCount(0);
+			for (const input of [first, second]) {
+				await expect(input).not.toHaveAttribute("aria-controls");
+				await expect(input).not.toHaveAttribute("aria-expanded");
+				await expect(input).not.toHaveAttribute("role");
+			}
+		});
+
 		test("picks with click and keyboard, updating the bound value through the framework", async ({
 			page,
 		}) => {

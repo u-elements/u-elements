@@ -116,6 +116,8 @@ const renderToStaticMarkup = (value?: number, max?: number) =>
   </u-progress>`
 ```
 
+**Hydration:** Attributes are dynamically added in the browser, so the client DOM will differ from the server markup. Use `suppressHydrationWarning` in React, `data-allow-mismatch="attribute"` in Vue, or similar for your framework on these elements, to avoid hydration warnings.
+
 ## Accessibility
 
 | Screen reader | `<progress>` | `<u-progress>` |

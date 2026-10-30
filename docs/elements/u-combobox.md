@@ -588,6 +588,8 @@ const renderToStaticMarkup = (data: string, options: string) =>
   </u-combobox>`
 ```
 
+**Hydration:** Attributes are dynamically added in the browser, so the client DOM will differ from the server markup. Use `suppressHydrationWarning` in React, `data-allow-mismatch="attribute"` in Vue, or similar for your framework on these elements, to avoid hydration warnings.
+
 ## Notes
 - `<datalist>` or `<u-datalist>` must be a child of `<u-combobox>`. The `list` attribute on `<input>` is managed automatically
 - Without a datalist, single mode is free text: the input is never overwritten, blur does nothing, and `Enter` only creates an item when `data-creatable` is set. The item is removed through the clear button

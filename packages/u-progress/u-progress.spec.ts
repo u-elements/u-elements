@@ -249,6 +249,19 @@ test.describe("UHTMLProgressElement", () => {
 		);
 	});
 
+	test("joins the text of every <label>", async ({ page }) => {
+		await mount(
+			page,
+			`<label for="p">Label 1</label>
+			<label for="p">Label 2</label>
+			<u-progress id="p" value="5" max="10"></u-progress>`,
+		);
+		const isIOS = test.info().project.name === "Mobile Safari";
+		await expect(page.locator("u-progress")).toHaveAccessibleName(
+			isIOS ? "Label 1 Label 2 (50%)" : "Label 1 Label 2",
+		);
+	});
+
 	test("prefers aria-labelledby over aria-label over <label>", async ({
 		page,
 	}) => {

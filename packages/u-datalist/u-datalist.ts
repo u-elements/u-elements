@@ -109,12 +109,13 @@ export class UHTMLDataListElement extends UHTMLElement {
 	disconnectedCallback() {
 		if (this._root) off(this._root, EVENTS_IDLE_CAPTURE, this, true); // Unbind capture
 		if (this._root) off(this._root, EVENTS_ACTIVE_BUBBLE, this); // Unbind bubble
-		setInputAttributes(this, null); // Reset input
+		for (const el of getInputs(this, this.id)) setInputAttr(this, el, false); // Reset inputs by attributes
+		setInputAttr(this, this._control, false); // Reset input, also if its list attribute changed
 		this._unfocus?.();
 		this._umutate?.();
 		this._umutate = this._unfocus = this._root = this._control = undefined;
 	}
-	attributeChangedCallback(prop?: string, _?: string, next?: string) {
+	attributeChangedCallback(prop?: string, prev?: string, next?: string) {
 		if (prop === "hidden") {
 			// hidden is the open state, and this is the single place it is applied, whether written by setExpanded or a consumer (i.e. <u-combobox> toggle button)
 			const open = next === null;
@@ -123,6 +124,7 @@ export class UHTMLDataListElement extends UHTMLElement {
 			if (!open) this._announced = undefined; // Announce hits again next time the list opens
 			if (this.popover && this.isConnected) this.togglePopover(open); // Mirror Popover API if used
 		} else if (this.isConnected) {
+			for (const el of getInputs(this, prev)) setInputAttr(this, el, false); // Reset inputs left pointing to the previous id. Inputs following the id are set up again by syncInputs
 			syncInputs(this);
 			afterRender(() => syncInputs(this)); // Sync again once frameworks have rendered, as the input list attribute may be written after the id
 		}
@@ -160,45 +162,49 @@ const setActive = (self: UHTMLDataListElement, opt?: HTMLOptionElement) => {
 	opt?.scrollIntoView?.({ block: "nearest" }); // Using ?. as JSDOM does not support scrollIntoView
 };
 
-const syncInputs = (self: UHTMLDataListElement) => {
-	if (!self._root) return;
-	const { _root, _control, id } = self;
-	const inputs = `input[list="${id.replace(CSS_SPECIAL, (c) => `\\${c.charCodeAt(0).toString(16)} `)}"]`;
-
-	if (_control && attr(_control, "list") !== id) {
-		setExpanded(self, false);
-		setInputAttributes(self, null); // Disconnect previous input
-		self._control = undefined;
-	}
-	if (id)
-		for (const input of _root.querySelectorAll(inputs as "input"))
-			setInputAttributes(self, input);
+// Inputs in the same root pointing to id through their list attribute
+const getInputs = (self: UHTMLDataListElement, id?: string | null) => {
+	if (!self._root || !id) return [];
+	const selector = `input[list="${id.replace(CSS_SPECIAL, (c) => `\\${c.charCodeAt(0).toString(16)} `)}"]`;
+	return self._root.querySelectorAll(selector as "input");
 };
 
-const setInputAttributes = (
+const syncInputs = (self: UHTMLDataListElement) => {
+	const { _control, id } = self;
+	if (_control && attr(_control, "list") !== id) {
+		setExpanded(self, false);
+		setInputAttr(self, _control, false); // Disconnect previous input
+		self._control = undefined;
+	}
+	for (const input of getInputs(self, id)) setInputAttr(self, input);
+};
+
+// Set up input attributes, or remove them when setup is false
+const setInputAttr = (
 	self: UHTMLDataListElement,
-	setup: HTMLInputElement | null,
+	input?: HTMLInputElement | null,
+	setup = true,
 ) => {
-	const input = setup || self._control;
 	const hidden = !self._root || self.hidden; // Assume hidden when no _root, as the component has not run connectedCallback yet
+	const set = (value: string | null) => (setup ? value : null);
 	if (!input) return;
 	if (self.popover) {
 		attr(self, "popover", "manual"); // Make sure we control popover state
-		attr(input, "popovertarget", setup && useId(self)); // Prepare for Popover API
+		attr(input, "popovertarget", set(useId(self))); // Prepare for Popover API
 	}
-	attr(input, "aria-autocomplete", setup && "list");
-	attr(input, "aria-controls", setup && useId(self));
-	attr(input, "aria-expanded", setup && `${!hidden}`);
-	attr(input, "autocomplete", setup && "off");
+	attr(input, "aria-autocomplete", set("list"));
+	attr(input, "aria-controls", set(useId(self)));
+	attr(input, "aria-expanded", set(`${!hidden}`));
+	attr(input, "autocomplete", set("off"));
 	attr(input, "enterkeyhint", "done");
-	attr(input, "role", setup ? "combobox" : null);
+	attr(input, "role", set("combobox"));
 };
 
 const onFocus = (self: UHTMLDataListElement, { target: el }: Event) => {
 	if (self._control === el) return; // Connected to the current target
 	if (isInput(el) && el.getAttribute("list") === self.id) {
-		setInputAttributes(self, null); // Reset previous input
-		setInputAttributes(self, el); // Ensure attributes
+		setInputAttr(self, self._control, false); // Reset previous input
+		setInputAttr(self, el); // Ensure attributes
 		if (el.readOnly || el.matches(":disabled")) return; // Do not open if disabled or readOnly
 		if (self._root) on(self._root, EVENTS_ACTIVE_BUBBLE, self); // Listen to input events to update the list
 		attr(self, "aria-label", el.labels?.[0]?.textContent.trim() || null);

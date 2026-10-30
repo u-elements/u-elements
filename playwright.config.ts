@@ -1,15 +1,18 @@
 import { defineConfig, devices } from "@playwright/test";
 import type { Framework, TestOptions } from "./packages/test";
 
-// Framework harness pages, each served by its own Vite dev server (see frameworks/<name>/test.html)
+// Harness pages, each served by its own Vite dev server (see frameworks/<name>/test.html).
+// Ports are outside the Vite default range, so a server started by hand with `npm run dev` (which keeps
+// watching and reloads the page on save, see frameworks/vite.shared.ts) is never reused by a test run
+const VANILLA = 5273;
 const FRAMEWORKS: Record<Exclude<Framework, "vanilla">, number> = {
-	react: 5174,
-	vue: 5175,
-	svelte: 5176,
-	angular: 5177,
-	solid: 5178,
-	qwik: 5179,
-	preact: 5180,
+	react: 5274,
+	vue: 5275,
+	svelte: 5276,
+	angular: 5277,
+	solid: 5278,
+	qwik: 5279,
+	preact: 5280,
 };
 const FRAMEWORK_SPECS = /\.frameworks\.spec\.ts$/; // Shared suites run against every framework page, see packages/test.ts
 const reuseExistingServer = !process.env.CI;
@@ -23,7 +26,7 @@ export default defineConfig<TestOptions>({
 	workers: process.env.CI ? 1 : undefined,
 	reporter: "html",
 	use: {
-		baseURL: "http://127.0.0.1:5173",
+		baseURL: `http://127.0.0.1:${VANILLA}`,
 		framework: "vanilla",
 		trace: "on-first-retry", // See https://playwright.dev/docs/trace-viewer
 		timezoneId: "Europe/Berlin", // Avoid any time-zone shift when testing Zulu dates
@@ -77,8 +80,8 @@ export default defineConfig<TestOptions>({
 	],
 	webServer: [
 		{
-			command: "npm run dev -- --host",
-			url: "http://127.0.0.1:5173",
+			command: `npm run dev -- --host --port ${VANILLA} --strictPort`,
+			url: `http://127.0.0.1:${VANILLA}`,
 			reuseExistingServer,
 			env,
 		},

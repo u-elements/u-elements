@@ -247,16 +247,18 @@ const SYNCING_PANELS = new WeakSet<Element>(); // Panels being associated, as th
 const syncTabPanel = (panel: UHTMLTabPanelElement) => {
 	if (SYNCING_PANELS.has(panel)) return;
 	SYNCING_PANELS.add(panel);
-	const tabs = new Set(panel.tabs);
-	const root = getTabsElement(panel);
-	const idx =
-		root &&
-		getTabs(getTabList(root))[Array.prototype.indexOf.call(root.panels, panel)]; // Try to find associated tab via index, by instance as the tabs might not be connected yet
-	if (idx && !idx.hasAttribute(ARIA_CONTROLS)) tabs.add(idx); // Only add index based tab if not already owning other panel
+	try {
+		const panelTabs = new Set(panel.tabs);
+		const root = getTabsElement(panel);
+		const tabs = root && getTabs(getTabList(root));
+		const idx = tabs?.[Array.prototype.indexOf.call(root?.panels, panel)]; // Try to find associated tab via index, by instance as the tabs might not be connected yet
+		if (idx && !idx.hasAttribute(ARIA_CONTROLS)) panelTabs.add(idx); // Only add index based tab if not already owning other panel
 
-	const tab = getSelected(tabs) || tabs.values().next().value;
-	skipTabsUpdate(tab, () => syncPanel(panel, tab, !!tab && isSelected(tab))); // Sync panel with tab to set initial visibility
-	SYNCING_PANELS.delete(panel);
+		const tab = getSelected(panelTabs) || panelTabs.values().next().value;
+		skipTabsUpdate(tab, () => syncPanel(panel, tab, !!tab && isSelected(tab))); // Sync panel with tab to set initial visibility
+	} finally {
+		SYNCING_PANELS.delete(panel); // In finally, so a throw from consumer code does not block later syncs of this panel
+	}
 };
 
 const syncPanel = (panel: Element, tab?: Element, show = false) => {

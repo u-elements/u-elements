@@ -607,6 +607,14 @@ const renderToStaticMarkup = (data: string, options: string) =>
     - Ensure clear button is a `<button type="reset"></button>`
     - Replace `data-sr-*` attributes with [`--sr-*` CSS custom properties](#screen-reader-texts)
     - Remove `comboboxprogrammaticinput` listeners - the event is removed
+  - **Single mode:**
+    - **Important:** No longer matches while typing, only on `Enter` and blur
+    - `Enter` no longer reverts text on match; text is kept until blur
+    - `input.value` is only synced to the `<data>` if a datalist is present
+    - `values` returns at most one value, matching the mirrored `<data>`
+    - Mirrors only the first `<data>` into `<select>`, so submitted value matches the input
+  - **Multiple mode:**
+    - `Enter` only adds. A matched option that is already an item is kept, as removal is intended through a pick or an explicit item removal
   - **Changes in both single and multiple mode:**
     - Better support for async rendering and events in frameworks
     - Better performance when frameworks syncs attributes
@@ -617,14 +625,6 @@ const renderToStaticMarkup = (data: string, options: string) =>
     - Firefox spell check and autofill are not seen as option-picks
     - Synthetic `InputEvent` (i.e. testing-library) does not cause incorrect option click
     - Framework typings for Qwik 1, Qwik 2 and Preact 11 uses `HTMLElementTagNameMap`
-  - **Single mode:**
-    - **Important:** No longer matches while typing, only on `Enter` and blur
-    - `Enter` no longer reverts text on match; text is kept until blur
-    - `input.value` is only synced to the `<data>` if a datalist is present
-    - `values` returns at most one value, matching the mirrored `<data>`
-    - Mirrors only the first `<data>` into `<select>`, so submitted value matches the input
-  - **Multiple mode:**
-    - `Enter` only adds. A matched option that is already an item is kept, as removal is intended through a pick or an explicit item removal
 - **2.1.5:** Fix state handling when mode is multiple and controlled (i.e. React)
 - **2.1.4:** Fix internal state when preventing a selection or setting value programmatically
 - **2.1.3:** Fix issue where item behind datalist could receive focus

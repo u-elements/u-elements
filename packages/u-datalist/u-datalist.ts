@@ -41,10 +41,9 @@ export const UHTMLDataListStyle = `${DISPLAY_BLOCK}
 ::slotted([role="option"][${ARIA_HIDDEN}="true"]),
 ::slotted([role="option"][disabled]),
 ::slotted([role="option"][hidden]) { display: none !important }
-::slotted([role="option"])::after{content:''/var(--sr-ios,"")}
 @supports(-webkit-touch-callout:none) {
-	::slotted([role="option"])::after { --sr-ios: ", "attr(data-posint)" "var(--sr-of, "of")" "attr(data-sizeset) }
-	::slotted([role="option"][aria-setsize="-1"])::after { --sr-ios: ", "attr(data-sr-pos) }
+	::slotted([role="option"])::after { content:: ""/", "attr(data-posinset)" "var(--sr-of, "of")" "attr(data-sizeset) }
+	::slotted([role="option"][aria-setsize="-1"])::after { --sr-ios: ", "attr(data-posinset) }
 }`;
 
 export const UHTMLDataListShadowRoot =
@@ -285,7 +284,7 @@ const onMutations = (self: UHTMLDataListElement) => {
 	if (IS_IOS) {
 		const count = `${getCount(show)}`;
 		for (const [index, opt] of show.entries()) {
-			attr(opt, "data-posint", attr(opt, "aria-posinset") || `${index + 1}`);
+			attr(opt, "data-posinset", attr(opt, "aria-posinset") || `${index + 1}`);
 			attr(opt, "data-sizeset", count);
 		}
 	}

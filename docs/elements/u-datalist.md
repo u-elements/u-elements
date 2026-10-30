@@ -100,6 +100,10 @@ While `<u-datalist>` support all events, *native* datalist does not as it is ren
 
 If you need to detect click on options or require a more fine-grained API — including `comboboxbeforeselect` and `comboboxafterselect` events — we recommend using [`<u-combobox>`](/elements/u-combobox), which extends `<u-datalist>` with [several useful features →](/elements/u-combobox)
 
+::: tip Note:
+Pressing inside `<u-datalist>` keeps focus on the `<input>`, like a native datalist, by cancelling `mousedown` inside the list. Focusable elements placed inside `<u-datalist>` (i.e. a "Load more" button) therefore do not receive focus on click, but still receive the `click` event.
+:::
+
 ## Styling
 
 While `<u-datalist>` and `<u-option>` are styleable, *native* datalist and option elements are currently not. However, there is a possibility that the [native elements may support styling in the future](https://open-ui.org/components/customizableselect/#rich-content-in-options).
@@ -135,7 +139,7 @@ u-option:not([hidden]) {
 ```
 
 ### Styling option focus and selected state
-`<u-option>` receive real focus on keyboard navigation, and a `selected` attribute on selection, which both can be utilized for styling:
+`<u-option>` receive a `data-activedescendant` attribute when active on keyboard navigation (focus stays on the `<input>`, using `aria-activedescendant`), and a `selected` attribute on selection, which both can be utilized for styling:
 
 ```css
 u-option[data-activedescendant] {
@@ -177,7 +181,7 @@ u-option:not([selected]) {
     border-bottom-right-radius: 0;
   }
   .my-input:focus-visible,
-  .my-list u-option:focus {
+  .my-list u-option[data-activedescendant] {
     box-shadow: 0 0 0 1px #fff,0 0 0 3px #6325e7,0 0 0 4px #fff;
     outline: none;
   }
@@ -199,7 +203,7 @@ u-option:not([selected]) {
     padding: .5em;
     transition: .2s;
   }
-  .my-list u-option:focus {
+  .my-list u-option[data-activedescendant] {
     background-color: #EBF0FA;
   }
   .my-list u-option[selected] {
@@ -320,7 +324,7 @@ const renderToStaticMarkup = (options: string) =>
   - Alignment with native `<datalist>`:
     - `HTMLInputElement.prototype` is no longer used to update the input value
     - `beforeinput` is no longer dispatched when picking
-    - Pressing inside the list keeps focus on the input
+    - Pressing inside the list keeps focus on the input, so focusable elements inside the list do not receive focus on click
     - Holding `Enter` on an option picks it once instead of on every key repeat
   - Framework typings for Qwik 1, Qwik 2 and Preact 11 uses `HTMLElementTagNameMap`
 - **2.0.3:** Allow `Shift` key events combined with a letter to open datalist

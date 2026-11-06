@@ -582,6 +582,7 @@ const onMutations = (self: UHTMLComboboxElement, r?: MutationRecord[]) => {
 	const prev = self._serialized || keys;
 	const isInit = !r || r.some(isAdd, control) || r.some(isListOrMode, self);
 	const isEdit = `${prev}` !== `${keys}`;
+	const count = items.length;
 
 	self._value = control.value; // Also cache value attribute writes
 	self._serialized = keys;
@@ -599,11 +600,12 @@ const onMutations = (self: UHTMLComboboxElement, r?: MutationRecord[]) => {
 	if (isEdit || isInit || r?.some(isAdd, self._select[0])) syncSelect(self);
 	if (isEdit || isInit) {
 		const hint = multiple
-			? `${items.length ? srText(self, "found", "Navigate left to find %d selected").replace("%d", `${items.length}`) : srText(self, "empty", "No selected")}`
+			? `${count ? srText(self, "found", "Navigate left to find %d selected").replace("%d", `${count}`) : srText(self, "empty", "No selected")}`
 			: null;
 		attr(control, "aria-description", hint); // Only when the count can have changed, as srText forces a style recalculation
 	}
-	attr(_listbox, "hidden", items.length ? null : ""); // Avoid Siteimprove warning about empty role="listbox"
+	attr(_listbox, "aria-hidden", count ? null : "true"); // Avoid axe-core warning about empty role="listbox"
+	attr(_listbox, "hidden", count ? null : ""); // Avoid Siteimprove warning about empty role="listbox"
 	attr(control, "list", useId(list));
 	syncButtons(self);
 	self._umutate?.takeRecords(); // Clear mutations caused by our attribute writes, before dispatching events, so consumer mutations made in event handlers are kept

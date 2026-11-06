@@ -1,15 +1,82 @@
-import { countCalls } from "../suite";
+import type { Page } from "@playwright/test";
+import {
+	countCalls,
+	expectNoAxeViolations,
+	gotoHarness,
+	harnessHelpers,
+} from "../suite";
 import { expect, test } from "../test";
 import type {
 	UHTMLTabElement,
 	UHTMLTabListElement,
 	UHTMLTabsElement,
 } from "./u-tabs";
+import { type HarnessConfig, TABS } from "./u-tabs.harness";
 import { tabsSuite } from "./u-tabs.suite";
 
 // Runs the shared suite (u-tabs.suite.ts) against the vanilla DOM harness page (frameworks/vanilla/test.html?component=u-tabs).
 // The tests below need raw DOM access and have no equivalent in the harness
 tabsSuite({ url: "frameworks/vanilla/test.html?component=u-tabs" });
+
+// Axe scans of each state. Here and not in the shared suite, as the markup comes from the component and does not differ between frameworks
+test.describe("axe", () => {
+	const { render } = harnessHelpers<HarnessConfig>();
+	const scan = (page: Page) =>
+		expectNoAxeViolations(page, ["u-tabs", "u-tabpanel"]); // Panels can be rendered outside <u-tabs>
+
+	test.beforeEach(({ page }) =>
+		gotoHarness(page, "frameworks/vanilla/test.html?component=u-tabs"),
+	);
+
+	for (const ids of [false, true]) {
+		test(`${ids ? "consumer" : "generated"} ids`, async ({ page }) => {
+			await render(page, { ids });
+			await scan(page);
+		});
+	}
+
+	test("after keyboard navigation", async ({ page }) => {
+		await render(page);
+		const tabs = page.locator("u-tab");
+		await tabs.first().focus();
+		await tabs.first().press("ArrowRight");
+		await expect(tabs.nth(1)).toBeFocused(); // Arrows only move focus
+		await scan(page);
+
+		await tabs.nth(1).press("Enter");
+		await expect(tabs.nth(1)).toHaveAttribute("aria-selected", "true");
+		await scan(page);
+	});
+
+	test("controlled with only the selected panel", async ({ page }) => {
+		await render(page, {
+			ids: true,
+			controlled: true,
+			selected: "b",
+			onlySelectedPanel: true,
+		});
+		await scan(page);
+	});
+
+	test("panels outside", async ({ page }) => {
+		await render(page, { panelsOutside: true });
+		await scan(page);
+	});
+
+	test("nested", async ({ page }) => {
+		await render(page, { nested: true });
+		await scan(page);
+	});
+
+	test("disabled tab", async ({ page }) => {
+		await render(page, {
+			tabs: TABS.map((tab) =>
+				tab.key === "b" ? { ...tab, disabled: true } : tab,
+			),
+		});
+		await scan(page);
+	});
+});
 
 const attrLabelledby = () => {
 	const IS_ANDROID = test.info().project.name === "Mobile Chrome";

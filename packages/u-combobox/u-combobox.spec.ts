@@ -13,6 +13,7 @@ import { comboboxSuite } from "./u-combobox.suite";
 comboboxSuite({
 	url: "frameworks/vanilla/test.html?component=u-combobox",
 	defaults: { controlled: false },
+	axe: true,
 });
 
 declare global {
@@ -135,7 +136,7 @@ test.describe("DOM", () => {
 		const combobox = (attrs = "") => `
 			<label for="input">Label</label>
 			<u-combobox ${attrs}>
-				<input id="input" list="list">
+				<input type="text" id="input" list="list">
 				<${LIST_TAG} id="list" data-nofilter>
 					<${OPT_TAG} value="oslo-id" label="Oslo">Oslo</${OPT_TAG}>
 					<${OPT_TAG}>Bergen</${OPT_TAG}>
@@ -153,7 +154,7 @@ test.describe("DOM", () => {
 				await input.pressSequentially("bergen");
 				await expect(input).toHaveValue("bergen");
 
-				// Controlled inputs (i.e. React) sync the value attribute on every keystroke
+				// Controlled inputs (i.e. React) sync the value attri<inputbute on every keystroke
 				await input.evaluate((el) => el.setAttribute("value", "bergen"));
 				// Frameworks (i.e. Vue) re-write unchanged option values on every render
 				await page

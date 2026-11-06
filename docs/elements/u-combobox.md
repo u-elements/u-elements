@@ -596,12 +596,15 @@ const renderToStaticMarkup = (data: string, options: string) =>
 - Single mode acts on the first `<data>` only
 - The toggle button is hidden when using native `<datalist>`, as the native suggestion popup can not be detected programmatically
 - In controlled mode, `change` is dispatched by the input sync that follows the `<data>` change. A deferred render (i.e. React `startTransition`, a debounced state update) still dispatches `change` when it renders the item the user picked or matched. On blur, the input shows the previous item until the deferred render lands, as a prevented match can not be told apart from a deferred one
+- Axe automated tests does not allow `role="combobox"` on `<input>` with `list`, since `combobox` is implied. Explicit role is needed to secure compatibility in all environments, so set `"aria-allowed-role"` for Axe to silence the error if needed.
 - ARC Toolkit incorrectly reports `aria-description` as an invalid ARIA-attribute
 - ARC Toolkit does not correctly read the relation between items with `role="option"` and the ShadowDOM wrapping container `role="listbox"`
 - See full behavior spec in [u-combobox source](https://github.com/u-elements/u-elements/blob/main/packages/u-combobox/u-combobox.ts)
 
 ## Changelog
 
+- **3.0.1:**
+  - Component unchanged, but ShadowDOM updated to comply with axe-core@4.14.0 automated tests
 - **3.0.0:** Framework compatibility and matching changes
   - **How to upgrade:**
     - Update `@u-elements/u-datalist` to 3.0.0 or newer

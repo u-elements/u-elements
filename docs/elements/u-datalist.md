@@ -318,6 +318,9 @@ const renderToStaticMarkup = (options: string) =>
 - DOM interface: [HTMLOptionElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLOptionElement)
 - HTML Standard: [The &lt;option&gt; element](https://html.spec.whatwg.org/multipage/form-elements.html#the-option-element)
 
+## Notes
+- Axe automated tests does not allow `role="combobox"` on `<input>` with `list`, since `combobox` is implied. Explicit role is needed to secure compatibility in all environments, so set `"aria-allowed-role"` for Axe to silence the error if needed.
+
 ## Changelog
 
 - **3.0.0:**

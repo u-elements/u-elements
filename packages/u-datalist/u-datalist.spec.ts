@@ -1,10 +1,82 @@
 import type { Page } from "@playwright/test";
+import { expectNoAxeViolations, gotoHarness, harnessHelpers } from "../suite";
 import { expect, test } from "../test";
+import { type HarnessConfig, OPTIONS } from "./u-datalist.harness";
 import { datalistSuite, opened, recordSpoken } from "./u-datalist.suite";
 
 // Runs the shared suite (u-datalist.suite.ts) against the vanilla DOM harness page (frameworks/vanilla/test.html?component=u-datalist).
 // The tests below need raw DOM access and have no equivalent in the harness
 datalistSuite({ url: "frameworks/vanilla/test.html?component=u-datalist" });
+
+// Axe scans of each state. Here and not in the shared suite, as the markup comes from the component and does not differ between frameworks
+test.describe("axe", () => {
+	const { render } = harnessHelpers<HarnessConfig>();
+	const scan = (page: Page) =>
+		expectNoAxeViolations(
+			page,
+			["u-datalist", "input"],
+			["aria-allowed-role"], // Axe does not allow <input> with list and role="combobox" in the same time
+		); // The input is outside <u-datalist>, but carries the combobox semantics
+
+	test.beforeEach(({ page }) =>
+		gotoHarness(page, "frameworks/vanilla/test.html?component=u-datalist"),
+	);
+
+	test("closed", async ({ page }) => {
+		await render(page);
+		await scan(page);
+	});
+
+	test("open with active option", async ({ page }) => {
+		await render(page);
+		const input = page.locator("#input");
+		await input.focus();
+		await input.press("ArrowDown"); // Opens the list
+		await input.press("ArrowDown"); // Activates the first option
+		await expect(page.locator("u-datalist")).toBeVisible();
+		await scan(page);
+	});
+
+	test("open filtered, also without matches", async ({ page }) => {
+		await render(page, { nofilter: false });
+		const input = page.locator("#input");
+		await input.pressSequentially("Option 2");
+		await expect(page.locator("u-datalist")).toBeVisible();
+		await scan(page);
+
+		await input.fill("Nothing");
+		await opened(page);
+		await scan(page);
+	});
+
+	test("multiselectable with selected, disabled and hidden options", async ({
+		page,
+	}) => {
+		await render(page, {
+			attrs: { "aria-multiselectable": "true" },
+			options: [
+				{ ...OPTIONS[0], selected: true },
+				{ ...OPTIONS[1], disabled: true },
+				{ ...OPTIONS[2], hidden: true },
+			],
+		});
+		await page.locator("#input").press("ArrowDown"); // Opens the list
+		await expect(page.locator("u-datalist")).toBeVisible();
+		await scan(page);
+	});
+
+	for (const attr of ["disabled", "readonly"]) {
+		test(`${attr} input`, async ({ page }) => {
+			await render(page, { inputAttrs: { [attr]: "" } });
+			await scan(page);
+		});
+	}
+
+	test("two inputs sharing the list", async ({ page }) => {
+		await render(page, { inputs: 2 });
+		await scan(page);
+	});
+});
 
 const mount = async (page: Page, html: string) => {
 	await page.evaluate((markup) => {

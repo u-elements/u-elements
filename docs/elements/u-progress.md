@@ -148,6 +148,7 @@ const renderToStaticMarkup = (value?: number, max?: number) =>
 
 ## Changelog
 
+- **1.1.1:** Not writing redundant `aria-valuenow`, `aria-valuemin` and `aria-valuemax` when iOS does not properly support `role="progress"`
 - **1.1.0:** Framework compatibility:
   - Setting `value` or `max` properties to `null` or `undefined` removes the attribute, like frameworks expect for a native element (i.e. `value={undefined}` for indeterminate)
   - Better handling of `aria-labelledby` and `aria-label` written by the consumer

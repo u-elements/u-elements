@@ -1,6 +1,7 @@
 import { gotoHarness } from "../suite";
 import { test } from "../test";
 import { announcementsTests } from "./suite/announcements";
+import { axeTests, axeWithoutDatalistTests } from "./suite/axe";
 import { buttonsTests } from "./suite/buttons";
 import { consumerEventsTests } from "./suite/consumer-events";
 import { createContext } from "./suite/context";
@@ -33,11 +34,13 @@ import type { HarnessPatch } from "./u-combobox.harness";
 export type SuiteOptions = {
 	url?: string; // Harness page, relative to the project baseURL
 	defaults?: HarnessPatch; // Applied to every render, i.e. { controlled: false } to let the component manage items
+	axe?: boolean; // Run the axe scans, only from the vanilla spec as the component markup does not differ between frameworks
 };
 
 export const comboboxSuite = ({
 	url = "test.html?component=u-combobox",
 	defaults = {},
+	axe = false,
 }: SuiteOptions = {}) => {
 	test.describe("harness", () => {
 		test.beforeEach(({ page }) => gotoHarness(page, url));
@@ -57,8 +60,10 @@ export const comboboxSuite = ({
 			disabledReadonlyTests(ctx);
 			keyboardTests(ctx);
 			announcementsTests(ctx);
+			if (axe) axeTests(ctx);
 		}
 
 		withoutDatalistTests(defaults);
+		if (axe) axeWithoutDatalistTests(defaults);
 	});
 };

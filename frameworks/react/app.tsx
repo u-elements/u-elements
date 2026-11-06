@@ -14,19 +14,21 @@ import "../../packages/u-tabs";
 
 export default function App() {
 	const [count, setCount] = useState(0);
-	const [selected, setSelected] = useState(["Test 1"]);
+	const [selected, setSelected] = useState([{ value: "HEI", label: "Test 1" }]);
 	const ref = useRef<UHTMLComboboxElement>(null);
 
 	const handleBeforeSelect = (event: CustomEvent<HTMLDataElement>) => {
-		const { multiple, values } = event.target as UHTMLComboboxElement;
-		const { isConnected, value } = event.detail;
-		console.log("beforeselect", { isConnected, value, values, multiple });
+		const { multiple, items } = event.target as UHTMLComboboxElement;
+		const { isConnected, textContent: label, value } = event.detail;
+		console.log("beforeselect", { isConnected, value, items, multiple });
 		event.preventDefault();
 
-		if (!multiple) setSelected(isConnected ? [] : [value]);
+		if (!multiple) setSelected(isConnected ? [] : [{ value, label }]);
 		else
-			setSelected(
-				values.concat(value).filter((v) => value !== v || !isConnected),
+			setSelected((prev) =>
+				prev
+					.concat({ value, label })
+					.filter((item) => value !== item.value || !isConnected),
 			);
 	};
 
@@ -62,8 +64,10 @@ export default function App() {
 				oncomboboxbeforeselect={handleBeforeSelect}
 			>
 				<select hidden></select>
-				{selected.map((opt) => (
-					<data key={opt}>{opt}</data>
+				{selected.map(({ label, value }) => (
+					<data key={value} value={value}>
+						{label}
+					</data>
 				))}
 				<input
 					// biome-ignore lint/a11y/noAutofocus: Demo page
@@ -75,8 +79,8 @@ export default function App() {
 					&times;
 				</button>
 				<u-datalist id="my-list">
-					<u-option>Test 1</u-option>
-					<u-option>Test 2</u-option>
+					<u-option value="HEI">Test 1</u-option>
+					<u-option value="Hade">Test 2</u-option>
 					<u-option>Test 3</u-option>
 					<u-option>Bergen</u-option>
 				</u-datalist>
@@ -108,6 +112,32 @@ export default function App() {
 				<u-tabpanel>Panel 2</u-tabpanel>
 				<u-tabpanel>Panel 3</u-tabpanel>
 			</u-tabs>
+			<div>
+				<label htmlFor="dest">Velg en destinasjon</label>
+				{/* @ts-expect-error */}
+				<u-combobox className="ds-suggestion" data-multiple id="dest">
+					<input className="ds-input" type="text" placeholder="" />
+					<button
+						aria-expanded="false"
+						aria-label="Valg"
+						type="button"
+					></button>
+					<button hidden={true} type="reset"></button>
+					<u-datalist data-nofilter="" popover="manual" role="listbox">
+						<u-option data-empty="">Ingen treff</u-option>
+						<u-option label="Sogndal" value="Sog">
+							Sogndal
+						</u-option>
+						<u-option label="Oslo" value="Osl">
+							Oslo
+						</u-option>
+						<u-option label="Brønnøysund" value="Brø">
+							Brønnøysund
+						</u-option>
+					</u-datalist>
+					{/* @ts-expect-error */}
+				</u-combobox>
+			</div>
 		</div>
 	);
 }

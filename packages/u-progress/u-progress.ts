@@ -55,8 +55,8 @@ export class UHTMLProgressElement extends UHTMLElement {
 		this._internals = this.attachInternals?.();
 	}
 	connectedCallback() {
-		attr(this, "aria-valuemin", "0");
-		attr(this, "aria-valuemax", "100");
+		attr(this, "aria-valuemin", IS_IOS ? null : "0");
+		attr(this, "aria-valuemax", IS_IOS ? null : "100");
 		attr(this, "role", IS_IOS ? "img" : "progressbar");
 		this.attributeChangedCallback();
 	}
@@ -78,11 +78,11 @@ export class UHTMLProgressElement extends UHTMLElement {
 		}
 		this._skipAttrChange = true;
 		try {
-			const position = this.position;
-			const percentage = Math.max(0, Math.round(position * 100));
+			const pos = this.position;
+			const percent = Math.max(0, Math.round(pos * 100));
 
 			// Write CSS variable before getLabel (innerText triggers style recalc)
-			this.style.setProperty("--percentage", `${percentage}%`);
+			this.style.setProperty("--percentage", `${percent}%`);
 
 			let label = getInputLabel(
 				this,
@@ -90,11 +90,11 @@ export class UHTMLProgressElement extends UHTMLElement {
 				this._labelledby ?? null,
 			); // From what the consumer wrote, as the element rewrites both aria-label and aria-labelledby
 			if (IS_IOS)
-				label = `${label.replace(/\(\d+%\)$/, "")} (${percentage}%)`.trim(); // Always use percentage as iOS role="img"
+				label = `${label.replace(/\(\d+%\)$/, "")} (${percent}%)`.trim(); // Always use percentage as iOS role="img"
 
 			// Set ARIA attributes
-			attr(this, "aria-busy", `${position === -1}`);
-			attr(this, "aria-valuenow", position === -1 ? null : `${percentage}`);
+			attr(this, "aria-busy", `${pos === -1}`);
+			attr(this, "aria-valuenow", IS_IOS || pos === -1 ? null : `${percent}`);
 			attr(this, ARIA_LABEL, label); // Must use aria-label to include percentage value
 			attr(this, ARIA_LABELLEDBY, this._labelledby ? useId(this) : null); // Point at itself while the consumer has aria-labelledby, as a self-reference names from aria-label, and keeping the attribute makes a consumer removal fire attributeChangedCallback
 		} finally {

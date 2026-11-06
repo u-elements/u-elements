@@ -42,6 +42,7 @@
 		"@angular/core": "22.2.3",
 		"@angular/forms": "22.2.3",
 		"@angular/platform-browser": "22.2.3",
+		"@axe-core/playwright": "4.14.0",
 		"@biomejs/biome": "2.6.3",
 		"@custom-elements-manifest/analyzer": "0.11.0",
 		"@mdn/browser-compat-data": "8.1.7",

@@ -68,19 +68,17 @@ export const setupTests = ({
 		test("sets up attributes on clear and toggle buttons added dynamically", async ({
 			page,
 		}) => {
-			const { name } = test.info().project;
-			const ariaHidden = `${name === "Mobile Safari" || name === "Mobile Chrome"}`;
 			await render(page);
 			const clear = page.locator('button[type="reset"]');
 			const toggle = page.locator("button[aria-expanded]");
 
 			await update(page, { clear: true, toggle: true }); // Rendered by the framework after mount
 
-			await expect(clear).toHaveAttribute("aria-hidden", ariaHidden);
+			await expect(clear).toHaveAttribute("aria-hidden", "true");
 			await expect(clear).toHaveAttribute("hidden", "");
 			await expect(clear).toHaveAttribute("tabindex", "-1");
 
-			await expect(toggle).toHaveAttribute("aria-hidden", ariaHidden);
+			await expect(toggle).toHaveAttribute("aria-hidden", "true");
 			await expect(toggle).toHaveAttribute("aria-expanded", "false");
 			await expect(toggle).toHaveAttribute("tabindex", "-1");
 			await expect(toggle).toHaveAttribute("type", "button");

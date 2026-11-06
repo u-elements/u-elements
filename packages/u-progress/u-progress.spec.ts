@@ -1,11 +1,53 @@
 import type { Page } from "@playwright/test";
-import { countCalls } from "../suite";
+import {
+	countCalls,
+	expectNoAxeViolations,
+	gotoHarness,
+	harnessHelpers,
+} from "../suite";
 import { expect, test } from "../test";
+import type { HarnessConfig, LabelMode } from "./u-progress.harness";
 import { progressSuite } from "./u-progress.suite";
 
 // Runs the shared suite (u-progress.suite.ts) against the vanilla DOM harness page (frameworks/vanilla/test.html?component=u-progress).
 // The tests below need raw DOM access and have no equivalent in the harness
 progressSuite({ url: "frameworks/vanilla/test.html?component=u-progress" });
+
+// Axe scans of each state. Here and not in the shared suite, as the markup comes from the component and does not differ between frameworks
+test.describe("axe", () => {
+	const { render } = harnessHelpers<HarnessConfig>();
+	const scan = (page: Page) => expectNoAxeViolations(page, "u-progress");
+
+	test.beforeEach(({ page }) =>
+		gotoHarness(page, "frameworks/vanilla/test.html?component=u-progress"),
+	);
+
+	for (const value of [5, null]) {
+		test(`${value === null ? "indeterminate" : "determinate"}`, async ({
+			page,
+		}) => {
+			await render(page, { value });
+			await scan(page);
+		});
+	}
+
+	for (const label of [
+		"for",
+		"wrap",
+		"aria-label",
+		"aria-labelledby",
+	] satisfies LabelMode[]) {
+		test(`labelled with ${label}`, async ({ page }) => {
+			await render(page, { label });
+			await scan(page);
+		});
+	}
+
+	test("complete with custom max", async ({ page }) => {
+		await render(page, { value: 200, max: 200 });
+		await scan(page);
+	});
+});
 
 const mount = async (page: Page, html: string) => {
 	await page.evaluate((markup) => {

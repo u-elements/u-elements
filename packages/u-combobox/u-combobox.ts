@@ -12,8 +12,6 @@ import {
 	getInputLabel,
 	getRoot,
 	getText,
-	IS_ANDROID,
-	IS_IOS,
 	IS_SAFARI,
 	isBrowser,
 	off,
@@ -166,7 +164,6 @@ const DATALIST = "DATALIST";
 const EVENTS = "focus click keydown keyup mousedown"; // blur and pointerdown are handled by onFocusLeave, input by onWindowInput or connectedCallback
 const FALSE = "false";
 const FOCUS = { focusVisible: true };
-const IS_MOBILE = `${IS_IOS || IS_ANDROID}`;
 const NO_OPTIONS = isBrowser() && document.getElementsByTagName("-");
 const SR_ANNOUNCE = "--sr-announce";
 const SR_ONLY = 'position:absolute;pointer-events:none;content:"\\00A0"'; // Used to ensure announcement from CSS
@@ -187,6 +184,7 @@ export const UHTMLComboboxStyle = `${DISPLAY_BLOCK}
 ::slotted(button[aria-expanded])::before { content:var(--toggle,"\\25BC");content:var(--toggle,"\\25BC")/var(--sr-toggle,"Options") }
 ::slotted(button[aria-expanded="true"])::before { --toggle:"\\25B2" }
 ::slotted(button[aria-expanded]:not(:empty))::before { ${SR_ONLY} }
+#sr-items{position:absolute;pointer-events:none;opacity:0}
 #sr-items::before { ${SR_ONLY};${SR_ONLY}/var(--sr-items, "Selected") }`; // Double content: declarations without alt text to support Safari before 17.4 and Firefox before 128
 
 export const UHTMLComboboxShadowRoot =
@@ -238,7 +236,7 @@ export class UHTMLComboboxElement extends UHTMLElement {
 			tabindex: "-1", // Prevent tabstop even if consumer sets overflow: auto (https://issues.chromium.org/issues/40456188)
 		});
 		this._listbox.append(tag("slot", { name: "items" })); // Avoid innerHTML to comply with Trusted Types CSP
-		root.append(tag("div", { id: "sr-items", "aria-hidden": "true" }));
+		root.append(tag("div", { id: "sr-items", "aria-hidden": "true" }, ".")); // Add . to make Axe DevTools see the CSS content
 		root.prepend(this._listbox);
 	}
 	connectedCallback() {
@@ -507,7 +505,7 @@ const onInput = (self: UHTMLComboboxElement, e: Partial<InputEvent>) => {
 	if (option && !control.readOnly && !control.matches(":disabled")) {
 		e.stopImmediatePropagation?.(); // Stop the input event, as dispatchSelect syncs the input if needed
 		setValue(control, self._value || "");
-		if (value) dispatchSelect(self, option, true); // Picking <option value=""> should not cause select
+		if (value) dispatchSelect(self, getItem(option), true); // Picking <option value=""> should not cause select
 	} else self._value = value; // Also updates _value if readonly or disabled
 
 	syncButtons(self);
@@ -685,14 +683,14 @@ const syncButtons = (self: UHTMLComboboxElement) => {
 	const clearable = clear && control?.value;
 	if (clear) {
 		const focused = control?.value && clear === getFocused(self); // It is possible to tab to clear button
-		attr(clear, "aria-hidden", focused ? FALSE : IS_MOBILE); // Hide from screen readers to keep datalist open on mobile swipe right screen reader navigation
+		attr(clear, "aria-hidden", `${!focused}`); // Hide to keep datalist open on swipe right screen reader navigation and to keep Axe happy
 		attr(clear, "hidden", clearable && !inert ? null : "");
 		attr(clear, "tabindex", focused ? "0" : "-1");
 	}
 	if (toggle) {
 		const isNative = list?.nodeName === DATALIST;
 		attr(toggle, "aria-expanded", `${!isNative && list?.hidden === false}`);
-		attr(toggle, "aria-hidden", IS_MOBILE); // Hide from screen readers to keep datalist open on swipe right navigation
+		attr(toggle, "aria-hidden", "true"); // Hide to keep datalist open on swipe right screen reader navigation and to keep Axe happy
 		attr(toggle, "hidden", !list || clearable || inert || isNative ? "" : null); // Hide toggle if native datalist
 		attr(toggle, "tabindex", "-1");
 		attr(toggle, "type", "button"); // Prevent submit

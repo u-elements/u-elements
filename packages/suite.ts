@@ -2,8 +2,40 @@
  * Node-side helpers for the shared Playwright suites (packages/<tag>/<tag>.suite.ts), driving the
  * `window.harness` exposed by the harness pages, see packages/harness.ts.
  */
+import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import type { Mountable } from "./harness";
+import { expect } from "./test";
+
+// Scan the elements matching include with axe (WCAG 2.2 AA and best practices), listing each violation as "rule: targets" for a readable diff.
+// Scoped to the component, so page-level rules (landmarks, h1) do not report the harness page itself. Pass several selectors for related elements outside the component, i.e. the input of a datalist
+export const expectNoAxeViolations = async (
+	page: Page,
+	include: string | string[],
+	disableRules: string[] = [],
+) => {
+	const builder = new AxeBuilder({ page });
+	for (const selector of [include].flat()) builder.include(selector);
+	const { violations } = await builder
+		.withTags([
+			"wcag2a",
+			"wcag2aa",
+			"wcag21a",
+			"wcag21aa",
+			"wcag22aa",
+			"best-practice",
+		])
+		.disableRules([
+			...disableRules,
+			"target-size", // Sizes come from consumer CSS, and the harness page is unstyled
+		])
+		.analyze();
+	expect(
+		violations.map(
+			({ id, nodes }) => `${id}: ${nodes.map((n) => n.target).join(", ")}`,
+		),
+	).toEqual([]);
+};
 
 // Open a harness page and wait for the framework to expose window.harness
 export const gotoHarness = async (page: Page, url: string) => {

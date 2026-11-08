@@ -323,6 +323,7 @@ const renderToStaticMarkup = (options: string) =>
 
 ## Changelog
 
+- **3.0.1:** Allow overwriting internal `display: none` on `hidden`, `disabled` or `aria-hidden="true"` elements even when using CSS layers
 - **3.0.0:**
   - Screen reader texts are set through `--sr-*` CSS instead of `data-sr-*` attributes
   - `aria-posinset` and `aria-setsize` on options is now supported

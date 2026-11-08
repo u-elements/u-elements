@@ -46,7 +46,7 @@ export const UHTMLDataListStyle = `${DISPLAY_BLOCK}
 ::slotted([role="option"][${DATA_ACTIVE}]) { ${FOCUS_OUTLINE} }
 ::slotted([role="option"][${ARIA_HIDDEN}="true"]),
 ::slotted([role="option"][disabled]),
-::slotted([role="option"][hidden]) { display: none !important }
+::slotted([role="option"][hidden]) { display: none }
 ::slotted([role="option"][${DATA_INSET}])::after { content: ""/", "attr(${DATA_INSET})" "var(--sr-of, "of")" "attr(${DATA_SIZE}) }
 ::slotted([role="option"][${DATA_INSET}][aria-setsize="-1"])::after { content: ""/", "attr(${DATA_INSET})" }`;
 

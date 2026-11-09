@@ -323,6 +323,7 @@ const renderToStaticMarkup = (options: string) =>
 
 ## Changelog
 
+- **3.0.2:** `data-nofilter="false"` no longer disables filtering, increasing compatibility with frameworks where data-attributes are always written
 - **3.0.1:** Allow overwriting internal `display: none` on `hidden`, `disabled` or `aria-hidden="true"` elements even when using CSS layers
 - **3.0.0:**
   - Screen reader texts are set through `--sr-*` CSS instead of `data-sr-*` attributes

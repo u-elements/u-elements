@@ -41,6 +41,7 @@ const DATA_INSET = "data-posinset";
 const ARIA_SIZE = "aria-setsize";
 const DATA_SIZE = "data-setsize";
 const ARIA_HIDDEN = "aria-hidden";
+const FALSE = "false";
 export const UHTMLDataListStyle = `${DISPLAY_BLOCK}
 ::slotted([role="option"]) { display:block;cursor:pointer }
 ::slotted([role="option"][${DATA_ACTIVE}]) { ${FOCUS_OUTLINE} }
@@ -293,8 +294,8 @@ const onKeyDown = (self: UHTMLDataListElement, event: KeyboardEvent) => {
 
 const onMutations = (self: UHTMLDataListElement) => {
 	if (!self._control || self.hidden) return; // Do not process if hidden or no input connected
+	const filter = (self.getAttribute("data-nofilter") ?? FALSE) === FALSE; // Support proposed nofilter attribute https://github.com/whatwg/html/issues/4882
 	const query = self._control.value.toLowerCase().trim() || "";
-	const filter = !self.hasAttribute("data-nofilter"); // Support proposed nofilter attribute https://github.com/whatwg/html/issues/4882
 	const hide: HTMLOptionElement[] = [];
 	const show: HTMLOptionElement[] = [];
 

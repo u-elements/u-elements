@@ -169,6 +169,35 @@ export const singleTests = ({
 		});
 
 		for (const multiple of [false, true]) {
+			test(`Enter and blur never match an option with empty value in ${multiple ? "multiple" : "single"} mode`, async ({
+				page,
+			}) => {
+				await render(page, {
+					multiple,
+					options: [{ value: "", text: "Loading" }, ...OPTIONS],
+				});
+				await resetLog(page, "comboboxbeforematch");
+				await resetLog(page, "comboboxbeforeselect");
+				const input = page.locator("#input");
+				const items = page.locator("u-combobox data");
+				const live = page.locator("[aria-live='assertive']");
+
+				await input.click();
+				await input.fill("Loading");
+				await input.press("Enter");
+				await settled(page);
+				await expect(items).toHaveCount(0);
+				await expect(input).toHaveValue("Loading"); // Typed text stays until blur
+				await expect(live).toHaveText(/Invalid value/); // A placeholder is no match
+				expect(await logged(page, "comboboxbeforematch")).toHaveLength(1);
+
+				await input.blur();
+				await settled(page);
+				await expect(items).toHaveCount(0);
+				await expect(input).toHaveValue(multiple ? "Loading" : ""); // Single mode syncs to the missing item
+				expect(await logged(page, "comboboxbeforeselect")).toEqual([]);
+			});
+
 			test(`Enter on text equal to an item without a matching option does not announce invalid in ${multiple ? "multiple" : "single"} mode`, async ({
 				page,
 			}) => {

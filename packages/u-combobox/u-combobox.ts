@@ -37,6 +37,7 @@ import { version } from "./package.json";
  * - cached text:  the last text seen before a option pick. Used to revert text after a datalist pick in multiple mode
  * - match:        dispatch comboboxbeforematch with the first enabled and non-hidden option whose label equals the trimmed text case-insensitive,
  *                 preferring an option whose value is already an item when several labels are equal.
+ *                 An option with empty value (i.e. <option value="">Loading</option>) is a placeholder and never matched, unless selected by a custom match.
  *                 Prevented means custom matching: first option with option.selected is the result, so consumer should loop all options to pick or reject another option.
  *                 The result is the matched option, or a new item made from the text when creatable and no option matched (Enter only, never blur), or nothing.
  *                 Match is never dispatched for empty text, and never without a datalist (creatable still creates from the text on Enter)
@@ -739,9 +740,9 @@ const getCombobox = (input?: Node) => {
 	const el = input?.parentElement as UHTMLComboboxElement | null | undefined;
 	return el && VERSIONS[VERSION].has(el) && el.control === input ? el : null;
 };
-// biome-ignore format: next-line
+// biome-ignore format: next-line Options with empty value should not create match
 function isMatch(this: string, opt: HTMLOptionElement) {
-	return !opt.hidden && !(opt.disabled ?? opt.hasAttribute("disabled")) && getLabel(opt).trim().toLowerCase() === this.toLowerCase();
+	return !opt.hidden && !(opt.disabled ?? opt.hasAttribute("disabled")) && getValue(opt) !== "" && getLabel(opt).trim().toLowerCase() === this.toLowerCase();
 }
 const isSelected = (opt: HTMLOptionElement) =>
 	opt.selected ?? opt.hasAttribute("selected");

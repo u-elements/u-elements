@@ -603,6 +603,7 @@ const renderToStaticMarkup = (data: string, options: string) =>
 
 ## Changelog
 
+- **3.0.3:** Options with `value=""` can no longer match in single mode, aligning with native `<datalist>` behavior
 - **3.0.2:** Hide listbox in ShadowDOM when empty to comply with Siteimprove a11y test warnings
 - **3.0.1:** Component unchanged, but ShadowDOM updated to comply with axe-core@4.14.0 automated tests
 - **3.0.0:** Framework compatibility and matching changes
